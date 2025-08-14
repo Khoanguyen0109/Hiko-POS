@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import BottomNav from "../components/shared/BottomNav";
 import BackButton from "../components/shared/BackButton";
 import TableCard from "../components/tables/TableCard";
-import { tables } from "../constants";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getTables } from "../https";
+import { enqueueSnackbar } from "notistack";
 
 const Tables = () => {
   const [status, setStatus] = useState("all");
 
-    useEffect(() => {
-      document.title = "POS | Tables"
-    }, [])
+  useEffect(() => {
+    document.title = "POS | Tables"
+  }, [])
 
   const { data: resData, isError } = useQuery({
     queryKey: ["tables"],
@@ -24,8 +24,6 @@ const Tables = () => {
   if(isError) {
     enqueueSnackbar("Something went wrong!", { variant: "error" })
   }
-
-  console.log(resData);
 
   return (
     <section className="bg-[#1f1f1f]  h-[calc(100vh-5rem)] overflow-hidden">
@@ -60,6 +58,7 @@ const Tables = () => {
         {resData?.data.data.map((table) => {
           return (
             <TableCard
+              key={table._id}
               id={table._id}
               name={table.tableNo}
               status={table.status}

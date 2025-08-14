@@ -1,4 +1,3 @@
-import React from "react";
 import { itemsData, metricsData } from "../../constants";
 
 const Metrics = () => {

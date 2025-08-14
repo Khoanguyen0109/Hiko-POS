@@ -10,6 +10,7 @@ import Header from "./components/shared/Header";
 import { useSelector } from "react-redux";
 import useLoadData from "./hooks/useLoadData";
 import FullScreenLoader from "./components/shared/FullScreenLoader"
+import PropTypes from "prop-types";
 
 function Layout() {
   const isLoading = useLoadData();
@@ -77,6 +78,10 @@ function ProtectedRoutes({ children }) {
   }
 
   return children;
+}
+
+ProtectedRoutes.propTypes = {
+  children: PropTypes.node.isRequired
 }
 
 function App() {

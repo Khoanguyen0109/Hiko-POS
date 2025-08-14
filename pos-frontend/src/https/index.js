@@ -25,3 +25,28 @@ export const addOrder = (data) => axiosWrapper.post("/api/order/", data);
 export const getOrders = () => axiosWrapper.get("/api/order");
 export const updateOrderStatus = ({ orderId, orderStatus }) =>
   axiosWrapper.put(`/api/order/${orderId}`, { orderStatus });
+
+// Category Endpoints
+export const addCategory = (data) => axiosWrapper.post("/api/category/", data);
+export const getCategories = () => axiosWrapper.get("/api/category");
+export const getCategoryById = (categoryId) => axiosWrapper.get(`/api/category/${categoryId}`);
+export const updateCategory = ({ categoryId, ...categoryData }) =>
+  axiosWrapper.put(`/api/category/${categoryId}`, categoryData);
+export const deleteCategory = (categoryId) => axiosWrapper.delete(`/api/category/${categoryId}`);
+
+// Dish Endpoints
+export const addDish = (data) => axiosWrapper.post("/api/dish/", data);
+export const getDishes = () => axiosWrapper.get("/api/dish");
+export const getDishesByCategory = (categoryId) => axiosWrapper.get(`/api/dish/category/${categoryId}`);
+export const getDishById = (dishId) => axiosWrapper.get(`/api/dish/${dishId}`);
+export const updateDish = ({ dishId, ...dishData }) =>
+  axiosWrapper.put(`/api/dish/${dishId}`, dishData);
+export const deleteDish = (dishId) => axiosWrapper.delete(`/api/dish/${dishId}`);
+
+// Customer Endpoints
+export const addCustomer = (data) => axiosWrapper.post("/api/customer/", data);
+export const getCustomers = () => axiosWrapper.get("/api/customer");
+export const getCustomerById = (customerId) => axiosWrapper.get(`/api/customer/${customerId}`);
+export const updateCustomer = ({ customerId, ...customerData }) =>
+  axiosWrapper.put(`/api/customer/${customerId}`, customerData);
+export const deleteCustomer = (customerId) => axiosWrapper.delete(`/api/customer/${customerId}`);

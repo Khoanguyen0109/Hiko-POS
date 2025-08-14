@@ -8,7 +8,6 @@ import paneerTikka from '../assets/images/paneer-tika.webp';
 import gulabJamun from '../assets/images/gulab-jamun.webp';
 import pooriSabji from '../assets/images/poori-sabji.webp';
 import roganJosh from '../assets/images/rogan-josh.jpg';
-import { color } from 'framer-motion';
 
 export const popularDishes = [
     {
@@ -364,7 +363,7 @@ export const salads = [
     id: 5,
     name: "Tuna Salad",
     price: 350,
-  
+    
   }
 ];
 

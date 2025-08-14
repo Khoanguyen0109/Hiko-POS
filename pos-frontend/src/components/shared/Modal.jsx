@@ -1,5 +1,5 @@
-import React from 'react';
 import { motion } from 'framer-motion';
+import PropTypes from 'prop-types';
 
 
 const Modal = ({ isOpen, onClose, title, children }) => {
@@ -29,5 +29,12 @@ const Modal = ({ isOpen, onClose, title, children }) => {
     </div>
   );
 };
+
+Modal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  title: PropTypes.string.isRequired,
+  children: PropTypes.node
+}
 
 export default Modal;

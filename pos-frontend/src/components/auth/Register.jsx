@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { register } from "../../https";
 import { useMutation } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
+import PropTypes from "prop-types";
 
 const Register = ({setIsRegister}) => {
   const [formData, setFormData] = useState({
@@ -149,5 +150,9 @@ const Register = ({setIsRegister}) => {
     </div>
   );
 };
+
+Register.propTypes = {
+  setIsRegister: PropTypes.func.isRequired
+}
 
 export default Register;

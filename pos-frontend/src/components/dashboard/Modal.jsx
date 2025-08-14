@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { IoMdClose } from "react-icons/io";
 import { useMutation } from "@tanstack/react-query";
 import { addTable } from "../../https";
 import { enqueueSnackbar } from "notistack"
+import PropTypes from "prop-types";
 
 const Modal = ({ setIsTableModalOpen }) => {
   const [tableData, setTableData] = useState({
@@ -107,5 +108,9 @@ const Modal = ({ setIsTableModalOpen }) => {
     </div>
   );
 };
+
+Modal.propTypes = {
+  setIsTableModalOpen: PropTypes.func.isRequired
+}
 
 export default Modal;

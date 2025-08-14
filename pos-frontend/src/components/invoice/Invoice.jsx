@@ -1,13 +1,14 @@
-import React, { useRef } from "react";
+import { useRef } from "react";
 import { motion } from "framer-motion";
 import { FaCheck } from "react-icons/fa6";
-
+import PropTypes from "prop-types";
 const Invoice = ({ orderInfo, setShowInvoice }) => {
   const invoiceRef = useRef(null);
   const handlePrint = () => {
+    console.log('2222')
     const printContent = invoiceRef.current.innerHTML;
     const WinPrint = window.open("", "", "width=900,height=650");
-
+    console.log("printContent", printContent);
     WinPrint.document.write(`
             <html>
               <head>
@@ -156,5 +157,32 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
     </div>
   );
 };
+
+Invoice.propTypes = {
+  setShowInvoice: PropTypes.func.isRequired,
+  orderInfo: PropTypes.shape({
+    orderDate: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]).isRequired,
+    customerDetails: PropTypes.shape({
+      name: PropTypes.string.isRequired,
+      phone: PropTypes.string.isRequired,
+      guests: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired
+    }).isRequired,
+    items: PropTypes.arrayOf(PropTypes.shape({
+      name: PropTypes.string.isRequired,
+      quantity: PropTypes.number.isRequired,
+      price: PropTypes.number.isRequired
+    })).isRequired,
+    bills: PropTypes.shape({
+      total: PropTypes.number.isRequired,
+      tax: PropTypes.number.isRequired,
+      totalWithTax: PropTypes.number.isRequired
+    }).isRequired,
+    paymentMethod: PropTypes.string.isRequired,
+    paymentData: PropTypes.shape({
+      razorpay_order_id: PropTypes.string,
+      razorpay_payment_id: PropTypes.string
+    })
+  }).isRequired
+}
 
 export default Invoice;

@@ -1,12 +1,11 @@
-import React from "react";
 import { FaCheckDouble, FaLongArrowAltRight } from "react-icons/fa";
 import { FaCircle } from "react-icons/fa";
 import { formatDateAndTime, getAvatarName } from "../../utils/index";
+import PropTypes from "prop-types";
 
-const OrderCard = ({ key, order }) => {
-  console.log(order);
+const OrderCard = ({ order }) => {
   return (
-    <div key={key} className="w-[500px] bg-[#262626] p-4 rounded-lg mb-4">
+    <div className="w-[500px] bg-[#262626] p-4 rounded-lg mb-4">
       <div className="flex items-center gap-5">
         <button className="bg-[#f6b100] p-3 text-xl font-bold rounded-lg">
           {getAvatarName(order.customerDetails.name)}
@@ -55,5 +54,16 @@ const OrderCard = ({ key, order }) => {
     </div>
   );
 };
+
+OrderCard.propTypes = {
+  order: PropTypes.shape({
+    customerDetails: PropTypes.shape({ name: PropTypes.string.isRequired }).isRequired,
+    orderDate: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]).isRequired,
+    table: PropTypes.shape({ tableNo: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired }).isRequired,
+    orderStatus: PropTypes.string.isRequired,
+    items: PropTypes.array.isRequired,
+    bills: PropTypes.shape({ totalWithTax: PropTypes.number.isRequired }).isRequired
+  }).isRequired
+}
 
 export default OrderCard;

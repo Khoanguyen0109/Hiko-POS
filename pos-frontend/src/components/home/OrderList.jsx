@@ -1,9 +1,9 @@
-import React from "react";
+import PropTypes from "prop-types";
 import { FaCheckDouble, FaLongArrowAltRight } from "react-icons/fa";
 import { FaCircle } from "react-icons/fa";
 import { getAvatarName } from "../../utils/index";
 
-const OrderList = ({ key, order }) => {
+const OrderList = ({ order }) => {
   return (
     <div className="flex items-center gap-5 mb-3">
       <button className="bg-[#f6b100] p-3 text-xl font-bold rounded-lg">
@@ -18,7 +18,7 @@ const OrderList = ({ key, order }) => {
         </div>
 
         <h1 className="text-[#f6b100] font-semibold border border-[#f6b100] rounded-lg p-1">
-          Table <FaLongArrowAltRight className="text-[#ababab] ml-2 inline" />{" "}
+          Table <FaLongArrowAltRight className="text-[#ababab] ml-2 inline" /> {" "}
           {order.table.tableNo}
         </h1>
 
@@ -41,5 +41,16 @@ const OrderList = ({ key, order }) => {
     </div>
   );
 };
+
+OrderList.propTypes = {
+  order: PropTypes.shape({
+    customerDetails: PropTypes.shape({
+      name: PropTypes.string.isRequired
+    }).isRequired,
+    items: PropTypes.arrayOf(PropTypes.object).isRequired,
+    table: PropTypes.shape({ tableNo: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired }).isRequired,
+    orderStatus: PropTypes.string.isRequired
+  }).isRequired
+}
 
 export default OrderList;

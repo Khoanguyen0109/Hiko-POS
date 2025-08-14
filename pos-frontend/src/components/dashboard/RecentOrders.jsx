@@ -1,6 +1,3 @@
-import React from "react";
-import { orders } from "../../constants";
-import { GrUpdate } from "react-icons/gr";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
 import { getOrders, updateOrderStatus } from "../../https/index";
@@ -9,15 +6,14 @@ import { formatDateAndTime } from "../../utils";
 const RecentOrders = () => {
   const queryClient = useQueryClient();
   const handleStatusChange = ({orderId, orderStatus}) => {
-    console.log(orderId)
     orderStatusUpdateMutation.mutate({orderId, orderStatus});
   };
 
   const orderStatusUpdateMutation = useMutation({
     mutationFn: ({orderId, orderStatus}) => updateOrderStatus({orderId, orderStatus}),
-    onSuccess: (data) => {
+    onSuccess: () => {
       enqueueSnackbar("Order status updated successfully!", { variant: "success" });
-      queryClient.invalidateQueries(["orders"]); // Refresh order list
+      queryClient.invalidateQueries(["orders"]);
     },
     onError: () => {
       enqueueSnackbar("Failed to update order status!", { variant: "error" });
@@ -35,8 +31,6 @@ const RecentOrders = () => {
   if (isError) {
     enqueueSnackbar("Something went wrong!", { variant: "error" });
   }
-
-  console.log(resData.data.data);
 
   return (
     <div className="container mx-auto bg-[#262626] p-4 rounded-lg">

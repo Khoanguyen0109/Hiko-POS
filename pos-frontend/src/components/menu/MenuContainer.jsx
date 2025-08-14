@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { menus } from "../../constants";
 import { GrRadialSelected } from "react-icons/gr";
 import { FaShoppingCart } from "react-icons/fa";
