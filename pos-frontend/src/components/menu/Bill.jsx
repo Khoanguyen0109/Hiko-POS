@@ -11,7 +11,9 @@ import { useMutation } from "@tanstack/react-query";
 import { removeAllItems } from "../../redux/slices/cartSlice";
 import { removeCustomer } from "../../redux/slices/customerSlice";
 import Invoice from "../invoice/Invoice";
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { useReactToPrint } from "react-to-print";
+import ThermalReceiptTemplate from "../print/ThermalReceiptTemplate";
 
 function loadScript(src) {
   return new Promise((resolve) => {
@@ -29,6 +31,7 @@ function loadScript(src) {
 
 const Bill = () => {
   const dispatch = useDispatch();
+  const thermalReceiptRef = useRef();
 
   const customerData = useSelector((state) => state.customer);
   const cartData = useSelector((state) => state.cart);
@@ -40,6 +43,28 @@ const Bill = () => {
   const [paymentMethod, setPaymentMethod] = useState();
   const [showInvoice, setShowInvoice] = useState(false);
   const [orderInfo, setOrderInfo] = useState();
+
+  const handleThermalPrint = useReactToPrint({
+    contentRef: thermalReceiptRef,
+    documentTitle: `Receipt-${customerData.orderId || Date.now()}`,
+    pageStyle: `
+      @page {
+        size: 80mm auto;
+        margin: 0;
+      }
+      @media print {
+        body { margin: 0; }
+      }
+    `
+  });
+
+  const handlePrintReceipt = () => {
+    if (cartData.length === 0) {
+      enqueueSnackbar("No items in cart to print", { variant: "warning" });
+      return;
+    }
+    handleThermalPrint();
+  };
 
   const handlePlaceOrder = async () => {
     if (!paymentMethod) {
@@ -189,11 +214,27 @@ const Bill = () => {
     },
   });
 
+  // Prepare thermal receipt data
+  const thermalReceiptData = {
+    orderId: customerData.orderId || Date.now(),
+    table: customerData.table?.tableNo || 'N/A',
+    customerName: customerData.customerName,
+    items: cartData,
+    subtotal: total,
+    tax: tax,
+    total: totalPriceWithTax
+  };
+
   return (
     <>
+      {/* Hidden thermal receipt template */}
+      <div style={{ display: 'none' }}>
+        <ThermalReceiptTemplate ref={thermalReceiptRef} orderData={thermalReceiptData} />
+      </div>
+
       <div className="flex items-center justify-between px-5 mt-2">
         <p className="text-xs text-[#ababab] font-medium mt-2">
-          Items({cartData.lenght})
+          Items({cartData.length})
         </p>
         <h1 className="text-[#f5f5f5] text-md font-bold">
           ₹{total.toFixed(2)}
@@ -231,7 +272,7 @@ const Bill = () => {
       </div>
 
       <div className="flex items-center gap-3 px-5 mt-4">
-        <button className="bg-[#025cca] px-4 py-3 w-full rounded-lg text-[#f5f5f5] font-semibold text-lg">
+        <button onClick={handlePrintReceipt} className="bg-[#025cca] px-4 py-3 w-full rounded-lg text-[#f5f5f5] font-semibold text-lg">
           Print Receipt
         </button>
         <button

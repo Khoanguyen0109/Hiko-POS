@@ -4,7 +4,12 @@ const { default: mongoose } = require("mongoose");
 
 const addOrder = async (req, res, next) => {
   try {
-    const order = new Order(req.body);
+    const { _id: userId, name: userName } = req.user || {};
+    const orderPayload = {
+      ...req.body,
+      createdBy: (userId && userName) ? { userId, userName } : undefined
+    };
+    const order = new Order(orderPayload);
     await order.save();
     res
       .status(201)

@@ -431,3 +431,19 @@ export const orders = [
     total: 220.0,
   },
 ];
+
+export const ROUTES = {
+  ROOT: "/",
+  AUTH: "/auth",
+  ORDERS: "/orders",
+  TABLES: "/tables",
+  MENU: "/menu",
+  DASHBOARD: "/dashboard",
+  MENU_ORDER: "/menu-order"
+};
+
+
+export const userRoles = {
+  ADMIN: "Admin",
+  USER: "User"
+}

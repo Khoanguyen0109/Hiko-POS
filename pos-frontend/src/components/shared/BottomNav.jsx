@@ -7,6 +7,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import Modal from "./Modal";
 import { useDispatch } from "react-redux";
 import { setCustomer } from "../../redux/slices/customerSlice";
+import { ROUTES } from "../../constants";
 
 const BottomNav = () => {
   const navigate = useNavigate();
@@ -32,9 +33,10 @@ const BottomNav = () => {
   const isActive = (path) => location.pathname === path;
 
   const handleCreateOrder = () => {
+    console.log('222')
     // send the data to store
-    dispatch(setCustomer({name, phone, guests: guestCount}));
-    navigate("/tables");
+    // dispatch(setCustomer({name, phone, guests: guestCount}));
+    navigate(ROUTES.MENU_ORDER);
   }
 
   return (

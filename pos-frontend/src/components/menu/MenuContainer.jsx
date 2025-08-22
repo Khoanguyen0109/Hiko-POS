@@ -13,12 +13,21 @@ const MenuContainer = () => {
   const dispatch = useDispatch();
 
   const increment = (id) => {
+    if(id !== itemId) {
+      setItemId(id);
+      setItemCount(1);
+      return;
+    }
     setItemId(id);
-    if (itemCount >= 4) return;
     setItemCount((prev) => prev + 1);
   };
 
   const decrement = (id) => {
+    if(id !== itemId) {
+      setItemId(id);
+      setItemCount(0);
+      return;
+    }
     setItemId(id);
     if (itemCount <= 0) return;
     setItemCount((prev) => prev - 1);

@@ -24,6 +24,10 @@ const orderSchema = new mongoose.Schema({
     paymentData: {
         razorpay_order_id: String,
         razorpay_payment_id: String
+    },
+    createdBy: {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        userName: { type: String }
     }
 }, { timestamps : true } );
 

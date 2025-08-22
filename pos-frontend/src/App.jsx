@@ -5,36 +5,48 @@ import {
   useLocation,
   Navigate,
 } from "react-router-dom";
-import { Home, Auth, Orders, Tables, Menu, Dashboard } from "./pages";
+import {
+  Home,
+  Auth,
+  Orders,
+  Tables,
+  Menu,
+  Dashboard,
+  MenuOrder,
+} from "./pages";
 import Header from "./components/shared/Header";
 import { useSelector } from "react-redux";
 import useLoadData from "./hooks/useLoadData";
-import FullScreenLoader from "./components/shared/FullScreenLoader"
+import FullScreenLoader from "./components/shared/FullScreenLoader";
 import PropTypes from "prop-types";
+import { ROUTES } from "./constants";
 
 function Layout() {
   const isLoading = useLoadData();
   const location = useLocation();
-  const hideHeaderRoutes = ["/auth"];
-  const { isAuth } = useSelector(state => state.user);
+  const hideHeaderRoutes = [ROUTES.AUTH];
+  const { isAuth } = useSelector((state) => state.user);
 
-  if(isLoading) return <FullScreenLoader />
+  if (isLoading) return <FullScreenLoader />;
 
   return (
     <>
       {!hideHeaderRoutes.includes(location.pathname) && <Header />}
       <Routes>
         <Route
-          path="/"
+          path={ROUTES.ROOT}
           element={
             <ProtectedRoutes>
               <Home />
             </ProtectedRoutes>
           }
         />
-        <Route path="/auth" element={isAuth ? <Navigate to="/" /> : <Auth />} />
         <Route
-          path="/orders"
+          path={ROUTES.AUTH}
+          element={isAuth ? <Navigate to={ROUTES.ROOT} /> : <Auth />}
+        />
+        <Route
+          path={ROUTES.ORDERS}
           element={
             <ProtectedRoutes>
               <Orders />
@@ -42,7 +54,7 @@ function Layout() {
           }
         />
         <Route
-          path="/tables"
+          path={ROUTES.TABLES}
           element={
             <ProtectedRoutes>
               <Tables />
@@ -50,7 +62,7 @@ function Layout() {
           }
         />
         <Route
-          path="/menu"
+          path={ROUTES.MENU}
           element={
             <ProtectedRoutes>
               <Menu />
@@ -58,7 +70,16 @@ function Layout() {
           }
         />
         <Route
-          path="/dashboard"
+          path={ROUTES.MENU_ORDER}
+          element={
+            <ProtectedRoutes>
+              <MenuOrder />
+            </ProtectedRoutes>
+          }
+        />
+
+        <Route
+          path={ROUTES.DASHBOARD}
           element={
             <ProtectedRoutes>
               <Dashboard />
@@ -74,15 +95,15 @@ function Layout() {
 function ProtectedRoutes({ children }) {
   const { isAuth } = useSelector((state) => state.user);
   if (!isAuth) {
-    return <Navigate to="/auth" />;
+    return <Navigate to={ROUTES.AUTH} />;
   }
 
   return children;
 }
 
 ProtectedRoutes.propTypes = {
-  children: PropTypes.node.isRequired
-}
+  children: PropTypes.node.isRequired,
+};
 
 function App() {
   return (
