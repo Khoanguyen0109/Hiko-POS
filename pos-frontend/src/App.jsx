@@ -13,79 +13,78 @@ import {
   Menu,
   Dashboard,
   MenuOrder,
+  Dishes,
+  Categories,
 } from "./pages";
 import Header from "./components/shared/Header";
 import { useSelector } from "react-redux";
 import useLoadData from "./hooks/useLoadData";
 import FullScreenLoader from "./components/shared/FullScreenLoader";
 import PropTypes from "prop-types";
-import { ROUTES } from "./constants";
+import { 
+  ROUTES, 
+  PUBLIC_ROUTES, 
+  PROTECTED_ROUTES, 
+  HEADER_HIDDEN_ROUTES 
+} from "./constants";
+import BottomNav from "./components/shared/BottomNav";
+
+// Component mapping for dynamic rendering
+const COMPONENT_MAP = {
+  Home,
+  Auth,
+  Orders,
+  Tables,
+  Menu,
+  Dashboard,
+  MenuOrder,
+  Dishes,
+  Categories,
+};
 
 function Layout() {
   const isLoading = useLoadData();
   const location = useLocation();
-  const hideHeaderRoutes = [ROUTES.AUTH];
   const { isAuth } = useSelector((state) => state.user);
 
   if (isLoading) return <FullScreenLoader />;
 
   return (
     <>
-      {!hideHeaderRoutes.includes(location.pathname) && <Header />}
+      {!HEADER_HIDDEN_ROUTES.includes(location.pathname) && <Header />}
       <Routes>
-        <Route
-          path={ROUTES.ROOT}
-          element={
-            <ProtectedRoutes>
-              <Home />
-            </ProtectedRoutes>
-          }
-        />
-        <Route
-          path={ROUTES.AUTH}
-          element={isAuth ? <Navigate to={ROUTES.ROOT} /> : <Auth />}
-        />
-        <Route
-          path={ROUTES.ORDERS}
-          element={
-            <ProtectedRoutes>
-              <Orders />
-            </ProtectedRoutes>
-          }
-        />
-        <Route
-          path={ROUTES.TABLES}
-          element={
-            <ProtectedRoutes>
-              <Tables />
-            </ProtectedRoutes>
-          }
-        />
-        <Route
-          path={ROUTES.MENU}
-          element={
-            <ProtectedRoutes>
-              <Menu />
-            </ProtectedRoutes>
-          }
-        />
-        <Route
-          path={ROUTES.MENU_ORDER}
-          element={
-            <ProtectedRoutes>
-              <MenuOrder />
-            </ProtectedRoutes>
-          }
-        />
+        {/* Public Routes */}
+        {PUBLIC_ROUTES.map((route) => (
+          <Route
+            key={route.path}
+            path={route.path}
+            element={
+              isAuth && route.redirectIfAuth ? (
+                <Navigate to={route.redirectIfAuth} />
+              ) : (
+                <Auth />
+              )
+            }
+          />
+        ))}
 
-        <Route
-          path={ROUTES.DASHBOARD}
-          element={
-            <ProtectedRoutes>
-              <Dashboard />
-            </ProtectedRoutes>
-          }
-        />
+        {/* Protected Routes */}
+        {PROTECTED_ROUTES.map((route) => {
+          const Component = COMPONENT_MAP[route.componentName];
+          return (
+            <Route
+              key={route.path}
+              path={route.path}
+              element={
+                <ProtectedRoutes>
+                  <Component />
+                </ProtectedRoutes>
+              }
+            />
+          );
+        })}
+
+        {/* Fallback Route */}
         <Route path="*" element={<div>Not Found</div>} />
       </Routes>
     </>
@@ -109,6 +108,7 @@ function App() {
   return (
     <Router>
       <Layout />
+      <BottomNav />
     </Router>
   );
 }

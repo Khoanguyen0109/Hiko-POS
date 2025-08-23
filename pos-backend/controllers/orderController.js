@@ -42,8 +42,49 @@ const getOrderById = async (req, res, next) => {
 
 const getOrders = async (req, res, next) => {
   try {
-    const orders = await Order.find().populate("table");
-    res.status(200).json({ data: orders });
+    const { startDate, endDate, status } = req.query;
+    
+    // Build query object
+    let query = {};
+    
+    // Date filtering
+    if (startDate || endDate) {
+      query.createdAt = {};
+      
+      if (startDate) {
+        // Start of the day for startDate
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        query.createdAt.$gte = start;
+      }
+      
+      if (endDate) {
+        // End of the day for endDate
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        query.createdAt.$lte = end;
+      }
+    }
+    
+    // Status filtering
+    if (status && status !== 'all') {
+      query.orderStatus = status;
+    }
+    
+    const orders = await Order.find(query)
+      .populate("table")
+      .sort({ createdAt: -1 }); // Sort by newest first
+      
+    res.status(200).json({ 
+      success: true,
+      data: orders,
+      count: orders.length,
+      filters: {
+        startDate: startDate || null,
+        endDate: endDate || null,
+        status: status || 'all'
+      }
+    });
   } catch (error) {
     next(error);
   }

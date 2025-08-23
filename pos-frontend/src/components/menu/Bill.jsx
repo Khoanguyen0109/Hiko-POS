@@ -14,6 +14,7 @@ import Invoice from "../invoice/Invoice";
 import { useState, useRef } from "react";
 import { useReactToPrint } from "react-to-print";
 import ThermalReceiptTemplate from "../print/ThermalReceiptTemplate";
+import { formatVND } from "../../utils";
 
 function loadScript(src) {
   return new Promise((resolve) => {
@@ -36,9 +37,6 @@ const Bill = () => {
   const customerData = useSelector((state) => state.customer);
   const cartData = useSelector((state) => state.cart);
   const total = useSelector(getTotalPrice);
-  const taxRate = 5.25;
-  const tax = (total * taxRate) / 100;
-  const totalPriceWithTax = total + tax;
 
   const [paymentMethod, setPaymentMethod] = useState();
   const [showInvoice, setShowInvoice] = useState(false);
@@ -92,7 +90,7 @@ const Bill = () => {
         // create order
 
         const reqData = {
-          amount: totalPriceWithTax.toFixed(2),
+          amount: total.toFixed(2),
         };
 
         const { data } = await createOrderRazorpay(reqData);
@@ -119,8 +117,7 @@ const Bill = () => {
               orderStatus: "In Progress",
               bills: {
                 total: total,
-                tax: tax,
-                totalWithTax: totalPriceWithTax,
+                totalWithTax: total,
               },
               items: cartData,
               table: customerData.table.tableId,
@@ -162,8 +159,7 @@ const Bill = () => {
         orderStatus: "In Progress",
         bills: {
           total: total,
-          tax: tax,
-          totalWithTax: totalPriceWithTax,
+          totalWithTax: total,
         },
         items: cartData,
         table: customerData.table.tableId,
@@ -221,8 +217,7 @@ const Bill = () => {
     customerName: customerData.customerName,
     items: cartData,
     subtotal: total,
-    tax: tax,
-    total: totalPriceWithTax
+    total: total
   };
 
   return (
@@ -237,34 +232,32 @@ const Bill = () => {
           Items({cartData.length})
         </p>
         <h1 className="text-[#f5f5f5] text-md font-bold">
-          ₹{total.toFixed(2)}
+          {formatVND(total)}
         </h1>
       </div>
+      
       <div className="flex items-center justify-between px-5 mt-2">
-        <p className="text-xs text-[#ababab] font-medium mt-2">Tax(5.25%)</p>
-        <h1 className="text-[#f5f5f5] text-md font-bold">₹{tax.toFixed(2)}</h1>
-      </div>
-      <div className="flex items-center justify-between px-5 mt-2">
-        <p className="text-xs text-[#ababab] font-medium mt-2">
-          Total With Tax
+        <p className="text-lg text-[#f5f5f5] font-bold mt-2">
+          Total
         </p>
-        <h1 className="text-[#f5f5f5] text-md font-bold">
-          ₹{totalPriceWithTax.toFixed(2)}
+        <h1 className="text-[#f6b100] text-xl font-bold">
+          {formatVND(total)}
         </h1>
       </div>
+      
       <div className="flex items-center gap-3 px-5 mt-4">
         <button
           onClick={() => setPaymentMethod("Cash")}
-          className={`bg-[#1f1f1f] px-4 py-3 w-full rounded-lg text-[#ababab] font-semibold ${
-            paymentMethod === "Cash" ? "bg-[#383737]" : ""
+          className={`bg-[#1f1f1f] px-4 py-3 w-full rounded-lg text-[#ababab] font-semibold transition-colors ${
+            paymentMethod === "Cash" ? "bg-[#383737] text-[#f5f5f5]" : "hover:bg-[#2a2a2a]"
           }`}
         >
           Cash
         </button>
         <button
           onClick={() => setPaymentMethod("Online")}
-          className={`bg-[#1f1f1f] px-4 py-3 w-full rounded-lg text-[#ababab] font-semibold ${
-            paymentMethod === "Online" ? "bg-[#383737]" : ""
+          className={`bg-[#1f1f1f] px-4 py-3 w-full rounded-lg text-[#ababab] font-semibold transition-colors ${
+            paymentMethod === "Online" ? "bg-[#383737] text-[#f5f5f5]" : "hover:bg-[#2a2a2a]"
           }`}
         >
           Online
@@ -272,12 +265,16 @@ const Bill = () => {
       </div>
 
       <div className="flex items-center gap-3 px-5 mt-4">
-        <button onClick={handlePrintReceipt} className="bg-[#025cca] px-4 py-3 w-full rounded-lg text-[#f5f5f5] font-semibold text-lg">
+        <button 
+          onClick={handlePrintReceipt} 
+          className="bg-[#025cca] px-4 py-3 w-full rounded-lg text-[#f5f5f5] font-semibold text-lg hover:bg-[#0248a3] transition-colors"
+        >
           Print Receipt
         </button>
         <button
           onClick={handlePlaceOrder}
-          className="bg-[#f6b100] px-4 py-3 w-full rounded-lg text-[#1f1f1f] font-semibold text-lg"
+          disabled={!paymentMethod || cartData.length === 0}
+          className="bg-[#f6b100] px-4 py-3 w-full rounded-lg text-[#1f1f1f] font-semibold text-lg hover:bg-[#e09900] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           Place Order
         </button>

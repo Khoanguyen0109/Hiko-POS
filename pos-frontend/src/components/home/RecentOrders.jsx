@@ -3,12 +3,14 @@ import OrderList from "./OrderList";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
 import { getOrders } from "../../https/index";
+import { getTodayDate } from "../../utils";
 
 const RecentOrders = () => {
   const { data: resData, isError } = useQuery({
-    queryKey: ["orders"],
+    queryKey: ["orders", "recent"],
     queryFn: async () => {
-      return await getOrders();
+      const today = getTodayDate();
+      return await getOrders({ startDate: today, endDate: today });
     },
     placeholderData: keepPreviousData,
   });

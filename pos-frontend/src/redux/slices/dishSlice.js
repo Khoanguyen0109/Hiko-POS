@@ -1,5 +1,13 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getDishes, addDish, updateDish, deleteDish, getDishesByCategory } from "../../https";
+import { 
+    getDishes, 
+    addDish, 
+    updateDish, 
+    deleteDish, 
+    getDishesByCategory, 
+    getAvailableDishes, 
+    toggleDishAvailability 
+} from "../../https";
 
 export const fetchDishes = createAsyncThunk("dishes/fetchAll", async (_, thunkAPI) => {
     try{
@@ -7,6 +15,15 @@ export const fetchDishes = createAsyncThunk("dishes/fetchAll", async (_, thunkAP
         return data.data;
     }catch(error){
         return thunkAPI.rejectWithValue(error.response?.data?.message || "Failed to fetch dishes");
+    }
+});
+
+export const fetchAvailableDishes = createAsyncThunk("dishes/fetchAvailable", async (_, thunkAPI) => {
+    try{
+        const { data } = await getAvailableDishes();
+        return data.data;
+    }catch(error){
+        return thunkAPI.rejectWithValue(error.response?.data?.message || "Failed to fetch available dishes");
     }
 });
 
@@ -46,19 +63,33 @@ export const removeDish = createAsyncThunk("dishes/delete", async (dishId, thunk
     }
 });
 
+export const toggleAvailability = createAsyncThunk("dishes/toggleAvailability", async (dishId, thunkAPI) => {
+    try{
+        const { data } = await toggleDishAvailability(dishId);
+        return data.data;
+    }catch(error){
+        return thunkAPI.rejectWithValue(error.response?.data?.message || "Failed to toggle dish availability");
+    }
+});
+
 const initialState = {
     items: [],
+    availableItems: [],
     loading: false,
-    error: null,
-    lastFetchedCategory: null
+    error: null
 };
 
 const dishSlice = createSlice({
     name: "dishes",
     initialState,
-    reducers: {},
+    reducers: {
+        clearError: (state) => {
+            state.error = null;
+        }
+    },
     extraReducers: (builder) => {
         builder
+            // Fetch all dishes
             .addCase(fetchDishes.pending, (state) => {
                 state.loading = true;
                 state.error = null;
@@ -66,40 +97,109 @@ const dishSlice = createSlice({
             .addCase(fetchDishes.fulfilled, (state, action) => {
                 state.loading = false;
                 state.items = action.payload || [];
-                state.lastFetchedCategory = null;
             })
             .addCase(fetchDishes.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload || String(action.error.message || "Failed to fetch dishes");
             })
-            .addCase(fetchDishesByCategory.pending, (state) => {
+            
+            // Fetch available dishes
+            .addCase(fetchAvailableDishes.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(fetchDishesByCategory.fulfilled, (state, action) => {
+            .addCase(fetchAvailableDishes.fulfilled, (state, action) => {
                 state.loading = false;
-                state.items = action.payload.items || [];
-                state.lastFetchedCategory = action.payload.categoryId;
+                state.availableItems = action.payload || [];
             })
-            .addCase(fetchDishesByCategory.rejected, (state, action) => {
+            .addCase(fetchAvailableDishes.rejected, (state, action) => {
                 state.loading = false;
-                state.error = action.payload || String(action.error.message || "Failed to fetch dishes by category");
+                state.error = action.payload || String(action.error.message || "Failed to fetch available dishes");
+            })
+            
+            // Create dish
+            .addCase(createDish.pending, (state) => {
+                state.loading = true;
+                state.error = null;
             })
             .addCase(createDish.fulfilled, (state, action) => {
+                state.loading = false;
                 state.items.unshift(action.payload);
+                // Add to available items if the dish is available
+                if (action.payload.isAvailable) {
+                    state.availableItems.unshift(action.payload);
+                }
             })
+            .addCase(createDish.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || String(action.error.message || "Failed to create dish");
+            })
+            
+            // Update dish
             .addCase(editDish.fulfilled, (state, action) => {
                 const updated = action.payload;
                 const idx = state.items.findIndex(d => d._id === updated._id);
                 if(idx !== -1){
                     state.items[idx] = updated;
                 }
+                
+                // Update available items
+                const availableIdx = state.availableItems.findIndex(d => d._id === updated._id);
+                if (updated.isAvailable) {
+                    if (availableIdx === -1) {
+                        state.availableItems.push(updated);
+                    } else {
+                        state.availableItems[availableIdx] = updated;
+                    }
+                } else {
+                    if (availableIdx !== -1) {
+                        state.availableItems.splice(availableIdx, 1);
+                    }
+                }
             })
+            
+            // Delete dish
             .addCase(removeDish.fulfilled, (state, action) => {
                 const id = action.payload;
                 state.items = state.items.filter(d => d._id !== id);
+                state.availableItems = state.availableItems.filter(d => d._id !== id);
+            })
+            
+            // Toggle availability
+            .addCase(toggleAvailability.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(toggleAvailability.fulfilled, (state, action) => {
+                state.loading = false;
+                const updated = action.payload;
+                
+                // Update main items
+                const idx = state.items.findIndex(d => d._id === updated._id);
+                if(idx !== -1){
+                    state.items[idx] = updated;
+                }
+                
+                // Update available items
+                const availableIdx = state.availableItems.findIndex(d => d._id === updated._id);
+                if (updated.isAvailable) {
+                    if (availableIdx === -1) {
+                        state.availableItems.push(updated);
+                    } else {
+                        state.availableItems[availableIdx] = updated;
+                    }
+                } else {
+                    if (availableIdx !== -1) {
+                        state.availableItems.splice(availableIdx, 1);
+                    }
+                }
+            })
+            .addCase(toggleAvailability.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || String(action.error.message || "Failed to toggle availability");
             });
     }
 });
 
+export const { clearError } = dishSlice.actions;
 export default dishSlice.reducer; 

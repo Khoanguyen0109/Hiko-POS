@@ -22,7 +22,16 @@ export const verifyPaymentRazorpay = (data) =>
 
 // Order Endpoints
 export const addOrder = (data) => axiosWrapper.post("/api/order/", data);
-export const getOrders = () => axiosWrapper.get("/api/order");
+export const getOrders = (params = {}) => {
+  const queryParams = new URLSearchParams();
+  
+  if (params.startDate) queryParams.append('startDate', params.startDate);
+  if (params.endDate) queryParams.append('endDate', params.endDate);
+  if (params.status && params.status !== 'all') queryParams.append('status', params.status);
+  
+  const queryString = queryParams.toString();
+  return axiosWrapper.get(`/api/order${queryString ? `?${queryString}` : ''}`);
+};
 export const updateOrderStatus = ({ orderId, orderStatus }) =>
   axiosWrapper.put(`/api/order/${orderId}`, { orderStatus });
 
@@ -37,11 +46,13 @@ export const deleteCategory = (categoryId) => axiosWrapper.delete(`/api/category
 // Dish Endpoints
 export const addDish = (data) => axiosWrapper.post("/api/dish/", data);
 export const getDishes = () => axiosWrapper.get("/api/dish");
+export const getAvailableDishes = () => axiosWrapper.get("/api/dish/available");
 export const getDishesByCategory = (categoryId) => axiosWrapper.get(`/api/dish/category/${categoryId}`);
 export const getDishById = (dishId) => axiosWrapper.get(`/api/dish/${dishId}`);
 export const updateDish = ({ dishId, ...dishData }) =>
   axiosWrapper.put(`/api/dish/${dishId}`, dishData);
 export const deleteDish = (dishId) => axiosWrapper.delete(`/api/dish/${dishId}`);
+export const toggleDishAvailability = (dishId) => axiosWrapper.patch(`/api/dish/${dishId}/toggle-availability`);
 
 // Customer Endpoints
 export const addCustomer = (data) => axiosWrapper.post("/api/customer/", data);

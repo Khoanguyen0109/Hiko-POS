@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
 import PropTypes from "prop-types";
+import { formatVND } from "../../utils";
 
 const ThermalReceiptTemplate = forwardRef(({ orderData }, ref) => {
   const currentTime = new Date().toLocaleString();
@@ -50,52 +51,68 @@ const ThermalReceiptTemplate = forwardRef(({ orderData }, ref) => {
         <div style={{ borderTop: '1px dashed #000', margin: '3px 0' }}></div>
       </div>
 
-      {/* Time */}
-      <div style={{ textAlign: 'center', fontSize: '9px', marginBottom: '8px' }}>
-        Printed: {currentTime}
-      </div>
-
-      {/* Order Details */}
-      <div style={{ marginBottom: '8px' }}>
-        <div style={{ fontSize: '11px', fontWeight: 'bold', marginBottom: '3px' }}>
-          ORDER DETAILS
+      {/* Order Info */}
+      <div style={{ marginBottom: '8px', fontSize: '9px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Order ID:</span>
+          <span>#{orderData.orderId}</span>
         </div>
-        <div style={{ fontSize: '9px' }}>
-          Order ID: #{orderData.orderId || 'N/A'}
-        </div>
-        <div style={{ fontSize: '9px' }}>
-          Table: {orderData.table || 'N/A'} | Items: {itemCount}
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Table:</span>
+          <span>{orderData.table}</span>
         </div>
         {orderData.customerName && (
-          <div style={{ fontSize: '9px' }}>
-            Customer: {orderData.customerName}
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>Customer:</span>
+            <span>{orderData.customerName}</span>
           </div>
         )}
-        <div style={{ borderTop: '1px dashed #000', margin: '3px 0' }}></div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Time:</span>
+          <span>{currentTime}</span>
+        </div>
       </div>
 
-      {/* Large Order Warning */}
+      {/* Large order warning */}
       {isLargeOrder && (
-        <div style={{ textAlign: 'center', fontSize: '8px', marginBottom: '5px', fontStyle: 'italic' }}>
-          *** LARGE ORDER - {itemCount} ITEMS ***
+        <div style={{ 
+          textAlign: 'center', 
+          fontSize: '8px', 
+          backgroundColor: '#f0f0f0', 
+          padding: '2px', 
+          marginBottom: '5px',
+          border: '1px solid #ccc'
+        }}>
+          ⚠️ Large Order - Items grouped for readability
         </div>
       )}
 
       {/* Items */}
       <div style={{ marginBottom: '8px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: isLargeOrder ? '8px' : '10px', marginBottom: '2px' }}>
-          <span>ITEM</span>
-          <span>QTY</span>
-          <span>AMOUNT</span>
+        <div style={{ borderTop: '1px dashed #000', margin: '3px 0' }}></div>
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          fontSize: '9px', 
+          fontWeight: 'bold',
+          marginBottom: '2px'
+        }}>
+          <span>Item</span>
+          <span>Qty</span>
+          <span>Price</span>
         </div>
-        <div style={{ borderTop: '1px solid #000', margin: '1px 0' }}></div>
+        <div style={{ borderTop: '1px dashed #000', margin: '3px 0' }}></div>
         
         {groupedItemsArray.map((item, index) => (
-          <div key={index} style={{ marginBottom: '1px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: isLargeOrder ? '8px' : '9px', lineHeight: '1.0' }}>
+          <div key={index} style={{ marginBottom: '2px' }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              fontSize: isLargeOrder ? '8px' : '9px',
+              lineHeight: '1.1'
+            }}>
               <span style={{ 
-                flex: 1, 
-                paddingRight: '3px',
+                flex: 1,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
@@ -109,13 +126,13 @@ const ThermalReceiptTemplate = forwardRef(({ orderData }, ref) => {
                 x{item.quantity}
               </span>
               <span style={{ minWidth: '20mm', textAlign: 'right' }}>
-                ₹{Number(item.totalPrice || 0).toFixed(2)}
+                {formatVND(item.totalPrice || 0)}
               </span>
             </div>
             {/* Show unit price for quantities > 1 */}
             {item.quantity > 1 && (
               <div style={{ fontSize: '7px', color: '#666', paddingLeft: '2px', lineHeight: '1.0' }}>
-                @₹{Number(item.unitPrice || 0).toFixed(2)} each
+                @{formatVND(item.unitPrice || 0)} each
               </div>
             )}
           </div>
@@ -133,18 +150,14 @@ const ThermalReceiptTemplate = forwardRef(({ orderData }, ref) => {
 
       {/* Total */}
       <div style={{ marginBottom: '8px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', marginBottom: '1px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', marginBottom: '2px' }}>
           <span>Subtotal:</span>
-          <span>₹{Number(orderData.subtotal || 0).toFixed(2)}</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', marginBottom: '1px' }}>
-          <span>Tax:</span>
-          <span>₹{Number(orderData.tax || 0).toFixed(2)}</span>
+          <span>{formatVND(orderData.subtotal || 0)}</span>
         </div>
         <div style={{ borderTop: '1px solid #000', margin: '2px 0' }}></div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 'bold' }}>
           <span>TOTAL:</span>
-          <span>₹{Number(orderData.total || 0).toFixed(2)}</span>
+          <span>{formatVND(orderData.total || 0)}</span>
         </div>
       </div>
 
@@ -171,7 +184,6 @@ ThermalReceiptTemplate.propTypes = {
       price: PropTypes.number.isRequired
     })),
     subtotal: PropTypes.number,
-    tax: PropTypes.number,
     total: PropTypes.number
   }).isRequired
 };

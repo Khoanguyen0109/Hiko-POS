@@ -1,7 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { enqueueSnackbar } from "notistack";
 import { getOrders, updateOrderStatus } from "../../https/index";
-import { formatDateAndTime } from "../../utils";
+import { formatDateAndTime, getTodayDate } from "../../utils";
 
 const RecentOrders = () => {
   const queryClient = useQueryClient();
@@ -21,9 +21,10 @@ const RecentOrders = () => {
   })
 
   const { data: resData, isError } = useQuery({
-    queryKey: ["orders"],
+    queryKey: ["orders", "today"],
     queryFn: async () => {
-      return await getOrders();
+      const today = getTodayDate();
+      return await getOrders({ startDate: today, endDate: today });
     },
     placeholderData: keepPreviousData,
   });

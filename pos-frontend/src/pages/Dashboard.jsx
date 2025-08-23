@@ -4,6 +4,8 @@ import { BiSolidDish } from "react-icons/bi";
 import Metrics from "../components/dashboard/Metrics";
 import RecentOrders from "../components/dashboard/RecentOrders";
 import Modal from "../components/dashboard/Modal";
+import CategoryModal from "../components/dashboard/CategoryModal";
+import DishModal from "../components/dashboard/DishModal";
 
 const buttons = [
   { label: "Add Table", icon: <MdTableBar />, action: "table" },
@@ -19,10 +21,14 @@ const Dashboard = () => {
   }, []);
 
   const [isTableModalOpen, setIsTableModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isDishesModalOpen, setIsDishesModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("Metrics");
 
   const handleOpenModal = (action) => {
     if (action === "table") setIsTableModalOpen(true);
+    if (action === "category") setIsCategoryModalOpen(true);
+    if (action === "dishes") setIsDishesModalOpen(true);
   };
 
   return (
@@ -71,6 +77,8 @@ const Dashboard = () => {
       )}
 
       {isTableModalOpen && <Modal setIsTableModalOpen={setIsTableModalOpen} />}
+      {isCategoryModalOpen && <CategoryModal setIsCategoryModalOpen={setIsCategoryModalOpen} />}
+      {isDishesModalOpen && <DishModal setIsDishesModalOpen={setIsDishesModalOpen} />}
     </div>
   );
 };

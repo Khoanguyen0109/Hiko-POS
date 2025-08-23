@@ -1,67 +1,180 @@
-import React, { useState, useEffect } from "react";
-import BottomNav from "../components/shared/BottomNav";
+import { useState, useEffect } from "react";
+import { MdFilterList, MdRefresh } from "react-icons/md";
 import OrderCard from "../components/orders/OrderCard";
 import BackButton from "../components/shared/BackButton";
+import DateFilter from "../components/shared/DateFilter";
+import FullScreenLoader from "../components/shared/FullScreenLoader";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getOrders } from "../https/index";
-import { enqueueSnackbar } from "notistack"
+import { enqueueSnackbar } from "notistack";
+import { getTodayDate } from "../utils";
 
 const Orders = () => {
-
   const [status, setStatus] = useState("all");
+  const [startDate, setStartDate] = useState(getTodayDate());
+  const [endDate, setEndDate] = useState(getTodayDate());
+  const [showDateFilter, setShowDateFilter] = useState(false);
 
-    useEffect(() => {
-      document.title = "POS | Orders"
-    }, [])
+  useEffect(() => {
+    document.title = "POS | Orders";
+  }, []);
 
-  const { data: resData, isError } = useQuery({
-    queryKey: ["orders"],
+  const { data: resData, isError, isLoading, refetch } = useQuery({
+    queryKey: ["orders", startDate, endDate, status],
     queryFn: async () => {
-      return await getOrders();
+      return await getOrders({ startDate, endDate, status });
     },
-    placeholderData: keepPreviousData
-  })
+    placeholderData: keepPreviousData,
+  });
 
-  if(isError) {
-    enqueueSnackbar("Something went wrong!", {variant: "error"})
+  if (isError) {
+    enqueueSnackbar("Something went wrong!", { variant: "error" });
+  }
+
+  const handleDateChange = ({ startDate: newStartDate, endDate: newEndDate }) => {
+    setStartDate(newStartDate);
+    setEndDate(newEndDate);
+  };
+
+  const handleRefresh = () => {
+    refetch();
+    enqueueSnackbar("Orders refreshed!", { variant: "success" });
+  };
+
+  const orders = resData?.data?.data || [];
+  const orderCount = resData?.data?.count || 0;
+
+  // Filter orders by status on frontend (for immediate UI feedback)
+  const filteredOrders = status === "all" 
+    ? orders 
+    : orders.filter(order => order.orderStatus === status);
+
+  const statusButtons = [
+    { key: "all", label: "All", count: orders.length },
+    { key: "progress", label: "In Progress", count: orders.filter(o => o.orderStatus === "progress").length },
+    { key: "ready", label: "Ready", count: orders.filter(o => o.orderStatus === "ready").length },
+    { key: "completed", label: "Completed", count: orders.filter(o => o.orderStatus === "completed").length },
+  ];
+
+  if (isLoading && !resData) {
+    return <FullScreenLoader />;
   }
 
   return (
-    <section className="bg-[#1f1f1f]  h-[calc(100vh-5rem)] overflow-hidden">
-      <div className="flex items-center justify-between px-10 py-4">
+    <section className="bg-[#1f1f1f] h-[calc(100vh-5rem)] overflow-hidden">
+      {/* Header Section */}
+      <div className="flex items-center justify-between px-10 py-4 border-b border-[#343434]">
         <div className="flex items-center gap-4">
           <BackButton />
           <h1 className="text-[#f5f5f5] text-2xl font-bold tracking-wider">
             Orders
           </h1>
+          <div className="flex items-center gap-2 text-sm text-[#ababab]">
+            <span>•</span>
+            <span>{orderCount} orders found</span>
+            {isLoading && <span className="text-[#f6b100]">• Refreshing...</span>}
+          </div>
         </div>
-        <div className="flex items-center justify-around gap-4">
-          <button onClick={() => setStatus("all")} className={`text-[#ababab] text-lg ${status === "all" && "bg-[#383838] rounded-lg px-5 py-2"}  rounded-lg px-5 py-2 font-semibold`}>
-            All
+        
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowDateFilter(!showDateFilter)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              showDateFilter
+                ? "bg-[#f6b100] text-[#1f1f1f]"
+                : "bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434]"
+            }`}
+          >
+            <MdFilterList size={16} />
+            Date Filter
           </button>
-          <button onClick={() => setStatus("progress")} className={`text-[#ababab] text-lg ${status === "progress" && "bg-[#383838] rounded-lg px-5 py-2"}  rounded-lg px-5 py-2 font-semibold`}>
-            In Progress
-          </button>
-          <button onClick={() => setStatus("ready")} className={`text-[#ababab] text-lg ${status === "ready" && "bg-[#383838] rounded-lg px-5 py-2"}  rounded-lg px-5 py-2 font-semibold`}>
-            Ready
-          </button>
-          <button onClick={() => setStatus("completed")} className={`text-[#ababab] text-lg ${status === "completed" && "bg-[#383838] rounded-lg px-5 py-2"}  rounded-lg px-5 py-2 font-semibold`}>
-            Completed
+          <button
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <MdRefresh size={16} className={isLoading ? "animate-spin" : ""} />
+            Refresh
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3 px-16 py-4 overflow-y-scroll scrollbar-hide">
-        {
-          resData?.data.data.length > 0 ? (
-            resData.data.data.map((order) => {
-              return <OrderCard key={order._id} order={order} />
-            })
-          ) : <p className="col-span-3 text-gray-500">No orders available</p>
-        }
+      {/* Date Filter Section */}
+      {showDateFilter && (
+        <div className="px-10 py-4 border-b border-[#343434] bg-[#1a1a1a]">
+          <DateFilter
+            onDateChange={handleDateChange}
+            initialStartDate={startDate}
+            initialEndDate={endDate}
+          />
+        </div>
+      )}
+
+      {/* Status Filter Section */}
+      <div className="px-10 py-4 border-b border-[#343434]">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-[#f5f5f5] text-sm font-semibold">Filter by Status</h3>
+          <span className="text-[#ababab] text-xs">
+            Showing {filteredOrders.length} of {orders.length} orders
+          </span>
+        </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          {statusButtons.map(({ key, label, count }) => (
+            <button
+              key={key}
+              onClick={() => setStatus(key)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                status === key
+                  ? "bg-[#f6b100] text-[#1f1f1f]"
+                  : "bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434]"
+              }`}
+            >
+              <span>{label}</span>
+              <span className={`px-2 py-0.5 rounded-full text-xs ${
+                status === key
+                  ? "bg-[#1f1f1f]/20 text-[#1f1f1f]"
+                  : "bg-[#343434] text-[#ababab]"
+              }`}>
+                {count}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
-      <BottomNav />
+      {/* Orders Grid */}
+      <div className="px-10 py-4 overflow-y-scroll scrollbar-hide h-[calc(100%-280px)]">
+        {filteredOrders.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredOrders.map((order) => (
+              <OrderCard key={order._id} order={order} />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="w-16 h-16 bg-[#262626] rounded-full flex items-center justify-center mb-4">
+              <MdFilterList size={32} className="text-[#ababab]" />
+            </div>
+            <h3 className="text-[#f5f5f5] text-lg font-semibold mb-2">No Orders Found</h3>
+            <p className="text-[#ababab] text-sm max-w-md">
+              {status === "all" 
+                ? "No orders found for the selected date range. Try selecting a different date or check if there are any orders in the system."
+                : `No orders with status "${status}" found for the selected date range. Try changing the status filter or date range.`
+              }
+            </p>
+            <button
+              onClick={() => {
+                setStatus("all");
+                setStartDate(getTodayDate());
+                setEndDate(getTodayDate());
+              }}
+              className="mt-4 px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg text-sm font-medium hover:bg-[#f6b100]/90 transition-colors"
+            >
+              Reset Filters
+            </button>
+          </div>
+        )}
+      </div>
     </section>
   );
 };

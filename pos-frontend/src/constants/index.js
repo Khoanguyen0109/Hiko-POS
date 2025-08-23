@@ -439,9 +439,57 @@ export const ROUTES = {
   TABLES: "/tables",
   MENU: "/menu",
   DASHBOARD: "/dashboard",
-  MENU_ORDER: "/menu-order"
+  MENU_ORDER: "/menu-order",
+  DISHES: "/dishes",
+  CATEGORIES: "/categories"
 };
 
+// Route configurations for optimized rendering
+export const PUBLIC_ROUTES = [
+  {
+    path: ROUTES.AUTH,
+    requiresAuth: false,
+    redirectIfAuth: ROUTES.ROOT // Redirect authenticated users
+  }
+];
+
+export const PROTECTED_ROUTES = [
+  {
+    path: ROUTES.ROOT,
+    componentName: "Home"
+  },
+  {
+    path: ROUTES.ORDERS,
+    componentName: "Orders"
+  },
+  {
+    path: ROUTES.TABLES,
+    componentName: "Tables"
+  },
+  {
+    path: ROUTES.MENU,
+    componentName: "Menu"
+  },
+  {
+    path: ROUTES.MENU_ORDER,
+    componentName: "MenuOrder"
+  },
+  {
+    path: ROUTES.DASHBOARD,
+    componentName: "Dashboard"
+  },
+  {
+    path: ROUTES.DISHES,
+    componentName: "Dishes"
+  },
+  {
+    path: ROUTES.CATEGORIES,
+    componentName: "Categories"
+  }
+];
+
+// Routes where header should be hidden
+export const HEADER_HIDDEN_ROUTES = [ROUTES.AUTH];
 
 export const userRoles = {
   ADMIN: "Admin",
