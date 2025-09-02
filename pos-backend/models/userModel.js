@@ -9,9 +9,10 @@ const userSchema = new mongoose.Schema({
 
     email : {
         type: String,
-        required: true,
+        required: false,
         validate: {
             validator: function (v) {
+                if (!v) return true; // Allow empty email
                 return /\S+@\S+\.\S+/.test(v);
             },
             message : "Email must be in valid format!"
@@ -21,11 +22,12 @@ const userSchema = new mongoose.Schema({
     phone: {
         type : String,
         required: true,
+        unique: true,
         validate: {
             validator: function (v) {
-                return /\d{8}/.test(v);
+                return /^\d{10}$/.test(v.replace(/\s/g, ""));
             },
-            message : "Phone number must be a 10-digit number!"
+            message : "Phone number must be exactly 10 digits!"
         }
     },
 

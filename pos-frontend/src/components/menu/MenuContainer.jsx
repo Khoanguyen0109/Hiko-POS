@@ -10,7 +10,7 @@ import DishSelectionModal from "./DishSelectionModal";
 
 const MenuContainer = () => {
   const dispatch = useDispatch();
-  
+
   // Redux state
   const { items: categories, loading: categoriesLoading } = useSelector((state) => state.categories);
   const { items: dishes, loading: dishesLoading } = useSelector((state) => state.dishes);
@@ -118,8 +118,8 @@ const MenuContainer = () => {
                 dish.category._id === category._id && dish.isAvailable
               ).length;
 
-              return (
-                <div
+          return (
+            <div
                   key={category._id}
                   className="flex flex-col items-start justify-between p-4 rounded-lg h-[100px] cursor-pointer transition-all duration-200 hover:scale-105"
                   style={{ 
@@ -127,20 +127,20 @@ const MenuContainer = () => {
                     opacity: selectedCategory?._id === category._id ? 1 : 0.8
                   }}
                   onClick={() => handleCategorySelect(category)}
-                >
-                  <div className="flex items-center justify-between w-full">
+            >
+              <div className="flex items-center justify-between w-full">
                     <h3 className="text-white text-lg font-semibold">
                       {category.name}
                     </h3>
                     {selectedCategory?._id === category._id && (
-                      <GrRadialSelected className="text-white" size={20} />
-                    )}
-                  </div>
+                  <GrRadialSelected className="text-white" size={20} />
+                )}
+              </div>
                   <p className="text-white/80 text-sm font-medium">
                     {categoryDishCount} Dishes
-                  </p>
-                </div>
-              );
+              </p>
+            </div>
+          );
             })
           )}
         </div>
@@ -201,12 +201,12 @@ const MenuContainer = () => {
                 }
               }
 
-              return (
-                <div
+          return (
+            <div
                   key={dish._id}
                   onClick={() => handleDishClick(dish)}
                   className="flex flex-col justify-between p-4 rounded-lg h-[280px] cursor-pointer hover:bg-[#2a2a2a] bg-[#1a1a1a] transition-all duration-200 overflow-hidden hover:scale-105 hover:shadow-lg"
-                >
+            >
                   {/* Dish Image */}
                   <div className="w-full h-32 mb-3 rounded-lg overflow-hidden bg-[#2a2a2a] relative">
                     <img 
@@ -260,18 +260,18 @@ const MenuContainer = () => {
                         {dish.note}
                       </p>
                     )}
-                  </div>
+              </div>
 
                   {/* Price Section */}
-                  <div className="flex items-center justify-between w-full">
+              <div className="flex items-center justify-between w-full">
                     <div className="flex flex-col">
                       <p className="text-[#f6b100] text-lg font-bold">
                         {priceLabel}
-                      </p>
+                </p>
                       {dish.hasSizeVariants && (
                         <span className="text-[#ababab] text-xs">
                           Multiple sizes available
-                        </span>
+                  </span>
                       )}
                     </div>
                     
@@ -279,12 +279,12 @@ const MenuContainer = () => {
                     <div className="text-[#ababab] text-xs text-right">
                       <p>Click to</p>
                       <p className="text-[#f6b100] font-medium">Order</p>
-                    </div>
-                  </div>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
         )}
       </div>
 

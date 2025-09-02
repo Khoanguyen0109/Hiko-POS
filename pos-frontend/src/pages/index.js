@@ -1,5 +1,6 @@
 export { default as Home } from './Home.jsx'
 export { default as Orders } from './Orders.jsx'
+export { default as OrderDetail } from './OrderDetail.jsx'
 export { default as Auth } from './Auth.jsx'
 export { default as Tables } from './Tables.jsx'
 export { default as Menu } from './Menu.jsx'
@@ -7,3 +8,5 @@ export { default as Dashboard } from "./Dashboard.jsx"
 export { default as MenuOrder } from "./MenuOrder.jsx"
 export { default as Dishes } from "./dishes"
 export { default as Categories } from "./Categories"
+export { default as Members } from "./Members"
+export { default as AccountSettings } from "./AccountSettings.jsx"

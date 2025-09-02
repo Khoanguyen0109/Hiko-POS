@@ -9,43 +9,41 @@ const register = async (req, res, next) => {
 
         const { name, phone, email, password, role } = req.body;
 
-        if(!name || !phone || !email || !password || !role){
-            const error = createHttpError(400, "All fields are required!");
+        if(!name || !phone || !password || !role){
+            const error = createHttpError(400, "Name, phone, password and role are required!");
             return next(error);
         }
 
-        const isUserPresent = await User.findOne({email});
+        const isUserPresent = await User.findOne({phone});
         if(isUserPresent){
-            const error = createHttpError(400, "User already exist!");
+            const error = createHttpError(400, "User with this phone number already exists!");
             return next(error);
         }
 
-
-        const user = { name, phone, email, password, role };
+        const user = { name, phone, password, role };
+        if (email) user.email = email; // Only add email if provided
         const newUser = User(user);
         await newUser.save();
 
         res.status(201).json({success: true, message: "New user created!", data: newUser});
-
 
     } catch (error) {
         next(error);
     }
 }
 
-
 const login = async (req, res, next) => {
 
     try {
         
-        const { email, password } = req.body;
+        const { phone, password } = req.body;
 
-        if(!email || !password) {
-            const error = createHttpError(400, "All fields are required!");
+        if(!phone || !password) {
+            const error = createHttpError(400, "Phone and password are required!");
             return next(error);
         }
 
-        const isUserPresent = await User.findOne({email});
+        const isUserPresent = await User.findOne({phone});
         if(!isUserPresent){
             const error = createHttpError(401, "Invalid Credentials");
             return next(error);
@@ -71,7 +69,6 @@ const login = async (req, res, next) => {
         res.status(200).json({success: true, message: "User login successfully!", 
             data: isUserPresent
         });
-
 
     } catch (error) {
         next(error);

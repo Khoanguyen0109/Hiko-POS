@@ -32,6 +32,7 @@ export const getOrders = (params = {}) => {
   const queryString = queryParams.toString();
   return axiosWrapper.get(`/api/order${queryString ? `?${queryString}` : ''}`);
 };
+export const getOrderById = (orderId) => axiosWrapper.get(`/api/order/${orderId}`);
 export const updateOrderStatus = ({ orderId, orderStatus }) =>
   axiosWrapper.put(`/api/order/${orderId}`, { orderStatus });
 
@@ -61,3 +62,15 @@ export const getCustomerById = (customerId) => axiosWrapper.get(`/api/customer/$
 export const updateCustomer = ({ customerId, ...customerData }) =>
   axiosWrapper.put(`/api/customer/${customerId}`, customerData);
 export const deleteCustomer = (customerId) => axiosWrapper.delete(`/api/customer/${customerId}`);
+
+// Member Management Endpoints
+export const getAllMembers = () => axiosWrapper.get("/api/member/");
+export const getMemberById = (id) => axiosWrapper.get(`/api/member/${id}`);
+export const createMember = (data) => axiosWrapper.post("/api/member/", data);
+export const updateMember = (id, data) => axiosWrapper.put(`/api/member/${id}`, data);
+export const deleteMember = (id) => axiosWrapper.delete(`/api/member/${id}`);
+
+// Member Profile Endpoints
+export const getOwnProfile = () => axiosWrapper.get("/api/member/profile");
+export const updateOwnProfile = (data) => axiosWrapper.put("/api/member/profile", data);
+export const changePassword = (data) => axiosWrapper.put("/api/member/change-password", data);

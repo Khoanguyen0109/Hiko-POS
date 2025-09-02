@@ -8,8 +8,12 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getOrders } from "../https/index";
 import { enqueueSnackbar } from "notistack";
 import { getTodayDate } from "../utils";
+import { useSelector } from "react-redux";
 
 const Orders = () => {
+  const { role } = useSelector((state) => state.user);
+  const isAdmin = role === "Admin";
+  
   const [status, setStatus] = useState("all");
   const [startDate, setStartDate] = useState(getTodayDate());
   const [endDate, setEndDate] = useState(getTodayDate());
@@ -20,9 +24,15 @@ const Orders = () => {
   }, []);
 
   const { data: resData, isError, isLoading, refetch } = useQuery({
-    queryKey: ["orders", startDate, endDate, status],
+    queryKey: ["orders", isAdmin ? startDate : null, isAdmin ? endDate : null, status],
     queryFn: async () => {
-      return await getOrders({ startDate, endDate, status });
+      // Only apply date filtering for admin users
+      const params = { status };
+      if (isAdmin) {
+        params.startDate = startDate;
+        params.endDate = endDate;
+      }
+      return await getOrders(params);
     },
     placeholderData: keepPreviousData,
   });
@@ -71,23 +81,35 @@ const Orders = () => {
           </h1>
           <div className="flex items-center gap-2 text-sm text-[#ababab]">
             <span>•</span>
-            <span>{orderCount} orders found</span>
+            <span>
+              {orderCount} orders found
+              {isAdmin && startDate === endDate && (
+                <span className="ml-1">for {new Date(startDate).toLocaleDateString('vi-VN')}</span>
+              )}
+              {isAdmin && startDate !== endDate && (
+                <span className="ml-1">
+                  from {new Date(startDate).toLocaleDateString('vi-VN')} to {new Date(endDate).toLocaleDateString('vi-VN')}
+                </span>
+              )}
+            </span>
             {isLoading && <span className="text-[#f6b100]">• Refreshing...</span>}
           </div>
         </div>
         
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowDateFilter(!showDateFilter)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-              showDateFilter
-                ? "bg-[#f6b100] text-[#1f1f1f]"
-                : "bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434]"
-            }`}
-          >
-            <MdFilterList size={16} />
-            Date Filter
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => setShowDateFilter(!showDateFilter)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                showDateFilter
+                  ? "bg-[#f6b100] text-[#1f1f1f]"
+                  : "bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434]"
+              }`}
+            >
+              <MdFilterList size={16} />
+              Date Filter
+            </button>
+          )}
           <button
             onClick={handleRefresh}
             disabled={isLoading}
@@ -99,8 +121,8 @@ const Orders = () => {
         </div>
       </div>
 
-      {/* Date Filter Section */}
-      {showDateFilter && (
+      {/* Date Filter Section - Admin Only */}
+      {isAdmin && showDateFilter && (
         <div className="px-10 py-4 border-b border-[#343434] bg-[#1a1a1a]">
           <DateFilter
             onDateChange={handleDateChange}
@@ -158,15 +180,21 @@ const Orders = () => {
             <h3 className="text-[#f5f5f5] text-lg font-semibold mb-2">No Orders Found</h3>
             <p className="text-[#ababab] text-sm max-w-md">
               {status === "all" 
-                ? "No orders found for the selected date range. Try selecting a different date or check if there are any orders in the system."
-                : `No orders with status "${status}" found for the selected date range. Try changing the status filter or date range.`
+                ? isAdmin 
+                  ? "No orders found for the selected date range. Try selecting a different date or check if there are any orders in the system."
+                  : "No orders found in the system. Orders will appear here once customers start placing them."
+                : isAdmin
+                  ? `No orders with status "${status}" found for the selected date range. Try changing the status filter or date range.`
+                  : `No orders with status "${status}" found. Try changing the status filter.`
               }
             </p>
             <button
               onClick={() => {
                 setStatus("all");
-                setStartDate(getTodayDate());
-                setEndDate(getTodayDate());
+                if (isAdmin) {
+                  setStartDate(getTodayDate());
+                  setEndDate(getTodayDate());
+                }
               }}
               className="mt-4 px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg text-sm font-medium hover:bg-[#f6b100]/90 transition-colors"
             >

@@ -1,22 +1,24 @@
 import { useState } from "react";
-import { FaHome } from "react-icons/fa";
+import { FaHome, FaUsers } from "react-icons/fa";
 import { MdOutlineReorder, MdTableBar } from "react-icons/md";
-import { CiCircleMore } from "react-icons/ci";
 import { BiSolidDish } from "react-icons/bi";
 
 import { useNavigate, useLocation } from "react-router-dom";
+import { useSelector } from "react-redux";
 import Modal from "./Modal";
 import { ROUTES } from "../../constants";
 
 const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { role } = useSelector((state) => state.user);
+  const isAdmin = role === "Admin";
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [guestCount, setGuestCount] = useState(0);
   const [name, setName] = useState();
   const [phone, setPhone] = useState();
 
-  const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
   const increment = () => {
@@ -31,7 +33,6 @@ const BottomNav = () => {
   const isActive = (path) => location.pathname === path;
 
   const handleCreateOrder = () => {
-    console.log('222')
     // send the data to store
     // dispatch(setCustomer({name, phone, guests: guestCount}));
     navigate(ROUTES.MENU_ORDER);
@@ -39,14 +40,19 @@ const BottomNav = () => {
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-[#262626] p-2 h-16 flex justify-around">
-      <button
-        onClick={() => navigate(ROUTES.ROOT)}
-        className={`flex items-center justify-center font-bold ${
-          isActive(ROUTES.ROOT) ? "text-[#f5f5f5] bg-[#343434]" : "text-[#ababab]"
-        } w-[300px] rounded-[20px]`}
-      >
-        <FaHome className="inline mr-2" size={20} /> <p>Home</p>
-      </button>
+      {/* Home button - Admin only */}
+      {isAdmin && (
+        <button
+          onClick={() => navigate(ROUTES.ROOT)}
+          className={`flex items-center justify-center font-bold ${
+            isActive(ROUTES.ROOT) ? "text-[#f5f5f5] bg-[#343434]" : "text-[#ababab]"
+          } w-[300px] rounded-[20px]`}
+        >
+          <FaHome className="inline mr-2" size={20} /> <p>Home</p>
+        </button>
+      )}
+      
+      {/* Orders button - All users */}
       <button
         onClick={() => navigate(ROUTES.ORDERS)}
         className={`flex items-center justify-center font-bold ${
@@ -55,21 +61,35 @@ const BottomNav = () => {
       >
         <MdOutlineReorder className="inline mr-2" size={20} /> <p>Orders</p>
       </button>
-      <button
-        onClick={() => navigate(ROUTES.DISHES)}
-        className={`flex items-center justify-center font-bold ${
-          isActive(ROUTES.TABLES) ? "text-[#f5f5f5] bg-[#343434]" : "text-[#ababab]"
-        } w-[300px] rounded-[20px]`}
-      >
-        <MdTableBar className="inline mr-2" size={20} /> <p>Dishes</p>
-      </button>
-      <button className="flex items-center justify-center font-bold text-[#ababab] w-[300px]">
-        <CiCircleMore className="inline mr-2" size={20} /> <p>More</p>
-      </button>
+      
+      {/* Dishes button - Admin only */}
+      {isAdmin && (
+        <button
+          onClick={() => navigate(ROUTES.DISHES)}
+          className={`flex items-center justify-center font-bold ${
+            isActive(ROUTES.DISHES) ? "text-[#f5f5f5] bg-[#343434]" : "text-[#ababab]"
+          } w-[300px] rounded-[20px]`}
+        >
+          <MdTableBar className="inline mr-2" size={20} /> <p>Dishes</p>
+        </button>
+      )}
+      
+      {/* Members button - Admin only */}
+      {isAdmin && (
+        <button
+          onClick={() => navigate(ROUTES.MEMBERS)}
+          className={`flex items-center justify-center font-bold ${
+            isActive(ROUTES.MEMBERS) ? "text-[#f5f5f5] bg-[#343434]" : "text-[#ababab]"
+          } w-[300px] rounded-[20px]`}
+        >
+          <FaUsers className="inline mr-2" size={20} /> <p>Members</p>
+        </button>
+      )}
+      
+
 
       <button
-        disabled={isActive(ROUTES.DISHES) || isActive(ROUTES.MENU)}
-        onClick={openModal}
+        onClick={handleCreateOrder}
         className="absolute bottom-6 bg-[#F6B100] text-[#f5f5f5] rounded-full p-4 items-center"
       >
         <BiSolidDish size={40} />

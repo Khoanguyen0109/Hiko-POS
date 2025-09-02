@@ -9,12 +9,15 @@ import {
   Home,
   Auth,
   Orders,
+  OrderDetail,
   Tables,
   Menu,
   Dashboard,
   MenuOrder,
   Dishes,
   Categories,
+  Members,
+  AccountSettings,
 } from "./pages";
 import Header from "./components/shared/Header";
 import { useSelector } from "react-redux";
@@ -34,12 +37,15 @@ const COMPONENT_MAP = {
   Home,
   Auth,
   Orders,
+  OrderDetail,
   Tables,
   Menu,
   Dashboard,
   MenuOrder,
   Dishes,
   Categories,
+  Members,
+  AccountSettings,
 };
 
 function Layout() {
@@ -71,14 +77,24 @@ function Layout() {
         {/* Protected Routes */}
         {PROTECTED_ROUTES.map((route) => {
           const Component = COMPONENT_MAP[route.componentName];
+          
+          // Check if route requires admin access
+          const isAdminRoute = ['Home', 'Dishes', 'Categories', 'Dashboard', 'Members'].includes(route.componentName);
+          
           return (
             <Route
               key={route.path}
               path={route.path}
               element={
-                <ProtectedRoutes>
-                  <Component />
-                </ProtectedRoutes>
+                isAdminRoute ? (
+                  <AdminProtectedRoutes>
+                    <Component />
+                  </AdminProtectedRoutes>
+                ) : (
+                  <ProtectedRoutes>
+                    <Component />
+                  </ProtectedRoutes>
+                )
               }
             />
           );
@@ -100,7 +116,24 @@ function ProtectedRoutes({ children }) {
   return children;
 }
 
+function AdminProtectedRoutes({ children }) {
+  const { isAuth, role } = useSelector((state) => state.user);
+  if (!isAuth) {
+    return <Navigate to={ROUTES.AUTH} />;
+  }
+  
+  if (role !== "Admin") {
+    return <Navigate to={ROUTES.ORDERS} />;
+  }
+
+  return children;
+}
+
 ProtectedRoutes.propTypes = {
+  children: PropTypes.node.isRequired,
+};
+
+AdminProtectedRoutes.propTypes = {
   children: PropTypes.node.isRequired,
 };
 

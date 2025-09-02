@@ -57,14 +57,22 @@ const ThermalReceiptTemplate = forwardRef(({ orderData }, ref) => {
           <span>Order ID:</span>
           <span>#{orderData.orderId}</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>Table:</span>
-          <span>{orderData.table}</span>
-        </div>
         {orderData.customerName && (
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
             <span>Customer:</span>
             <span>{orderData.customerName}</span>
+          </div>
+        )}
+        {orderData.customerPhone && (
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>Phone:</span>
+            <span>{orderData.customerPhone}</span>
+          </div>
+        )}
+        {orderData.guests && (
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>Guests:</span>
+            <span>{orderData.guests}</span>
           </div>
         )}
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -176,8 +184,9 @@ ThermalReceiptTemplate.displayName = 'ThermalReceiptTemplate';
 ThermalReceiptTemplate.propTypes = {
   orderData: PropTypes.shape({
     orderId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-    table: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     customerName: PropTypes.string,
+    customerPhone: PropTypes.string,
+    guests: PropTypes.number,
     items: PropTypes.arrayOf(PropTypes.shape({
       name: PropTypes.string.isRequired,
       quantity: PropTypes.number,

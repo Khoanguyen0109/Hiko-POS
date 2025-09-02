@@ -5,15 +5,107 @@ const { default: mongoose } = require("mongoose");
 const addOrder = async (req, res, next) => {
   try {
     const { _id: userId, name: userName } = req.user || {};
+    const { customerDetails, orderStatus, bills, items, paymentMethod, paymentData } = req.body;
+
+    // Validate required fields
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      const error = createHttpError(400, "Order must contain at least one item");
+      return next(error);
+    }
+
+    if (!bills || typeof bills.total !== 'number' || bills.total < 0) {
+      const error = createHttpError(400, "Valid bill total is required");
+      return next(error);
+    }
+
+    if (!paymentMethod || !['Cash', 'Online', 'Card'].includes(paymentMethod)) {
+      const error = createHttpError(400, "Valid payment method is required (Cash, Online, or Card)");
+      return next(error);
+    }
+
+    // Validate and process items
+    const processedItems = items.map((item, index) => {
+      // Validate required item fields
+      if (!item.dishId || !mongoose.Types.ObjectId.isValid(item.dishId)) {
+        throw createHttpError(400, `Invalid dishId for item at index ${index}`);
+      }
+      
+      if (!item.name || typeof item.name !== 'string') {
+        throw createHttpError(400, `Item name is required for item at index ${index}`);
+      }
+      
+      if (typeof item.pricePerQuantity !== 'number' || item.pricePerQuantity < 0) {
+        throw createHttpError(400, `Valid price per quantity is required for item at index ${index}`);
+      }
+      
+      if (typeof item.quantity !== 'number' || item.quantity < 1) {
+        throw createHttpError(400, `Valid quantity (minimum 1) is required for item at index ${index}`);
+      }
+      
+      if (typeof item.price !== 'number' || item.price < 0) {
+        throw createHttpError(400, `Valid total price is required for item at index ${index}`);
+      }
+
+      // Process the item
+      const processedItem = {
+        dishId: item.dishId,
+        name: item.name.trim(),
+        pricePerQuantity: item.pricePerQuantity,
+        quantity: item.quantity,
+        price: item.price,
+        category: item.category ? item.category.trim() : undefined,
+        image: item.image ? item.image.trim() : undefined,
+        note: item.note ? item.note.trim() : undefined
+      };
+
+      // Add variant information if present
+      if (item.variant) {
+        processedItem.variant = {
+          size: item.variant.size ? item.variant.size.trim() : undefined,
+          price: typeof item.variant.price === 'number' ? item.variant.price : undefined,
+          cost: typeof item.variant.cost === 'number' ? item.variant.cost : 0
+        };
+      }
+
+      return processedItem;
+    });
+
+    // Calculate total items and verify bill total
+    const calculatedTotal = processedItems.reduce((sum, item) => sum + item.price, 0);
+    if (Math.abs(calculatedTotal - bills.total) > 0.01) {
+      const error = createHttpError(400, `Bill total (${bills.total}) does not match calculated total (${calculatedTotal})`);
+      return next(error);
+    }
+
     const orderPayload = {
-      ...req.body,
+      customerDetails: {
+        name: customerDetails?.name ? customerDetails.name.trim() : undefined,
+        phone: customerDetails?.phone ? customerDetails.phone.trim() : undefined,
+        guests: customerDetails?.guests && typeof customerDetails.guests === 'number' ? customerDetails.guests : undefined
+      },
+      orderStatus: orderStatus || 'pending',
+      bills: {
+        total: bills.total,
+        tax: bills.tax || 0,
+        totalWithTax: bills.totalWithTax || bills.total
+      },
+      items: processedItems,
+      paymentMethod,
+      paymentData: paymentData || {},
       createdBy: (userId && userName) ? { userId, userName } : undefined
     };
+
     const order = new Order(orderPayload);
     await order.save();
-    res
-      .status(201)
-      .json({ success: true, message: "Order created!", data: order });
+
+    // Populate dish references for response
+    await order.populate('items.dishId', 'name category price');
+
+    res.status(201).json({ 
+      success: true, 
+      message: "Order created successfully!", 
+      data: order 
+    });
   } catch (error) {
     next(error);
   }
@@ -24,17 +116,23 @@ const getOrderById = async (req, res, next) => {
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      const error = createHttpError(404, "Invalid id!");
+      const error = createHttpError(404, "Invalid order ID!");
       return next(error);
     }
 
-    const order = await Order.findById(id);
+    const order = await Order.findById(id)
+      .populate('items.dishId', 'name category price image')
+      .populate('createdBy.userId', 'name email');
+
     if (!order) {
       const error = createHttpError(404, "Order not found!");
       return next(error);
     }
 
-    res.status(200).json({ success: true, data: order });
+    res.status(200).json({ 
+      success: true, 
+      data: order 
+    });
   } catch (error) {
     next(error);
   }
@@ -72,7 +170,8 @@ const getOrders = async (req, res, next) => {
     }
     
     const orders = await Order.find(query)
-      .populate("table")
+      .populate('items.dishId', 'name category price image')
+      .populate('createdBy.userId', 'name email')
       .sort({ createdAt: -1 }); // Sort by newest first
       
     res.status(200).json({ 
@@ -96,7 +195,12 @@ const updateOrder = async (req, res, next) => {
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      const error = createHttpError(404, "Invalid id!");
+      const error = createHttpError(404, "Invalid order ID!");
+      return next(error);
+    }
+
+    if (!orderStatus || !['pending', 'progress', 'ready', 'completed', 'cancelled'].includes(orderStatus)) {
+      const error = createHttpError(400, "Valid order status is required (pending, progress, ready, completed, cancelled)");
       return next(error);
     }
 
@@ -104,16 +208,18 @@ const updateOrder = async (req, res, next) => {
       id,
       { orderStatus },
       { new: true }
-    );
+    ).populate('items.dishId', 'name category price image');
 
     if (!order) {
       const error = createHttpError(404, "Order not found!");
       return next(error);
     }
 
-    res
-      .status(200)
-      .json({ success: true, message: "Order updated", data: order });
+    res.status(200).json({ 
+      success: true, 
+      message: "Order status updated successfully", 
+      data: order 
+    });
   } catch (error) {
     next(error);
   }

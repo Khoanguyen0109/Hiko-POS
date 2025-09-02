@@ -10,7 +10,7 @@ const Login = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
     const[formData, setFormData] = useState({
-      email: "",
+      phone: "",
       password: "",
     });
   
@@ -44,15 +44,15 @@ const Login = () => {
       <form onSubmit={handleSubmit}>
         <div>
           <label className="block text-[#ababab] mb-2 mt-3 text-sm font-medium">
-            Employee Email
+            Employee Phone
           </label>
           <div className="flex item-center rounded-lg p-5 px-4 bg-[#1f1f1f]">
             <input
-              type="email"
-              name="email"
-              value={formData.email}
+              type="text"
+              name="phone"
+              value={formData.phone}
               onChange={handleChange}
-              placeholder="Enter employee email"
+              placeholder="Enter employee phone number (10 digits)"
               className="bg-transparent flex-1 text-white focus:outline-none"
               required
             />

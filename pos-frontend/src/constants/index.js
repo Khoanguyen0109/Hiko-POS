@@ -436,12 +436,16 @@ export const ROUTES = {
   ROOT: "/",
   AUTH: "/auth",
   ORDERS: "/orders",
+  ORDER_DETAIL: "/orders/:orderId",
   TABLES: "/tables",
   MENU: "/menu",
   DASHBOARD: "/dashboard",
   MENU_ORDER: "/menu-order",
   DISHES: "/dishes",
-  CATEGORIES: "/categories"
+  CATEGORIES: "/categories",
+  MEMBERS: "/members",
+  ACCOUNT_SETTINGS: "/account-settings",
+  SETTINGS: "/settings"
 };
 
 // Route configurations for optimized rendering
@@ -461,6 +465,10 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.ORDERS,
     componentName: "Orders"
+  },
+  {
+    path: ROUTES.ORDER_DETAIL,
+    componentName: "OrderDetail"
   },
   {
     path: ROUTES.TABLES,
@@ -485,6 +493,14 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.CATEGORIES,
     componentName: "Categories"
+  },
+  {
+    path: ROUTES.MEMBERS,
+    componentName: "Members"
+  },
+  {
+    path: ROUTES.ACCOUNT_SETTINGS,
+    componentName: "AccountSettings"
   }
 ];
 
