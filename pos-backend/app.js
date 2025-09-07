@@ -11,9 +11,15 @@ const PORT = config.port;
 connectDB();
 
 // Middlewares
+const allowedOrigins = [
+    'http://localhost:5173', // Development frontend
+    process.env.FRONTEND_URL, // Production frontend
+    'https://your-frontend-domain.railway.app' // Railway frontend URL (update this)
+].filter(Boolean); // Remove undefined values
+
 app.use(cors({
     credentials: true,
-    origin: ['http://localhost:5173']
+    origin: allowedOrigins.length > 0 ? allowedOrigins : ['http://localhost:5173']
 }))
 app.use(express.json()); // parse incoming request in json format
 app.use(cookieParser())
