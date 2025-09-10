@@ -13,6 +13,7 @@ connectDB();
 // Middlewares
 const allowedOrigins = [
     'http://localhost:5173', // Development frontend
+    'https://hiko-pos.vercel.app', // Vercel frontend
     process.env.FRONTEND_URL, // Production frontend
     'https://your-frontend-domain.railway.app' // Railway frontend URL (update this)
 ].filter(Boolean); // Remove undefined values
