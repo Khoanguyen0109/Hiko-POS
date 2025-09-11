@@ -11,7 +11,10 @@ const PORT = config.port;
 connectDB();
 
 // Middlewares
-app.use(cors())
+app.use(cors({
+    origin: ['http://localhost:5173', 'https://hiko-pos.vercel.app'],
+    credentials: true
+}))
 app.use(express.json()); // parse incoming request in json format
 app.use(cookieParser())
 
