@@ -9,6 +9,8 @@ const isVerifiedUser = async (req, res, next) => {
     try{
 
         console.log('req.cookies', req.cookies)
+        console.log('req.headers.cookie', req.headers.cookie)
+        console.log('req.headers', req.headers)
         const { accessToken } = req.cookies;
         
         if(!accessToken){

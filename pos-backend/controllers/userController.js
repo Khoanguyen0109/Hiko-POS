@@ -63,7 +63,9 @@ const login = async (req, res, next) => {
             maxAge: 1000 * 60 * 60 *24 * 30,
             httpOnly: true,
             sameSite: 'none',
-            secure: true
+            secure: true,
+            path: '/',
+            domain: undefined // Let the browser handle the domain
         })
 
         res.status(200).json({success: true, message: "User login successfully!", 

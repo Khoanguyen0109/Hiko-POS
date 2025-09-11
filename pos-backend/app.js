@@ -27,6 +27,15 @@ app.get("/", (req,res) => {
     res.json({message : "Hello from POS Server!"});
 })
 
+// Test endpoint for debugging cookies
+app.get("/test-cookies", (req,res) => {
+    res.json({
+        message: "Cookie test endpoint",
+        cookies: req.cookies,
+        headers: req.headers.cookie
+    });
+})
+
 // Other Endpoints
 app.use("/api/user", require("./routes/userRoute"));
 app.use("/api/member", require("./routes/memberRoute"));
