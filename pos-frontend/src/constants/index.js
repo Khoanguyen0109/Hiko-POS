@@ -453,6 +453,7 @@ export const PUBLIC_ROUTES = [
   {
     path: ROUTES.AUTH,
     requiresAuth: false,
+    componentName: "Login",
     redirectIfAuth: ROUTES.ROOT // Redirect authenticated users
   }
 ];

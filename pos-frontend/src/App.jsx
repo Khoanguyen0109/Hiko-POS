@@ -21,17 +21,17 @@ import {
 } from "./pages";
 import Header from "./components/shared/Header";
 import { useSelector, useDispatch } from "react-redux";
-import useLoadData from "./hooks/useLoadData";
 import FullScreenLoader from "./components/shared/FullScreenLoader";
 import PropTypes from "prop-types";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { getAuthData } from "./utils/auth";
 import { setUser } from "./redux/slices/userSlice";
-import { 
-  ROUTES, 
-  PUBLIC_ROUTES, 
-  PROTECTED_ROUTES, 
-  HEADER_HIDDEN_ROUTES 
+import { getUserData } from "./https";
+import {
+  ROUTES,
+  PUBLIC_ROUTES,
+  PROTECTED_ROUTES,
+  HEADER_HIDDEN_ROUTES,
 } from "./constants";
 import BottomNav from "./components/shared/BottomNav";
 
@@ -53,18 +53,45 @@ const COMPONENT_MAP = {
 
 function Layout() {
   const dispatch = useDispatch();
-  const isLoading = useLoadData();
   const location = useLocation();
+  const [isLoading, setIsLoading] = useState(true);
   const { isAuth } = useSelector((state) => state.user);
+  const [isValidatingToken, setIsValidatingToken] = useState(true);
 
   // Initialize authentication state from localStorage on app load
   useEffect(() => {
-    const { isAuthenticated, user } = getAuthData();
-    if (isAuthenticated && user) {
-      dispatch(setUser(user));
-    }
+    const initializeAuth = async () => {
+      setIsLoading(true);
+      const { isAuthenticated, accessToken } = getAuthData();
+      
+      if (isAuthenticated && accessToken) {
+        try {
+          // Fetch user data to validate token
+          const response = await getUserData();
+          const { data } = response.data;
+          
+          // If successful, set user data in Redux
+          dispatch(setUser(data));
+        } catch (error) {
+          // Token is invalid or expired, clear auth data
+          console.log('Token validation failed:', error);
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('user');
+        }finally{
+          setIsLoading(false);
+        }
+      }
+      
+      setIsValidatingToken(false);
+    };
+
+    initializeAuth();
   }, [dispatch]);
 
+  // Show loading while validating token
+  if (isValidatingToken) return <FullScreenLoader />;
+  
+  // Show loading for other data
   if (isLoading) return <FullScreenLoader />;
 
   return (
@@ -89,10 +116,16 @@ function Layout() {
         {/* Protected Routes */}
         {PROTECTED_ROUTES.map((route) => {
           const Component = COMPONENT_MAP[route.componentName];
-          
+
           // Check if route requires admin access
-          const isAdminRoute = ['Home', 'Dishes', 'Categories', 'Dashboard', 'Members'].includes(route.componentName);
-          
+          const isAdminRoute = [
+            "Home",
+            "Dishes",
+            "Categories",
+            "Dashboard",
+            "Members",
+          ].includes(route.componentName);
+
           return (
             <Route
               key={route.path}
@@ -121,6 +154,7 @@ function Layout() {
 
 function ProtectedRoutes({ children }) {
   const { isAuth } = useSelector((state) => state.user);
+  console.log("isAuth", isAuth);
   if (!isAuth) {
     return <Navigate to={ROUTES.AUTH} />;
   }
@@ -133,7 +167,7 @@ function AdminProtectedRoutes({ children }) {
   if (!isAuth) {
     return <Navigate to={ROUTES.AUTH} />;
   }
-  
+
   if (role !== "Admin") {
     return <Navigate to={ROUTES.ORDERS} />;
   }

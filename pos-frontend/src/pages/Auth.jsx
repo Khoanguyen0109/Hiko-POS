@@ -6,9 +6,9 @@ import Login from "../components/auth/Login";
 
 const Auth = () => {
 
-  useEffect(() => {
-    document.title = "POS | Auth"
-  }, [])
+  // useEffect(() => {
+  //   document.title = "POS | Auth"
+  // }, [])
 
   const [isRegister, setIsRegister] = useState(false);
 

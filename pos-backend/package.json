@@ -2,10 +2,6 @@
   "name": "pos-backend",
   "version": "1.0.0",
   "main": "app.js",
-  "engines": {
-    "node": "18.19.0",
-    "npm": ">=8.0.0"
-  },
   "scripts": {
     "dev": "nodemon app.js",
     "start": "node app.js",

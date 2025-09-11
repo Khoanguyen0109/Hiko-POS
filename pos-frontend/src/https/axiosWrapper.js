@@ -1,4 +1,5 @@
 import axios from "axios";
+import { clearAuthData } from "../utils/auth";
 
 const defaultHeader = {
   "Content-Type": "application/json",
@@ -33,8 +34,7 @@ axiosInstance.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Token expired or invalid, clear localStorage and redirect to login
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('user');
+      clearAuthData();
       window.location.href = '/auth';
     }
     return Promise.reject(error);
