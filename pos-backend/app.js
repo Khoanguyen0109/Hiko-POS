@@ -15,8 +15,8 @@ app.use(cors({
     origin: ['http://localhost:5173', 'https://hiko-pos.vercel.app'],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
-    secure: true,
-    sameSite: 'none'
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+    exposedHeaders: ['Set-Cookie']
 }))
 app.use(express.json()); // parse incoming request in json format
 app.use(cookieParser())
