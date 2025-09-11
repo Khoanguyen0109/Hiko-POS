@@ -59,17 +59,19 @@ const login = async (req, res, next) => {
             expiresIn : '1d'
         });
 
-        res.cookie('accessToken', accessToken, {
-            maxAge: 1000 * 60 * 60 *24 * 30,
-            httpOnly: true,
-            sameSite: 'none',
-            secure: true,
-            path: '/',
-            domain: undefined // Let the browser handle the domain
-        })
-
-        res.status(200).json({success: true, message: "User login successfully!", 
-            data: {} 
+        res.status(200).json({
+            success: true, 
+            message: "User login successfully!", 
+            data: {
+                accessToken,
+                user: {
+                    _id: isUserPresent._id,
+                    name: isUserPresent.name,
+                    phone: isUserPresent.phone,
+                    email: isUserPresent.email,
+                    role: isUserPresent.role
+                }
+            }
         });
 
     } catch (error) {
@@ -91,13 +93,7 @@ const getUserData = async (req, res, next) => {
 
 const logout = async (req, res, next) => {
     try {
-        
-        res.clearCookie('accessToken', {
-            sameSite: 'none',
-            secure: true
-        });
         res.status(200).json({success: true, message: "User logout successfully!"});
-
     } catch (error) {
         next(error);
     }

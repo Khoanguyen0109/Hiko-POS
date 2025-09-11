@@ -7,11 +7,11 @@ const { userRoles } = require("../constants/user");
 
 const isVerifiedUser = async (req, res, next) => {
     try{
-
-        console.log('req.cookies', req.cookies)
-        console.log('req.headers.cookie', req.headers.cookie)
-        console.log('req.headers', req.headers)
-        const { accessToken } = req.cookies;
+        // Get token from Authorization header
+        const authHeader = req.headers.authorization;
+        const accessToken = authHeader && authHeader.startsWith('Bearer ') 
+            ? authHeader.slice(7) 
+            : null;
         
         if(!accessToken){
             const error = createHttpError(401, "Please provide token!");

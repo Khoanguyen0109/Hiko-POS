@@ -20,10 +20,13 @@ import {
   AccountSettings,
 } from "./pages";
 import Header from "./components/shared/Header";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import useLoadData from "./hooks/useLoadData";
 import FullScreenLoader from "./components/shared/FullScreenLoader";
 import PropTypes from "prop-types";
+import { useEffect } from "react";
+import { getAuthData } from "./utils/auth";
+import { setUser } from "./redux/slices/userSlice";
 import { 
   ROUTES, 
   PUBLIC_ROUTES, 
@@ -49,9 +52,18 @@ const COMPONENT_MAP = {
 };
 
 function Layout() {
+  const dispatch = useDispatch();
   const isLoading = useLoadData();
   const location = useLocation();
   const { isAuth } = useSelector((state) => state.user);
+
+  // Initialize authentication state from localStorage on app load
+  useEffect(() => {
+    const { isAuthenticated, user } = getAuthData();
+    if (isAuthenticated && user) {
+      dispatch(setUser(user));
+    }
+  }, [dispatch]);
 
   if (isLoading) return <FullScreenLoader />;
 

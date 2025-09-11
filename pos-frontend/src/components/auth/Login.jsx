@@ -5,6 +5,7 @@ import { enqueueSnackbar } from "notistack";
 import { useDispatch } from "react-redux";
 import { setUser } from "../../redux/slices/userSlice";
 import { useNavigate } from "react-router-dom";
+import { setAuthData } from "../../utils/auth";
  
 const Login = () => {
     const navigate = useNavigate();
@@ -29,8 +30,14 @@ const Login = () => {
       onSuccess: (res) => {
           const { data } = res;
           console.log(data);
-          const { _id, name, email, phone, role } = data.data;
-          dispatch(setUser({ _id, name, email, phone, role }));
+          const { accessToken, user } = data.data;
+          
+          // Store token and user data in localStorage
+          setAuthData(accessToken, user);
+          
+          // Update Redux store
+          dispatch(setUser(user));
+          
           navigate("/");
       },
       onError: (error) => {

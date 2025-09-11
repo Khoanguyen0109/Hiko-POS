@@ -8,6 +8,7 @@ import { useMutation } from "@tanstack/react-query";
 import { logout } from "../../https";
 import { removeUser } from "../../redux/slices/userSlice";
 import { useNavigate } from "react-router-dom";
+import { clearAuthData } from "../../utils/auth";
 import { MdDashboard, MdPerson, MdSettings, MdKeyboardArrowDown } from "react-icons/md";
 import { useState, useRef, useEffect } from "react";
 import { ROUTES } from "../../constants";
@@ -23,11 +24,18 @@ const Header = () => {
     mutationFn: () => logout(),
     onSuccess: (data) => {
       console.log(data);
+      // Clear localStorage
+      clearAuthData();
+      // Clear Redux store
       dispatch(removeUser());
       navigate(ROUTES.AUTH);
     },
     onError: (error) => {
       console.log(error);
+      // Even if logout fails on server, clear local data
+      clearAuthData();
+      dispatch(removeUser());
+      navigate(ROUTES.AUTH);
     },
   });
 
