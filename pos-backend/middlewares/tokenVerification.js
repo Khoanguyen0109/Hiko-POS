@@ -8,6 +8,7 @@ const { userRoles } = require("../constants/user");
 const isVerifiedUser = async (req, res, next) => {
     try{
 
+        console.log('req.cookies', req.cookies)
         const { accessToken } = req.cookies;
         
         if(!accessToken){
