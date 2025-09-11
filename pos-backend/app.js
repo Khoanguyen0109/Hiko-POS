@@ -11,17 +11,7 @@ const PORT = config.port;
 connectDB();
 
 // Middlewares
-const allowedOrigins = [
-    'http://localhost:5173', // Development frontend
-    'https://hiko-pos.vercel.app', // Vercel frontend
-    process.env.FRONTEND_URL, // Production frontend
-    'https://your-frontend-domain.railway.app' // Railway frontend URL (update this)
-].filter(Boolean); // Remove undefined values
-
-app.use(cors({
-    credentials: true,
-    origin: allowedOrigins.length > 0 ? allowedOrigins : ['http://localhost:5173']
-}))
+app.use(cors())
 app.use(express.json()); // parse incoming request in json format
 app.use(cookieParser())
 

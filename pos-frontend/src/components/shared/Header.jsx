@@ -24,7 +24,7 @@ const Header = () => {
     onSuccess: (data) => {
       console.log(data);
       dispatch(removeUser());
-      navigate("/auth");
+      navigate(ROUTES.AUTH);
     },
     onError: (error) => {
       console.log(error);

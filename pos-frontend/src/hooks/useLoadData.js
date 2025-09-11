@@ -3,6 +3,7 @@ import { getUserData } from "../https";
 import { useEffect, useState } from "react";
 import { removeUser, setUser } from "../redux/slices/userSlice";
 import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../constants";
 
 const useLoadData = () => {
   const dispatch = useDispatch();
@@ -18,7 +19,7 @@ const useLoadData = () => {
         dispatch(setUser({ _id, name, email, phone, role }));
       } catch (error) {
         dispatch(removeUser());
-        navigate("/auth");
+        navigate(ROUTES.AUTH);
         console.log(error);
       }finally{
         setIsLoading(false);
