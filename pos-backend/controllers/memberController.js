@@ -61,11 +61,11 @@ const createMember = async (req, res, next) => {
             return next(error);
         }
 
-        // Validate role (cannot create admin accounts)
-        if (role === userRoles.ADMIN) {
-            const error = createHttpError(403, "Cannot create admin accounts!");
-            return next(error);
-        }
+        // // Validate role (cannot create admin accounts)
+        // if (role === userRoles.ADMIN) {
+        //     const error = createHttpError(403, "Cannot create admin accounts!");
+        //     return next(error);
+        // }
 
         // Check if user already exists
         const existingUser = await User.findOne({ email });

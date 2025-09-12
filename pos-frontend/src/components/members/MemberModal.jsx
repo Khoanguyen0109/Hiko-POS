@@ -36,12 +36,11 @@ const MemberModal = ({ isOpen, onClose, mode, member }) => {
   const isEditMode = mode === "edit";
   const isLoading = createLoading || updateLoading;
 
-  useEffect(() => {
-    if (error) {
-      enqueueSnackbar(error, { variant: "error" });
-      dispatch(clearError());
-    }
-  }, [error, dispatch]);
+  // useEffect(() => {
+  //   if (error) {
+  //     dispatch(clearError());
+  //   }
+  // }, [error, dispatch]);
 
   useEffect(() => {
     if (isEditMode && member) {
