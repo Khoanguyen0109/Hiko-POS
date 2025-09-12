@@ -49,7 +49,10 @@ const login = async (req, res, next) => {
             return next(error);
         }
 
+        console.log('isUserPresent', isUserPresent)
         const isMatch = await bcrypt.compare(password, isUserPresent.password);
+        console.log('isMatch', isMatch)
+
         if(!isMatch){
             const error = createHttpError(401, "Invalid Credentials");
             return next(error);
