@@ -28,7 +28,7 @@ const Login = () => {
           // Store token and user data in localStorage
           setAuthData(accessToken, user);
           enqueueSnackbar("Login successful!", { variant: "success" });
-          // navigate("/");
+          navigate("/");
         })
         .catch((error) => {
           enqueueSnackbar(error, { variant: "error" });
