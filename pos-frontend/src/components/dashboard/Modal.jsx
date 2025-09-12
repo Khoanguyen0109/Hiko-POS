@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { IoMdClose } from "react-icons/io";
-import { useMutation } from "@tanstack/react-query";
-import { addTable } from "../../https";
+import { useDispatch, useSelector } from "react-redux";
+import { createTable } from "../../redux/slices/tableSlice";
 import { enqueueSnackbar } from "notistack"
 import PropTypes from "prop-types";
 
 const Modal = ({ setIsTableModalOpen }) => {
+  const dispatch = useDispatch();
+  const { loading } = useSelector((state) => state.tables);
+  
   const [tableData, setTableData] = useState({
     tableNo: "",
     seats: "",
@@ -20,26 +23,22 @@ const Modal = ({ setIsTableModalOpen }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log(tableData);
-    tableMutation.mutate(tableData);
+    
+    dispatch(createTable(tableData))
+      .unwrap()
+      .then(() => {
+        setIsTableModalOpen(false);
+        enqueueSnackbar("Table created successfully!", { variant: "success" });
+      })
+      .catch((error) => {
+        enqueueSnackbar(error, { variant: "error" });
+        console.log(error);
+      });
   };
 
   const handleCloseModal = () => {
     setIsTableModalOpen(false);
   };
-
-  const tableMutation = useMutation({
-    mutationFn: (reqData) => addTable(reqData),
-    onSuccess: (res) => {
-        setIsTableModalOpen(false);
-        const { data } = res;
-        enqueueSnackbar(data.message, { variant: "success" })
-    },
-    onError: (error) => {
-        const { data } = error.response;
-        enqueueSnackbar(data.message, { variant: "error" })
-        console.log(error);
-    }
-  })
 
 
   return (
@@ -99,9 +98,10 @@ const Modal = ({ setIsTableModalOpen }) => {
 
           <button
             type="submit"
-            className="w-full rounded-lg mt-10 mb-6 py-3 text-lg bg-yellow-400 text-gray-900 font-bold"
+            disabled={loading}
+            className="w-full rounded-lg mt-10 mb-6 py-3 text-lg bg-yellow-400 text-gray-900 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Add Table
+            {loading ? "Adding Table..." : "Add Table"}
           </button>
         </form>
       </motion.div>

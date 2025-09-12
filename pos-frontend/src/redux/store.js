@@ -6,6 +6,8 @@ import categoriesReducer from "./slices/categorySlice";
 import dishesReducer from "./slices/dishSlice";
 import customersDataReducer from "./slices/customersSlice";
 import memberReducer from "./slices/memberSlice";
+import ordersReducer from "./slices/orderSlice";
+import tablesReducer from "./slices/tableSlice";
 
 const store = configureStore({
     reducer: {
@@ -15,7 +17,9 @@ const store = configureStore({
         categories: categoriesReducer,
         dishes: dishesReducer,
         customersData: customersDataReducer,
-        members: memberReducer
+        members: memberReducer,
+        orders: ordersReducer,
+        tables: tablesReducer
     },
 
     devTools: import.meta.env.NODE_ENV !== "production",

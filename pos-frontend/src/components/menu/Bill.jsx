@@ -1,12 +1,8 @@
 import { useDispatch, useSelector } from "react-redux";
-import { getTotalPrice } from "../../redux/slices/cartSlice";
-import {
-  addOrder,
-} from "../../https/index";
-import { enqueueSnackbar } from "notistack";
-import { useMutation } from "@tanstack/react-query";
-import { removeAllItems } from "../../redux/slices/cartSlice";
+import { getTotalPrice, removeAllItems } from "../../redux/slices/cartSlice";
 import { removeCustomer } from "../../redux/slices/customerSlice";
+import { createOrder } from "../../redux/slices/orderSlice";
+import { enqueueSnackbar } from "notistack";
 import Invoice from "../invoice/Invoice";
 import { useState, useRef } from "react";
 import { useReactToPrint } from "react-to-print";
@@ -22,6 +18,7 @@ const Bill = () => {
   const customerData = useSelector((state) => state.customer);
   const cartData = useSelector((state) => state.cart);
   const total = useSelector(getTotalPrice);
+  const { loading } = useSelector((state) => state.orders);
 
   const [showInvoice, setShowInvoice] = useState(false);
   const [orderInfo, setOrderInfo] = useState();
@@ -65,36 +62,32 @@ const Bill = () => {
       items: cartData,
       paymentMethod: "Cash",
     };
-    orderMutation.mutate(orderData);
+    
+    dispatch(createOrder(orderData))
+      .unwrap()
+      .then((data) => {
+        console.log(data);
+        setOrderInfo(data);
+        
+        enqueueSnackbar("Order Placed Successfully!", {
+          variant: "success",
+        });
+        setShowInvoice(true);
+        
+        // Clear cart and customer data
+        setTimeout(() => {
+          dispatch(removeCustomer());
+          dispatch(removeAllItems());
+        }, 1500);
+      })
+      .catch((error) => {
+        console.log(error);
+        const errorMessage = error || "Failed to place order";
+        enqueueSnackbar(errorMessage, {
+          variant: "error",
+        });
+      });
   };
-
-  const orderMutation = useMutation({
-    mutationFn: (reqData) => addOrder(reqData),
-    onSuccess: (resData) => {
-      const { data } = resData.data;
-      console.log(data);
-
-      setOrderInfo(data);
-
-      enqueueSnackbar("Order Placed Successfully!", {
-        variant: "success",
-      });
-      setShowInvoice(true);
-
-      // Clear cart and customer data
-      setTimeout(() => {
-        dispatch(removeCustomer());
-        dispatch(removeAllItems());
-      }, 1500);
-    },
-    onError: (error) => {
-      console.log(error);
-      const errorMessage = error.response?.data?.message || "Failed to place order";
-      enqueueSnackbar(errorMessage, {
-        variant: "error",
-      });
-    },
-  });
 
   // Prepare thermal receipt data
   const thermalReceiptData = {
@@ -141,10 +134,10 @@ const Bill = () => {
         </button>
         <button
           onClick={handlePlaceOrder}
-          disabled={cartData.length === 0}
+          disabled={cartData.length === 0 || loading}
           className="bg-[#f6b100] px-4 py-3 w-full rounded-lg text-[#1f1f1f] font-semibold text-lg hover:bg-[#e09900] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          Place Order
+          {loading ? "Placing Order..." : "Place Order"}
         </button>
       </div>
 

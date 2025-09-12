@@ -1,29 +1,25 @@
 import { useState, useEffect } from "react";
-
 import BackButton from "../components/shared/BackButton";
 import TableCard from "../components/tables/TableCard";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { getTables } from "../https";
 import { enqueueSnackbar } from "notistack";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchTables } from "../redux/slices/tableSlice";
 
 const Tables = () => {
+  const dispatch = useDispatch();
+  const { items: tables, loading, error } = useSelector((state) => state.tables);
   const [status, setStatus] = useState("all");
 
   useEffect(() => {
     document.title = "POS | Tables"
-  }, [])
+    dispatch(fetchTables());
+  }, [dispatch])
 
-  const { data: resData, isError } = useQuery({
-    queryKey: ["tables"],
-    queryFn: async () => {
-      return await getTables();
-    },
-    placeholderData: keepPreviousData,
-  });
-
-  if(isError) {
-    enqueueSnackbar("Something went wrong!", { variant: "error" })
-  }
+  useEffect(() => {
+    if (error) {
+      enqueueSnackbar(error, { variant: "error" });
+    }
+  }, [error]);
 
   return (
     <section className="bg-[#1f1f1f]  h-[calc(100vh-5rem)] overflow-hidden">
@@ -55,18 +51,24 @@ const Tables = () => {
       </div>
 
       <div className="grid grid-cols-5 gap-3 px-16 py-4 h-[650px] overflow-y-scroll scrollbar-hide">
-        {resData?.data.data.map((table) => {
-          return (
-            <TableCard
-              key={table._id}
-              id={table._id}
-              name={table.tableNo}
-              status={table.status}
-              initials={table?.currentOrder?.customerDetails.name}
-              seats={table.seats}
-            />
-          );
-        })}
+        {loading ? (
+          <div className="col-span-5 flex justify-center items-center">
+            <div className="text-[#ababab]">Loading tables...</div>
+          </div>
+        ) : (
+          tables?.map((table) => {
+            return (
+              <TableCard
+                key={table._id}
+                id={table._id}
+                name={table.tableNo}
+                status={table.status}
+                initials={table?.currentOrder?.customerDetails.name}
+                seats={table.seats}
+              />
+            );
+          })
+        )}
       </div>
 
     </section>

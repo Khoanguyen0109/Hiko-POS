@@ -45,7 +45,7 @@
 - Frontend
   - React functional components, hooks
   - State: use Redux Toolkit slices in `pos-frontend/src/redux/slices/`
-  - Data fetching/caching: React Query (`@tanstack/react-query`)
+  - Data fetching/caching: RTK Query 
   - Routing: `react-router-dom@7`
   - Styling: Tailwind CSS; avoid inline styles unless necessary
 - Backend

@@ -54,34 +54,30 @@ const COMPONENT_MAP = {
 function Layout() {
   const dispatch = useDispatch();
   const location = useLocation();
-  const [isLoading, setIsLoading] = useState(true);
   const { isAuth } = useSelector((state) => state.user);
   const [isValidatingToken, setIsValidatingToken] = useState(true);
 
   // Initialize authentication state from localStorage on app load
   useEffect(() => {
     const initializeAuth = async () => {
-      setIsLoading(true);
       const { isAuthenticated, accessToken } = getAuthData();
-      
+
       if (isAuthenticated && accessToken) {
         try {
           // Fetch user data to validate token
           const response = await getUserData();
           const { data } = response.data;
-          
+
           // If successful, set user data in Redux
           dispatch(setUser(data));
         } catch (error) {
           // Token is invalid or expired, clear auth data
-          console.log('Token validation failed:', error);
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('user');
-        }finally{
-          setIsLoading(false);
+          console.log("Token validation failed:", error);
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("user");
         }
       }
-      
+
       setIsValidatingToken(false);
     };
 
@@ -90,9 +86,6 @@ function Layout() {
 
   // Show loading while validating token
   if (isValidatingToken) return <FullScreenLoader />;
-  
-  // Show loading for other data
-  if (isLoading) return <FullScreenLoader />;
 
   return (
     <>
@@ -184,10 +177,12 @@ AdminProtectedRoutes.propTypes = {
 };
 
 function App() {
+  const { isAuth } = useSelector((state) => state.user);
+
   return (
     <Router>
       <Layout />
-      <BottomNav />
+      {isAuth && <BottomNav />}
     </Router>
   );
 }

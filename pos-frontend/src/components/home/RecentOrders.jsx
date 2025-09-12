@@ -1,23 +1,25 @@
 import { FaSearch } from "react-icons/fa";
 import OrderList from "./OrderList";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { enqueueSnackbar } from "notistack";
-import { getOrders } from "../../https/index";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchOrders } from "../../redux/slices/orderSlice";
 import { getTodayDate } from "../../utils";
 
 const RecentOrders = () => {
-  const { data: resData, isError } = useQuery({
-    queryKey: ["orders", "recent"],
-    queryFn: async () => {
-      const today = getTodayDate();
-      return await getOrders({ startDate: today, endDate: today });
-    },
-    placeholderData: keepPreviousData,
-  });
+  const dispatch = useDispatch();
+  const { recentOrders, loading, error } = useSelector((state) => state.orders);
 
-  if (isError) {
-    enqueueSnackbar("Something went wrong!", { variant: "error" });
-  }
+  useEffect(() => {
+    const today = getTodayDate();
+    dispatch(fetchOrders({ startDate: today, endDate: today }));
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (error) {
+      enqueueSnackbar(error, { variant: "error" });
+    }
+  }, [error]);
 
   return (
     <div className="px-8 mt-6">
@@ -42,8 +44,10 @@ const RecentOrders = () => {
 
         {/* Order list */}
         <div className="mt-4 px-6 overflow-y-scroll h-[300px] scrollbar-hide">
-          {resData?.data.data.length > 0 ? (
-            resData.data.data.map((order) => {
+          {loading ? (
+            <p className="col-span-3 text-gray-500">Loading orders...</p>
+          ) : recentOrders?.length > 0 ? (
+            recentOrders.map((order) => {
               return <OrderList key={order._id} order={order} />;
             })
           ) : (

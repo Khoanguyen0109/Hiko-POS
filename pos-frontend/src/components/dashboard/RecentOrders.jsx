@@ -1,37 +1,34 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { enqueueSnackbar } from "notistack";
-import { getOrders, updateOrderStatus } from "../../https/index";
+import { fetchOrders, updateOrder } from "../../redux/slices/orderSlice";
 import { formatDateAndTime, getTodayDate } from "../../utils";
 
 const RecentOrders = () => {
-  const queryClient = useQueryClient();
+  const dispatch = useDispatch();
+  const { recentOrders, loading, error } = useSelector((state) => state.orders);
+  
   const handleStatusChange = ({orderId, orderStatus}) => {
-    orderStatusUpdateMutation.mutate({orderId, orderStatus});
+    dispatch(updateOrder({orderId, orderStatus}))
+      .unwrap()
+      .then(() => {
+        enqueueSnackbar("Order status updated successfully!", { variant: "success" });
+      })
+      .catch(() => {
+        enqueueSnackbar("Failed to update order status!", { variant: "error" });
+      });
   };
 
-  const orderStatusUpdateMutation = useMutation({
-    mutationFn: ({orderId, orderStatus}) => updateOrderStatus({orderId, orderStatus}),
-    onSuccess: () => {
-      enqueueSnackbar("Order status updated successfully!", { variant: "success" });
-      queryClient.invalidateQueries(["orders"]);
-    },
-    onError: () => {
-      enqueueSnackbar("Failed to update order status!", { variant: "error" });
+  useEffect(() => {
+    const today = getTodayDate();
+    dispatch(fetchOrders({ startDate: today, endDate: today }));
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (error) {
+      enqueueSnackbar(error, { variant: "error" });
     }
-  })
-
-  const { data: resData, isError } = useQuery({
-    queryKey: ["orders", "today"],
-    queryFn: async () => {
-      const today = getTodayDate();
-      return await getOrders({ startDate: today, endDate: today });
-    },
-    placeholderData: keepPreviousData,
-  });
-
-  if (isError) {
-    enqueueSnackbar("Something went wrong!", { variant: "error" });
-  }
+  }, [error]);
 
   return (
     <div className="container mx-auto bg-[#262626] p-4 rounded-lg">
@@ -53,40 +50,54 @@ const RecentOrders = () => {
             </tr>
           </thead>
           <tbody>
-            {resData?.data.data.map((order, index) => (
-              <tr
-                key={index}
-                className="border-b border-gray-600 hover:bg-[#333]"
-              >
-                <td className="p-4">#{Math.floor(new Date(order.orderDate).getTime())}</td>
-                <td className="p-4">{order.customerDetails.name}</td>
-                <td className="p-4">
-                  <select
-                    className={`bg-[#1a1a1a] text-[#f5f5f5] border border-gray-500 p-2 rounded-lg focus:outline-none ${
-                      order.orderStatus === "Ready"
-                        ? "text-green-500"
-                        : "text-yellow-500"
-                    }`}
-                    value={order.orderStatus}
-                    onChange={(e) => handleStatusChange({orderId: order._id, orderStatus: e.target.value})}
-                  >
-                    <option className="text-yellow-500" value="In Progress">
-                      In Progress
-                    </option>
-                    <option className="text-green-500" value="Ready">
-                      Ready
-                    </option>
-                  </select>
-                </td>
-                <td className="p-4">{formatDateAndTime(order.orderDate)}</td>
-                <td className="p-4">{order.items.length} Items</td>
-                <td className="p-4">Table - {order.table.tableNo}</td>
-                <td className="p-4">₹{order.bills.totalWithTax}</td>
-                <td className="p-4">
-                  {order.paymentMethod}
+            {loading ? (
+              <tr>
+                <td colSpan="8" className="p-4 text-center text-gray-500">
+                  Loading orders...
                 </td>
               </tr>
-            ))}
+            ) : recentOrders?.length > 0 ? (
+              recentOrders.map((order, index) => (
+                <tr
+                  key={index}
+                  className="border-b border-gray-600 hover:bg-[#333]"
+                >
+                  <td className="p-4">#{Math.floor(new Date(order.orderDate).getTime())}</td>
+                  <td className="p-4">{order.customerDetails.name}</td>
+                  <td className="p-4">
+                    <select
+                      className={`bg-[#1a1a1a] text-[#f5f5f5] border border-gray-500 p-2 rounded-lg focus:outline-none ${
+                        order.orderStatus === "Ready"
+                          ? "text-green-500"
+                          : "text-yellow-500"
+                      }`}
+                      value={order.orderStatus}
+                      onChange={(e) => handleStatusChange({orderId: order._id, orderStatus: e.target.value})}
+                    >
+                      <option className="text-yellow-500" value="In Progress">
+                        In Progress
+                      </option>
+                      <option className="text-green-500" value="Ready">
+                        Ready
+                      </option>
+                    </select>
+                  </td>
+                  <td className="p-4">{formatDateAndTime(order.orderDate)}</td>
+                  <td className="p-4">{order.items.length} Items</td>
+                  <td className="p-4">Table - {order.table?.tableNo || 'N/A'}</td>
+                  <td className="p-4">₹{order.bills.totalWithTax}</td>
+                  <td className="p-4">
+                    {order.paymentMethod}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="8" className="p-4 text-center text-gray-500">
+                  No orders available
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

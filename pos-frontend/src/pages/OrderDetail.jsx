@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useDispatch, useSelector } from "react-redux";
 import { MdPerson, MdPhone, MdGroup, MdAccessTime, MdReceipt, MdPayment } from "react-icons/md";
 import { FaCheckCircle, FaClock, FaSpinner, FaBan } from "react-icons/fa";
-import { getOrderById, updateOrderStatus } from "../https/index";
+import { fetchOrderById, updateOrder, clearCurrentOrder } from "../redux/slices/orderSlice";
 import { enqueueSnackbar } from "notistack";
 import { formatDateAndTime, formatVND } from "../utils";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
@@ -13,37 +13,43 @@ import PropTypes from "prop-types";
 const OrderDetail = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const dispatch = useDispatch();
+  const { currentOrder, loading, error } = useSelector((state) => state.orders);
   const [selectedStatus, setSelectedStatus] = useState("");
 
-  const { data: orderData, isLoading, isError, error } = useQuery({
-    queryKey: ["order", orderId],
-    queryFn: () => getOrderById(orderId),
-    enabled: !!orderId,
-  });
-
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ orderId, orderStatus }) => updateOrderStatus({ orderId, orderStatus }),
-    onSuccess: () => {
-      enqueueSnackbar("Order status updated successfully!", { variant: "success" });
-      queryClient.invalidateQueries(["order", orderId]);
-      queryClient.invalidateQueries(["orders"]);
-    },
-    onError: (error) => {
-      const errorMessage = error.response?.data?.message || "Failed to update order status";
-      enqueueSnackbar(errorMessage, { variant: "error" });
-    },
-  });
+  useEffect(() => {
+    if (orderId) {
+      dispatch(fetchOrderById(orderId));
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      dispatch(clearCurrentOrder());
+    };
+  }, [dispatch, orderId]);
 
   useEffect(() => {
-    if (orderData?.data?.data) {
-      setSelectedStatus(orderData.data.data.orderStatus);
+    if (currentOrder) {
+      setSelectedStatus(currentOrder.orderStatus);
     }
-  }, [orderData]);
+  }, [currentOrder]);
+
+  useEffect(() => {
+    if (error) {
+      enqueueSnackbar(error, { variant: "error" });
+    }
+  }, [error]);
 
   const handleStatusUpdate = () => {
-    if (selectedStatus && selectedStatus !== orderData.data.data.orderStatus) {
-      updateStatusMutation.mutate({ orderId, orderStatus: selectedStatus });
+    if (selectedStatus && selectedStatus !== currentOrder?.orderStatus) {
+      dispatch(updateOrder({ orderId, orderStatus: selectedStatus }))
+        .unwrap()
+        .then(() => {
+          enqueueSnackbar("Order status updated successfully!", { variant: "success" });
+        })
+        .catch((error) => {
+          enqueueSnackbar(error, { variant: "error" });
+        });
     }
   };
 
@@ -81,14 +87,14 @@ const OrderDetail = () => {
     }
   };
 
-  if (isLoading) return <FullScreenLoader />;
+  if (loading && !currentOrder) return <FullScreenLoader />;
 
-  if (isError) {
+  if (error && !currentOrder) {
     return (
       <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-[#f5f5f5] text-xl font-semibold mb-4">Error Loading Order</h2>
-          <p className="text-[#ababab] mb-4">{error?.response?.data?.message || "Order not found"}</p>
+          <p className="text-[#ababab] mb-4">{error || "Order not found"}</p>
           <button
             onClick={() => navigate("/orders")}
             className="px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#e09900] transition-colors"
@@ -100,7 +106,7 @@ const OrderDetail = () => {
     );
   }
 
-  const order = orderData?.data?.data;
+  const order = currentOrder;
   if (!order) return null;
 
   const statusOptions = [
@@ -138,10 +144,10 @@ const OrderDetail = () => {
           </select>
           <button
             onClick={handleStatusUpdate}
-            disabled={updateStatusMutation.isLoading || selectedStatus === order.orderStatus}
+            disabled={loading || selectedStatus === order.orderStatus}
             className="px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#e09900] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {updateStatusMutation.isLoading ? "Updating..." : "Update Status"}
+            {loading ? "Updating..." : "Update Status"}
           </button>
         </div>
       </div>

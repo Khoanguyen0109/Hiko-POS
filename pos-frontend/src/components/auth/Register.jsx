@@ -1,10 +1,13 @@
-import { useState } from "react";
-import { register } from "../../https";
-import { useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 import { enqueueSnackbar } from "notistack";
+import { useDispatch, useSelector } from "react-redux";
+import { registerUser, clearError } from "../../redux/slices/userSlice";
 import PropTypes from "prop-types";
 
 const Register = ({setIsRegister}) => {
+  const dispatch = useDispatch();
+  const { loading, error } = useSelector((state) => state.user);
+  
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -23,32 +26,35 @@ const Register = ({setIsRegister}) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    registerMutation.mutate(formData);
+    dispatch(registerUser(formData))
+      .unwrap()
+      .then(() => {
+        enqueueSnackbar("Registration successful!", { variant: "success" });
+        setFormData({
+          name: "",
+          email: "",
+          phone: "",
+          password: "",
+          role: "",
+        });
+        
+        setTimeout(() => {
+          setIsRegister(false);
+        }, 1500);
+      })
+      .catch((error) => {
+        enqueueSnackbar(error, { variant: "error" });
+      });
   };
 
-  const registerMutation = useMutation({
-    mutationFn: (reqData) => register(reqData),
-    onSuccess: (res) => {
-      const { data } = res;
-      enqueueSnackbar(data.message, { variant: "success" });
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        password: "",
-        role: "",
-      });
-      
-      setTimeout(() => {
-        setIsRegister(false);
-      }, 1500);
-    },
-    onError: (error) => {
-      const { response } = error;
-      const message = response.data.message;
-      enqueueSnackbar(message, { variant: "error" });
-    },
-  });
+  // Clear error when component unmounts
+  useEffect(() => {
+    return () => {
+      if (error) {
+        dispatch(clearError());
+      }
+    };
+  }, [error, dispatch]);
 
   return (
     <div>
@@ -141,9 +147,10 @@ const Register = ({setIsRegister}) => {
 
         <button
           type="submit"
-          className="w-full rounded-lg mt-6 py-3 text-lg bg-yellow-400 text-gray-900 font-bold"
+          disabled={loading}
+          className="w-full rounded-lg mt-6 py-3 text-lg bg-yellow-400 text-gray-900 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Sign up
+          {loading ? "Signing up..." : "Sign up"}
         </button>
       </form>
     </div>

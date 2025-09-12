@@ -4,14 +4,15 @@ import OrderCard from "../components/orders/OrderCard";
 import BackButton from "../components/shared/BackButton";
 import DateFilter from "../components/shared/DateFilter";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { getOrders } from "../https/index";
 import { enqueueSnackbar } from "notistack";
 import { getTodayDate } from "../utils";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchOrders, setFilters } from "../redux/slices/orderSlice";
 
 const Orders = () => {
+  const dispatch = useDispatch();
   const { role } = useSelector((state) => state.user);
+  const { items: orders, loading, error, filters } = useSelector((state) => state.orders);
   const isAdmin = role === "Admin";
   
   const [status, setStatus] = useState("all");
@@ -23,23 +24,24 @@ const Orders = () => {
     document.title = "POS | Orders";
   }, []);
 
-  const { data: resData, isError, isLoading, refetch } = useQuery({
-    queryKey: ["orders", isAdmin ? startDate : null, isAdmin ? endDate : null, status],
-    queryFn: async () => {
-      // Only apply date filtering for admin users
-      const params = { status };
-      if (isAdmin) {
-        params.startDate = startDate;
-        params.endDate = endDate;
-      }
-      return await getOrders(params);
-    },
-    placeholderData: keepPreviousData,
-  });
+  // Fetch orders when component mounts or filters change
+  useEffect(() => {
+    const params = { status };
+    if (isAdmin) {
+      params.startDate = startDate;
+      params.endDate = endDate;
+    }
+    
+    dispatch(setFilters(params));
+    dispatch(fetchOrders(params));
+  }, [dispatch, status, startDate, endDate, isAdmin]);
 
-  if (isError) {
-    enqueueSnackbar("Something went wrong!", { variant: "error" });
-  }
+  // Show error message if there's an error
+  useEffect(() => {
+    if (error) {
+      enqueueSnackbar(error, { variant: "error" });
+    }
+  }, [error]);
 
   const handleDateChange = ({ startDate: newStartDate, endDate: newEndDate }) => {
     setStartDate(newStartDate);
@@ -47,12 +49,14 @@ const Orders = () => {
   };
 
   const handleRefresh = () => {
-    refetch();
+    const params = { status };
+    if (isAdmin) {
+      params.startDate = startDate;
+      params.endDate = endDate;
+    }
+    dispatch(fetchOrders(params));
     enqueueSnackbar("Orders refreshed!", { variant: "success" });
   };
-
-  const orders = resData?.data?.data || [];
-  const orderCount = resData?.data?.count || 0;
 
   // Filter orders by status on frontend (for immediate UI feedback)
   const filteredOrders = status === "all" 
@@ -60,13 +64,13 @@ const Orders = () => {
     : orders.filter(order => order.orderStatus === status);
 
   const statusButtons = [
-    { key: "all", label: "All", count: orders.length },
-    { key: "progress", label: "In Progress", count: orders.filter(o => o.orderStatus === "progress").length },
-    { key: "ready", label: "Ready", count: orders.filter(o => o.orderStatus === "ready").length },
-    { key: "completed", label: "Completed", count: orders.filter(o => o.orderStatus === "completed").length },
+    { key: "all", label: "All", count: orders?.length || 0 },
+    { key: "progress", label: "In Progress", count: orders?.filter(o => o.orderStatus === "progress").length || 0 },
+    { key: "ready", label: "Ready", count: orders?.filter(o => o.orderStatus === "ready").length || 0 },
+    { key: "completed", label: "Completed", count: orders?.filter(o => o.orderStatus === "completed").length || 0 },
   ];
 
-  if (isLoading && !resData) {
+  if (loading && !orders.length) {
     return <FullScreenLoader />;
   }
 
@@ -82,7 +86,7 @@ const Orders = () => {
           <div className="flex items-center gap-2 text-sm text-[#ababab]">
             <span>•</span>
             <span>
-              {orderCount} orders found
+              {orders.length} orders found
               {isAdmin && startDate === endDate && (
                 <span className="ml-1">for {new Date(startDate).toLocaleDateString('vi-VN')}</span>
               )}
@@ -92,7 +96,7 @@ const Orders = () => {
                 </span>
               )}
             </span>
-            {isLoading && <span className="text-[#f6b100]">• Refreshing...</span>}
+            {loading && <span className="text-[#f6b100]">• Refreshing...</span>}
           </div>
         </div>
         
@@ -112,10 +116,10 @@ const Orders = () => {
           )}
           <button
             onClick={handleRefresh}
-            disabled={isLoading}
+            disabled={loading}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <MdRefresh size={16} className={isLoading ? "animate-spin" : ""} />
+            <MdRefresh size={16} className={loading ? "animate-spin" : ""} />
             Refresh
           </button>
         </div>

@@ -1,15 +1,15 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query"
-import { login } from "../../https/index"
+import { useState, useEffect } from "react";
 import { enqueueSnackbar } from "notistack";
-import { useDispatch } from "react-redux";
-import { setUser } from "../../redux/slices/userSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { loginUser, clearError } from "../../redux/slices/userSlice";
 import { useNavigate } from "react-router-dom";
 import { setAuthData } from "../../utils/auth";
  
 const Login = () => {
     const navigate = useNavigate();
     const dispatch = useDispatch();
+    const { loading, error, isAuth } = useSelector((state) => state.user);
+    
     const[formData, setFormData] = useState({
       phone: "",
       password: "",
@@ -19,32 +19,35 @@ const Login = () => {
       setFormData({...formData, [e.target.name]: e.target.value});
     }
 
-  
     const handleSubmit = (e) => {
       e.preventDefault();
-      loginMutation.mutate(formData);
-    }
-
-    const loginMutation = useMutation({
-      mutationFn: (reqData) => login(reqData),
-      onSuccess: (res) => {
-          const { data } = res;
-          console.log(data);
-          const { accessToken, user } = data.data;
-          
+      dispatch(loginUser(formData))
+        .unwrap()
+        .then((userData) => {
+          const { accessToken, user } = userData;
           // Store token and user data in localStorage
           setAuthData(accessToken, user);
-          
-          // Update Redux store
-          dispatch(setUser(user));
-          
+          enqueueSnackbar("Login successful!", { variant: "success" });
           navigate("/");
-      },
-      onError: (error) => {
-        const { response } = error;
-        enqueueSnackbar(response.data.message, { variant: "error" });
+        })
+        .catch((error) => {
+          enqueueSnackbar(error, { variant: "error" });
+        });
+    }
+
+    // Clear error when component unmounts or error changes
+    useEffect(() => {
+      if (error) {
+        dispatch(clearError());
       }
-    })
+    }, []);
+
+    // Redirect if already authenticated
+    useEffect(() => {
+      if (isAuth) {
+        navigate("/");
+      }
+    }, [isAuth, navigate]);
 
   return (
     <div>
@@ -84,9 +87,10 @@ const Login = () => {
 
         <button
           type="submit"
-          className="w-full rounded-lg mt-6 py-3 text-lg bg-yellow-400 text-gray-900 font-bold"
+          disabled={loading}
+          className="w-full rounded-lg mt-6 py-3 text-lg bg-yellow-400 text-gray-900 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Sign in
+          {loading ? "Signing in..." : "Sign in"}
         </button>
       </form>
     </div>

@@ -4,9 +4,7 @@ import { FaBell } from "react-icons/fa";
 import logo from "../../assets/images/logo.png";
 import { useDispatch, useSelector } from "react-redux";
 import { IoLogOut } from "react-icons/io5";
-import { useMutation } from "@tanstack/react-query";
-import { logout } from "../../https";
-import { removeUser } from "../../redux/slices/userSlice";
+import { logoutUser, removeUser } from "../../redux/slices/userSlice";
 import { useNavigate } from "react-router-dom";
 import { clearAuthData } from "../../utils/auth";
 import { MdDashboard, MdPerson, MdSettings, MdKeyboardArrowDown } from "react-icons/md";
@@ -20,27 +18,21 @@ const Header = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef(null);
 
-  const logoutMutation = useMutation({
-    mutationFn: () => logout(),
-    onSuccess: (data) => {
-      console.log(data);
-      // Clear localStorage
-      clearAuthData();
-      // Clear Redux store
-      dispatch(removeUser());
-      navigate(ROUTES.AUTH);
-    },
-    onError: (error) => {
-      console.log(error);
-      // Even if logout fails on server, clear local data
-      clearAuthData();
-      dispatch(removeUser());
-      navigate(ROUTES.AUTH);
-    },
-  });
-
   const handleLogout = () => {
-    logoutMutation.mutate();
+    dispatch(logoutUser())
+      .unwrap()
+      .then(() => {
+        // Clear localStorage
+        clearAuthData();
+        navigate(ROUTES.AUTH);
+      })
+      .catch((error) => {
+        console.log(error);
+        // Even if logout fails on server, clear local data
+        clearAuthData();
+        dispatch(removeUser());
+        navigate(ROUTES.AUTH);
+      });
   };
 
   const toggleUserMenu = () => {

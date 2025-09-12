@@ -1,6 +1,9 @@
 import PropTypes from 'prop-types'
+import { formatVND } from '../../utils'
 
 const MiniCard = ({title, icon, number, footerNum}) => {
+  const isLoading = number === "...";
+  
   return (
     <div className='bg-[#1a1a1a] py-5 px-5 rounded-lg w-[50%]'>
         <div className='flex items-start justify-between'>
@@ -9,8 +12,17 @@ const MiniCard = ({title, icon, number, footerNum}) => {
         </div>
         <div>
             <h1 className='text-[#f5f5f5] text-4xl font-bold mt-5'>
-              {title === "Total Earnings" ? `₹${number}` : number}</h1>
-            <h1 className='text-[#f5f5f5] text-lg mt-2'><span className='text-[#02ca3a]'>{footerNum}%</span> than yesterday</h1>
+              {isLoading ? (
+                <span className="animate-pulse">Loading...</span>
+              ) : title === "Total Earnings" ? (
+                formatVND(`${number}`)
+              ) : (
+                number
+              )}
+            </h1>
+            <h1 className='text-[#f5f5f5] text-lg mt-2'>
+              <span className='text-[#02ca3a]'>{footerNum}%</span> than yesterday
+            </h1>
         </div>
     </div>
   )
