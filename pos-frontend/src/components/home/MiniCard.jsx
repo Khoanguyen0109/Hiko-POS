@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types'
 import { formatVND } from '../../utils'
 
-const MiniCard = ({title, icon, number, footerNum}) => {
+const MiniCard = ({title, icon, number}) => {
   const isLoading = number === "...";
   
   return (
@@ -19,9 +19,6 @@ const MiniCard = ({title, icon, number, footerNum}) => {
               ) : (
                 number
               )}
-            </h1>
-            <h1 className='text-[#f5f5f5] text-lg mt-2'>
-              <span className='text-[#02ca3a]'>{footerNum}%</span> than yesterday
             </h1>
         </div>
     </div>

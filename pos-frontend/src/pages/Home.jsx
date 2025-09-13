@@ -12,6 +12,7 @@ import { getTodayDate } from "../utils";
 const Home = () => {
   const dispatch = useDispatch();
   const { items: orders, loading } = useSelector((state) => state.orders);
+  console.log('orders', orders)
 
   useEffect(() => {
     document.title = "POS | Home";
@@ -35,11 +36,13 @@ const Home = () => {
     const completedOrders = orders.filter(
       (order) => order.orderStatus === "completed"
     );
+    console.log('completedOrders', completedOrders)
 
     const totalEarnings = completedOrders.reduce(
       (sum, order) => sum + (order.bills?.totalWithTax || 0),
       0
     );
+    console.log('totalEarnings', totalEarnings)
 
     return {
       totalEarnings,
@@ -58,13 +61,11 @@ const Home = () => {
             title="Total Earnings"
             icon={<BsCashCoin />}
             number={loading ? "..." : todayStats.totalEarnings}
-            footerNum={todayStats.totalEarnings}
           />
           <MiniCard
             title="Total Orders"
             icon={<GrInProgress />}
             number={loading ? "..." : todayStats.totalOrders}
-            footerNum={todayStats.totalOrders}
           />
         </div>
         <RecentOrders />
