@@ -10,62 +10,61 @@ import { fetchOrders } from "../redux/slices/orderSlice";
 import { getTodayDate } from "../utils";
 
 const Home = () => {
-    const dispatch = useDispatch();
-    const { items: orders, loading } = useSelector((state) => state.orders);
+  const dispatch = useDispatch();
+  const { items: orders, loading } = useSelector((state) => state.orders);
 
-    useEffect(() => {
-      document.title = "POS | Home"
-      
-      // Fetch today's orders for the dashboard stats
-      const today = getTodayDate();
-      dispatch(fetchOrders({ startDate: today, endDate: today }));
-    }, [dispatch])
+  useEffect(() => {
+    document.title = "POS | Home";
 
-    // Calculate today's statistics
-    const todayStats = useMemo(() => {
-      if (!orders || orders.length === 0) {
-        return {
-          totalEarnings: 0,
-          totalOrders: 0,
-          completedOrders: 0
-        };
-      }
+    // Fetch today's orders for the dashboard stats
+    const today = getTodayDate();
+    dispatch(fetchOrders({ startDate: today, endDate: today }));
+  }, [dispatch]);
 
-      // Filter orders for today and completed status for earnings
-      const completedOrders = orders.filter(order => 
-        order.orderStatus === 'completed'
-      );
-
-      const totalEarnings = completedOrders.reduce((sum, order) => 
-        sum + (order.bills?.totalWithTax || 0), 0
-      );
-
+  // Calculate today's statistics
+  const todayStats = useMemo(() => {
+    if (!orders || orders.length === 0) {
       return {
-        totalEarnings,
-        totalOrders: orders.length,
-        completedOrders: completedOrders.length
+        totalEarnings: 0,
+        totalOrders: 0,
+        completedOrders: 0,
       };
-    }, [orders]);
+    }
 
+    // Filter orders for today and completed status for earnings
+    const completedOrders = orders.filter(
+      (order) => order.orderStatus === "completed"
+    );
 
+    const totalEarnings = completedOrders.reduce(
+      (sum, order) => sum + (order.bills?.totalWithTax || 0),
+      0
+    );
+
+    return {
+      totalEarnings,
+      totalOrders: orders.length,
+      completedOrders: completedOrders.length,
+    };
+  }, [orders]);
 
   return (
-    <section className="bg-[#1f1f1f]  h-[calc(100vh-5rem)] overflow-hidden flex gap-3">
+    <section className="bg-[#1f1f1f]  pb-20  flex gap-3">
       {/* Left Div */}
       <div className="flex-[3]">
         <Greetings />
         <div className="flex items-center w-full gap-3 px-8 mt-8">
-          <MiniCard 
-            title="Total Earnings" 
-            icon={<BsCashCoin />} 
-            number={loading ? "..." : todayStats.totalEarnings} 
-            footerNum={todayStats.totalEarnings} 
+          <MiniCard
+            title="Total Earnings"
+            icon={<BsCashCoin />}
+            number={loading ? "..." : todayStats.totalEarnings}
+            footerNum={todayStats.totalEarnings}
           />
-          <MiniCard 
-            title="Total Orders" 
-            icon={<GrInProgress />} 
-            number={loading ? "..." : todayStats.totalOrders} 
-            footerNum={todayStats.totalOrders} 
+          <MiniCard
+            title="Total Orders"
+            icon={<GrInProgress />}
+            number={loading ? "..." : todayStats.totalOrders}
+            footerNum={todayStats.totalOrders}
           />
         </div>
         <RecentOrders />

@@ -97,7 +97,7 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose }) => {
 
         {/* Dish Image */}
         <div className="p-6 pb-4">
-          <div className="w-full h-48 rounded-lg overflow-hidden bg-[#2a2a2a] relative mb-4">
+          <div className="w-full h-48 rounded-lg  bg-[#2a2a2a] relative mb-4">
             <img 
               src={dish.image || defaultDishImage} 
               alt={dish.name}
@@ -132,11 +132,6 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose }) => {
               <span className="text-[#f6b100] text-xl font-bold">
                 {formatVND(getCurrentPrice())}
               </span>
-              {getCurrentCost() > 0 && (
-                <span className="text-[#ababab] text-sm">
-                  (Cost: {formatVND(getCurrentCost())})
-                </span>
-              )}
             </div>
           </div>
         </div>
@@ -176,11 +171,6 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose }) => {
                         <span className={`font-bold text-lg ${isSelected ? 'text-[#1f1f1f]' : 'text-[#f6b100]'}`}>
                           {formatVND(variant.price)}
                         </span>
-                        {variant.cost > 0 && (
-                          <div className={`text-xs ${isSelected ? 'text-[#1f1f1f]/70' : 'text-[#ababab]'}`}>
-                            Cost: {formatVND(variant.cost)}
-                          </div>
-                        )}
                       </div>
                     </div>
                   </button>

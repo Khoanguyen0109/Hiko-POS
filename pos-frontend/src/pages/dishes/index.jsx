@@ -16,7 +16,7 @@ const Dishes = () => {
 
   return (
     <>
-      <section className="bg-[#1f1f1f] h-[calc(100vh-3rem)] overflow-y-scroll scrollbar-hide p-4">
+      <section className="bg-[#1f1f1f] min-h-screen pb-20 overflow-y-scroll scrollbar-hide p-4">
         <div className="flex items-center justify-between px-10 py-4">
           <div className="flex items-center gap-4">
             <BackButton />

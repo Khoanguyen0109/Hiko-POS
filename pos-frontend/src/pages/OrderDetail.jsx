@@ -1,9 +1,20 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { MdPerson, MdPhone, MdGroup, MdAccessTime, MdReceipt, MdPayment } from "react-icons/md";
+import {
+  MdPerson,
+  MdPhone,
+  MdGroup,
+  MdAccessTime,
+  MdReceipt,
+  MdPayment,
+} from "react-icons/md";
 import { FaCheckCircle, FaClock, FaSpinner, FaBan } from "react-icons/fa";
-import { fetchOrderById, updateOrder, clearCurrentOrder } from "../redux/slices/orderSlice";
+import {
+  fetchOrderById,
+  updateOrder,
+  clearCurrentOrder,
+} from "../redux/slices/orderSlice";
 import { enqueueSnackbar } from "notistack";
 import { formatDateAndTime, formatVND } from "../utils";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
@@ -21,7 +32,7 @@ const OrderDetail = () => {
     if (orderId) {
       dispatch(fetchOrderById(orderId));
     }
-    
+
     // Cleanup on unmount
     return () => {
       dispatch(clearCurrentOrder());
@@ -45,7 +56,9 @@ const OrderDetail = () => {
       dispatch(updateOrder({ orderId, orderStatus: selectedStatus }))
         .unwrap()
         .then(() => {
-          enqueueSnackbar("Order status updated successfully!", { variant: "success" });
+          enqueueSnackbar("Order status updated successfully!", {
+            variant: "success",
+          });
         })
         .catch((error) => {
           enqueueSnackbar(error, { variant: "error" });
@@ -55,15 +68,15 @@ const OrderDetail = () => {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'pending':
+      case "pending":
         return <FaClock className="text-yellow-500" />;
-      case 'progress':
+      case "progress":
         return <FaSpinner className="text-blue-500" />;
-      case 'ready':
+      case "ready":
         return <FaCheckCircle className="text-green-500" />;
-      case 'completed':
+      case "completed":
         return <FaCheckCircle className="text-green-600" />;
-      case 'cancelled':
+      case "cancelled":
         return <FaBan className="text-red-500" />;
       default:
         return <FaClock className="text-gray-500" />;
@@ -72,18 +85,18 @@ const OrderDetail = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-900/20 text-yellow-400 border-yellow-700';
-      case 'progress':
-        return 'bg-blue-900/20 text-blue-400 border-blue-700';
-      case 'ready':
-        return 'bg-green-900/20 text-green-400 border-green-700';
-      case 'completed':
-        return 'bg-green-900/30 text-green-300 border-green-600';
-      case 'cancelled':
-        return 'bg-red-900/20 text-red-400 border-red-700';
+      case "pending":
+        return "bg-yellow-900/20 text-yellow-400 border-yellow-700";
+      case "progress":
+        return "bg-blue-900/20 text-blue-400 border-blue-700";
+      case "ready":
+        return "bg-green-900/20 text-green-400 border-green-700";
+      case "completed":
+        return "bg-green-900/30 text-green-300 border-green-600";
+      case "cancelled":
+        return "bg-red-900/20 text-red-400 border-red-700";
       default:
-        return 'bg-gray-900/20 text-gray-400 border-gray-700';
+        return "bg-gray-900/20 text-gray-400 border-gray-700";
     }
   };
 
@@ -93,7 +106,9 @@ const OrderDetail = () => {
     return (
       <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-[#f5f5f5] text-xl font-semibold mb-4">Error Loading Order</h2>
+          <h2 className="text-[#f5f5f5] text-xl font-semibold mb-4">
+            Error Loading Order
+          </h2>
           <p className="text-[#ababab] mb-4">{error || "Order not found"}</p>
           <button
             onClick={() => navigate("/orders")}
@@ -110,11 +125,11 @@ const OrderDetail = () => {
   if (!order) return null;
 
   const statusOptions = [
-    { value: 'pending', label: 'Pending', icon: FaClock },
-    { value: 'progress', label: 'In Progress', icon: FaSpinner },
-    { value: 'ready', label: 'Ready', icon: FaCheckCircle },
-    { value: 'completed', label: 'Completed', icon: FaCheckCircle },
-    { value: 'cancelled', label: 'Cancelled', icon: FaBan },
+    { value: "pending", label: "Pending", icon: FaClock },
+    { value: "progress", label: "In Progress", icon: FaSpinner },
+    { value: "ready", label: "Ready", icon: FaCheckCircle },
+    { value: "completed", label: "Completed", icon: FaCheckCircle },
+    { value: "cancelled", label: "Cancelled", icon: FaBan },
   ];
 
   return (
@@ -128,7 +143,7 @@ const OrderDetail = () => {
             <p className="text-[#ababab] text-sm">Order #{order._id}</p>
           </div>
         </div>
-        
+
         {/* Status Update Section */}
         <div className="flex items-center gap-3">
           <select
@@ -163,8 +178,13 @@ const OrderDetail = () => {
             </h2>
             <div className="flex items-center gap-3">
               {getStatusIcon(order.orderStatus)}
-              <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(order.orderStatus)}`}>
-                {order.orderStatus.charAt(0).toUpperCase() + order.orderStatus.slice(1)}
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(
+                  order.orderStatus
+                )}`}
+              >
+                {order.orderStatus.charAt(0).toUpperCase() +
+                  order.orderStatus.slice(1)}
               </span>
               <span className="text-[#ababab] text-sm">
                 Created {formatDateAndTime(order.createdAt)}
@@ -184,7 +204,9 @@ const OrderDetail = () => {
                   <MdPerson className="text-[#f6b100]" size={18} />
                   <div>
                     <p className="text-[#ababab] text-xs">Name</p>
-                    <p className="text-[#f5f5f5] font-medium">{order.customerDetails.name}</p>
+                    <p className="text-[#f5f5f5] font-medium">
+                      {order.customerDetails.name}
+                    </p>
                   </div>
                 </div>
               )}
@@ -193,7 +215,9 @@ const OrderDetail = () => {
                   <MdPhone className="text-[#f6b100]" size={18} />
                   <div>
                     <p className="text-[#ababab] text-xs">Phone</p>
-                    <p className="text-[#f5f5f5] font-medium">{order.customerDetails.phone}</p>
+                    <p className="text-[#f5f5f5] font-medium">
+                      {order.customerDetails.phone}
+                    </p>
                   </div>
                 </div>
               )}
@@ -202,7 +226,9 @@ const OrderDetail = () => {
                   <MdGroup className="text-[#f6b100]" size={18} />
                   <div>
                     <p className="text-[#ababab] text-xs">Guests</p>
-                    <p className="text-[#f5f5f5] font-medium">{order.customerDetails.guests}</p>
+                    <p className="text-[#f5f5f5] font-medium">
+                      {order.customerDetails.guests}
+                    </p>
                   </div>
                 </div>
               )}
@@ -210,7 +236,9 @@ const OrderDetail = () => {
                 <MdAccessTime className="text-[#f6b100]" size={18} />
                 <div>
                   <p className="text-[#ababab] text-xs">Order Time</p>
-                  <p className="text-[#f5f5f5] font-medium">{formatDateAndTime(order.createdAt)}</p>
+                  <p className="text-[#f5f5f5] font-medium">
+                    {formatDateAndTime(order.createdAt)}
+                  </p>
                 </div>
               </div>
             </div>
@@ -240,7 +268,9 @@ const OrderDetail = () => {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-[#ababab]">Payment Method</span>
-                <span className="text-[#f5f5f5] font-medium">{order.paymentMethod}</span>
+                <span className="text-[#f5f5f5] font-medium">
+                  {order.paymentMethod}
+                </span>
               </div>
               {order.paymentData?.razorpay_payment_id && (
                 <div className="flex justify-between">
@@ -255,22 +285,30 @@ const OrderDetail = () => {
 
           {/* Bill Summary */}
           <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
-            <h2 className="text-[#f5f5f5] text-lg font-semibold mb-4">Bill Summary</h2>
+            <h2 className="text-[#f5f5f5] text-lg font-semibold mb-4">
+              Bill Summary
+            </h2>
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-[#ababab]">Subtotal</span>
-                <span className="text-[#f5f5f5]">{formatVND(order.bills?.total || 0)}</span>
+                <span className="text-[#f5f5f5]">
+                  {formatVND(order.bills?.total || 0)}
+                </span>
               </div>
               {order.bills?.tax > 0 && (
                 <div className="flex justify-between">
                   <span className="text-[#ababab]">Tax</span>
-                  <span className="text-[#f5f5f5]">{formatVND(order.bills.tax)}</span>
+                  <span className="text-[#f5f5f5]">
+                    {formatVND(order.bills.tax)}
+                  </span>
                 </div>
               )}
               <hr className="border-[#343434]" />
               <div className="flex justify-between text-lg font-semibold">
                 <span className="text-[#f5f5f5]">Total</span>
-                <span className="text-[#f6b100]">{formatVND(order.bills?.totalWithTax || 0)}</span>
+                <span className="text-[#f6b100]">
+                  {formatVND(order.bills?.totalWithTax || 0)}
+                </span>
               </div>
             </div>
           </div>
@@ -278,7 +316,9 @@ const OrderDetail = () => {
           {/* Created By */}
           {order.createdBy?.userName && (
             <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
-              <h2 className="text-[#f5f5f5] text-lg font-semibold mb-4">Created By</h2>
+              <h2 className="text-[#f5f5f5] text-lg font-semibold mb-4">
+                Created By
+              </h2>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-[#f6b100] rounded-full flex items-center justify-center">
                   <span className="text-[#1f1f1f] font-bold text-sm">
@@ -286,7 +326,9 @@ const OrderDetail = () => {
                   </span>
                 </div>
                 <div>
-                  <p className="text-[#f5f5f5] font-medium">{order.createdBy.userName}</p>
+                  <p className="text-[#f5f5f5] font-medium">
+                    {order.createdBy.userName}
+                  </p>
                   <p className="text-[#ababab] text-sm">Staff Member</p>
                 </div>
               </div>
@@ -303,14 +345,14 @@ const OrderItem = ({ item }) => {
   return (
     <div className="flex items-start gap-4 p-4 bg-[#262626] rounded-lg border border-[#343434]">
       {/* Item Image */}
-      <div className="w-16 h-16 bg-[#343434] rounded-lg overflow-hidden flex-shrink-0">
+      <div className="w-16 h-16 bg-[#343434] rounded-lg  flex-shrink-0">
         {item.image ? (
-          <img 
-            src={item.image} 
+          <img
+            src={item.image}
             alt={item.name}
             className="w-full h-full object-cover"
             onError={(e) => {
-              e.target.style.display = 'none';
+              e.target.style.display = "none";
             }}
           />
         ) : (
@@ -330,7 +372,9 @@ const OrderItem = ({ item }) => {
             )}
           </div>
           <div className="text-right">
-            <p className="text-[#f6b100] font-semibold">{formatVND(item.price)}</p>
+            <p className="text-[#f6b100] font-semibold">
+              {formatVND(item.price)}
+            </p>
             <p className="text-[#ababab] text-xs">
               {formatVND(item.pricePerQuantity)} × {item.quantity}
             </p>
@@ -343,11 +387,6 @@ const OrderItem = ({ item }) => {
             <span className="text-[#ababab] text-xs">
               Size: <span className="text-[#f5f5f5]">{item.variant.size}</span>
             </span>
-            {item.variant.cost > 0 && (
-              <span className="text-[#ababab] text-xs">
-                Cost: <span className="text-[#f5f5f5]">{formatVND(item.variant.cost)}</span>
-              </span>
-            )}
           </div>
         )}
 
@@ -380,4 +419,4 @@ OrderItem.propTypes = {
   }).isRequired,
 };
 
-export default OrderDetail; 
+export default OrderDetail;

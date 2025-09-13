@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { fetchDishes } from "../../redux/slices/dishSlice";
 import { useDispatch, useSelector } from "react-redux";
 import Dish from "../../components/dishes/Dish";
+import PropTypes from "prop-types";
 
-const DishList = () => {
+const DishList = ({ filterStatus }) => {
   const { items, loading } = useSelector((state) => state.dishes);
   const dispatch = useDispatch();
 
@@ -11,15 +12,53 @@ const DishList = () => {
     dispatch(fetchDishes());
   }, [dispatch]);
 
-  if (loading) return <div>Loading...</div>;
+  // Filter dishes based on the filterStatus prop
+  const filteredDishes = useMemo(() => {
+    if (!items) return [];
+    
+    switch (filterStatus) {
+      case "active":
+        return items.filter(dish => dish.isAvailable === true);
+      case "inactive":
+        return items.filter(dish => dish.isAvailable === false);
+      case "all":
+      default:
+        return items;
+    }
+  }, [items, filterStatus]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="text-[#ababab] text-lg">Loading dishes...</div>
+      </div>
+    );
+  }
+
+  if (filteredDishes.length === 0) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="text-[#ababab] text-lg">
+          {filterStatus === "all" 
+            ? "No dishes found" 
+            : `No ${filterStatus} dishes found`
+          }
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="grid grid-cols-3 gap-2-16 py-4 overflow-y-scroll scrollbar-hide w-full">
-      {items.map((dish) => (
-        <Dish key={dish.id} dish={dish} />
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-10 py-4">
+      {filteredDishes.map((dish) => (
+        <Dish key={dish._id} dish={dish} />
       ))}
     </div>
   );
+};
+
+DishList.propTypes = {
+  filterStatus: PropTypes.oneOf(["all", "active", "inactive"]).isRequired
 };
 
 export default DishList;

@@ -7,13 +7,17 @@ import { fetchTables } from "../redux/slices/tableSlice";
 
 const Tables = () => {
   const dispatch = useDispatch();
-  const { items: tables, loading, error } = useSelector((state) => state.tables);
+  const {
+    items: tables,
+    loading,
+    error,
+  } = useSelector((state) => state.tables);
   const [status, setStatus] = useState("all");
 
   useEffect(() => {
-    document.title = "POS | Tables"
+    document.title = "POS | Tables";
     dispatch(fetchTables());
-  }, [dispatch])
+  }, [dispatch]);
 
   useEffect(() => {
     if (error) {
@@ -22,7 +26,7 @@ const Tables = () => {
   }, [error]);
 
   return (
-    <section className="bg-[#1f1f1f]  h-[calc(100vh-5rem)] overflow-hidden">
+    <section className="bg-[#1f1f1f]  pb-20">
       <div className="flex items-center justify-between px-10 py-4">
         <div className="flex items-center gap-4">
           <BackButton />
@@ -70,7 +74,6 @@ const Tables = () => {
           })
         )}
       </div>
-
     </section>
   );
 };

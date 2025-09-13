@@ -77,7 +77,7 @@ const MenuContainer = () => {
   return (
     <>
       {/* Categories Section */}
-      <div className="px-10 py-4">
+      <div className="px-10 py-4 overflow-y-auto">
         <h2 className="text-[#f5f5f5] text-lg font-semibold mb-4 flex items-center gap-2">
           <MdCategory size={20} />
           Categories
@@ -205,10 +205,10 @@ const MenuContainer = () => {
             <div
                   key={dish._id}
                   onClick={() => handleDishClick(dish)}
-                  className="flex flex-col justify-between p-4 rounded-lg h-[280px] cursor-pointer hover:bg-[#2a2a2a] bg-[#1a1a1a] transition-all duration-200 overflow-hidden hover:scale-105 hover:shadow-lg"
+                  className="flex flex-col justify-between p-4 rounded-lg h-[280px] cursor-pointer hover:bg-[#2a2a2a] bg-[#1a1a1a] transition-all duration-200 hover:scale-105 hover:shadow-lg"
             >
                   {/* Dish Image */}
-                  <div className="w-full h-32 mb-3 rounded-lg overflow-hidden bg-[#2a2a2a] relative">
+                  <div className="w-full h-32 mb-3 rounded-lg  bg-[#2a2a2a] relative">
                     <img 
                       src={dish.image || defaultDishImage} 
                       alt={dish.name}

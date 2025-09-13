@@ -147,11 +147,6 @@ const CartInfo = () => {
                       <span className="text-[#ababab] text-xs">
                         Size: {item.variant.size}
                       </span>
-                      {item.variant.cost > 0 && (
-                        <span className="text-[#ababab] text-xs">
-                          Cost: {formatVND(item.variant.cost)}
-                        </span>
-                      )}
                     </div>
                   </div>
                 )}

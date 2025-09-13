@@ -17,7 +17,7 @@ const MenuOrder = () => {
   const customerData = useSelector((state) => state.customer);
 
   return (
-    <section className="bg-[#1f1f1f] h-[calc(100vh-5rem)] overflow-hidden flex gap-3">
+    <section className="bg-[#1f1f1f] pb-20 flex gap-3">
       {/* Left Div */}
       <div className="flex-[3]">
         <div className="flex items-center justify-between px-10 py-4">

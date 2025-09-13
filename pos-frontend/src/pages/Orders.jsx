@@ -12,9 +12,13 @@ import { fetchOrders, setFilters } from "../redux/slices/orderSlice";
 const Orders = () => {
   const dispatch = useDispatch();
   const { role } = useSelector((state) => state.user);
-  const { items: orders, loading, error, filters } = useSelector((state) => state.orders);
+  const {
+    items: orders,
+    loading,
+    error,
+  } = useSelector((state) => state.orders);
   const isAdmin = role === "Admin";
-  
+
   const [status, setStatus] = useState("all");
   const [startDate, setStartDate] = useState(getTodayDate());
   const [endDate, setEndDate] = useState(getTodayDate());
@@ -31,7 +35,7 @@ const Orders = () => {
       params.startDate = startDate;
       params.endDate = endDate;
     }
-    
+
     dispatch(setFilters(params));
     dispatch(fetchOrders(params));
   }, [dispatch, status, startDate, endDate, isAdmin]);
@@ -43,7 +47,10 @@ const Orders = () => {
     }
   }, [error]);
 
-  const handleDateChange = ({ startDate: newStartDate, endDate: newEndDate }) => {
+  const handleDateChange = ({
+    startDate: newStartDate,
+    endDate: newEndDate,
+  }) => {
     setStartDate(newStartDate);
     setEndDate(newEndDate);
   };
@@ -59,15 +66,28 @@ const Orders = () => {
   };
 
   // Filter orders by status on frontend (for immediate UI feedback)
-  const filteredOrders = status === "all" 
-    ? orders 
-    : orders.filter(order => order.orderStatus === status);
+  const filteredOrders =
+    status === "all"
+      ? orders
+      : orders.filter((order) => order.orderStatus === status);
 
   const statusButtons = [
     { key: "all", label: "All", count: orders?.length || 0 },
-    { key: "progress", label: "In Progress", count: orders?.filter(o => o.orderStatus === "progress").length || 0 },
-    { key: "ready", label: "Ready", count: orders?.filter(o => o.orderStatus === "ready").length || 0 },
-    { key: "completed", label: "Completed", count: orders?.filter(o => o.orderStatus === "completed").length || 0 },
+    {
+      key: "progress",
+      label: "In Progress",
+      count: orders?.filter((o) => o.orderStatus === "progress").length || 0,
+    },
+    {
+      key: "ready",
+      label: "Ready",
+      count: orders?.filter((o) => o.orderStatus === "ready").length || 0,
+    },
+    {
+      key: "completed",
+      label: "Completed",
+      count: orders?.filter((o) => o.orderStatus === "completed").length || 0,
+    },
   ];
 
   if (loading && !orders.length) {
@@ -75,7 +95,7 @@ const Orders = () => {
   }
 
   return (
-    <section className="bg-[#1f1f1f] h-[calc(100vh-5rem)] overflow-hidden">
+    <section className="bg-[#1f1f1f] pb-20 ">
       {/* Header Section */}
       <div className="flex items-center justify-between px-10 py-4 border-b border-[#343434]">
         <div className="flex items-center gap-4">
@@ -88,18 +108,21 @@ const Orders = () => {
             <span>
               {orders.length} orders found
               {isAdmin && startDate === endDate && (
-                <span className="ml-1">for {new Date(startDate).toLocaleDateString('vi-VN')}</span>
+                <span className="ml-1">
+                  for {new Date(startDate).toLocaleDateString("vi-VN")}
+                </span>
               )}
               {isAdmin && startDate !== endDate && (
                 <span className="ml-1">
-                  from {new Date(startDate).toLocaleDateString('vi-VN')} to {new Date(endDate).toLocaleDateString('vi-VN')}
+                  from {new Date(startDate).toLocaleDateString("vi-VN")} to{" "}
+                  {new Date(endDate).toLocaleDateString("vi-VN")}
                 </span>
               )}
             </span>
             {loading && <span className="text-[#f6b100]">• Refreshing...</span>}
           </div>
         </div>
-        
+
         <div className="flex items-center gap-3">
           {isAdmin && (
             <button
@@ -139,7 +162,9 @@ const Orders = () => {
       {/* Status Filter Section */}
       <div className="px-10 py-4 border-b border-[#343434]">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-[#f5f5f5] text-sm font-semibold">Filter by Status</h3>
+          <h3 className="text-[#f5f5f5] text-sm font-semibold">
+            Filter by Status
+          </h3>
           <span className="text-[#ababab] text-xs">
             Showing {filteredOrders.length} of {orders.length} orders
           </span>
@@ -156,11 +181,13 @@ const Orders = () => {
               }`}
             >
               <span>{label}</span>
-              <span className={`px-2 py-0.5 rounded-full text-xs ${
-                status === key
-                  ? "bg-[#1f1f1f]/20 text-[#1f1f1f]"
-                  : "bg-[#343434] text-[#ababab]"
-              }`}>
+              <span
+                className={`px-2 py-0.5 rounded-full text-xs ${
+                  status === key
+                    ? "bg-[#1f1f1f]/20 text-[#1f1f1f]"
+                    : "bg-[#343434] text-[#ababab]"
+                }`}
+              >
                 {count}
               </span>
             </button>
@@ -181,16 +208,17 @@ const Orders = () => {
             <div className="w-16 h-16 bg-[#262626] rounded-full flex items-center justify-center mb-4">
               <MdFilterList size={32} className="text-[#ababab]" />
             </div>
-            <h3 className="text-[#f5f5f5] text-lg font-semibold mb-2">No Orders Found</h3>
+            <h3 className="text-[#f5f5f5] text-lg font-semibold mb-2">
+              No Orders Found
+            </h3>
             <p className="text-[#ababab] text-sm max-w-md">
-              {status === "all" 
-                ? isAdmin 
+              {status === "all"
+                ? isAdmin
                   ? "No orders found for the selected date range. Try selecting a different date or check if there are any orders in the system."
                   : "No orders found in the system. Orders will appear here once customers start placing them."
                 : isAdmin
-                  ? `No orders with status "${status}" found for the selected date range. Try changing the status filter or date range.`
-                  : `No orders with status "${status}" found. Try changing the status filter.`
-              }
+                ? `No orders with status "${status}" found for the selected date range. Try changing the status filter or date range.`
+                : `No orders with status "${status}" found. Try changing the status filter.`}
             </p>
             <button
               onClick={() => {
