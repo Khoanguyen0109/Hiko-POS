@@ -95,7 +95,7 @@ const Orders = () => {
   }
 
   return (
-    <section className="bg-[#1f1f1f] pb-20 ">
+    <section className="bg-[#1f1f1f] pb-20 min-h-screen ">
       {/* Header Section */}
       <div className="flex items-center justify-between px-10 py-4 border-b border-[#343434]">
         <div className="flex items-center gap-4">

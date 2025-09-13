@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { FaCheck } from "react-icons/fa6";
 import PropTypes from "prop-types";
 const Invoice = ({ orderInfo, setShowInvoice }) => {
+  console.log('orderInfo', orderInfo)
   const invoiceRef = useRef(null);
   const handlePrint = () => {
     console.log('2222')
@@ -69,13 +70,7 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
               {Math.floor(new Date(orderInfo.orderDate).getTime())}
             </p>
             <p>
-              <strong>Name:</strong> {orderInfo.customerDetails.name}
-            </p>
-            <p>
-              <strong>Phone:</strong> {orderInfo.customerDetails.phone}
-            </p>
-            <p>
-              <strong>Guests:</strong> {orderInfo.customerDetails.guests}
+              <strong>Name:</strong> {orderInfo.customerDetails?.name}
             </p>
           </div>
 
@@ -90,7 +85,7 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
                   className="flex justify-between items-center text-xs"
                 >
                   <span>
-                    {item.name} x{item.quantity}
+                    {item?.name} x{item?.quantity}
                   </span>
                   <span>₹{item.price.toFixed(2)}</span>
                 </li>
