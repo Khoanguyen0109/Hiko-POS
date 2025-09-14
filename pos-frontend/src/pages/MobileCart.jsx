@@ -37,7 +37,7 @@ const MobileCart = () => {
               Cart
             </h1>
             <p className="text-[#ababab] text-sm">
-              {cartItems?.length || 0} items • {customerData.customerName || "Customer"}
+              {cartItems?.items?.length || 0} items • {customerData.customerName || "Customer"}
             </p>
           </div>
         </div>

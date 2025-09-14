@@ -38,7 +38,7 @@ const Bill = () => {
   });
 
   const handlePrintReceipt = () => {
-    if (cartData.length === 0) {
+    if (cartData.items?.length === 0) {
       enqueueSnackbar("No items in cart to print", { variant: "warning" });
       return;
     }
@@ -59,8 +59,8 @@ const Bill = () => {
         tax: 0,
         totalWithTax: total,
       },
-      items: cartData,
-      paymentMethod: "Cash",
+      items: cartData.items,
+      paymentMethod: cartData.paymentMethod,
     };
     
     dispatch(createOrder(orderData))
@@ -95,7 +95,7 @@ const Bill = () => {
     customerName: customerData.customerName,
     customerPhone: customerData.customerPhone,
     guests: customerData.guests,
-    items: cartData,
+    items: cartData.items,
     subtotal: total,
     total: total
   };
@@ -109,7 +109,7 @@ const Bill = () => {
 
       <div className="flex items-center justify-between px-5 mt-2">
         <p className="text-xs text-[#ababab] font-medium mt-2">
-          Items({cartData.length})
+          Items({cartData.items?.length || 0})
         </p>
         <h1 className="text-[#f5f5f5] text-md font-bold">
           {formatVND(total)}
@@ -134,7 +134,7 @@ const Bill = () => {
         </button>
         <button
           onClick={handlePlaceOrder}
-          disabled={cartData.length === 0 || loading}
+          disabled={cartData.items?.length === 0 || loading}
           className="bg-[#f6b100] px-4 py-3 w-full rounded-lg text-[#1f1f1f] font-semibold text-lg hover:bg-[#e09900] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {loading ? "Placing Order..." : "Place Order"}

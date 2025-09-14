@@ -1,9 +1,10 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { RiDeleteBin2Fill } from "react-icons/ri";
 import { FaNotesMedical } from "react-icons/fa6";
-import { MdAdd, MdRemove } from "react-icons/md";
+import { MdAdd, MdRemove, MdPayment, MdAccountBalance } from "react-icons/md";
+import { FaMoneyBillWave } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
-import { removeItem, updateItemQuantity } from "../../redux/slices/cartSlice";
+import { removeItem, updateItemQuantity, setPaymentMethod } from "../../redux/slices/cartSlice";
 import { formatVND } from "../../utils";
 
 const CartInfo = () => {
@@ -11,6 +12,9 @@ const CartInfo = () => {
   console.log('cartData', cartData)
   const scrolLRef = useRef();
   const dispatch = useDispatch();
+  
+  // Get payment method from Redux store
+  const paymentMethod = useSelector((state) => state.cart.paymentMethod);
 
   useEffect(() => {
     if (scrolLRef.current) {
@@ -49,6 +53,25 @@ const CartInfo = () => {
     }
   };
 
+  const handlePaymentMethodChange = (method) => {
+    dispatch(setPaymentMethod(method));
+  };
+
+  const paymentMethods = [
+    {
+      id: "Cash",
+      label: "Cash",
+      icon: <FaMoneyBillWave size={18} />,
+      description: "Pay with cash on delivery"
+    },
+    {
+      id: "Banking",
+      label: "Online Banking",
+      icon: <MdAccountBalance size={18} />,
+      description: "Pay via online banking"
+    }
+  ];
+
   return (
     <div className="px-4 py-2">
       <h1 className="text-lg text-[#e4e4e4] font-semibold tracking-wide">
@@ -58,12 +81,12 @@ const CartInfo = () => {
         className="mt-4 overflow-y-scroll scrollbar-hide h-auto "
         ref={scrolLRef}
       >
-        {cartData.length === 0 ? (
+        {cartData.items?.length === 0 ? (
           <p className="text-[#ababab] text-sm flex justify-center items-center h-[380px]">
             Your cart is empty. Start adding items!
           </p>
         ) : (
-          cartData.map((item) => {
+          cartData.items?.map((item) => {
             return (
               <div key={item.id} className="bg-[#1f1f1f] rounded-lg px-4 py-4 mb-2">
                 {/* Item Header */}
@@ -156,6 +179,94 @@ const CartInfo = () => {
           })
         )}
       </div>
+
+      {/* Payment Method Section */}
+      {cartData.items?.length > 0 && (
+        <div className="mt-6 pt-4 border-t border-[#343434]">
+          <div className="flex items-center gap-2 mb-4">
+            <MdPayment className="text-[#f6b100]" size={20} />
+            <h2 className="text-[#e4e4e4] font-semibold tracking-wide">
+              Payment Method
+            </h2>
+          </div>
+          
+          <div className="space-y-3">
+            {paymentMethods.map((method) => (
+              <label
+                key={method.id}
+                className={`flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 border ${
+                  paymentMethod === method.id
+                    ? "bg-[#f6b100]/10 border-[#f6b100] text-[#f6b100]"
+                    : "bg-[#1f1f1f] border-[#343434] text-[#ababab] hover:bg-[#262626] hover:border-[#404040]"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value={method.id}
+                  checked={paymentMethod === method.id}
+                  onChange={() => handlePaymentMethodChange(method.id)}
+                  className="sr-only"
+                />
+                
+                {/* Custom radio button */}
+                <div className={`w-5 h-5 rounded-full border-2 mr-3 flex items-center justify-center transition-colors ${
+                  paymentMethod === method.id
+                    ? "border-[#f6b100] bg-[#f6b100]"
+                    : "border-[#ababab]"
+                }`}>
+                  {paymentMethod === method.id && (
+                    <div className="w-2 h-2 rounded-full bg-[#1f1f1f]"></div>
+                  )}
+                </div>
+
+                {/* Method icon */}
+                <div className={`mr-3 ${
+                  paymentMethod === method.id ? "text-[#f6b100]" : "text-[#ababab]"
+                }`}>
+                  {method.icon}
+                </div>
+
+                {/* Method details */}
+                <div className="flex-1">
+                  <div className={`font-semibold text-sm sm:text-base ${
+                    paymentMethod === method.id ? "text-[#f6b100]" : "text-[#f5f5f5]"
+                  }`}>
+                    {method.label}
+                  </div>
+                  <div className="text-xs text-[#ababab] mt-1 hidden sm:block">
+                    {method.description}
+                  </div>
+                </div>
+
+                {/* Selected indicator */}
+                {paymentMethod === method.id && (
+                  <div className="ml-2">
+                    <div className="w-2 h-2 rounded-full bg-[#f6b100] animate-pulse"></div>
+                  </div>
+                )}
+              </label>
+            ))}
+          </div>
+
+          {/* Payment method info */}
+          <div className="mt-3 p-3 bg-[#1f1f1f] rounded-lg border border-[#343434]">
+            <div className="flex items-start gap-2">
+              <div className="text-[#f6b100] mt-0.5">
+                <MdPayment size={16} />
+              </div>
+              <div>
+                <p className="text-[#f5f5f5] text-sm font-medium">
+                  Selected: {paymentMethods.find(m => m.id === paymentMethod)?.label}
+                </p>
+                <p className="text-[#ababab] text-xs mt-1">
+                  {paymentMethods.find(m => m.id === paymentMethod)?.description}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
