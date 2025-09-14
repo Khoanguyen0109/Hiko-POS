@@ -209,10 +209,10 @@ const MenuContainer = () => {
             <div
                   key={dish._id}
                   onClick={() => handleDishClick(dish)}
-                  className="flex flex-col justify-between p-3 sm:p-4 rounded-lg h-[240px] sm:h-[280px] cursor-pointer hover:bg-[#2a2a2a] bg-[#1a1a1a] transition-all duration-200 hover:scale-105 hover:shadow-lg"
+                  className="flex flex-col justify-between p-2 sm:p-3 rounded-lg h-[180px] sm:h-[220px] cursor-pointer hover:bg-[#2a2a2a] bg-[#1a1a1a] transition-all duration-200 hover:scale-105 hover:shadow-lg"
             >
                   {/* Dish Image */}
-                  <div className="w-full h-24 sm:h-32 mb-2 sm:mb-3 rounded-lg bg-[#2a2a2a] relative">
+                  <div className="w-full h-20 sm:h-24 mb-1 sm:mb-2 rounded-lg bg-[#2a2a2a] relative">
                     <img 
                       src={dish.image || defaultDishImage} 
                       alt={dish.name}
@@ -257,12 +257,12 @@ const MenuContainer = () => {
                   </div>
 
                   {/* Dish Header */}
-                  <div className="flex-1 mb-2 sm:mb-3">
-                    <h3 className="text-[#f5f5f5] text-sm sm:text-lg font-semibold mb-1 line-clamp-2">
+                  <div className="flex-1 mb-1 sm:mb-2">
+                    <h3 className="text-[#f5f5f5] text-xs sm:text-sm font-semibold mb-1 line-clamp-1 sm:line-clamp-2">
                       {dish.name}
                     </h3>
                     {dish.note && (
-                      <p className="text-[#ababab] text-xs line-clamp-2 hidden sm:block">
+                      <p className="text-[#ababab] text-xs line-clamp-1 hidden sm:block">
                         {dish.note}
                       </p>
                     )}
@@ -271,20 +271,19 @@ const MenuContainer = () => {
                   {/* Price Section */}
               <div className="flex items-center justify-between w-full">
                     <div className="flex flex-col flex-1 min-w-0">
-                      <p className="text-[#f6b100] text-sm sm:text-lg font-bold truncate">
+                      <p className="text-[#f6b100] text-xs sm:text-sm font-bold truncate">
                         {priceLabel}
                 </p>
                       {dish.hasSizeVariants && (
                         <span className="text-[#ababab] text-xs hidden sm:inline">
-                          Multiple sizes available
+                          Multiple sizes
                   </span>
                       )}
                     </div>
                     
                     {/* Click to order indicator */}
-                    <div className="text-[#ababab] text-xs text-right flex-shrink-0 ml-2">
-                      <p className="hidden sm:block">Click to</p>
-                      <p className="text-[#f6b100] font-medium">Order</p>
+                    <div className="text-[#ababab] text-xs text-right flex-shrink-0 ml-1">
+                      <p className="text-[#f6b100] font-medium text-xs">Order</p>
                 </div>
               </div>
             </div>

@@ -70,10 +70,6 @@ const Home = () => {
         </div>
         <RecentOrders />
       </div>
-      {/* Right Div */}
-      <div className="flex-1 lg:flex-[2]">
-        <PopularDishes />
-      </div>
     </section>
   );
 };

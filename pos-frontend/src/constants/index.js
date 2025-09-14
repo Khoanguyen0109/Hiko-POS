@@ -441,6 +441,7 @@ export const ROUTES = {
   MENU: "/menu",
   DASHBOARD: "/dashboard",
   MENU_ORDER: "/menu-order",
+  MOBILE_CART: "/mobile-cart",
   DISHES: "/dishes",
   CATEGORIES: "/categories",
   MEMBERS: "/members",
@@ -482,6 +483,10 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.MENU_ORDER,
     componentName: "MenuOrder"
+  },
+  {
+    path: ROUTES.MOBILE_CART,
+    componentName: "MobileCart"
   },
   {
     path: ROUTES.DASHBOARD,

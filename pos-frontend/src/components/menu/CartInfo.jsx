@@ -8,6 +8,7 @@ import { formatVND } from "../../utils";
 
 const CartInfo = () => {
   const cartData = useSelector((state) => state.cart);
+  console.log('cartData', cartData)
   const scrolLRef = useRef();
   const dispatch = useDispatch();
 
