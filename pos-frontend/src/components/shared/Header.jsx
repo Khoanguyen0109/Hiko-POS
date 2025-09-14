@@ -59,44 +59,44 @@ const Header = () => {
   }, []);
 
   return (
-    <header className="flex justify-between items-center py-4 px-8 bg-[#1a1a1a]">
+    <header className="flex justify-between items-center py-4 px-4 md:px-8 bg-[#1a1a1a]">
       {/* LOGO */}
       <div onClick={() => userData.role === "Admin" ? navigate("/") : navigate("/orders")} className="flex items-center gap-2 cursor-pointer">
         <img src={logo} className="h-8 w-8" alt="restro logo" />
-        <h1 className="text-lg font-semibold text-[#f5f5f5] tracking-wide">
+        <h1 className="text-lg font-semibold text-[#f5f5f5] tracking-wide hidden sm:block">
           Restro
         </h1>
       </div>
 
-      {/* SEARCH */}
-      <div className="flex items-center gap-4 bg-[#1f1f1f] rounded-[15px] px-5 py-2 w-[500px]">
+      {/* SEARCH - Hidden on mobile, responsive width on larger screens */}
+      <div className="hidden md:flex items-center gap-4 bg-[#1f1f1f] rounded-[15px] px-5 py-2 flex-1 max-w-md mx-4">
         <FaSearch className="text-[#f5f5f5]" />
         <input
           type="text"
           placeholder="Search"
-          className="bg-[#1f1f1f] outline-none text-[#f5f5f5]"
+          className="bg-[#1f1f1f] outline-none text-[#f5f5f5] w-full"
         />
       </div>
 
       {/* LOGGED USER DETAILS */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 md:gap-4">
         {userData.role === "Admin" && (
-          <div onClick={() => navigate("/dashboard")} className="bg-[#1f1f1f] rounded-[15px] p-3 cursor-pointer">
-            <MdDashboard className="text-[#f5f5f5] text-2xl" />
+          <div onClick={() => navigate("/dashboard")} className="bg-[#1f1f1f] rounded-[15px] p-2 md:p-3 cursor-pointer">
+            <MdDashboard className="text-[#f5f5f5] text-xl md:text-2xl" />
           </div>
         )}
-        <div className="bg-[#1f1f1f] rounded-[15px] p-3 cursor-pointer">
-          <FaBell className="text-[#f5f5f5] text-2xl" />
+        <div className="bg-[#1f1f1f] rounded-[15px] p-2 md:p-3 cursor-pointer">
+          <FaBell className="text-[#f5f5f5] text-xl md:text-2xl" />
         </div>
         
         {/* User Profile Section with Dropdown */}
         <div className="relative" ref={userMenuRef}>
           <div 
             onClick={toggleUserMenu}
-            className="flex items-center gap-3 cursor-pointer bg-[#1f1f1f] rounded-[15px] p-3 hover:bg-[#262626] transition-colors"
+            className="flex items-center gap-2 md:gap-3 cursor-pointer bg-[#1f1f1f] rounded-[15px] p-2 md:p-3 hover:bg-[#262626] transition-colors"
           >
-            <FaUserCircle className="text-[#f5f5f5] text-4xl" />
-            <div className="flex flex-col items-start">
+            <FaUserCircle className="text-[#f5f5f5] text-2xl md:text-4xl" />
+            <div className="hidden lg:flex flex-col items-start">
               <h1 className="text-md text-[#f5f5f5] font-semibold tracking-wide">
                 {userData.name || "TEST USER"}
               </h1>
@@ -105,7 +105,7 @@ const Header = () => {
               </p>
             </div>
             <MdKeyboardArrowDown 
-              className={`text-[#f5f5f5] transition-transform duration-200 ${
+              className={`text-[#f5f5f5] transition-transform duration-200 hidden md:block ${
                 showUserMenu ? 'rotate-180' : ''
               }`}
               size={20}

@@ -98,11 +98,11 @@ const Dish = ({ dish }) => {
   };
 
   return (
-    <div className="bg-[#1f1f1f] rounded-[20px] p-6 mt-4 mx-6 hover:bg-[#252525] transition-colors duration-200 border border-transparent hover:border-[#343434] relative">
+    <div className="bg-[#1f1f1f] rounded-[20px] p-4 sm:p-6 mt-4 mx-2 sm:mx-4 lg:mx-6 hover:bg-[#252525] transition-colors duration-200 border border-transparent hover:border-[#343434] relative">
       {/* Action Buttons */}
 
       {/* Header Section */}
-      <div className="flex items-start gap-4 pr-24">
+      <div className="flex items-start gap-3 sm:gap-4 pr-16 sm:pr-24">
         {/* Dish Number */}
         {/* <div className="flex-shrink-0">
           <div className="w-12 h-12 bg-gradient-to-br from-[#f6b100] to-[#e09900] rounded-full flex items-center justify-center">
@@ -117,7 +117,7 @@ const Dish = ({ dish }) => {
           <img
             src={dish.image || biryani}
             alt={dish.name}
-            className="w-16 h-16 rounded-xl object-cover border-2 border-[#343434]"
+            className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl object-cover border-2 border-[#343434]"
           />
         </div>
 
@@ -125,23 +125,25 @@ const Dish = ({ dish }) => {
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h2 className="text-[#f5f5f5] font-bold text-xl tracking-wide mb-1">
+              <h2 className="text-[#f5f5f5] font-bold text-lg sm:text-xl tracking-wide mb-1 line-clamp-2">
                 {dish.name}
               </h2>
 
               {/* Dish Meta Info */}
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
                 {!dish.isAvailable && (
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-900/30 text-red-400 border border-red-800">
                     <MdOutlineInventory size={12} className="mr-1" />
-                    Unavailable
+                    <span className="hidden sm:inline">Unavailable</span>
+                    <span className="sm:hidden">N/A</span>
                   </span>
                 )}
 
                 {dish.hasSizeVariants && (
                   <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-900/30 text-blue-400 border border-blue-800">
                     <IoMdPricetag size={12} className="mr-1" />
-                    {dish.sizeVariants?.length} Sizes
+                    <span className="hidden sm:inline">{dish.sizeVariants?.length} Sizes</span>
+                    <span className="sm:hidden">{dish.sizeVariants?.length}S</span>
                   </span>
                 )}
               </div>

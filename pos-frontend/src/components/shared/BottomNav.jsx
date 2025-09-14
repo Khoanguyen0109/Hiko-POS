@@ -39,7 +39,7 @@ const BottomNav = () => {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-[#262626] p-2 h-16 flex justify-around">
+    <div className="fixed bottom-0 left-0 right-0 bg-[#262626] p-2 h-16 flex justify-around items-center">
       {/* Home button - Admin only */}
       <button
         onClick={() => navigate(ROUTES.ROOT)}
@@ -47,9 +47,10 @@ const BottomNav = () => {
           isActive(ROUTES.ROOT)
             ? "text-[#f5f5f5] bg-[#343434]"
             : "text-[#ababab]"
-        } w-[300px] rounded-[20px]`}
+        } flex-1 max-w-[120px] sm:max-w-[200px] md:max-w-[300px] rounded-[20px] py-2 px-2`}
       >
-        <FaHome className="inline mr-2" size={20} /> <p>Home</p>
+        <FaHome className="inline mr-1 sm:mr-2" size={16} /> 
+        <p className="text-sm sm:text-base hidden xs:block">Home</p>
       </button>
 
       {/* Orders button - All users */}
@@ -59,9 +60,10 @@ const BottomNav = () => {
           isActive(ROUTES.ORDERS)
             ? "text-[#f5f5f5] bg-[#343434]"
             : "text-[#ababab]"
-        } w-[300px] rounded-[20px]`}
+        } flex-1 max-w-[120px] sm:max-w-[200px] md:max-w-[300px] rounded-[20px] py-2 px-2`}
       >
-        <MdOutlineReorder className="inline mr-2" size={20} /> <p>Orders</p>
+        <MdOutlineReorder className="inline mr-1 sm:mr-2" size={16} /> 
+        <p className="text-sm sm:text-base hidden xs:block">Orders</p>
       </button>
 
       {/* Dishes button - Admin only */}
@@ -72,9 +74,10 @@ const BottomNav = () => {
             isActive(ROUTES.DISHES)
               ? "text-[#f5f5f5] bg-[#343434]"
               : "text-[#ababab]"
-          } w-[300px] rounded-[20px]`}
+          } flex-1 max-w-[120px] sm:max-w-[200px] md:max-w-[300px] rounded-[20px] py-2 px-2`}
         >
-          <MdTableBar className="inline mr-2" size={20} /> <p>Dishes</p>
+          <MdTableBar className="inline mr-1 sm:mr-2" size={16} /> 
+          <p className="text-sm sm:text-base hidden xs:block">Dishes</p>
         </button>
       )}
 
@@ -86,17 +89,19 @@ const BottomNav = () => {
             isActive(ROUTES.MEMBERS)
               ? "text-[#f5f5f5] bg-[#343434]"
               : "text-[#ababab]"
-          } w-[300px] rounded-[20px]`}
+          } flex-1 max-w-[120px] sm:max-w-[200px] md:max-w-[300px] rounded-[20px] py-2 px-2`}
         >
-          <FaUsers className="inline mr-2" size={20} /> <p>Members</p>
+          <FaUsers className="inline mr-1 sm:mr-2" size={16} /> 
+          <p className="text-sm sm:text-base hidden xs:block">Members</p>
         </button>
       )}
 
       <button
         onClick={handleCreateOrder}
-        className="absolute bottom-6 bg-[#F6B100] text-[#f5f5f5] rounded-full p-4 items-center"
+        className="absolute bottom-6 right-4 bg-[#F6B100] text-[#f5f5f5] rounded-full p-3 md:p-4 items-center shadow-lg"
       >
-        <BiSolidDish size={40} />
+        <BiSolidDish size={32} className="md:hidden" />
+        <BiSolidDish size={40} className="hidden md:block" />
       </button>
 
       <Modal isOpen={isModalOpen} onClose={closeModal} title="Create Order">

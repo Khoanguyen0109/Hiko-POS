@@ -97,33 +97,35 @@ const Orders = () => {
   return (
     <section className="bg-[#1f1f1f] pb-20 min-h-screen ">
       {/* Header Section */}
-      <div className="flex items-center justify-between px-10 py-4 border-b border-[#343434]">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-10 py-4 border-b border-[#343434] gap-4">
         <div className="flex items-center gap-4">
           <BackButton />
-          <h1 className="text-[#f5f5f5] text-2xl font-bold tracking-wider">
-            Orders
-          </h1>
-          <div className="flex items-center gap-2 text-sm text-[#ababab]">
-            <span>•</span>
-            <span>
-              {orders.length} orders found
-              {isAdmin && startDate === endDate && (
-                <span className="ml-1">
-                  for {new Date(startDate).toLocaleDateString("vi-VN")}
-                </span>
-              )}
-              {isAdmin && startDate !== endDate && (
-                <span className="ml-1">
-                  from {new Date(startDate).toLocaleDateString("vi-VN")} to{" "}
-                  {new Date(endDate).toLocaleDateString("vi-VN")}
-                </span>
-              )}
-            </span>
-            {loading && <span className="text-[#f6b100]">• Refreshing...</span>}
+          <div>
+            <h1 className="text-[#f5f5f5] text-xl sm:text-2xl font-bold tracking-wider">
+              Orders
+            </h1>
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-[#ababab] mt-1 sm:mt-0">
+              <span>•</span>
+              <span>
+                {orders.length} orders found
+                {isAdmin && startDate === endDate && (
+                  <span className="ml-1 hidden sm:inline">
+                    for {new Date(startDate).toLocaleDateString("vi-VN")}
+                  </span>
+                )}
+                {isAdmin && startDate !== endDate && (
+                  <span className="ml-1 hidden sm:inline">
+                    from {new Date(startDate).toLocaleDateString("vi-VN")} to{" "}
+                    {new Date(endDate).toLocaleDateString("vi-VN")}
+                  </span>
+                )}
+              </span>
+              {loading && <span className="text-[#f6b100]">• Refreshing...</span>}
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           {isAdmin && (
             <button
               onClick={() => setShowDateFilter(!showDateFilter)}
@@ -150,7 +152,7 @@ const Orders = () => {
 
       {/* Date Filter Section - Admin Only */}
       {isAdmin && showDateFilter && (
-        <div className="px-10 py-4 border-b border-[#343434] bg-[#1a1a1a]">
+        <div className="px-4 sm:px-10 py-4 border-b border-[#343434] bg-[#1a1a1a]">
           <DateFilter
             onDateChange={handleDateChange}
             initialStartDate={startDate}
@@ -160,8 +162,8 @@ const Orders = () => {
       )}
 
       {/* Status Filter Section */}
-      <div className="px-10 py-4 border-b border-[#343434]">
-        <div className="flex items-center justify-between mb-3">
+      <div className="px-4 sm:px-10 py-4 border-b border-[#343434]">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
           <h3 className="text-[#f5f5f5] text-sm font-semibold">
             Filter by Status
           </h3>
@@ -169,7 +171,7 @@ const Orders = () => {
             Showing {filteredOrders.length} of {orders.length} orders
           </span>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           {statusButtons.map(({ key, label, count }) => (
             <button
               key={key}
@@ -196,9 +198,9 @@ const Orders = () => {
       </div>
 
       {/* Orders Grid */}
-      <div className="px-10 py-4 overflow-y-scroll scrollbar-hide h-[calc(100%-280px)]">
+      <div className="px-4 sm:px-10 py-4 overflow-y-scroll scrollbar-hide h-[calc(100vh-320px)] sm:h-[calc(100%-280px)]">
         {filteredOrders.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {filteredOrders.map((order) => (
               <OrderCard key={order._id} order={order} />
             ))}

@@ -52,11 +52,11 @@ const Home = () => {
   }, [orders]);
 
   return (
-    <section className="bg-[#1f1f1f]  pb-20  flex gap-3">
+    <section className="bg-[#1f1f1f] pb-20 flex flex-col h-auto lg:flex-row gap-3">
       {/* Left Div */}
-      <div className="flex-[3]">
+      <div className="flex-1 lg:flex-[3]">
         <Greetings />
-        <div className="flex items-center w-full gap-3 px-8 mt-8">
+        <div className="flex flex-col sm:flex-row items-center w-full gap-3 px-4 sm:px-8 mt-8">
           <MiniCard
             title="Total Earnings"
             icon={<BsCashCoin />}
@@ -71,7 +71,7 @@ const Home = () => {
         <RecentOrders />
       </div>
       {/* Right Div */}
-      <div className="flex-[2]">
+      <div className="flex-1 lg:flex-[2]">
         <PopularDishes />
       </div>
     </section>
