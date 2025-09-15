@@ -2,7 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
     items: [],
-    paymentMethod: "cash" // Default payment method
+    paymentMethod: "Cash" // Default payment method
 };
 
 const cartSlice = createSlice({
@@ -32,7 +32,7 @@ const cartSlice = createSlice({
 
         removeAllItems: (state) => {
             state.items = [];
-            state.paymentMethod = "cash"; // Reset to default
+            state.paymentMethod = "Cash"; // Reset to default
         }
     }
 })

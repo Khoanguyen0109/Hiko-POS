@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { RiDeleteBin2Fill } from "react-icons/ri";
 import { FaNotesMedical } from "react-icons/fa6";
 import { MdAdd, MdRemove, MdPayment, MdAccountBalance } from "react-icons/md";
 import { FaMoneyBillWave } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { removeItem, updateItemQuantity, setPaymentMethod } from "../../redux/slices/cartSlice";
+import { getTotalPrice } from "../../redux/slices/cartSlice";
 import { formatVND } from "../../utils";
 
 const CartInfo = () => {
@@ -56,6 +57,7 @@ const CartInfo = () => {
   const handlePaymentMethodChange = (method) => {
     dispatch(setPaymentMethod(method));
   };
+
 
   const paymentMethods = [
     {
@@ -267,6 +269,9 @@ const CartInfo = () => {
           </div>
         </div>
       )}
+
+
+
     </div>
   );
 };

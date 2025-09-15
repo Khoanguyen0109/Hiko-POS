@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { enqueueSnackbar } from "notistack";
 import { fetchOrders, updateOrder } from "../../redux/slices/orderSlice";
-import { formatDateAndTime, getTodayDate } from "../../utils";
+import { formatDateAndTime, getTodayDate, formatVND } from "../../utils";
 
 const RecentOrders = () => {
   const dispatch = useDispatch();
@@ -85,7 +85,7 @@ const RecentOrders = () => {
                   <td className="p-4">{formatDateAndTime(order.orderDate)}</td>
                   <td className="p-4">{order.items.length} Items</td>
                   <td className="p-4">Table - {order.table?.tableNo || 'N/A'}</td>
-                  <td className="p-4">₹{order.bills.totalWithTax}</td>
+                  <td className="p-4">{formatVND(order.bills.totalWithTax)}</td>
                   <td className="p-4">
                     {order.paymentMethod}
                   </td>

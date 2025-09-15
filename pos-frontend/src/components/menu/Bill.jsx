@@ -8,10 +8,15 @@ import { useState, useRef } from "react";
 import { useReactToPrint } from "react-to-print";
 import ThermalReceiptTemplate from "../print/ThermalReceiptTemplate";
 import { formatVND } from "../../utils";
+import { FaMoneyBillWave } from "react-icons/fa";
+import { MdClose, MdCalculate } from "react-icons/md";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../../constants";
 
 
 
 const Bill = () => {
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const thermalReceiptRef = useRef();
 
@@ -19,9 +24,15 @@ const Bill = () => {
   const cartData = useSelector((state) => state.cart);
   const total = useSelector(getTotalPrice);
   const { loading } = useSelector((state) => state.orders);
+  const paymentMethod = useSelector((state) => state.cart.paymentMethod);
 
   const [showInvoice, setShowInvoice] = useState(false);
   const [orderInfo, setOrderInfo] = useState();
+  
+  // Cash payment modal states
+  const [showCashModal, setShowCashModal] = useState(false);
+  const [cashReceived, setCashReceived] = useState("");
+  const [changeAmount, setChangeAmount] = useState(0);
 
   const handleThermalPrint = useReactToPrint({
     contentRef: thermalReceiptRef,
@@ -44,6 +55,49 @@ const Bill = () => {
     }
     handleThermalPrint();
   };
+
+  // Cash payment functions
+  const handleCashInputChange = (value) => {
+    setCashReceived(value);
+    const cash = parseFloat(value) || 0;
+    const change = cash - total;
+    setChangeAmount(change >= 0 ? change : 0);
+  };
+
+  const handleOpenCashModal = () => {
+    setShowCashModal(true);
+    setCashReceived("");
+    setChangeAmount(0);
+  };
+
+  const handleCloseCashModal = () => {
+    setShowCashModal(false);
+    setCashReceived("");
+    setChangeAmount(0);
+  };
+
+  const handlePlaceOrderWithCash = async () => {
+    const cash = parseFloat(cashReceived) || 0;
+    if (cash < total) {
+      enqueueSnackbar("Insufficient cash amount!", { variant: "error" });
+      return;
+    }
+    
+    // Close the modal first
+    handleCloseCashModal();
+    
+    // Then place the order
+    await handlePlaceOrder();
+    navigate(ROUTES.MENU_ORDER);
+  };
+
+  // Quick cash amount buttons
+  const quickCashAmounts = [
+    total, // Exact amount
+    Math.ceil(total / 50000) * 50000, // Round up to nearest 50k
+    Math.ceil(total / 100000) * 100000, // Round up to nearest 100k
+    Math.ceil(total / 200000) * 200000, // Round up to nearest 200k
+  ].filter((amount, index, arr) => arr.indexOf(amount) === index); // Remove duplicates
 
   const handlePlaceOrder = async () => {
     // Place the order
@@ -133,7 +187,7 @@ const Bill = () => {
           Print Receipt
         </button>
         <button
-          onClick={handlePlaceOrder}
+          onClick={paymentMethod === "Cash" ? handleOpenCashModal : handlePlaceOrder}
           disabled={cartData.items?.length === 0 || loading}
           className="bg-[#f6b100] px-4 py-3 w-full rounded-lg text-[#1f1f1f] font-semibold text-lg hover:bg-[#e09900] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
@@ -143,6 +197,111 @@ const Bill = () => {
 
       {showInvoice && (
         <Invoice orderInfo={orderInfo} setShowInvoice={setShowInvoice} />
+      )}
+
+      {/* Cash Payment Modal */}
+      {showCashModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#1a1a1a] rounded-lg p-6 w-full max-w-md border border-[#343434]">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <FaMoneyBillWave className="text-[#f6b100]" size={24} />
+                <h2 className="text-[#f5f5f5] text-xl font-bold">Cash Payment</h2>
+              </div>
+              <button
+                onClick={handleCloseCashModal}
+                className="text-[#ababab] hover:text-[#f5f5f5] transition-colors"
+              >
+                <MdClose size={24} />
+              </button>
+            </div>
+
+            {/* Order Total */}
+            <div className="mb-6 p-4 bg-[#262626] rounded-lg border border-[#343434]">
+              <div className="flex items-center justify-between">
+                <span className="text-[#ababab] text-sm">Total Amount:</span>
+                <span className="text-[#f6b100] text-xl font-bold">{formatVND(total)}</span>
+              </div>
+            </div>
+
+            {/* Cash Input */}
+            <div className="mb-4">
+              <label className="block text-[#f5f5f5] text-sm font-medium mb-2">
+                Cash Received from Customer:
+              </label>
+              <input
+                type="number"
+                value={cashReceived}
+                onChange={(e) => handleCashInputChange(e.target.value)}
+                placeholder="Enter cash amount"
+                className="w-full px-4 py-3 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] text-lg"
+                min="0"
+                step="1000"
+              />
+            </div>
+
+            {/* Quick Amount Buttons */}
+            <div className="mb-4">
+              <p className="text-[#ababab] text-sm mb-2">Quick amounts:</p>
+              <div className="grid grid-cols-2 gap-2">
+                {quickCashAmounts.map((amount) => (
+                  <button
+                    key={amount}
+                    onClick={() => handleCashInputChange(amount.toString())}
+                    className="px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm hover:bg-[#343434] hover:border-[#f6b100] transition-colors"
+                  >
+                    {formatVND(amount)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Change Calculation */}
+            {cashReceived && (
+              <div className="mb-6 p-4 bg-[#262626] rounded-lg border border-[#343434]">
+                <div className="flex items-center gap-2 mb-2">
+                  <MdCalculate className="text-[#f6b100]" size={16} />
+                  <span className="text-[#f5f5f5] text-sm font-medium">Change Calculation:</span>
+                </div>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-[#ababab]">Cash Received:</span>
+                    <span className="text-[#f5f5f5]">{formatVND(parseFloat(cashReceived) || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#ababab]">Total Amount:</span>
+                    <span className="text-[#f5f5f5]">{formatVND(total)}</span>
+                  </div>
+                  <hr className="border-[#343434] my-2" />
+                  <div className="flex justify-between font-bold">
+                    <span className="text-[#f5f5f5]">Change:</span>
+                    <span className={`${changeAmount <= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      -{formatVND(changeAmount)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Modal Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={handleCloseCashModal}
+                className="flex-1 px-4 py-3 bg-[#262626] border border-[#343434] rounded-lg text-[#ababab] font-medium hover:bg-[#343434] hover:text-[#f5f5f5] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePlaceOrderWithCash}
+                disabled={!cashReceived || parseFloat(cashReceived) < total}
+                className="flex-1 px-4 py-3 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-bold hover:bg-[#e09900] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Place Order
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
