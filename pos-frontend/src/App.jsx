@@ -160,13 +160,9 @@ function ProtectedRoutes({ children }) {
 }
 
 function AdminProtectedRoutes({ children }) {
-  const { isAuth, role } = useSelector((state) => state.user);
+  const { isAuth } = useSelector((state) => state.user);
   if (!isAuth) {
     return <Navigate to={ROUTES.AUTH} />;
-  }
-
-  if (role !== "Admin") {
-    return <Navigate to={ROUTES.ORDERS} />;
   }
 
   return children;
