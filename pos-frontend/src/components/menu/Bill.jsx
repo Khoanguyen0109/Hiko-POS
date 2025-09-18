@@ -9,7 +9,7 @@ import { useReactToPrint } from "react-to-print";
 import ThermalReceiptTemplate from "../print/ThermalReceiptTemplate";
 import { formatVND } from "../../utils";
 import { FaMoneyBillWave } from "react-icons/fa";
-import { MdClose, MdCalculate } from "react-icons/md";
+import { MdClose, MdCalculate, MdExpandMore, MdExpandLess } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants";
 
@@ -34,6 +34,9 @@ const Bill = () => {
   const [showCashModal, setShowCashModal] = useState(false);
   const [cashReceived, setCashReceived] = useState("");
   const [changeAmount, setChangeAmount] = useState(0);
+  
+  // Accordion state for vendor selection
+  const [isVendorAccordionOpen, setIsVendorAccordionOpen] = useState(false);
 
   const handleThermalPrint = useReactToPrint({
     contentRef: thermalReceiptRef,
@@ -193,49 +196,75 @@ const Bill = () => {
         </h1>
       </div>
 
-      {/* Third Party Vendor Selection */}
+      {/* Third Party Vendor Selection - Accordion */}
       <div className="px-5 mt-4">
-        <h3 className="text-[#f5f5f5] text-sm font-medium mb-3">3rd Party Vendor</h3>
-        <div className="space-y-2">
-          {vendorOptions.map((vendor) => (
-            <label
-              key={vendor.id}
-              className="flex items-center p-3 bg-[#262626] rounded-lg border border-[#343434] hover:border-[#f6b100] transition-colors cursor-pointer"
-            >
-              <input
-                type="radio"
-                name="thirdPartyVendor"
-                value={vendor.id}
-                checked={thirdPartyVendor === vendor.id}
-                onChange={() => handleVendorChange(vendor.id)}
-                className="sr-only"
-              />
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center">
-                  <div className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${
-                    thirdPartyVendor === vendor.id
-                      ? 'border-[#f6b100] bg-[#f6b100]'
-                      : 'border-[#ababab]'
-                  }`}>
-                    {thirdPartyVendor === vendor.id && (
-                      <div className="w-2 h-2 rounded-full bg-[#1f1f1f]"></div>
-                    )}
-                  </div>
-                  <div>
-                    <p className={`text-sm font-medium ${
-                      thirdPartyVendor === vendor.id ? 'text-[#f6b100]' : 'text-[#f5f5f5]'
-                    }`}>
-                      {vendor.label}
-                    </p>
-                    <p className="text-xs text-[#ababab]">{vendor.description}</p>
-                  </div>
-                </div>
+        <div className="bg-[#262626] rounded-lg border border-[#343434]">
+          {/* Accordion Header */}
+          <button
+            onClick={() => setIsVendorAccordionOpen(!isVendorAccordionOpen)}
+            className="w-full flex items-center justify-between p-4 hover:bg-[#343434] transition-colors rounded-lg"
+          >
+            <div className="flex items-center">
+              <h3 className="text-[#f5f5f5] text-sm font-medium">3rd Party Vendor</h3>
+              <span className="ml-2 text-xs text-[#f6b100] bg-[#f6b100]/10 px-2 py-1 rounded-full">
+                {vendorOptions.find(v => v.id === thirdPartyVendor)?.label}
+              </span>
+            </div>
+            <div className="text-[#ababab]">
+              {isVendorAccordionOpen ? (
+                <MdExpandLess size={20} />
+              ) : (
+                <MdExpandMore size={20} />
+              )}
+            </div>
+          </button>
+          
+          {/* Accordion Content */}
+          {isVendorAccordionOpen && (
+            <div className="px-4 pb-4 border-t border-[#343434]">
+              <div className="space-y-2 mt-3">
+                {vendorOptions.map((vendor) => (
+                  <label
+                    key={vendor.id}
+                    className="flex items-center p-3 bg-[#1f1f1f] rounded-lg border border-[#343434] hover:border-[#f6b100] transition-colors cursor-pointer"
+                  >
+                    <input
+                      type="radio"
+                      name="thirdPartyVendor"
+                      value={vendor.id}
+                      checked={thirdPartyVendor === vendor.id}
+                      onChange={() => handleVendorChange(vendor.id)}
+                      className="sr-only"
+                    />
+                    <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center">
+                        <div className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${
+                          thirdPartyVendor === vendor.id
+                            ? 'border-[#f6b100] bg-[#f6b100]'
+                            : 'border-[#ababab]'
+                        }`}>
+                          {thirdPartyVendor === vendor.id && (
+                            <div className="w-2 h-2 rounded-full bg-[#1f1f1f]"></div>
+                          )}
+                        </div>
+                        <div>
+                          <p className={`text-sm font-medium ${
+                            thirdPartyVendor === vendor.id ? 'text-[#f6b100]' : 'text-[#f5f5f5]'
+                          }`}>
+                            {vendor.label}
+                          </p>
+                          <p className="text-xs text-[#ababab]">{vendor.description}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </label>
+                ))}
               </div>
-            </label>
-          ))}
-        </div>
-        <div className="mt-2 text-xs text-[#ababab]">
-          Selected: {vendorOptions.find(v => v.id === thirdPartyVendor)?.label} - {vendorOptions.find(v => v.id === thirdPartyVendor)?.description}
+              <div className="mt-3 pt-3 border-t border-[#343434] text-xs text-[#ababab]">
+                <span className="text-[#f5f5f5]">Selected:</span> {vendorOptions.find(v => v.id === thirdPartyVendor)?.description}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
