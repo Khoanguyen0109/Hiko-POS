@@ -2,7 +2,8 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
     items: [],
-    paymentMethod: "Cash" // Default payment method
+    paymentMethod: "Cash", // Default payment method
+    thirdPartyVendor: "None" // Default vendor
 };
 
 const cartSlice = createSlice({
@@ -30,13 +31,18 @@ const cartSlice = createSlice({
             state.paymentMethod = action.payload;
         },
 
+        setThirdPartyVendor: (state, action) => {
+            state.thirdPartyVendor = action.payload;
+        },
+
         removeAllItems: (state) => {
             state.items = [];
             state.paymentMethod = "Cash"; // Reset to default
+            state.thirdPartyVendor = "None"; // Reset to default
         }
     }
 })
 
 export const getTotalPrice = (state) => state.cart.items.reduce((total, item) => total + item.price, 0);
-export const { addItems, removeItem, updateItemQuantity, setPaymentMethod, removeAllItems } = cartSlice.actions;
+export const { addItems, removeItem, updateItemQuantity, setPaymentMethod, setThirdPartyVendor, removeAllItems } = cartSlice.actions;
 export default cartSlice.reducer;

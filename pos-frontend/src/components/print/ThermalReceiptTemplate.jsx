@@ -79,6 +79,12 @@ const ThermalReceiptTemplate = forwardRef(({ orderData }, ref) => {
           <span>Time:</span>
           <span>{currentTime}</span>
         </div>
+        {orderData.thirdPartyVendor && orderData.thirdPartyVendor !== 'None' && (
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span>Vendor:</span>
+            <span>{orderData.thirdPartyVendor}</span>
+          </div>
+        )}
       </div>
 
       {/* Large order warning */}
@@ -193,7 +199,8 @@ ThermalReceiptTemplate.propTypes = {
       price: PropTypes.number.isRequired
     })),
     subtotal: PropTypes.number,
-    total: PropTypes.number
+    total: PropTypes.number,
+    thirdPartyVendor: PropTypes.string
   }).isRequired
 };
 

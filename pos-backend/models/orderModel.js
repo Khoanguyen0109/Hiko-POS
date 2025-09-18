@@ -92,6 +92,11 @@ const orderSchema = new mongoose.Schema({
         enum: ['Cash', 'Banking', 'Card'],
         required: true
     },
+    thirdPartyVendor: {
+        type: String,
+        enum: ['None', 'Shopee', 'Grab'],
+        default: 'None'
+    },
     paymentData: {
         razorpay_order_id: { type: String, trim: true },
         razorpay_payment_id: { type: String, trim: true }

@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from "react-redux";
-import { getTotalPrice, removeAllItems } from "../../redux/slices/cartSlice";
+import { getTotalPrice, removeAllItems, setThirdPartyVendor } from "../../redux/slices/cartSlice";
 import { removeCustomer } from "../../redux/slices/customerSlice";
 import { createOrder } from "../../redux/slices/orderSlice";
 import { enqueueSnackbar } from "notistack";
@@ -25,6 +25,7 @@ const Bill = () => {
   const total = useSelector(getTotalPrice);
   const { loading } = useSelector((state) => state.orders);
   const paymentMethod = useSelector((state) => state.cart.paymentMethod);
+  const thirdPartyVendor = useSelector((state) => state.cart.thirdPartyVendor);
 
   const [showInvoice, setShowInvoice] = useState(false);
   const [orderInfo, setOrderInfo] = useState();
@@ -91,6 +92,17 @@ const Bill = () => {
     navigate(ROUTES.MENU_ORDER);
   };
 
+  // Third party vendor options
+  const vendorOptions = [
+    { id: "None", label: "None", description: "Direct order" },
+    { id: "Shopee", label: "Shopee", description: "Shopee Food delivery" },
+    { id: "Grab", label: "Grab", description: "Grab Food delivery" }
+  ];
+
+  const handleVendorChange = (vendor) => {
+    dispatch(setThirdPartyVendor(vendor));
+  };
+
   // Quick cash amount buttons
   const quickCashAmounts = [
     total, // Exact amount
@@ -115,6 +127,7 @@ const Bill = () => {
       },
       items: cartData.items,
       paymentMethod: cartData.paymentMethod,
+      thirdPartyVendor: cartData.thirdPartyVendor,
     };
     
     dispatch(createOrder(orderData))
@@ -151,7 +164,8 @@ const Bill = () => {
     guests: customerData.guests,
     items: cartData.items,
     subtotal: total,
-    total: total
+    total: total,
+    thirdPartyVendor: thirdPartyVendor
   };
 
   return (
@@ -179,7 +193,53 @@ const Bill = () => {
         </h1>
       </div>
 
-      <div className="flex items-center gap-3 px-5 mt-4">
+      {/* Third Party Vendor Selection */}
+      <div className="px-5 mt-4">
+        <h3 className="text-[#f5f5f5] text-sm font-medium mb-3">3rd Party Vendor</h3>
+        <div className="space-y-2">
+          {vendorOptions.map((vendor) => (
+            <label
+              key={vendor.id}
+              className="flex items-center p-3 bg-[#262626] rounded-lg border border-[#343434] hover:border-[#f6b100] transition-colors cursor-pointer"
+            >
+              <input
+                type="radio"
+                name="thirdPartyVendor"
+                value={vendor.id}
+                checked={thirdPartyVendor === vendor.id}
+                onChange={() => handleVendorChange(vendor.id)}
+                className="sr-only"
+              />
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center">
+                  <div className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${
+                    thirdPartyVendor === vendor.id
+                      ? 'border-[#f6b100] bg-[#f6b100]'
+                      : 'border-[#ababab]'
+                  }`}>
+                    {thirdPartyVendor === vendor.id && (
+                      <div className="w-2 h-2 rounded-full bg-[#1f1f1f]"></div>
+                    )}
+                  </div>
+                  <div>
+                    <p className={`text-sm font-medium ${
+                      thirdPartyVendor === vendor.id ? 'text-[#f6b100]' : 'text-[#f5f5f5]'
+                    }`}>
+                      {vendor.label}
+                    </p>
+                    <p className="text-xs text-[#ababab]">{vendor.description}</p>
+                  </div>
+                </div>
+              </div>
+            </label>
+          ))}
+        </div>
+        <div className="mt-2 text-xs text-[#ababab]">
+          Selected: {vendorOptions.find(v => v.id === thirdPartyVendor)?.label} - {vendorOptions.find(v => v.id === thirdPartyVendor)?.description}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 px-5 mt-6">
         <button 
           onClick={handlePrintReceipt} 
           className="bg-[#025cca] px-4 py-3 w-full rounded-lg text-[#f5f5f5] font-semibold text-lg hover:bg-[#0248a3] transition-colors"

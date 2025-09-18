@@ -112,13 +112,21 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
 
           <div className="mb-2 mt-2 text-xs">
             {orderInfo.paymentMethod === "Cash" ? (
-              <p>
-                <strong>Payment Method:</strong> {orderInfo.paymentMethod}
-              </p>
+              <>
+                <p>
+                  <strong>Payment Method:</strong> {orderInfo.paymentMethod}
+                </p>
+                <p>
+                  <strong>3rd Party Vendor:</strong> {orderInfo.thirdPartyVendor || 'None'}
+                </p>
+              </>
             ) : (
               <>
                 <p>
                   <strong>Payment Method:</strong> {orderInfo.paymentMethod}
+                </p>
+                <p>
+                  <strong>3rd Party Vendor:</strong> {orderInfo.thirdPartyVendor || 'None'}
                 </p>
                 <p>
                   <strong>Razorpay Order ID:</strong>{" "}
@@ -173,6 +181,7 @@ Invoice.propTypes = {
       totalWithTax: PropTypes.number.isRequired
     }).isRequired,
     paymentMethod: PropTypes.string.isRequired,
+    thirdPartyVendor: PropTypes.string,
     paymentData: PropTypes.shape({
       razorpay_order_id: PropTypes.string,
       razorpay_payment_id: PropTypes.string

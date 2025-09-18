@@ -5,7 +5,7 @@ const { default: mongoose } = require("mongoose");
 const addOrder = async (req, res, next) => {
   try {
     const { _id: userId, name: userName } = req.user || {};
-    const { customerDetails, orderStatus, bills, items, paymentMethod, paymentData } = req.body;
+    const { customerDetails, orderStatus, bills, items, paymentMethod, thirdPartyVendor, paymentData } = req.body;
 
     // Validate required fields
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -20,6 +20,12 @@ const addOrder = async (req, res, next) => {
 
     if (!paymentMethod || !['Cash', 'Banking', 'Card'].includes(paymentMethod)) {
       const error = createHttpError(400, "Valid payment method is required (Cash, Banking, or Card)");
+      return next(error);
+    }
+
+    // Validate thirdPartyVendor if provided
+    if (thirdPartyVendor && !['None', 'Shopee', 'Grab'].includes(thirdPartyVendor)) {
+      const error = createHttpError(400, "Invalid third party vendor. Must be 'None', 'Shopee', or 'Grab'");
       return next(error);
     }
 
@@ -91,6 +97,7 @@ const addOrder = async (req, res, next) => {
       },
       items: processedItems,
       paymentMethod,
+      thirdPartyVendor: thirdPartyVendor || 'None',
       paymentData: paymentData || {},
       createdBy: (userId && userName) ? { userId, userName } : undefined
     };
