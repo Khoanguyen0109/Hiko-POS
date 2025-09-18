@@ -62,9 +62,9 @@ const Header = () => {
     <header className="flex justify-between items-center py-4 px-4 md:px-8 bg-[#1a1a1a]">
       {/* LOGO */}
       <div onClick={() => userData.role === "Admin" ? navigate("/") : navigate("/orders")} className="flex items-center gap-2 cursor-pointer">
-        <img src={logo} className="h-8 w-8" alt="restro logo" />
+        <img src={logo} className="h-8 w-8" alt="hiko logo" />
         <h1 className="text-lg font-semibold text-[#f5f5f5] tracking-wide hidden sm:block">
-          Restro
+          Hiko
         </h1>
       </div>
 

@@ -40,7 +40,7 @@ const Login = () => {
       if (error) {
         dispatch(clearError());
       }
-    }, []);
+    }, [dispatch, error]);
 
     // Redirect if already authenticated
     useEffect(() => {

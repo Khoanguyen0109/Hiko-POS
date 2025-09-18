@@ -43,7 +43,7 @@ const ThermalReceiptTemplate = forwardRef(({ orderData }, ref) => {
       {/* Header */}
       <div style={{ textAlign: 'center', marginBottom: '8px' }}>
         <div style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '3px' }}>
-          RESTRO
+          HIKO
         </div>
         <div style={{ fontSize: '9px' }}>
           Restaurant POS System

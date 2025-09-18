@@ -19,6 +19,7 @@ import {
   Categories,
   Members,
   AccountSettings,
+  NotFound,
 } from "./pages";
 import Header from "./components/shared/Header";
 import { useSelector, useDispatch } from "react-redux";
@@ -51,6 +52,7 @@ const COMPONENT_MAP = {
   Categories,
   Members,
   AccountSettings,
+  NotFound,
 };
 
 function Layout() {
@@ -141,7 +143,7 @@ function Layout() {
         })}
 
         {/* Fallback Route */}
-        <Route path="*" element={<div>Not Found</div>} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );
