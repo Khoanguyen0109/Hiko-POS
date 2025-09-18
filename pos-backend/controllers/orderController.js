@@ -18,8 +18,8 @@ const addOrder = async (req, res, next) => {
       return next(error);
     }
 
-    if (!paymentMethod || !['Cash', 'Banking'].includes(paymentMethod)) {
-      const error = createHttpError(400, "Valid payment method is required (Cash, Online, or Card)");
+    if (!paymentMethod || !['Cash', 'Banking', 'Card'].includes(paymentMethod)) {
+      const error = createHttpError(400, "Valid payment method is required (Cash, Banking, or Card)");
       return next(error);
     }
 
