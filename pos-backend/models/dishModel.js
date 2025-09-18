@@ -86,6 +86,18 @@ const dishSchema = new mongoose.Schema({
     isAvailable: {
         type: Boolean,
         default: true
+    },
+
+    // Compatible toppings for this dish
+    compatibleToppings: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Topping"
+    }],
+
+    // Whether this dish supports toppings
+    allowToppings: {
+        type: Boolean,
+        default: false
     }
 }, { timestamps: true });
 

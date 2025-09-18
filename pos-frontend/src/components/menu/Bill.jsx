@@ -24,6 +24,10 @@ const Bill = () => {
   const cartData = useSelector((state) => state.cart);
   const total = useSelector(getTotalPrice);
   const { loading } = useSelector((state) => state.orders);
+  
+  // Debug: Log cart data to verify topping prices are included
+  console.log('Bill - Cart items:', cartData.items);
+  console.log('Bill - Calculated total:', total);
   const paymentMethod = useSelector((state) => state.cart.paymentMethod);
   const thirdPartyVendor = useSelector((state) => state.cart.thirdPartyVendor);
 
@@ -178,22 +182,49 @@ const Bill = () => {
         <ThermalReceiptTemplate ref={thermalReceiptRef} orderData={thermalReceiptData} />
       </div>
 
-      <div className="flex items-center justify-between px-5 mt-2">
-        <p className="text-xs text-[#ababab] font-medium mt-2">
-          Items({cartData.items?.length || 0})
-        </p>
-        <h1 className="text-[#f5f5f5] text-md font-bold">
-          {formatVND(total)}
-        </h1>
-      </div>
-      
-      <div className="flex items-center justify-between px-5 mt-2">
-        <p className="text-lg text-[#f5f5f5] font-bold mt-2">
-          Total
-        </p>
-        <h1 className="text-[#f6b100] text-xl font-bold">
-          {formatVND(total)}
-        </h1>
+      {/* Detailed Bill Breakdown */}
+      <div className="px-5 mt-2">
+        <div className="bg-[#262626] rounded-lg p-4 border border-[#343434]">
+          <div className="space-y-2">
+            {cartData.items?.map((item) => (
+              <div key={item.id} className="flex justify-between items-start text-sm">
+                <div className="flex-1">
+                  <p className="text-[#f5f5f5] font-medium">{item.name}</p>
+                  <p className="text-[#ababab] text-xs">
+                    {formatVND(item.pricePerQuantity)} × {item.quantity}
+                  </p>
+                  {item.toppings && item.toppings.length > 0 && (
+                    <div className="ml-2 mt-1">
+                      {item.toppings.map((topping, tIndex) => (
+                        <p key={tIndex} className="text-[#ababab] text-xs">
+                          + {topping.name} ×{topping.quantity} ({formatVND(topping.totalPrice)})
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className="text-[#f6b100] font-bold">
+                  {formatVND(item.price)}
+                </p>
+              </div>
+            ))}
+            
+            {cartData.items?.length === 0 && (
+              <p className="text-[#ababab] text-center py-2">No items in cart</p>
+            )}
+          </div>
+          
+          <hr className="border-[#343434] my-3" />
+          
+          <div className="flex items-center justify-between">
+            <p className="text-[#f5f5f5] font-bold">
+              Total ({cartData.items?.length || 0} items)
+            </p>
+            <h1 className="text-[#f6b100] text-xl font-bold">
+              {formatVND(total)}
+            </h1>
+          </div>
+        </div>
       </div>
 
       {/* Third Party Vendor Selection - Accordion */}

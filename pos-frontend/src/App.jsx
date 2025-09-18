@@ -20,6 +20,7 @@ import {
   Members,
   AccountSettings,
   NotFound,
+  Toppings,
 } from "./pages";
 import Header from "./components/shared/Header";
 import { useSelector, useDispatch } from "react-redux";
@@ -53,6 +54,7 @@ const COMPONENT_MAP = {
   Members,
   AccountSettings,
   NotFound,
+  Toppings,
 };
 
 function Layout() {
@@ -121,6 +123,7 @@ function Layout() {
             "Categories",
             "Dashboard",
             "Members",
+            "Toppings",
           ].includes(route.componentName);
 
           return (

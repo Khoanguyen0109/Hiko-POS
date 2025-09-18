@@ -447,7 +447,8 @@ export const ROUTES = {
   CATEGORIES: "/categories",
   MEMBERS: "/members",
   ACCOUNT_SETTINGS: "/account-settings",
-  SETTINGS: "/settings"
+  SETTINGS: "/settings",
+  TOPPINGS: "/toppings"
 };
 
 // Route configurations for optimized rendering
@@ -508,6 +509,10 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.ACCOUNT_SETTINGS,
     componentName: "AccountSettings"
+  },
+  {
+    path: ROUTES.TOPPINGS,
+    componentName: "Toppings"
   }
 ];
 

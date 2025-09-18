@@ -43,6 +43,21 @@ const cartSlice = createSlice({
     }
 })
 
-export const getTotalPrice = (state) => state.cart.items.reduce((total, item) => total + item.price, 0);
+export const getTotalPrice = (state) => {
+    return state.cart.items.reduce((total, item) => {
+        // item.price should already include toppings cost * quantity
+        // But let's be explicit and recalculate to ensure accuracy
+        let itemTotal = item.price;
+        
+        // Double-check: if price seems incorrect, recalculate
+        const expectedPrice = item.pricePerQuantity * item.quantity;
+        if (Math.abs(itemTotal - expectedPrice) > 0.01) {
+            // Use the calculated price if there's a discrepancy
+            itemTotal = expectedPrice;
+        }
+        
+        return total + itemTotal;
+    }, 0);
+};
 export const { addItems, removeItem, updateItemQuantity, setPaymentMethod, setThirdPartyVendor, removeAllItems } = cartSlice.actions;
 export default cartSlice.reducer;

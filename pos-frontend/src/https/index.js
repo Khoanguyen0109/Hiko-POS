@@ -74,3 +74,21 @@ export const deleteMember = (id) => axiosWrapper.delete(`/api/member/${id}`);
 export const getOwnProfile = () => axiosWrapper.get("/api/member/profile");
 export const updateOwnProfile = (data) => axiosWrapper.put("/api/member/profile", data);
 export const changePassword = (data) => axiosWrapper.put("/api/member/change-password", data);
+
+// Topping Endpoints
+export const getToppings = (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.category) queryParams.append('category', params.category);
+  if (params.available !== undefined) queryParams.append('available', params.available);
+  if (params.sort) queryParams.append('sort', params.sort);
+  
+  const queryString = queryParams.toString();
+  return axiosWrapper.get(`/api/topping${queryString ? `?${queryString}` : ''}`);
+};
+export const getToppingsByCategory = () => axiosWrapper.get("/api/topping/by-category");
+export const getToppingById = (toppingId) => axiosWrapper.get(`/api/topping/${toppingId}`);
+export const addTopping = (data) => axiosWrapper.post("/api/topping/", data);
+export const updateTopping = ({ toppingId, ...toppingData }) =>
+  axiosWrapper.put(`/api/topping/${toppingId}`, toppingData);
+export const deleteTopping = (toppingId) => axiosWrapper.delete(`/api/topping/${toppingId}`);
+export const toggleToppingAvailability = (toppingId) => axiosWrapper.patch(`/api/topping/${toppingId}/toggle-availability`);

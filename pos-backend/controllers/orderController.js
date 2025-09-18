@@ -61,8 +61,38 @@ const addOrder = async (req, res, next) => {
         price: item.price,
         category: item.category ? item.category.trim() : undefined,
         image: item.image ? item.image.trim() : undefined,
-        note: item.note ? item.note.trim() : undefined
+        note: item.note ? item.note.trim() : undefined,
+        toppings: []
       };
+
+      // Process toppings if present
+      if (item.toppings && Array.isArray(item.toppings)) {
+        processedItem.toppings = item.toppings.map((topping, toppingIndex) => {
+          // Validate topping fields
+          if (!topping.toppingId || !mongoose.Types.ObjectId.isValid(topping.toppingId)) {
+            throw createHttpError(400, `Invalid topping ID for item ${index}, topping ${toppingIndex}`);
+          }
+          
+          if (!topping.name || typeof topping.name !== 'string') {
+            throw createHttpError(400, `Topping name is required for item ${index}, topping ${toppingIndex}`);
+          }
+          
+          if (typeof topping.price !== 'number' || topping.price < 0) {
+            throw createHttpError(400, `Valid topping price is required for item ${index}, topping ${toppingIndex}`);
+          }
+          
+          if (typeof topping.quantity !== 'number' || topping.quantity < 1) {
+            throw createHttpError(400, `Valid topping quantity is required for item ${index}, topping ${toppingIndex}`);
+          }
+
+          return {
+            toppingId: topping.toppingId,
+            name: topping.name.trim(),
+            price: topping.price,
+            quantity: topping.quantity
+          };
+        });
+      }
 
       // Add variant information if present
       if (item.variant) {
@@ -76,8 +106,12 @@ const addOrder = async (req, res, next) => {
       return processedItem;
     });
 
-    // Calculate total items and verify bill total
-    const calculatedTotal = processedItems.reduce((sum, item) => sum + item.price, 0);
+    // Calculate total items and verify bill total (including toppings)
+    // Note: item.price already includes toppings cost, so we don't need to add toppings separately
+    const calculatedTotal = processedItems.reduce((sum, item) => {
+      // item.price already includes the base dish price + all toppings
+      return sum + item.price;
+    }, 0);
     if (Math.abs(calculatedTotal - bills.total) > 0.01) {
       const error = createHttpError(400, `Bill total (${bills.total}) does not match calculated total (${calculatedTotal})`);
       return next(error);

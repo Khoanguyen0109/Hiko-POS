@@ -79,19 +79,51 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
 
           <div className="mt-4 border-t pt-4">
             <h3 className="text-sm font-semibold">Items Ordered</h3>
-            <ul className="text-sm text-gray-700">
+            <div className="text-sm text-gray-700 space-y-3">
               {orderInfo.items.map((item, index) => (
-                <li
-                  key={index}
-                  className="flex justify-between items-center text-xs"
-                >
-                  <span>
-                    {item?.name} x{item?.quantity}
-                  </span>
-                  <span>{formatVND(item.price)}</span>
-                </li>
+                <div key={index} className="border-b border-gray-200 pb-2 last:border-b-0">
+                  {/* Main item */}
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-800">
+                        {item?.name} ×{item?.quantity}
+                      </div>
+                      {item.variant && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          Size: {item.variant.size}
+                        </div>
+                      )}
+                    </div>
+                    <span className="font-semibold text-gray-800">
+                      {formatVND(item.price)}
+                    </span>
+                  </div>
+                  
+                  {/* Toppings */}
+                  {item.toppings && item.toppings.length > 0 && (
+                    <div className="mt-2 ml-4 space-y-1">
+                      <div className="text-xs text-gray-600 font-medium">Add-ons:</div>
+                      {item.toppings.map((topping, toppingIndex) => (
+                        <div key={toppingIndex} className="flex justify-between items-center text-xs text-gray-600">
+                          <span className="flex items-center">
+                            <span className="w-1 h-1 bg-gray-400 rounded-full mr-2"></span>
+                            {topping.name} ×{topping.quantity}
+                          </span>
+                          <span>{formatVND(topping.totalPrice)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Special instructions */}
+                  {item.note && (
+                    <div className="mt-2 text-xs text-gray-500 italic">
+                      Note: {item.note}
+                    </div>
+                  )}
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
 
           {/* Bills Summary */}
@@ -173,7 +205,22 @@ Invoice.propTypes = {
     items: PropTypes.arrayOf(PropTypes.shape({
       name: PropTypes.string.isRequired,
       quantity: PropTypes.number.isRequired,
-      price: PropTypes.number.isRequired
+      price: PropTypes.number.isRequired,
+      variant: PropTypes.shape({
+        size: PropTypes.string,
+        price: PropTypes.number,
+        cost: PropTypes.number,
+      }),
+      toppings: PropTypes.arrayOf(
+        PropTypes.shape({
+          toppingId: PropTypes.string,
+          name: PropTypes.string.isRequired,
+          price: PropTypes.number.isRequired,
+          quantity: PropTypes.number.isRequired,
+          totalPrice: PropTypes.number.isRequired,
+        })
+      ),
+      note: PropTypes.string,
     })).isRequired,
     bills: PropTypes.shape({
       total: PropTypes.number.isRequired,

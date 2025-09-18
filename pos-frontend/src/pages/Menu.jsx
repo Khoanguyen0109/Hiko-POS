@@ -44,7 +44,7 @@ const Menu = () => {
       </div>
       
       {/* Right Div - Cart/Bill Section */}
-      <div className="w-full lg:w-auto lg:flex-[1] bg-[#1a1a1a] mt-4 lg:mr-3 h-auto lg:h-[780px] rounded-lg pt-2 order-first lg:order-last">
+      <div className="w-full lg:w-auto lg:flex-[1] bg-[#1a1a1a] mt-4 lg:mr-3 h-auto rounded-lg pt-2 order-first lg:order-last">
         {/* Customer Info */}
         <CustomerInfo />
         <hr className="border-[#2a2a2a] border-t-2" />

@@ -381,12 +381,59 @@ const OrderItem = ({ item }) => {
           </div>
         </div>
 
-        {/* Variant Information */}
-        {item.variant && (
-          <div className="flex items-center gap-4 mt-2 pt-2 border-t border-[#343434]">
-            <span className="text-[#ababab] text-xs">
-              Size: <span className="text-[#f5f5f5]">{item.variant.size}</span>
-            </span>
+        {/* Variant and Toppings Information */}
+        {(item.variant || item.toppings) && (
+          <div className="mt-2 pt-2 border-t border-[#343434] space-y-2">
+            {/* Size variant info */}
+            {item.variant && (
+              <div className="flex items-center gap-4">
+                <span className="text-[#ababab] text-xs">
+                  Size: <span className="text-[#f5f5f5]">{item.variant.size}</span>
+                </span>
+              </div>
+            )}
+            
+            {/* Toppings info */}
+            {item.toppings && item.toppings.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[#ababab] text-xs font-medium">
+                    Toppings:
+                  </span>
+                  <div className="flex-1 h-px bg-[#343434]"></div>
+                </div>
+                <div className="bg-[#1f1f1f] rounded-md p-3 space-y-2">
+                  {item.toppings.map((topping, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-[#f6b100] rounded-full"></div>
+                        <span className="text-[#f5f5f5] text-xs">
+                          {topping.name}
+                        </span>
+                        <span className="text-[#ababab] text-xs bg-[#262626] px-2 py-0.5 rounded-full">
+                          ×{topping.quantity}
+                        </span>
+                      </div>
+                      <span className="text-[#f6b100] text-xs font-medium">
+                        {formatVND(topping.totalPrice)}
+                      </span>
+                    </div>
+                  ))}
+                  
+                  {/* Total toppings price */}
+                  {item.toppings.length > 1 && (
+                    <div className="pt-2 mt-2 border-t border-[#343434] flex items-center justify-between">
+                      <span className="text-[#ababab] text-xs font-medium">
+                        Toppings Total:
+                      </span>
+                      <span className="text-[#f6b100] text-xs font-bold">
+                        {formatVND(item.toppings.reduce((sum, t) => sum + t.totalPrice, 0))}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -415,6 +462,15 @@ OrderItem.propTypes = {
       price: PropTypes.number,
       cost: PropTypes.number,
     }),
+    toppings: PropTypes.arrayOf(
+      PropTypes.shape({
+        toppingId: PropTypes.string,
+        name: PropTypes.string.isRequired,
+        price: PropTypes.number.isRequired,
+        quantity: PropTypes.number.isRequired,
+        totalPrice: PropTypes.number.isRequired,
+      })
+    ),
     note: PropTypes.string,
   }).isRequired,
 };

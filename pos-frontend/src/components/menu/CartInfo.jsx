@@ -5,7 +5,6 @@ import { MdAdd, MdRemove, MdPayment, MdAccountBalance } from "react-icons/md";
 import { FaMoneyBillWave } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { removeItem, updateItemQuantity, setPaymentMethod } from "../../redux/slices/cartSlice";
-import { getTotalPrice } from "../../redux/slices/cartSlice";
 import { formatVND } from "../../utils";
 
 const CartInfo = () => {
@@ -166,14 +165,59 @@ const CartInfo = () => {
                   </div>
                 </div>
 
-                {/* Variant info if available */}
-                {item.variant && (
+                {/* Variant and Toppings info if available */}
+                {(item.variant || item.toppings) && (
                   <div className="mt-3 pt-3 border-t border-[#343434]">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#ababab] text-xs">
-                        Size: {item.variant.size}
-                      </span>
-                    </div>
+                    {/* Size variant info */}
+                    {item.variant && (
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[#ababab] text-xs">
+                          Size: {item.variant.size}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Toppings info */}
+                    {item.toppings && item.toppings.length > 0 && (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-[#ababab] text-xs font-medium">
+                            Toppings:
+                          </span>
+                          <div className="flex-1 h-px bg-[#343434]"></div>
+                        </div>
+                        <div className="bg-[#262626] rounded-md p-2 space-y-1">
+                          {item.toppings.map((topping, index) => (
+                            <div key={index} className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className="w-1 h-1 bg-[#f6b100] rounded-full"></div>
+                                <span className="text-[#f5f5f5] text-xs">
+                                  {topping.name}
+                                </span>
+                                <span className="text-[#ababab] text-xs bg-[#343434] px-2 py-0.5 rounded-full">
+                                  ×{topping.quantity}
+                                </span>
+                              </div>
+                              <span className="text-[#f6b100] text-xs font-medium">
+                                {formatVND(topping.totalPrice)}
+                              </span>
+                            </div>
+                          ))}
+                          
+                          {/* Total toppings price */}
+                          {item.toppings.length > 1 && (
+                            <div className="pt-1 mt-2 border-t border-[#343434] flex items-center justify-between">
+                              <span className="text-[#ababab] text-xs font-medium">
+                                Toppings Total:
+                              </span>
+                              <span className="text-[#f6b100] text-xs font-bold">
+                                {formatVND(item.toppings.reduce((sum, t) => sum + t.totalPrice, 0))}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

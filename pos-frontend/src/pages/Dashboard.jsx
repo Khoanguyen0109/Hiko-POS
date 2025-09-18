@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { MdTableBar, MdCategory } from "react-icons/md";
 import { BiSolidDish } from "react-icons/bi";
+import { MdAddCircle } from "react-icons/md";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "../constants";
 import Metrics from "../components/dashboard/Metrics";
 import RecentOrders from "../components/dashboard/RecentOrders";
 import Modal from "../components/dashboard/Modal";
@@ -11,11 +14,14 @@ const buttons = [
   { label: "Add Table", icon: <MdTableBar />, action: "table" },
   { label: "Add Category", icon: <MdCategory />, action: "category" },
   { label: "Add Dishes", icon: <BiSolidDish />, action: "dishes" },
+  { label: "Add Topping", icon: <MdAddCircle />, action: "topping" },
 ];
 
 const tabs = ["Metrics", "Orders", "Payments"];
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  
   useEffect(() => {
     document.title = "POS | Admin Dashboard";
   }, []);
@@ -29,6 +35,7 @@ const Dashboard = () => {
     if (action === "table") setIsTableModalOpen(true);
     if (action === "category") setIsCategoryModalOpen(true);
     if (action === "dishes") setIsDishesModalOpen(true);
+    if (action === "topping") navigate(ROUTES.TOPPINGS);
   };
 
   return (

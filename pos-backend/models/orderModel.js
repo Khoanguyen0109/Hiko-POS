@@ -53,7 +53,30 @@ const orderItemSchema = new mongoose.Schema({
     note: { 
         type: String, 
         trim: true 
-    }
+    },
+    toppings: [{
+        toppingId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Topping",
+            required: true
+        },
+        name: {
+            type: String,
+            required: true,
+            trim: true
+        },
+        price: {
+            type: Number,
+            required: true,
+            min: 0
+        },
+        quantity: {
+            type: Number,
+            required: true,
+            min: 1,
+            default: 1
+        }
+    }]
 }, { _id: true });
 
 const orderSchema = new mongoose.Schema({

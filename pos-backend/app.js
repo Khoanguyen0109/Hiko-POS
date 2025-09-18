@@ -34,6 +34,7 @@ app.use("/api/payment", require("./routes/paymentRoute"));
 app.use("/api/category", require("./routes/categoryRoute"));
 app.use("/api/dish", require("./routes/dishRoute"));
 app.use("/api/customer", require("./routes/customerRoute"));
+app.use("/api/topping", require("./routes/toppingRoute"));
 
 // Global Error Handler
 app.use(globalErrorHandler);
