@@ -1,10 +1,11 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { enqueueSnackbar } from "notistack";
+import PropTypes from "prop-types";
 import { fetchOrders, updateOrder } from "../../redux/slices/orderSlice";
 import { formatDateAndTime, getTodayDate, formatVND } from "../../utils";
 
-const RecentOrders = () => {
+const RecentOrders = ({ dateFilter = "today", customDateRange = { startDate: "", endDate: "" } }) => {
   const dispatch = useDispatch();
   const { recentOrders, loading, error } = useSelector((state) => state.orders);
   
@@ -20,9 +21,46 @@ const RecentOrders = () => {
   };
 
   useEffect(() => {
+    // Fetch data based on selected date range
     const today = getTodayDate();
-    dispatch(fetchOrders({ startDate: today, endDate: today }));
-  }, [dispatch]);
+    let startDate, endDate;
+    
+    switch (dateFilter) {
+      case "today": {
+        startDate = endDate = today;
+        break;
+      }
+      case "week": {
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        startDate = weekAgo.toISOString().split('T')[0];
+        endDate = today;
+        break;
+      }
+      case "month": {
+        const monthAgo = new Date();
+        monthAgo.setMonth(monthAgo.getMonth() - 1);
+        startDate = monthAgo.toISOString().split('T')[0];
+        endDate = today;
+        break;
+      }
+      case "custom": {
+        if (customDateRange.startDate && customDateRange.endDate) {
+          startDate = customDateRange.startDate;
+          endDate = customDateRange.endDate;
+        } else {
+          // Fallback to today if custom range is incomplete
+          startDate = endDate = today;
+        }
+        break;
+      }
+      default: {
+        startDate = endDate = today;
+      }
+    }
+
+    dispatch(fetchOrders({ startDate, endDate }));
+  }, [dispatch, dateFilter, customDateRange]);
 
   useEffect(() => {
     if (error) {
@@ -103,6 +141,14 @@ const RecentOrders = () => {
       </div>
     </div>
   );
+};
+
+RecentOrders.propTypes = {
+  dateFilter: PropTypes.string,
+  customDateRange: PropTypes.shape({
+    startDate: PropTypes.string,
+    endDate: PropTypes.string,
+  }),
 };
 
 export default RecentOrders;

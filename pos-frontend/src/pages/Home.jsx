@@ -3,9 +3,9 @@ import { useDispatch, useSelector } from "react-redux";
 import Greetings from "../components/home/Greetings";
 import { BsCashCoin } from "react-icons/bs";
 import { GrInProgress } from "react-icons/gr";
+import { MdRestaurantMenu } from "react-icons/md";
 import MiniCard from "../components/home/MiniCard";
 import RecentOrders from "../components/home/RecentOrders";
-import PopularDishes from "../components/home/PopularDishes";
 import { fetchOrders } from "../redux/slices/orderSlice";
 import { getTodayDate } from "../utils";
 
@@ -29,6 +29,7 @@ const Home = () => {
         totalEarnings: 0,
         totalOrders: 0,
         completedOrders: 0,
+        totalDishesOrdered: 0,
       };
     }
 
@@ -44,10 +45,20 @@ const Home = () => {
     );
     console.log('totalEarnings', totalEarnings)
 
+    // Calculate total dishes ordered across all orders
+    const totalDishesOrdered = orders.reduce((sum, order) => {
+      if (order.items && Array.isArray(order.items)) {
+        return sum + order.items.reduce((itemSum, item) => itemSum + (item.quantity || 0), 0);
+      }
+      return sum;
+    }, 0);
+    console.log('totalDishesOrdered', totalDishesOrdered)
+
     return {
       totalEarnings,
       totalOrders: orders.length,
       completedOrders: completedOrders.length,
+      totalDishesOrdered,
     };
   }, [orders]);
 
@@ -66,6 +77,11 @@ const Home = () => {
             title="Total Orders"
             icon={<GrInProgress />}
             number={loading ? "..." : todayStats.totalOrders}
+          />
+          <MiniCard
+            title="Dishes Ordered"
+            icon={<MdRestaurantMenu />}
+            number={loading ? "..." : todayStats.totalDishesOrdered}
           />
         </div>
         <RecentOrders />

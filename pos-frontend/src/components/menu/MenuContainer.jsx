@@ -4,7 +4,6 @@ import { MdCategory, MdRestaurantMenu } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCategories } from "../../redux/slices/categorySlice";
 import { fetchDishes } from "../../redux/slices/dishSlice";
-import { formatVND } from "../../utils";
 import defaultDishImage from "../../assets/images/hyderabadibiryani.jpg";
 import DishSelectionModal from "./DishSelectionModal";
 
@@ -12,9 +11,13 @@ const MenuContainer = () => {
   const dispatch = useDispatch();
 
   // Redux state
-  const { items: categories, loading: categoriesLoading } = useSelector((state) => state.categories);
-  const { items: dishes, loading: dishesLoading } = useSelector((state) => state.dishes);
-  
+  const { items: categories, loading: categoriesLoading } = useSelector(
+    (state) => state.categories
+  );
+  const { items: dishes, loading: dishesLoading } = useSelector(
+    (state) => state.dishes
+  );
+
   // Local state
   const [selectedCategory, setSelectedCategory] = useState("all"); // Start with "all"
   const [filteredDishes, setFilteredDishes] = useState([]);
@@ -32,11 +35,12 @@ const MenuContainer = () => {
     if (dishes.length > 0) {
       if (selectedCategory === "all") {
         // Show all available dishes
-        setFilteredDishes(dishes.filter(dish => dish.isAvailable));
-      } else if (selectedCategory && typeof selectedCategory === 'object') {
+        setFilteredDishes(dishes.filter((dish) => dish.isAvailable));
+      } else if (selectedCategory && typeof selectedCategory === "object") {
         // Show dishes from selected category
-        const categoryDishes = dishes.filter(dish => 
-          dish.category._id === selectedCategory._id && dish.isAvailable
+        const categoryDishes = dishes.filter(
+          (dish) =>
+            dish.category._id === selectedCategory._id && dish.isAvailable
         );
         setFilteredDishes(categoryDishes);
       }
@@ -58,10 +62,10 @@ const MenuContainer = () => {
   };
 
   // Get active categories only
-  const activeCategories = categories.filter(cat => cat.isActive);
+  const activeCategories = categories.filter((cat) => cat.isActive);
 
   // Get total available dishes count
-  const totalAvailableDishes = dishes.filter(dish => dish.isAvailable).length;
+  const totalAvailableDishes = dishes.filter((dish) => dish.isAvailable).length;
 
   if (categoriesLoading || dishesLoading) {
     return (
@@ -83,23 +87,23 @@ const MenuContainer = () => {
           <MdCategory size={20} className="hidden sm:block" />
           Categories
         </h2>
-        
-        <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
           {/* All Categories Option */}
           <div
-            className="flex flex-col items-start justify-between p-3 sm:p-4 rounded-lg h-[80px] sm:h-[100px] cursor-pointer transition-all duration-200 hover:scale-105"
-            style={{ 
+            className="flex flex-col items-start justify-between p-2 sm:p-4 rounded-lg h-[70px] sm:h-[100px] cursor-pointer transition-all duration-200 hover:scale-105"
+            style={{
               backgroundColor: "#f6b100",
-              opacity: selectedCategory === "all" ? 1 : 0.8
+              opacity: selectedCategory === "all" ? 1 : 0.8,
             }}
             onClick={() => handleCategorySelect("all")}
           >
             <div className="flex items-center justify-between w-full">
-              <h3 className="text-[#1f1f1f] text-base sm:text-lg font-semibold">
+              <h3 className="text-[#1f1f1f] text-sm sm:text-lg font-semibold">
                 All
               </h3>
               {selectedCategory === "all" && (
-                <GrRadialSelected className="text-[#1f1f1f]" size={16} />
+                <GrRadialSelected className="text-[#1f1f1f]" size={14} />
               )}
             </div>
             <p className="text-[#1f1f1f]/80 text-xs sm:text-sm font-medium">
@@ -115,33 +119,36 @@ const MenuContainer = () => {
             </div>
           ) : (
             activeCategories.map((category) => {
-              const categoryDishCount = dishes.filter(dish => 
-                dish.category._id === category._id && dish.isAvailable
+              const categoryDishCount = dishes.filter(
+                (dish) => dish.category._id === category._id && dish.isAvailable
               ).length;
 
-          return (
-            <div
-                  key={category._id}
-                  className="flex flex-col items-start justify-between p-3 sm:p-4 rounded-lg h-[80px] sm:h-[100px] cursor-pointer transition-all duration-200 hover:scale-105"
-                  style={{ 
+              return (
+                 <div
+                   key={category._id}
+                   className="flex flex-col items-start justify-between p-2 sm:p-4 rounded-lg h-[70px] sm:h-[100px] cursor-pointer transition-all duration-200 hover:scale-105"
+                  style={{
                     backgroundColor: category.color,
-                    opacity: selectedCategory?._id === category._id ? 1 : 0.8
+                    opacity: selectedCategory?._id === category._id ? 1 : 0.8,
                   }}
                   onClick={() => handleCategorySelect(category)}
-            >
-              <div className="flex items-center justify-between w-full">
-                    <h3 className="text-white text-base sm:text-lg font-semibold truncate pr-2">
-                      {category.name}
-                    </h3>
-                    {selectedCategory?._id === category._id && (
-                  <GrRadialSelected className="text-white flex-shrink-0" size={16} />
-                )}
-              </div>
-                  <p className="text-white/80 text-xs sm:text-sm font-medium">
-                    {categoryDishCount} Dishes
-              </p>
-            </div>
-          );
+                >
+                   <div className="flex items-center justify-between w-full">
+                     <h3 className="text-white text-sm sm:text-lg font-semibold truncate pr-2">
+                       {category.name}
+                     </h3>
+                     {selectedCategory?._id === category._id && (
+                       <GrRadialSelected
+                         className="text-white flex-shrink-0"
+                         size={14}
+                       />
+                     )}
+                   </div>
+                   <p className="text-white/80 text-xs sm:text-sm font-medium">
+                     {categoryDishCount} Dishes
+                   </p>
+                </div>
+              );
             })
           )}
         </div>
@@ -156,12 +163,11 @@ const MenuContainer = () => {
             <MdRestaurantMenu size={18} className="sm:hidden" />
             <MdRestaurantMenu size={20} className="hidden sm:block" />
             <span className="truncate">
-              {selectedCategory === "all" 
-                ? 'All Dishes' 
-                : selectedCategory 
-                  ? `${selectedCategory.name} Dishes` 
-                  : 'All Dishes'
-              }
+              {selectedCategory === "all"
+                ? "All Dishes"
+                : selectedCategory
+                ? `${selectedCategory.name} Dishes`
+                : "All Dishes"}
             </span>
           </h2>
           <span className="text-[#ababab] text-xs sm:text-sm flex-shrink-0">
@@ -171,68 +177,58 @@ const MenuContainer = () => {
 
         {filteredDishes.length === 0 ? (
           <div className="text-center py-12">
-            <MdRestaurantMenu size={64} className="text-[#343434] mx-auto mb-4" />
+            <MdRestaurantMenu
+              size={64}
+              className="text-[#343434] mx-auto mb-4"
+            />
             <h3 className="text-[#ababab] text-lg font-medium mb-2">
               No dishes available
             </h3>
             <p className="text-[#ababab] text-sm">
               {selectedCategory === "all"
-                ? 'No dishes available at the moment'
-                : selectedCategory && typeof selectedCategory === 'object'
-                  ? `No available dishes in ${selectedCategory.name} category`
-                  : 'No dishes available at the moment'
-              }
+                ? "No dishes available at the moment"
+                : selectedCategory && typeof selectedCategory === "object"
+                ? `No available dishes in ${selectedCategory.name} category`
+                : "No dishes available at the moment"}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4">
             {filteredDishes.map((dish) => {
-              // Get display price (handle size variants)
-              let priceLabel = formatVND(dish.price);
-              
-              if (dish.hasSizeVariants && dish.sizeVariants?.length > 0) {
-                const defaultVariant = dish.sizeVariants.find(v => v.isDefault) || dish.sizeVariants[0];
-                priceLabel = `${formatVND(defaultVariant.price)} (${defaultVariant.size})`;
-                
-                // Show price range if multiple variants
-                if (dish.sizeVariants.length > 1) {
-                  const prices = dish.sizeVariants.map(v => v.price);
-                  const minPrice = Math.min(...prices);
-                  const maxPrice = Math.max(...prices);
-                  if (minPrice !== maxPrice) {
-                    priceLabel = `${formatVND(minPrice)} - ${formatVND(maxPrice)}`;
-                  }
-                }
-              }
-
-          return (
-            <div
+              return (
+                <div
                   key={dish._id}
                   onClick={() => handleDishClick(dish)}
-                  className="flex flex-col justify-between p-2 sm:p-3 rounded-lg h-[180px] sm:h-[220px] cursor-pointer hover:bg-[#2a2a2a] bg-[#1a1a1a] transition-all duration-200 hover:scale-105 hover:shadow-lg"
-            >
+                  className="flex flex-col justify-between p-2 sm:p-3 rounded-lg h-[160px] sm:h-[220px] cursor-pointer hover:bg-[#2a2a2a] bg-[#1a1a1a] transition-all duration-200 hover:scale-105 hover:shadow-lg"
+                >
                   {/* Dish Image */}
-                  <div className="w-full h-20 sm:h-24 mb-1 sm:mb-2 rounded-lg bg-[#2a2a2a] relative">
-                    <img 
-                      src={dish.image || defaultDishImage} 
+                  <div className="w-full h-16 sm:h-24 mb-1 sm:mb-2 rounded-lg bg-[#2a2a2a] relative overflow-hidden">
+                    <img
+                      src={dish.image || defaultDishImage}
                       alt={dish.name}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-200 rounded-lg"
+                      className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-200 rounded-lg"
                       onError={(e) => {
                         e.target.src = defaultDishImage;
                       }}
                     />
                     {/* Image overlay for better text readability */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
-                    
+
                     {/* Availability badge */}
                     <div className="absolute top-1 sm:top-2 right-1 sm:right-2">
-                      <span className={`px-1 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${
-                        dish.isAvailable 
-                          ? 'bg-green-900/80 text-green-300 border border-green-700' 
-                          : 'bg-red-900/80 text-red-300 border border-red-700'
-                      }`}>
-                        <span className="hidden sm:inline">{dish.isAvailable ? 'Available' : 'Unavailable'}</span>
-                        <span className="sm:hidden">{dish.isAvailable ? '✓' : '✗'}</span>
+                      <span
+                        className={`px-1 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium ${
+                          dish.isAvailable
+                            ? "bg-green-900/80 text-green-300 border border-green-700"
+                            : "bg-red-900/80 text-red-300 border border-red-700"
+                        }`}
+                      >
+                        <span className="hidden sm:inline">
+                          {dish.isAvailable ? "Available" : "Unavailable"}
+                        </span>
+                        <span className="sm:hidden">
+                          {dish.isAvailable ? "✓" : "✗"}
+                        </span>
                       </span>
                     </div>
 
@@ -240,7 +236,9 @@ const MenuContainer = () => {
                     {dish.hasSizeVariants && (
                       <div className="absolute top-1 sm:top-2 left-1 sm:left-2">
                         <span className="px-1 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium bg-blue-900/80 text-blue-300 border border-blue-700">
-                          <span className="hidden sm:inline">Multiple Sizes</span>
+                          <span className="hidden sm:inline">
+                            Multiple Sizes
+                          </span>
                           <span className="sm:hidden">S/M/L</span>
                         </span>
                       </div>
@@ -258,7 +256,7 @@ const MenuContainer = () => {
 
                   {/* Dish Header */}
                   <div className="flex-1 mb-1 sm:mb-2">
-                    <h3 className="text-[#f5f5f5] text-xs sm:text-sm font-semibold mb-1 line-clamp-1 sm:line-clamp-2">
+                    <h3 className="text-[#f5f5f5] text-sm sm:text-sm font-semibold mb-1 line-clamp-2 leading-tight">
                       {dish.name}
                     </h3>
                     {dish.note && (
@@ -266,30 +264,12 @@ const MenuContainer = () => {
                         {dish.note}
                       </p>
                     )}
-              </div>
+                  </div>
 
-                  {/* Price Section */}
-              <div className="flex items-center justify-between w-full">
-                    <div className="flex flex-col flex-1 min-w-0">
-                      <p className="text-[#f6b100] text-xs sm:text-sm font-bold truncate">
-                        {priceLabel}
-                </p>
-                      {dish.hasSizeVariants && (
-                        <span className="text-[#ababab] text-xs hidden sm:inline">
-                          Multiple sizes
-                  </span>
-                      )}
-                    </div>
-                    
-                    {/* Click to order indicator */}
-                    <div className="text-[#ababab] text-xs text-right flex-shrink-0 ml-1">
-                      <p className="text-[#f6b100] font-medium text-xs">Order</p>
                 </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+              );
+            })}
+          </div>
         )}
       </div>
 
@@ -297,7 +277,9 @@ const MenuContainer = () => {
       {isDishModalOpen && selectedDish && (
         <DishSelectionModal
           dish={selectedDish}
-          selectedCategory={selectedCategory === "all" ? null : selectedCategory}
+          selectedCategory={
+            selectedCategory === "all" ? null : selectedCategory
+          }
           onClose={handleCloseModal}
         />
       )}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MdTableBar, MdCategory } from "react-icons/md";
+import { MdTableBar, MdCategory, MdDateRange, MdToday, MdCalendarMonth } from "react-icons/md";
 import { BiSolidDish } from "react-icons/bi";
 import { MdAddCircle } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
@@ -19,6 +19,13 @@ const buttons = [
 
 const tabs = ["Metrics", "Orders", "Payments"];
 
+const dateFilterOptions = [
+  { value: "today", label: "Today", icon: <MdToday /> },
+  { value: "week", label: "This Week", icon: <MdDateRange /> },
+  { value: "month", label: "This Month", icon: <MdCalendarMonth /> },
+  { value: "custom", label: "Custom Range", icon: <MdDateRange /> },
+];
+
 const Dashboard = () => {
   const navigate = useNavigate();
   
@@ -30,6 +37,11 @@ const Dashboard = () => {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isDishesModalOpen, setIsDishesModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("Metrics");
+  const [dateFilter, setDateFilter] = useState("today");
+  const [customDateRange, setCustomDateRange] = useState({
+    startDate: "",
+    endDate: ""
+  });
 
   const handleOpenModal = (action) => {
     if (action === "table") setIsTableModalOpen(true);
@@ -38,8 +50,23 @@ const Dashboard = () => {
     if (action === "topping") navigate(ROUTES.TOPPINGS);
   };
 
+  const handleDateFilterChange = (filterValue) => {
+    setDateFilter(filterValue);
+    if (filterValue !== "custom") {
+      setCustomDateRange({ startDate: "", endDate: "" });
+    }
+  };
+
+  const handleCustomDateChange = (field, value) => {
+    setCustomDateRange(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   return (
     <div className="bg-[#1f1f1f] pb-20">
+      {/* Header Section with Action Buttons and Tabs */}
       <div className="container mx-auto flex flex-col lg:flex-row items-start lg:items-center justify-between py-8 lg:py-14 px-4 md:px-6 gap-6 lg:gap-0">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
           {buttons.map(({ label, icon, action }) => {
@@ -77,8 +104,77 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {activeTab === "Metrics" && <Metrics />}
-      {activeTab === "Orders" && <RecentOrders />}
+      {/* Date Filter Section */}
+      <div className="container mx-auto px-4 md:px-6 mb-6">
+        <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#343434]">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-[#f5f5f5] font-semibold text-lg mb-1">Date Filter</h3>
+              <p className="text-[#ababab] text-sm">Filter data by time period</p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+              {/* Date Filter Buttons */}
+              <div className="flex flex-wrap gap-2">
+                {dateFilterOptions.map(({ value, label, icon }) => (
+                  <button
+                    key={value}
+                    onClick={() => handleDateFilterChange(value)}
+                    className={`
+                      flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+                      ${dateFilter === value
+                        ? "bg-[#f6b100] text-[#1f1f1f]"
+                        : "bg-[#262626] text-[#f5f5f5] hover:bg-[#343434]"
+                      }
+                    `}
+                  >
+                    {icon}
+                    <span className="hidden sm:inline">{label}</span>
+                    <span className="sm:hidden">{label.split(' ')[0]}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom Date Range Inputs */}
+              {dateFilter === "custom" && (
+                <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                  <div className="flex flex-col">
+                    <label className="text-[#ababab] text-xs mb-1">From</label>
+                    <input
+                      type="date"
+                      value={customDateRange.startDate}
+                      onChange={(e) => handleCustomDateChange("startDate", e.target.value)}
+                      className="bg-[#262626] text-[#f5f5f5] border border-[#343434] rounded px-3 py-2 text-sm focus:outline-none focus:border-[#f6b100]"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <label className="text-[#ababab] text-xs mb-1">To</label>
+                    <input
+                      type="date"
+                      value={customDateRange.endDate}
+                      onChange={(e) => handleCustomDateChange("endDate", e.target.value)}
+                      className="bg-[#262626] text-[#f5f5f5] border border-[#343434] rounded px-3 py-2 text-sm focus:outline-none focus:border-[#f6b100]"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {activeTab === "Metrics" && (
+        <Metrics 
+          dateFilter={dateFilter}
+          customDateRange={customDateRange}
+        />
+      )}
+      {activeTab === "Orders" && (
+        <RecentOrders 
+          dateFilter={dateFilter}
+          customDateRange={customDateRange}
+        />
+      )}
       {activeTab === "Payments" && (
         <div className="text-white p-6 container mx-auto">
           Payment Component Coming Soon
