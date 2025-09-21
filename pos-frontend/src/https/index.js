@@ -28,6 +28,7 @@ export const getOrders = (params = {}) => {
   if (params.startDate) queryParams.append('startDate', params.startDate);
   if (params.endDate) queryParams.append('endDate', params.endDate);
   if (params.status && params.status !== 'all') queryParams.append('status', params.status);
+  if (params.createdBy && params.createdBy !== 'all') queryParams.append('createdBy', params.createdBy);
   
   const queryString = queryParams.toString();
   return axiosWrapper.get(`/api/order${queryString ? `?${queryString}` : ''}`);

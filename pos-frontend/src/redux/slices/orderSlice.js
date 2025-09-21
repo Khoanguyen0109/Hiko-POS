@@ -47,7 +47,8 @@ const initialState = {
     filters: {
         startDate: null,
         endDate: null,
-        status: 'all'
+        status: 'all',
+        createdBy: 'all'
     }
 };
 

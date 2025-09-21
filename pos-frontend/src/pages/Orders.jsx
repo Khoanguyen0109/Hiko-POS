@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MdFilterList, MdRefresh } from "react-icons/md";
+import { MdFilterList, MdRefresh, MdPerson } from "react-icons/md";
 import OrderCard from "../components/orders/OrderCard";
 import BackButton from "../components/shared/BackButton";
 import DateFilter from "../components/shared/DateFilter";
@@ -8,6 +8,7 @@ import { enqueueSnackbar } from "notistack";
 import { getTodayDate } from "../utils";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchOrders, setFilters } from "../redux/slices/orderSlice";
+import { fetchMembers } from "../redux/slices/memberSlice";
 
 const Orders = () => {
   const dispatch = useDispatch();
@@ -17,16 +18,23 @@ const Orders = () => {
     loading,
     error,
   } = useSelector((state) => state.orders);
+  const { members } = useSelector((state) => state.members);
   const isAdmin = role === "Admin";
 
   const [status, setStatus] = useState("all");
   const [startDate, setStartDate] = useState(getTodayDate());
   const [endDate, setEndDate] = useState(getTodayDate());
   const [showDateFilter, setShowDateFilter] = useState(false);
+  const [createdBy, setCreatedBy] = useState("all");
+  const [showCreatedByFilter, setShowCreatedByFilter] = useState(false);
 
   useEffect(() => {
     document.title = "POS | Orders";
-  }, []);
+    // Fetch members for createdBy filter (Admin only)
+    if (isAdmin) {
+      dispatch(fetchMembers());
+    }
+  }, [dispatch, isAdmin]);
 
   // Fetch orders when component mounts or filters change
   useEffect(() => {
@@ -34,11 +42,12 @@ const Orders = () => {
     if (isAdmin) {
       params.startDate = startDate;
       params.endDate = endDate;
+      params.createdBy = createdBy;
     }
 
     dispatch(setFilters(params));
     dispatch(fetchOrders(params));
-  }, [dispatch, status, startDate, endDate, isAdmin]);
+  }, [dispatch, status, startDate, endDate, createdBy, isAdmin]);
 
   // Show error message if there's an error
   useEffect(() => {
@@ -60,17 +69,19 @@ const Orders = () => {
     if (isAdmin) {
       params.startDate = startDate;
       params.endDate = endDate;
+      params.createdBy = createdBy;
     }
     dispatch(fetchOrders(params));
     enqueueSnackbar("Orders refreshed!", { variant: "success" });
   };
 
-  // Filter orders by status on frontend (for immediate UI feedback)
-  const filteredOrders =
-    status === "all"
-      ? orders
-      : orders.filter((order) => order.orderStatus === status);
+  // Filter orders by status on frontend (createdBy filtering is now done on backend)
+  const filteredOrders = orders.filter((order) => {
+    // Filter by status
+    return status === "all" || order.orderStatus === status;
+  });
 
+  // Calculate status counts (backend already filtered by createdBy)
   const statusButtons = [
     { key: "all", label: "All", count: orders?.length || 0 },
     {
@@ -108,6 +119,11 @@ const Orders = () => {
               <span>•</span>
               <span>
                 {orders.length} orders found
+                {isAdmin && createdBy !== "all" && (
+                  <span className="ml-1 hidden sm:inline">
+                    by {members.find(m => m._id === createdBy)?.name || "Unknown"}
+                  </span>
+                )}
                 {isAdmin && startDate === endDate && (
                   <span className="ml-1 hidden sm:inline">
                     for {new Date(startDate).toLocaleDateString("vi-VN")}
@@ -127,17 +143,30 @@ const Orders = () => {
 
         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
           {isAdmin && (
-            <button
-              onClick={() => setShowDateFilter(!showDateFilter)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                showDateFilter
-                  ? "bg-[#f6b100] text-[#1f1f1f]"
-                  : "bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434]"
-              }`}
-            >
-              <MdFilterList size={16} />
-              Date Filter
-            </button>
+            <>
+              <button
+                onClick={() => setShowDateFilter(!showDateFilter)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  showDateFilter
+                    ? "bg-[#f6b100] text-[#1f1f1f]"
+                    : "bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434]"
+                }`}
+              >
+                <MdFilterList size={16} />
+                Date Filter
+              </button>
+              <button
+                onClick={() => setShowCreatedByFilter(!showCreatedByFilter)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  showCreatedByFilter
+                    ? "bg-[#f6b100] text-[#1f1f1f]"
+                    : "bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434]"
+                }`}
+              >
+                <MdPerson size={16} />
+                Created By
+              </button>
+            </>
           )}
           <button
             onClick={handleRefresh}
@@ -158,6 +187,53 @@ const Orders = () => {
             initialStartDate={startDate}
             initialEndDate={endDate}
           />
+        </div>
+      )}
+
+      {/* Created By Filter Section - Admin Only */}
+      {isAdmin && showCreatedByFilter && (
+        <div className="px-4 sm:px-10 py-4 border-b border-[#343434] bg-[#1a1a1a]">
+          <div className="bg-[#1f1f1f] rounded-lg p-4 border border-[#343434]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[#f5f5f5] text-sm font-semibold flex items-center gap-2">
+                <MdPerson size={16} />
+                Filter by Created By
+              </h3>
+            </div>
+            
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[#ababab] text-xs font-medium mb-2">
+                  Select Staff Member
+                </label>
+                <select
+                  value={createdBy}
+                  onChange={(e) => setCreatedBy(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100] transition-colors"
+                >
+                  <option value="all">All Staff Members</option>
+                  {members.map((member) => (
+                    <option key={member._id} value={member._id}>
+                      {member.name} ({member.role})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Current selection display */}
+            <div className="mt-3 pt-3 border-t border-[#343434]">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#ababab]">Selected:</span>
+                <span className="text-[#f5f5f5] font-medium">
+                  {createdBy === "all" 
+                    ? "All Staff Members"
+                    : members.find(m => m._id === createdBy)?.name || "Unknown"
+                  }
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -228,6 +304,7 @@ const Orders = () => {
                 if (isAdmin) {
                   setStartDate(getTodayDate());
                   setEndDate(getTodayDate());
+                  setCreatedBy("all");
                 }
               }}
               className="mt-4 px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg text-sm font-medium hover:bg-[#f6b100]/90 transition-colors"

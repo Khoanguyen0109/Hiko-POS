@@ -182,7 +182,7 @@ const getOrderById = async (req, res, next) => {
 
 const getOrders = async (req, res, next) => {
   try {
-    const { startDate, endDate, status } = req.query;
+    const { startDate, endDate, status, createdBy } = req.query;
     
     // Build query object
     let query = {};
@@ -207,6 +207,11 @@ const getOrders = async (req, res, next) => {
       query.orderStatus = status;
     }
     
+    // CreatedBy filtering
+    if (createdBy && createdBy !== 'all') {
+      query['createdBy.userId'] = createdBy;
+    }
+    
     const orders = await Order.find(query)
       .populate('items.dishId', 'name category price image')
       .populate('createdBy.userId', 'name email')
@@ -219,7 +224,8 @@ const getOrders = async (req, res, next) => {
       filters: {
         startDate: startDate || null,
         endDate: endDate || null,
-        status: status || 'all'
+        status: status || 'all',
+        createdBy: createdBy || 'all'
       }
     });
   } catch (error) {
