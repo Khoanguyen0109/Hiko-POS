@@ -4,6 +4,7 @@ import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
 import { fetchOrders, updateOrder } from "../../redux/slices/orderSlice";
 import { formatDateAndTime, getTodayDate, formatVND } from "../../utils";
+import { getDateRangeByPeriodVietnam } from "../../utils/dateUtils";
 
 const RecentOrders = ({ dateFilter = "today", customDateRange = { startDate: "", endDate: "" } }) => {
   const dispatch = useDispatch();
@@ -31,16 +32,14 @@ const RecentOrders = ({ dateFilter = "today", customDateRange = { startDate: "",
         break;
       }
       case "week": {
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        startDate = weekAgo.toISOString().split('T')[0];
+        const { start } = getDateRangeByPeriodVietnam('last7days');
+        startDate = start;
         endDate = today;
         break;
       }
       case "month": {
-        const monthAgo = new Date();
-        monthAgo.setMonth(monthAgo.getMonth() - 1);
-        startDate = monthAgo.toISOString().split('T')[0];
+        const { start } = getDateRangeByPeriodVietnam('last30days');
+        startDate = start;
         endDate = today;
         break;
       }
@@ -101,7 +100,7 @@ const RecentOrders = ({ dateFilter = "today", customDateRange = { startDate: "",
                   className="border-b border-gray-600 hover:bg-[#333]"
                 >
                   <td className="p-4">#{Math.floor(new Date(order.orderDate).getTime())}</td>
-                  <td className="p-4">{order.customerDetails.name}</td>
+                  <td className="p-4">{order.customerDetails?.name}</td>
                   <td className="p-4">
                     <select
                       className={`bg-[#1a1a1a] text-[#f5f5f5] border border-gray-500 p-2 rounded-lg focus:outline-none ${

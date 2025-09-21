@@ -40,7 +40,7 @@ export const formatDateAndTime = (date) => {
     minute: "2-digit",
     second: "2-digit",
     hour12: true,
-    timeZone: "Asia/Kolkata"
+    timeZone: "Asia/Ho_Chi_Minh"
   })
 
   return dateAndTime;
@@ -58,34 +58,33 @@ export const formatVND = (price) => {
   }).format(price);
 };
 
-// Get today's date in YYYY-MM-DD format
+// Import Vietnam timezone utilities
+import { 
+  getTodayDateVietnam, 
+  formatDateForInputVietnam, 
+  formatDateForDisplayVietnam,
+  toVietnamTime
+} from './dateUtils';
+
+// Get today's date in YYYY-MM-DD format (Vietnam timezone)
 export const getTodayDate = () => {
-  const today = new Date();
-  return today.toISOString().split('T')[0];
+  return getTodayDateVietnam();
 };
 
-// Format date for input field (YYYY-MM-DD)
+// Format date for input field (YYYY-MM-DD) (Vietnam timezone)
 export const formatDateForInput = (date) => {
-  if (!date) return '';
-  const d = new Date(date);
-  return d.toISOString().split('T')[0];
+  return formatDateForInputVietnam(date);
 };
 
-// Format date for display (DD/MM/YYYY)
+// Format date for display (DD/MM/YYYY) (Vietnam timezone)
 export const formatDateForDisplay = (date) => {
-  if (!date) return '';
-  const d = new Date(date);
-  return d.toLocaleDateString('vi-VN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
+  return formatDateForDisplayVietnam(date);
 };
 
-// Check if two dates are the same day
+// Check if two dates are the same day (Vietnam timezone)
 export const isSameDay = (date1, date2) => {
   if (!date1 || !date2) return false;
-  const d1 = new Date(date1);
-  const d2 = new Date(date2);
+  const d1 = toVietnamTime(date1);
+  const d2 = toVietnamTime(date2);
   return d1.toDateString() === d2.toDateString();
 };

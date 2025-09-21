@@ -205,7 +205,7 @@ const OrderDetail = () => {
                   <div>
                     <p className="text-[#ababab] text-xs">Name</p>
                     <p className="text-[#f5f5f5] font-medium">
-                      {order.customerDetails.name}
+                      {order.customerDetails?.name}
                     </p>
                   </div>
                 </div>

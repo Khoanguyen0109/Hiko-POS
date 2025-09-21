@@ -42,6 +42,7 @@ const RevenueByCategoryChart = ({ orders }) => {
     });
 
     const categories = Object.keys(revenueByCategory);
+    console.log('categories', categories)
     const revenues = Object.values(revenueByCategory);
 
     // Color palette for categories

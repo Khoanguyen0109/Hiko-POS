@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { getCurrentVietnamTime } = require("../utils/dateUtils");
 
 // Item schema for order items with variant support
 const orderItemSchema = new mongoose.Schema({
@@ -93,7 +94,7 @@ const orderSchema = new mongoose.Schema({
     },
     orderDate: {
         type: Date,
-        default: Date.now
+        default: getCurrentVietnamTime
     },
     bills: {
         total: { type: Number, required: true, min: 0 },

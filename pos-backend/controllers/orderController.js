@@ -1,6 +1,7 @@
 const createHttpError = require("http-errors");
 const Order = require("../models/orderModel");
 const { default: mongoose } = require("mongoose");
+const { getDateRangeVietnam } = require("../utils/dateUtils");
 
 const addOrder = async (req, res, next) => {
   try {
@@ -186,21 +187,17 @@ const getOrders = async (req, res, next) => {
     // Build query object
     let query = {};
     
-    // Date filtering
+    // Date filtering using Vietnam timezone
     if (startDate || endDate) {
       query.createdAt = {};
       
-      if (startDate) {
-        // Start of the day for startDate
-        const start = new Date(startDate);
-        start.setHours(0, 0, 0, 0);
+      const { start, end } = getDateRangeVietnam(startDate, endDate);
+      
+      if (start) {
         query.createdAt.$gte = start;
       }
       
-      if (endDate) {
-        // End of the day for endDate
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
+      if (end) {
         query.createdAt.$lte = end;
       }
     }

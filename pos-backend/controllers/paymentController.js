@@ -2,6 +2,7 @@ const Razorpay = require("razorpay");
 const config = require("../config/config");
 const crypto = require("crypto");
 const Payment = require("../models/paymentModel");
+const { getCurrentVietnamTime, toVietnamTime } = require("../utils/dateUtils");
 
 const createOrder = async (req, res, next) => {
   const razorpay = new Razorpay({
@@ -14,7 +15,7 @@ const createOrder = async (req, res, next) => {
     const options = {
       amount: amount * 100, // Amount in paisa (1 INR = 100 paisa)
       currency: "INR",
-      receipt: `receipt_${Date.now()}`,
+      receipt: `receipt_${getCurrentVietnamTime().getTime()}`,
     };
 
     const order = await razorpay.orders.create(options);
@@ -77,7 +78,7 @@ const webHookVerification = async (req, res, next) => {
           method: payment.method,
           email: payment.email,
           contact: payment.contact,
-          createdAt: new Date(payment.created_at * 1000) 
+          createdAt: toVietnamTime(new Date(payment.created_at * 1000)) 
         })
 
         await newPayment.save();

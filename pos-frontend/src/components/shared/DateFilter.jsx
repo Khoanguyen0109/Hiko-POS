@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { MdCalendarToday, MdDateRange, MdToday } from "react-icons/md";
 import { getTodayDate, formatDateForDisplay } from "../../utils";
+import { getDateRangeByPeriodVietnam } from "../../utils/dateUtils";
 import PropTypes from "prop-types";
 
 const DateFilter = ({ onDateChange, initialStartDate, initialEndDate }) => {
@@ -9,43 +10,7 @@ const DateFilter = ({ onDateChange, initialStartDate, initialEndDate }) => {
   const [showCustomRange, setShowCustomRange] = useState(false);
 
   const handlePresetClick = (preset) => {
-    const today = new Date();
-    let start, end;
-
-    switch (preset) {
-      case 'today': {
-        start = end = getTodayDate();
-        break;
-      }
-      case 'yesterday': {
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        start = end = yesterday.toISOString().split('T')[0];
-        break;
-      }
-      case 'last7days': {
-        const last7Days = new Date(today);
-        last7Days.setDate(last7Days.getDate() - 7);
-        start = last7Days.toISOString().split('T')[0];
-        end = getTodayDate();
-        break;
-      }
-      case 'last30days': {
-        const last30Days = new Date(today);
-        last30Days.setDate(last30Days.getDate() - 30);
-        start = last30Days.toISOString().split('T')[0];
-        end = getTodayDate();
-        break;
-      }
-      case 'thisMonth': {
-        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        start = firstDayOfMonth.toISOString().split('T')[0];
-        end = getTodayDate();
-        break;
-      }
-      default:
-        return;
-    }
+    const { start, end } = getDateRangeByPeriodVietnam(preset);
 
     setStartDate(start);
     setEndDate(end);

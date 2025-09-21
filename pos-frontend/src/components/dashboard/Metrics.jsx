@@ -4,6 +4,7 @@ import { fetchOrders } from "../../redux/slices/orderSlice";
 import { fetchDishes } from "../../redux/slices/dishSlice";
 import { fetchCategories } from "../../redux/slices/categorySlice";
 import { getTodayDate, formatVND } from "../../utils";
+import { getDateRangeByPeriodVietnam } from "../../utils/dateUtils";
 import PropTypes from "prop-types";
 import {
   RevenueTrendChart,
@@ -33,16 +34,14 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
         break;
       }
       case "week": {
-        const weekAgo = new Date();
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        startDate = weekAgo.toISOString().split('T')[0];
+        const { start } = getDateRangeByPeriodVietnam('last7days');
+        startDate = start;
         endDate = today;
         break;
       }
       case "month": {
-        const monthAgo = new Date();
-        monthAgo.setMonth(monthAgo.getMonth() - 1);
-        startDate = monthAgo.toISOString().split('T')[0];
+        const { start } = getDateRangeByPeriodVietnam('last30days');
+        startDate = start;
         endDate = today;
         break;
       }

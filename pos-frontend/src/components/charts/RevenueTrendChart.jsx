@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { getCurrentVietnamTime, toVietnamTime, formatVietnamTime } from '../../utils/dateUtils';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -27,8 +28,8 @@ const RevenueTrendChart = ({ orders, dateRange }) => {
   const chartData = useMemo(() => {
     if (!orders || orders.length === 0) {
       // Show current date with 0 revenue for empty data
-      const today = new Date();
-      const todayLabel = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const today = getCurrentVietnamTime();
+      const todayLabel = formatVietnamTime(today, 'MMM DD');
       return {
         labels: [todayLabel],
         datasets: [{
@@ -56,20 +57,20 @@ const RevenueTrendChart = ({ orders, dateRange }) => {
       // Try different date fields that might exist in the order object
       const orderDate = order.createdAt || order.orderDate || order.date || new Date().toISOString();
       
-      // Create a proper date object and format it consistently
+      // Create a proper date object and format it consistently in Vietnam timezone
       let dateObj;
       try {
-        dateObj = new Date(orderDate);
+        dateObj = toVietnamTime(orderDate);
         // Check if date is valid
         if (isNaN(dateObj.getTime())) {
-          dateObj = new Date(); // Fallback to current date
+          dateObj = getCurrentVietnamTime(); // Fallback to current date in Vietnam timezone
         }
       } catch (error) {
-        dateObj = new Date(); // Fallback to current date
+        dateObj = getCurrentVietnamTime(); // Fallback to current date in Vietnam timezone
       }
       
-      // Use ISO date string for consistent grouping (YYYY-MM-DD)
-      const dateKey = dateObj.toISOString().split('T')[0];
+      // Use Vietnam timezone date string for consistent grouping (YYYY-MM-DD)
+      const dateKey = formatVietnamTime(dateObj, 'YYYY-MM-DD');
       
       if (!revenueByDate[dateKey]) {
         revenueByDate[dateKey] = 0;
@@ -82,8 +83,8 @@ const RevenueTrendChart = ({ orders, dateRange }) => {
     
     // If no completed orders, show current date with 0 revenue
     if (sortedDates.length === 0) {
-      const today = new Date();
-      const todayLabel = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const today = getCurrentVietnamTime();
+      const todayLabel = formatVietnamTime(today, 'MMM DD');
       return {
         labels: [todayLabel],
         datasets: [{
@@ -107,7 +108,7 @@ const RevenueTrendChart = ({ orders, dateRange }) => {
 
     // Format labels based on date range
     const formatLabel = (dateString) => {
-      const d = new Date(dateString);
+      const d = toVietnamTime(dateString);
       
       // Ensure we have a valid date
       if (isNaN(d.getTime())) {
@@ -117,15 +118,15 @@ const RevenueTrendChart = ({ orders, dateRange }) => {
       
       switch (dateRange) {
         case 'today':
-          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          return formatVietnamTime(d, 'MMM DD');
         case 'week':
-          return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+          return formatVietnamTime(d, 'ddd DD');
         case 'month':
-          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          return formatVietnamTime(d, 'MMM DD');
         case 'custom':
-          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          return formatVietnamTime(d, 'MMM DD');
         default:
-          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          return formatVietnamTime(d, 'MMM DD');
       }
     };
 
