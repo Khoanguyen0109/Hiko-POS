@@ -26,14 +26,24 @@ ChartJS.register(
 const RevenueTrendChart = ({ orders, dateRange }) => {
   const chartData = useMemo(() => {
     if (!orders || orders.length === 0) {
+      // Show current date with 0 revenue for empty data
+      const today = new Date();
+      const todayLabel = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       return {
-        labels: [],
+        labels: [todayLabel],
         datasets: [{
           label: 'Revenue',
-          data: [],
+          data: [0],
           borderColor: '#f6b100',
           backgroundColor: 'rgba(246, 177, 0, 0.1)',
+          borderWidth: 3,
+          pointBackgroundColor: '#f6b100',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 6,
+          pointHoverRadius: 8,
           tension: 0.4,
+          fill: true,
         }]
       };
     }
@@ -43,26 +53,76 @@ const RevenueTrendChart = ({ orders, dateRange }) => {
     const completedOrders = orders.filter(order => order.orderStatus === 'completed');
     
     completedOrders.forEach(order => {
-      const date = new Date(order.createdAt).toLocaleDateString();
-      if (!revenueByDate[date]) {
-        revenueByDate[date] = 0;
+      // Try different date fields that might exist in the order object
+      const orderDate = order.createdAt || order.orderDate || order.date || new Date().toISOString();
+      
+      // Create a proper date object and format it consistently
+      let dateObj;
+      try {
+        dateObj = new Date(orderDate);
+        // Check if date is valid
+        if (isNaN(dateObj.getTime())) {
+          dateObj = new Date(); // Fallback to current date
+        }
+      } catch (error) {
+        dateObj = new Date(); // Fallback to current date
       }
-      revenueByDate[date] += order.bills?.totalWithTax || 0;
+      
+      // Use ISO date string for consistent grouping (YYYY-MM-DD)
+      const dateKey = dateObj.toISOString().split('T')[0];
+      
+      if (!revenueByDate[dateKey]) {
+        revenueByDate[dateKey] = 0;
+      }
+      revenueByDate[dateKey] += order.bills?.totalWithTax || 0;
     });
 
     // Sort dates and prepare data
     const sortedDates = Object.keys(revenueByDate).sort((a, b) => new Date(a) - new Date(b));
+    
+    // If no completed orders, show current date with 0 revenue
+    if (sortedDates.length === 0) {
+      const today = new Date();
+      const todayLabel = today.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return {
+        labels: [todayLabel],
+        datasets: [{
+          label: 'Revenue',
+          data: [0],
+          borderColor: '#f6b100',
+          backgroundColor: 'rgba(246, 177, 0, 0.1)',
+          borderWidth: 3,
+          pointBackgroundColor: '#f6b100',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 6,
+          pointHoverRadius: 8,
+          tension: 0.4,
+          fill: true,
+        }]
+      };
+    }
+    
     const revenueData = sortedDates.map(date => revenueByDate[date]);
 
     // Format labels based on date range
-    const formatLabel = (date) => {
-      const d = new Date(date);
+    const formatLabel = (dateString) => {
+      const d = new Date(dateString);
+      
+      // Ensure we have a valid date
+      if (isNaN(d.getTime())) {
+        console.warn('Invalid date string:', dateString);
+        return 'Invalid Date';
+      }
+      
       switch (dateRange) {
         case 'today':
           return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         case 'week':
           return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
         case 'month':
+          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        case 'custom':
           return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         default:
           return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });

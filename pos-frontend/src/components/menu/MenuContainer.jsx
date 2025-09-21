@@ -202,11 +202,11 @@ const MenuContainer = () => {
                   className="flex flex-col justify-between p-2 sm:p-3 rounded-lg h-[160px] sm:h-[220px] cursor-pointer hover:bg-[#2a2a2a] bg-[#1a1a1a] transition-all duration-200 hover:scale-105 hover:shadow-lg"
                 >
                   {/* Dish Image */}
-                  <div className="w-full h-16 sm:h-24 mb-1 sm:mb-2 rounded-lg bg-[#2a2a2a] relative overflow-hidden">
+                  <div className="flex-1 w-full h-16 sm:h-24 mb-1 sm:mb-2 rounded-lg bg-[#2a2a2a] relative overflow-hidden">
                     <img
                       src={dish.image || defaultDishImage}
                       alt={dish.name}
-                      className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-200 rounded-lg"
+                      className="h-full w-full object-contain object-center hover:scale-105 transition-transform duration-200 rounded-lg"
                       onError={(e) => {
                         e.target.src = defaultDishImage;
                       }}
@@ -255,7 +255,7 @@ const MenuContainer = () => {
                   </div>
 
                   {/* Dish Header */}
-                  <div className="flex-1 mb-1 sm:mb-2">
+                  <div className=" mb-1 sm:mb-2">
                     <h3 className="text-[#f5f5f5] text-sm sm:text-sm font-semibold mb-1 line-clamp-2 leading-tight">
                       {dish.name}
                     </h3>
