@@ -29,6 +29,8 @@ export const getOrders = (params = {}) => {
   if (params.endDate) queryParams.append('endDate', params.endDate);
   if (params.status && params.status !== 'all') queryParams.append('status', params.status);
   if (params.createdBy && params.createdBy !== 'all') queryParams.append('createdBy', params.createdBy);
+  if (params.paymentMethod && params.paymentMethod !== 'all') queryParams.append('paymentMethod', params.paymentMethod);
+  if (params.thirdPartyVendor && params.thirdPartyVendor !== 'all') queryParams.append('thirdPartyVendor', params.thirdPartyVendor);
   
   const queryString = queryParams.toString();
   return axiosWrapper.get(`/api/order${queryString ? `?${queryString}` : ''}`);

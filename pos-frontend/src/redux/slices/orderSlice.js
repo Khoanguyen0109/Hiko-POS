@@ -48,7 +48,9 @@ const initialState = {
         startDate: null,
         endDate: null,
         status: 'all',
-        createdBy: 'all'
+        createdBy: 'all',
+        paymentMethod: 'all',
+        thirdPartyVendor: 'all'
     }
 };
 

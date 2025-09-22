@@ -122,7 +122,7 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose }) => {
       pricePerQuantity: currentPrice + toppingsPrice,
       quantity: quantity,
       price: totalItemPrice,
-      category: selectedCategory?.name || 'Unknown',
+      category: dish.category?.name || selectedCategory?.name || 'Unknown',
       image: dish.image || defaultDishImage,
       variant: selectedVariant ? {
         size: selectedVariant.size,

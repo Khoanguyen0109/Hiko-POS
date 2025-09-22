@@ -12,7 +12,6 @@ import { getTodayDate } from "../utils";
 const Home = () => {
   const dispatch = useDispatch();
   const { items: orders, loading } = useSelector((state) => state.orders);
-  console.log('orders', orders)
 
   useEffect(() => {
     document.title = "POS | Home";
@@ -37,22 +36,24 @@ const Home = () => {
     const completedOrders = orders.filter(
       (order) => order.orderStatus === "completed"
     );
-    console.log('completedOrders', completedOrders)
 
     const totalEarnings = completedOrders.reduce(
       (sum, order) => sum + (order.bills?.totalWithTax || 0),
       0
     );
-    console.log('totalEarnings', totalEarnings)
 
-    // Calculate total dishes ordered across all orders
+    // Calculate total dishes ordered across all orders (excluding cancelled orders)
     const totalDishesOrdered = orders.reduce((sum, order) => {
+      // Skip cancelled orders
+      if (order.orderStatus === 'cancelled') {
+        return sum;
+      }
+      
       if (order.items && Array.isArray(order.items)) {
         return sum + order.items.reduce((itemSum, item) => itemSum + (item.quantity || 0), 0);
       }
       return sum;
     }, 0);
-    console.log('totalDishesOrdered', totalDishesOrdered)
 
     return {
       totalEarnings,

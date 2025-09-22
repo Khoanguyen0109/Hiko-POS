@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MdFilterList, MdRefresh, MdPerson } from "react-icons/md";
+import { MdFilterList, MdRefresh, MdPerson, MdPayment, MdStore } from "react-icons/md";
 import OrderCard from "../components/orders/OrderCard";
 import BackButton from "../components/shared/BackButton";
 import DateFilter from "../components/shared/DateFilter";
@@ -27,6 +27,10 @@ const Orders = () => {
   const [showDateFilter, setShowDateFilter] = useState(false);
   const [createdBy, setCreatedBy] = useState("all");
   const [showCreatedByFilter, setShowCreatedByFilter] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("all");
+  const [showPaymentFilter, setShowPaymentFilter] = useState(false);
+  const [thirdPartyVendor, setThirdPartyVendor] = useState("all");
+  const [showVendorFilter, setShowVendorFilter] = useState(false);
 
   useEffect(() => {
     document.title = "POS | Orders";
@@ -43,11 +47,13 @@ const Orders = () => {
       params.startDate = startDate;
       params.endDate = endDate;
       params.createdBy = createdBy;
+      params.paymentMethod = paymentMethod;
+      params.thirdPartyVendor = thirdPartyVendor;
     }
 
     dispatch(setFilters(params));
     dispatch(fetchOrders(params));
-  }, [dispatch, status, startDate, endDate, createdBy, isAdmin]);
+  }, [dispatch, status, startDate, endDate, createdBy, paymentMethod, thirdPartyVendor, isAdmin]);
 
   // Show error message if there's an error
   useEffect(() => {
@@ -70,6 +76,8 @@ const Orders = () => {
       params.startDate = startDate;
       params.endDate = endDate;
       params.createdBy = createdBy;
+      params.paymentMethod = paymentMethod;
+      params.thirdPartyVendor = thirdPartyVendor;
     }
     dispatch(fetchOrders(params));
     enqueueSnackbar("Orders refreshed!", { variant: "success" });
@@ -124,6 +132,16 @@ const Orders = () => {
                     by {members.find(m => m._id === createdBy)?.name || "Unknown"}
                   </span>
                 )}
+                {isAdmin && paymentMethod !== "all" && (
+                  <span className="ml-1 hidden sm:inline">
+                    • {paymentMethod} payments
+                  </span>
+                )}
+                {isAdmin && thirdPartyVendor !== "all" && (
+                  <span className="ml-1 hidden sm:inline">
+                    • {thirdPartyVendor === "None" ? "Direct orders" : thirdPartyVendor}
+                  </span>
+                )}
                 {isAdmin && startDate === endDate && (
                   <span className="ml-1 hidden sm:inline">
                     for {new Date(startDate).toLocaleDateString("vi-VN")}
@@ -141,7 +159,7 @@ const Orders = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-wrap">
           {isAdmin && (
             <>
               <button
@@ -165,6 +183,28 @@ const Orders = () => {
               >
                 <MdPerson size={16} />
                 Created By
+              </button>
+              <button
+                onClick={() => setShowPaymentFilter(!showPaymentFilter)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  showPaymentFilter
+                    ? "bg-[#f6b100] text-[#1f1f1f]"
+                    : "bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434]"
+                }`}
+              >
+                <MdPayment size={16} />
+                Payment
+              </button>
+              <button
+                onClick={() => setShowVendorFilter(!showVendorFilter)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  showVendorFilter
+                    ? "bg-[#f6b100] text-[#1f1f1f]"
+                    : "bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434]"
+                }`}
+              >
+                <MdStore size={16} />
+                Vendor
               </button>
             </>
           )}
@@ -229,6 +269,95 @@ const Orders = () => {
                   {createdBy === "all" 
                     ? "All Staff Members"
                     : members.find(m => m._id === createdBy)?.name || "Unknown"
+                  }
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Method Filter Section - Admin Only */}
+      {isAdmin && showPaymentFilter && (
+        <div className="px-4 sm:px-10 py-4 border-b border-[#343434] bg-[#1a1a1a]">
+          <div className="bg-[#1f1f1f] rounded-lg p-4 border border-[#343434]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[#f5f5f5] text-sm font-semibold flex items-center gap-2">
+                <MdPayment size={16} />
+                Filter by Payment Method
+              </h3>
+            </div>
+            
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[#ababab] text-xs font-medium mb-2">
+                  Select Payment Method
+                </label>
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100] transition-colors"
+                >
+                  <option value="all">All Payment Methods</option>
+                  <option value="Cash">Cash</option>
+                  <option value="Banking">Banking</option>
+                  <option value="Card">Card</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Current selection display */}
+            <div className="mt-3 pt-3 border-t border-[#343434]">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#ababab]">Selected:</span>
+                <span className="text-[#f5f5f5] font-medium">
+                  {paymentMethod === "all" ? "All Payment Methods" : paymentMethod}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Third Party Vendor Filter Section - Admin Only */}
+      {isAdmin && showVendorFilter && (
+        <div className="px-4 sm:px-10 py-4 border-b border-[#343434] bg-[#1a1a1a]">
+          <div className="bg-[#1f1f1f] rounded-lg p-4 border border-[#343434]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-[#f5f5f5] text-sm font-semibold flex items-center gap-2">
+                <MdStore size={16} />
+                Filter by Third Party Vendor
+              </h3>
+            </div>
+            
+            <div className="space-y-3">
+              <div>
+                <label className="block text-[#ababab] text-xs font-medium mb-2">
+                  Select Vendor
+                </label>
+                <select
+                  value={thirdPartyVendor}
+                  onChange={(e) => setThirdPartyVendor(e.target.value)}
+                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100] transition-colors"
+                >
+                  <option value="all">All Vendors</option>
+                  <option value="None">Direct Orders (No Vendor)</option>
+                  <option value="Shopee">Shopee</option>
+                  <option value="Grab">Grab</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Current selection display */}
+            <div className="mt-3 pt-3 border-t border-[#343434]">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[#ababab]">Selected:</span>
+                <span className="text-[#f5f5f5] font-medium">
+                  {thirdPartyVendor === "all" 
+                    ? "All Vendors" 
+                    : thirdPartyVendor === "None" 
+                    ? "Direct Orders" 
+                    : thirdPartyVendor
                   }
                 </span>
               </div>
@@ -305,6 +434,8 @@ const Orders = () => {
                   setStartDate(getTodayDate());
                   setEndDate(getTodayDate());
                   setCreatedBy("all");
+                  setPaymentMethod("all");
+                  setThirdPartyVendor("all");
                 }
               }}
               className="mt-4 px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg text-sm font-medium hover:bg-[#f6b100]/90 transition-colors"

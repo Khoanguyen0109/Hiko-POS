@@ -1,5 +1,6 @@
 const createHttpError = require("http-errors");
 const Order = require("../models/orderModel");
+const Dish = require("../models/dishModel");
 const { default: mongoose } = require("mongoose");
 const { getDateRangeVietnam } = require("../utils/dateUtils");
 
@@ -31,7 +32,7 @@ const addOrder = async (req, res, next) => {
     }
 
     // Validate and process items
-    const processedItems = items.map((item, index) => {
+    const processedItems = await Promise.all(items.map(async (item, index) => {
       // Validate required item fields
       if (!item.dishId || !mongoose.Types.ObjectId.isValid(item.dishId)) {
         throw createHttpError(400, `Invalid dishId for item at index ${index}`);
@@ -53,6 +54,19 @@ const addOrder = async (req, res, next) => {
         throw createHttpError(400, `Valid total price is required for item at index ${index}`);
       }
 
+      // Get category from dish if not provided or is 'Unknown'
+      let categoryName = item.category ? item.category.trim() : undefined;
+      if (!categoryName || categoryName === 'Unknown') {
+        try {
+          const dish = await Dish.findById(item.dishId).populate('category', 'name');
+          if (dish && dish.category) {
+            categoryName = dish.category.name;
+          }
+        } catch (error) {
+          console.warn(`Failed to fetch dish category for dishId ${item.dishId}:`, error.message);
+        }
+      }
+
       // Process the item
       const processedItem = {
         dishId: item.dishId,
@@ -60,7 +74,7 @@ const addOrder = async (req, res, next) => {
         pricePerQuantity: item.pricePerQuantity,
         quantity: item.quantity,
         price: item.price,
-        category: item.category ? item.category.trim() : undefined,
+        category: categoryName,
         image: item.image ? item.image.trim() : undefined,
         note: item.note ? item.note.trim() : undefined,
         toppings: []
@@ -105,7 +119,7 @@ const addOrder = async (req, res, next) => {
       }
 
       return processedItem;
-    });
+    }));
 
     // Calculate total items and verify bill total (including toppings)
     // Note: item.price already includes toppings cost, so we don't need to add toppings separately
@@ -182,7 +196,7 @@ const getOrderById = async (req, res, next) => {
 
 const getOrders = async (req, res, next) => {
   try {
-    const { startDate, endDate, status, createdBy } = req.query;
+    const { startDate, endDate, status, createdBy, paymentMethod, thirdPartyVendor } = req.query;
     
     // Build query object
     let query = {};
@@ -212,6 +226,16 @@ const getOrders = async (req, res, next) => {
       query['createdBy.userId'] = createdBy;
     }
     
+    // Payment method filtering
+    if (paymentMethod && paymentMethod !== 'all') {
+      query.paymentMethod = paymentMethod;
+    }
+    
+    // Third party vendor filtering
+    if (thirdPartyVendor && thirdPartyVendor !== 'all') {
+      query.thirdPartyVendor = thirdPartyVendor;
+    }
+    
     const orders = await Order.find(query)
       .populate('items.dishId', 'name category price image')
       .populate('createdBy.userId', 'name email')
@@ -225,7 +249,9 @@ const getOrders = async (req, res, next) => {
         startDate: startDate || null,
         endDate: endDate || null,
         status: status || 'all',
-        createdBy: createdBy || 'all'
+        createdBy: createdBy || 'all',
+        paymentMethod: paymentMethod || 'all',
+        thirdPartyVendor: thirdPartyVendor || 'all'
       }
     });
   } catch (error) {
