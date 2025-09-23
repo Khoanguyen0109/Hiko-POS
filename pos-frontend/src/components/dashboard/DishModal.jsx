@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { IoMdClose, IoMdAdd, IoMdRemove } from "react-icons/io";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchCategories } from "../../redux/slices/categorySlice";
-import { createDish } from "../../redux/slices/dishSlice";
+import { createDish, editDish } from "../../redux/slices/dishSlice";
 import { enqueueSnackbar } from "notistack"
 import PropTypes from "prop-types";
 
 const SIZE_OPTIONS = ['Small', 'Medium', 'Large', 'Extra Large', 'Regular'];
 
-const DishModal = ({ setIsDishModalOpen }) => {
+const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) => {
   const dispatch = useDispatch();
   const { items: categories, loading: categoriesLoading } = useSelector((state) => state.categories);
   const { loading: dishLoading } = useSelector((state) => state.dishes);
@@ -29,12 +29,76 @@ const DishModal = ({ setIsDishModalOpen }) => {
     { size: 'Medium', price: '', cost: '', isDefault: true }
   ]);
 
+  // Initialize form data when editing
+  useEffect(() => {
+    if (editingDish) {
+      setDishData({
+        name: editingDish.name || "",
+        price: editingDish.price?.toString() || "",
+        category: editingDish.category?._id || editingDish.category || "",
+        cost: editingDish.cost?.toString() || "",
+        note: editingDish.note || "",
+        image: editingDish.image || "",
+        hasSizeVariants: editingDish.hasSizeVariants || false,
+        isAvailable: editingDish.isAvailable !== undefined ? editingDish.isAvailable : true,
+      });
+
+      if (editingDish.hasSizeVariants && editingDish.sizeVariants?.length > 0) {
+        setSizeVariants(editingDish.sizeVariants.map(variant => ({
+          size: variant.size,
+          price: variant.price?.toString() || '',
+          cost: variant.cost?.toString() || '',
+          isDefault: variant.isDefault || false
+        })));
+      } else {
+        setSizeVariants([{ size: 'Medium', price: '', cost: '', isDefault: true }]);
+      }
+    } else {
+      // Reset form for new dish
+      setDishData({
+        name: "",
+        price: "",
+        category: "",
+        cost: "",
+        note: "",
+        image: "",
+        hasSizeVariants: false,
+        isAvailable: true,
+      });
+      setSizeVariants([{ size: 'Medium', price: '', cost: '', isDefault: true }]);
+    }
+  }, [editingDish]);
+
+  // Define handleCloseModal first with useCallback
+  const handleCloseModal = useCallback(() => {
+    // Use the correct close function based on which prop is provided
+    if (setIsDishModalOpen) {
+      setIsDishModalOpen(false);
+    } else if (setIsDishesModalOpen) {
+      setIsDishesModalOpen(false);
+    }
+  }, [setIsDishModalOpen, setIsDishesModalOpen]);
+
   // Fetch categories when component mounts
   useEffect(() => {
     if (categories.length === 0) {
       dispatch(fetchCategories());
     }
   }, [dispatch, categories.length]);
+
+  // Handle Escape key to close modal
+  useEffect(() => {
+    const handleEscapeKey = (event) => {
+      if (event.key === 'Escape') {
+        handleCloseModal();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscapeKey);
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [handleCloseModal]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -121,20 +185,49 @@ const DishModal = ({ setIsDishModalOpen }) => {
     }
     
     try {
-      const resultAction = await dispatch(createDish(submitData));
+      let resultAction;
       
-      if (createDish.fulfilled.match(resultAction)) {
-        setIsDishModalOpen(false);
-        enqueueSnackbar("Dish created successfully!", { variant: "success" });
-        // Reset form
-        setDishData({ 
-          name: "", price: "", category: "", cost: "", note: "", 
-          image: "", hasSizeVariants: false, isAvailable: true 
-        });
-        setSizeVariants([{ size: 'Medium', price: '', cost: '', isDefault: true }]);
+      if (editingDish) {
+        // Edit existing dish
+        resultAction = await dispatch(editDish({ 
+          dishId: editingDish._id, 
+          ...submitData 
+        }));
+        
+        if (editDish.fulfilled.match(resultAction)) {
+          // Use the correct close function based on which prop is provided
+          if (setIsDishModalOpen) {
+            setIsDishModalOpen(false);
+          } else if (setIsDishesModalOpen) {
+            setIsDishesModalOpen(false);
+          }
+          enqueueSnackbar("Dish updated successfully!", { variant: "success" });
+        } else {
+          const errorMessage = resultAction.payload || "Failed to update dish";
+          enqueueSnackbar(errorMessage, { variant: "error" });
+        }
       } else {
-        const errorMessage = resultAction.payload || "Failed to create dish";
-        enqueueSnackbar(errorMessage, { variant: "error" });
+        // Create new dish
+        resultAction = await dispatch(createDish(submitData));
+        
+        if (createDish.fulfilled.match(resultAction)) {
+          // Use the correct close function based on which prop is provided
+          if (setIsDishModalOpen) {
+            setIsDishModalOpen(false);
+          } else if (setIsDishesModalOpen) {
+            setIsDishesModalOpen(false);
+          }
+          enqueueSnackbar("Dish created successfully!", { variant: "success" });
+          // Reset form
+          setDishData({ 
+            name: "", price: "", category: "", cost: "", note: "", 
+            image: "", hasSizeVariants: false, isAvailable: true 
+          });
+          setSizeVariants([{ size: 'Medium', price: '', cost: '', isDefault: true }]);
+        } else {
+          const errorMessage = resultAction.payload || "Failed to create dish";
+          enqueueSnackbar(errorMessage, { variant: "error" });
+        }
       }
     } catch (error) {
       enqueueSnackbar("An unexpected error occurred", { variant: "error" });
@@ -142,13 +235,13 @@ const DishModal = ({ setIsDishModalOpen }) => {
     }
   };
 
-  const handleCloseModal = () => {
-    setIsDishModalOpen(false);
-  };
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      onClick={handleCloseModal}
+    >
       <motion.div
+        onClick={(e) => e.stopPropagation()}
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
@@ -157,7 +250,9 @@ const DishModal = ({ setIsDishModalOpen }) => {
       >
         {/* Modal Header */}
         <div className="flex justify-between item-center mb-4">
-          <h2 className="text-[#f5f5f5] text-xl font-semibold">Add Dish</h2>
+          <h2 className="text-[#f5f5f5] text-xl font-semibold">
+            {editingDish ? "Edit Dish" : "Add Dish"}
+          </h2>
           <button
             onClick={handleCloseModal}
             className="text-[#f5f5f5] hover:text-red-500"
@@ -397,7 +492,10 @@ const DishModal = ({ setIsDishModalOpen }) => {
             disabled={dishLoading || categoriesLoading}
             className="w-full rounded-lg mt-6 mb-4 py-3 text-lg bg-yellow-400 text-gray-900 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {dishLoading ? "Adding Dish..." : "Add Dish"}
+            {dishLoading 
+              ? (editingDish ? "Updating Dish..." : "Adding Dish...") 
+              : (editingDish ? "Update Dish" : "Add Dish")
+            }
           </button>
         </form>
       </motion.div>
@@ -406,7 +504,9 @@ const DishModal = ({ setIsDishModalOpen }) => {
 };
 
 DishModal.propTypes = {
-  setIsDishModalOpen: PropTypes.func.isRequired
+  setIsDishModalOpen: PropTypes.func,
+  setIsDishesModalOpen: PropTypes.func,
+  editingDish: PropTypes.object,
 }
 
 export default DishModal;

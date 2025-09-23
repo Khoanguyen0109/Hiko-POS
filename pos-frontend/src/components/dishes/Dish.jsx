@@ -6,13 +6,13 @@ import {
   IoMdPricetag,
   IoMdTrash,
 } from "react-icons/io";
-import { MdOutlineInventory, MdToggleOn, MdToggleOff } from "react-icons/md";
+import { MdOutlineInventory, MdToggleOn, MdToggleOff, MdEdit } from "react-icons/md";
 import { removeDish, toggleAvailability } from "../../redux/slices/dishSlice";
 import { enqueueSnackbar } from "notistack";
 import biryani from "../../assets/images/hyderabadibiryani.jpg";
 import { formatVND } from "../../utils";
 
-const Dish = ({ dish }) => {
+const Dish = ({ dish, onEdit }) => {
   const dispatch = useDispatch();
   const [selectedVariant, setSelectedVariant] = useState(() => {
     if (dish.hasSizeVariants && dish.sizeVariants?.length > 0) {
@@ -45,6 +45,13 @@ const Dish = ({ dish }) => {
       } catch {
         enqueueSnackbar("An unexpected error occurred", { variant: "error" });
       }
+    }
+  };
+
+  const handleEditDish = (e) => {
+    e.stopPropagation();
+    if (onEdit) {
+      onEdit(dish);
     }
   };
 
@@ -272,6 +279,15 @@ const Dish = ({ dish }) => {
       )}
 
       <div className="flex justify-end mt-4 items-center gap-2">
+        {/* Edit Button */}
+        <button
+          onClick={handleEditDish}
+          className="p-2 rounded-lg bg-blue-900/30 text-blue-400 hover:bg-blue-900/50 border border-blue-800 transition-colors duration-200"
+          title="Edit dish"
+        >
+          <MdEdit size={18} />
+        </button>
+
         {/* Toggle Availability Button */}
         <button
           onClick={handleToggleAvailability}
@@ -322,6 +338,7 @@ Dish.propTypes = {
       })
     ),
   }).isRequired,
+  onEdit: PropTypes.func,
 };
 
 export default Dish;

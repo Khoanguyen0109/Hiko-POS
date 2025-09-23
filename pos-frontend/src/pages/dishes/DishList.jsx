@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import Dish from "../../components/dishes/Dish";
 import PropTypes from "prop-types";
 
-const DishList = ({ filterStatus }) => {
+const DishList = ({ filterStatus, onEditDish }) => {
   const { items, loading } = useSelector((state) => state.dishes);
   const dispatch = useDispatch();
 
@@ -51,14 +51,15 @@ const DishList = ({ filterStatus }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 px-4 sm:px-6 lg:px-10 py-4">
       {filteredDishes.map((dish) => (
-        <Dish key={dish._id} dish={dish} />
+        <Dish key={dish._id} dish={dish} onEdit={onEditDish} />
       ))}
     </div>
   );
 };
 
 DishList.propTypes = {
-  filterStatus: PropTypes.oneOf(["all", "active", "inactive"]).isRequired
+  filterStatus: PropTypes.oneOf(["all", "active", "inactive"]).isRequired,
+  onEditDish: PropTypes.func,
 };
 
 export default DishList;

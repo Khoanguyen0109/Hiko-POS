@@ -8,10 +8,22 @@ import { ROUTES } from "../../constants";
 const Dishes = () => {
   const navigate = useNavigate();
   const [isDishModalOpen, setIsDishModalOpen] = useState(false);
+  const [editingDish, setEditingDish] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all"); // all, active, inactive
 
   const handleOpenModal = () => {
+    setEditingDish(null);
     setIsDishModalOpen(true);
+  };
+
+  const handleEditDish = (dish) => {
+    setEditingDish(dish);
+    setIsDishModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsDishModalOpen(false);
+    setEditingDish(null);
   };
 
   return (
@@ -61,9 +73,14 @@ const Dishes = () => {
           </div>
         </div>
 
-        <DishList filterStatus={filterStatus} />
+        <DishList filterStatus={filterStatus} onEditDish={handleEditDish} />
       </section>
-      {isDishModalOpen && <DishModal setIsDishModalOpen={setIsDishModalOpen} />}
+      {isDishModalOpen && (
+        <DishModal 
+          setIsDishModalOpen={handleCloseModal} 
+          editingDish={editingDish}
+        />
+      )}
     </>
   );
 };

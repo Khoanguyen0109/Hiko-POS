@@ -107,6 +107,11 @@ const Orders = () => {
       label: "Completed",
       count: orders?.filter((o) => o.orderStatus === "completed").length || 0,
     },
+    {
+      key: "cancelled",
+      label: "Cancelled",
+      count: orders?.filter((o) => o.orderStatus === "cancelled").length || 0,
+    },
   ];
 
   if (loading && !orders.length) {
@@ -383,7 +388,11 @@ const Orders = () => {
               onClick={() => setStatus(key)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                 status === key
-                  ? "bg-[#f6b100] text-[#1f1f1f]"
+                  ? key === "cancelled"
+                    ? "bg-red-600 text-white"
+                    : "bg-[#f6b100] text-[#1f1f1f]"
+                  : key === "cancelled"
+                  ? "bg-[#262626] text-red-400 hover:bg-red-900/30 hover:text-red-300 border border-red-800/50"
                   : "bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434]"
               }`}
             >
@@ -391,7 +400,11 @@ const Orders = () => {
               <span
                 className={`px-2 py-0.5 rounded-full text-xs ${
                   status === key
-                    ? "bg-[#1f1f1f]/20 text-[#1f1f1f]"
+                    ? key === "cancelled"
+                      ? "bg-white/20 text-white"
+                      : "bg-[#1f1f1f]/20 text-[#1f1f1f]"
+                    : key === "cancelled"
+                    ? "bg-red-800/50 text-red-300"
                     : "bg-[#343434] text-[#ababab]"
                 }`}
               >
