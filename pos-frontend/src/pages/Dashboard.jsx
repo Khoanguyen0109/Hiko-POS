@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { MdTableBar, MdCategory, MdDateRange, MdToday, MdCalendarMonth } from "react-icons/md";
+import { MdTableBar, MdCategory, MdDateRange, MdToday, MdCalendarMonth, MdLocalOffer } from "react-icons/md";
 import { BiSolidDish } from "react-icons/bi";
 import { MdAddCircle } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../constants";
 import Metrics from "../components/dashboard/Metrics";
 import RecentOrders from "../components/dashboard/RecentOrders";
+import PromotionMetrics from "../components/dashboard/PromotionMetrics";
 import Modal from "../components/dashboard/Modal";
 import CategoryModal from "../components/dashboard/CategoryModal";
 import DishModal from "../components/dashboard/DishModal";
@@ -15,9 +16,10 @@ const buttons = [
   { label: "Add Category", icon: <MdCategory />, action: "category" },
   { label: "Add Dishes", icon: <BiSolidDish />, action: "dishes" },
   { label: "Add Topping", icon: <MdAddCircle />, action: "topping" },
+  { label: "Add Promotion", icon: <MdLocalOffer />, action: "promotion" },
 ];
 
-const tabs = ["Metrics", "Orders", "Payments"];
+const tabs = ["Metrics", "Orders", "Promotions", "Payments"];
 
 const dateFilterOptions = [
   { value: "today", label: "Today", icon: <MdToday /> },
@@ -48,6 +50,7 @@ const Dashboard = () => {
     if (action === "category") setIsCategoryModalOpen(true);
     if (action === "dishes") setIsDishesModalOpen(true);
     if (action === "topping") navigate(ROUTES.TOPPINGS);
+    if (action === "promotion") navigate(ROUTES.PROMOTIONS);
   };
 
   const handleDateFilterChange = (filterValue) => {
@@ -174,6 +177,14 @@ const Dashboard = () => {
           dateFilter={dateFilter}
           customDateRange={customDateRange}
         />
+      )}
+      {activeTab === "Promotions" && (
+        <div className="container mx-auto px-4 md:px-6">
+          <PromotionMetrics 
+            dateFilter={dateFilter}
+            customDateRange={customDateRange}
+          />
+        </div>
       )}
       {activeTab === "Payments" && (
         <div className="text-white p-6 container mx-auto">

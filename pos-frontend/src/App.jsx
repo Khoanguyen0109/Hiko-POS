@@ -21,6 +21,7 @@ import {
   AccountSettings,
   NotFound,
   Toppings,
+  PromotionManager,
 } from "./pages";
 import Header from "./components/shared/Header";
 import { useSelector, useDispatch } from "react-redux";
@@ -55,6 +56,7 @@ const COMPONENT_MAP = {
   AccountSettings,
   NotFound,
   Toppings,
+  PromotionManager,
 };
 
 function Layout() {

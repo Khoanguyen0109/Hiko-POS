@@ -13,21 +13,47 @@ const orderItemSchema = new mongoose.Schema({
         required: true,
         trim: true 
     },
+    // Enhanced pricing structure for promotions
+    originalPricePerQuantity: { 
+        type: Number, 
+        required: true, 
+        min: 0 
+    }, // Original dish price before any discounts
     pricePerQuantity: { 
         type: Number, 
         required: true, 
         min: 0 
-    },
+    }, // Price per quantity after discounts
     quantity: { 
         type: Number, 
         required: true, 
         min: 1 
     },
+    originalPrice: { 
+        type: Number, 
+        required: true, 
+        min: 0 
+    }, // Total original price (originalPricePerQuantity * quantity)
     price: { 
         type: Number, 
         required: true, 
         min: 0 
-    },
+    }, // Final total price after all discounts
+    
+    // Promotion tracking for this item
+    promotionsApplied: [{
+        promotionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Promotion' },
+        promotionName: { type: String, required: true },
+        promotionType: { type: String, required: true },
+        discountAmount: { type: Number, required: true, min: 0 },
+        discountPercentage: { type: Number, min: 0, max: 100 },
+        appliedAt: { type: Date, default: getCurrentVietnamTime }
+    }],
+    
+    // Happy Hour specific tracking
+    isHappyHourItem: { type: Boolean, default: false },
+    happyHourDiscount: { type: Number, default: 0, min: 0 },
+    
     category: { 
         type: String, 
         trim: true 
@@ -97,10 +123,23 @@ const orderSchema = new mongoose.Schema({
         default: getCurrentVietnamTime
     },
     bills: {
-        total: { type: Number, required: true, min: 0 },
+        subtotal: { type: Number, required: true, min: 0 }, // Before any discounts
+        promotionDiscount: { type: Number, default: 0, min: 0 }, // Total promotion discount
+        total: { type: Number, required: true, min: 0 }, // After promotions
         tax: { type: Number, default: 0, min: 0 },
         totalWithTax: { type: Number, required: true, min: 0 }
     },
+    
+    // NEW: Promotion tracking
+    appliedPromotions: [{
+        promotionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Promotion' },
+        name: { type: String, required: true },
+        type: { type: String, required: true },
+        discountAmount: { type: Number, required: true, min: 0 },
+        code: { type: String },
+        appliedToItems: [{ type: String }] // Array of order item IDs that got the discount
+    }],
+    
     items: {
         type: [orderItemSchema],
         required: true,

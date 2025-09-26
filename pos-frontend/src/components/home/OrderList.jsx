@@ -14,7 +14,7 @@ const OrderList = ({ order }) => {
           <h1 className="text-[#f5f5f5] text-lg font-semibold tracking-wide">
             {order.customerDetails?.name}
           </h1>
-          <p className="text-[#ababab] text-sm">{order.items.length} Items</p>
+          <p className="text-[#ababab] text-sm">{order.items.reduce((total, item) => total + item.quantity, 0)} Items</p>
         </div>
 
 

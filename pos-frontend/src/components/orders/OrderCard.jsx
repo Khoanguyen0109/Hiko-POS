@@ -86,7 +86,7 @@ const OrderCard = ({ order }) => {
       </div>
       <div className="flex justify-between items-center mt-4 text-[#ababab] text-xs sm:text-sm">
         <p className="truncate flex-1 mr-2">{formatDateAndTime(order.createdAt || order.orderDate)}</p>
-        <p className="flex-shrink-0">{order.items?.length || 0} Items</p>
+        <p className="flex-shrink-0">{order.items?.reduce((total, item) => total + (item.quantity || 0), 0) || 0} Items</p>
       </div>
       <hr className="w-full mt-4 border-t-1 border-gray-500" />
       <div className="flex items-center justify-between mt-4">

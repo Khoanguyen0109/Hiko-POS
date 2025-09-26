@@ -1,15 +1,17 @@
 import { useDispatch, useSelector } from "react-redux";
-import { getTotalPrice, removeAllItems, setThirdPartyVendor } from "../../redux/slices/cartSlice";
+import { getTotalPrice, getSubtotal, getDiscount, getAppliedCoupon, removeAllItems, setThirdPartyVendor, calculatePricing, applyCoupon, removeCoupon } from "../../redux/slices/cartSlice";
 import { removeCustomer } from "../../redux/slices/customerSlice";
 import { createOrder } from "../../redux/slices/orderSlice";
+import { fetchPromotions } from "../../redux/slices/promotionSlice";
 import { enqueueSnackbar } from "notistack";
 import Invoice from "../invoice/Invoice";
-import { useState, useRef } from "react";
+import CouponSelector from "./CouponInput";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useReactToPrint } from "react-to-print";
 import ThermalReceiptTemplate from "../print/ThermalReceiptTemplate";
 import { formatVND } from "../../utils";
 import { FaMoneyBillWave } from "react-icons/fa";
-import { MdClose, MdCalculate, MdExpandMore, MdExpandLess } from "react-icons/md";
+import { MdClose, MdCalculate, MdExpandMore, MdExpandLess, MdAccessTime } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants";
 
@@ -22,12 +24,218 @@ const Bill = () => {
 
   const customerData = useSelector((state) => state.customer);
   const cartData = useSelector((state) => state.cart);
+  const subtotal = useSelector(getSubtotal);
+  const discount = useSelector(getDiscount);
   const total = useSelector(getTotalPrice);
+  const appliedCoupon = useSelector(getAppliedCoupon);
   const { loading } = useSelector((state) => state.orders);
+  const { items: promotions, loading: promotionsLoading } = useSelector((state) => state.promotions);
+  console.log('promotions', promotions)
   
   // Debug: Log cart data to verify topping prices are included
   console.log('Bill - Cart items:', cartData.items);
-  console.log('Bill - Calculated total:', total);
+  console.log('Bill - Pricing info:', { subtotal, discount, total, appliedCoupon });
+  
+  // Happy Hour detection helper functions (Vietnam timezone)
+  const isCurrentTimeInSlot = useCallback((timeSlot) => {
+    if (!timeSlot.start || !timeSlot.end) return false;
+    
+    // Get current time in Vietnam timezone
+    const now = new Date();
+    const vietnamTime = new Date(now.toLocaleString("en-US", {timeZone: "Asia/Ho_Chi_Minh"}));
+    const currentTime = vietnamTime.getHours() * 60 + vietnamTime.getMinutes(); // Convert to minutes
+    
+    const [startHour, startMin] = timeSlot.start.split(':').map(Number);
+    const [endHour, endMin] = timeSlot.end.split(':').map(Number);
+    
+    const startTime = startHour * 60 + startMin;
+    const endTime = endHour * 60 + endMin;
+    
+    // Handle time slots that cross midnight
+    if (startTime > endTime) {
+      return currentTime >= startTime || currentTime <= endTime;
+    }
+    
+    return currentTime >= startTime && currentTime <= endTime;
+  }, []);
+
+  const isCurrentDayValid = useCallback((daysOfWeek) => {
+    if (!daysOfWeek || daysOfWeek.length === 0) return true; // No day restriction
+    
+    // Get current day in Vietnam timezone
+    const now = new Date();
+    const currentDay = now.toLocaleDateString('en-US', { 
+      weekday: 'long',
+      timeZone: 'Asia/Ho_Chi_Minh'
+    }).toLowerCase();
+    
+    return daysOfWeek.includes(currentDay);
+  }, []);
+
+  const isItemEligibleForPromotion = useCallback((item, promotion) => {
+    if (promotion.applicableItems === 'all_order') {
+      return true;
+    } else if (promotion.applicableItems === 'specific_dishes') {
+      return promotion.specificDishes?.some(dish => 
+        dish._id === item.dishId || dish === item.dishId
+      );
+    } else if (promotion.applicableItems === 'categories') {
+      return promotion.categories?.some(category => {
+        // Handle both ObjectId and populated category objects
+        if (typeof category === 'object' && category.name) {
+          // Category is populated with name
+          return category.name.toLowerCase() === item.category?.toLowerCase();
+        } else {
+          // Category is ObjectId - check if item.category matches ID or name
+          return category._id === item.category || category === item.category;
+        }
+      });
+    }
+    return false;
+  }, []);
+
+  const hasEligibleItems = useCallback((promotion) => {
+    return cartData.items.some(item => isItemEligibleForPromotion(item, promotion));
+  }, [cartData.items, isItemEligibleForPromotion]);
+
+  const findActiveHappyHourPromotion = useCallback(() => {
+    if (!promotions || promotions.length === 0) return null;
+    console.log('promotions', promotions)
+    const now = new Date();
+    
+    console.log('🔍 Checking Happy Hour promotions at', now.toLocaleString("en-US", {timeZone: "Asia/Ho_Chi_Minh"}));
+    
+    // Filter for Happy Hour promotions
+    const happyHourPromotions = promotions.filter(promotion => {
+      console.log(`🎯 Checking promotion: ${promotion.name} (${promotion.type})`);
+      
+      // Check if it's a happy hour promotion
+      if (promotion.type !== 'happy_hour') {
+        console.log(`❌ Not happy hour type: ${promotion.type}`);
+        return false;
+      }
+      
+      // Check if promotion is active
+      if (!promotion.isActive) {
+        console.log(`❌ Promotion not active`);
+        return false;
+      }
+      
+      // Check if promotion is within valid date range
+      const startDate = new Date(promotion.startDate);
+      const endDate = new Date(promotion.endDate);
+      if (now < startDate || now > endDate) {
+        console.log(`❌ Outside date range: ${startDate} - ${endDate}`);
+        return false;
+      }
+      
+      // Check if current day is valid
+      const dayValid = isCurrentDayValid(promotion.conditions?.daysOfWeek);
+      if (!dayValid) {
+        console.log(`❌ Invalid day. Required: ${promotion.conditions?.daysOfWeek}`);
+        return false;
+      }
+      console.log(`✅ Day valid`);
+      
+      // Check if current time is within any time slot
+      const timeSlots = promotion.conditions?.timeSlots || [];
+      if (timeSlots.length === 0) {
+        console.log(`✅ No time restrictions`);
+        return true; // No time restriction
+      }
+      
+      const isInTimeSlot = timeSlots.some(slot => {
+        const inSlot = isCurrentTimeInSlot(slot);
+        console.log(`🕐 Time slot ${slot.start}-${slot.end}: ${inSlot ? '✅' : '❌'}`);
+        return inSlot;
+      });
+      if (!isInTimeSlot) {
+        console.log(`❌ Not in any time slot`);
+        return false;
+      }
+      
+      // Check if cart has eligible items
+      const hasEligible = hasEligibleItems(promotion);
+      if (!hasEligible) {
+        console.log(`❌ No eligible items in cart`);
+        console.log(`Cart items:`, cartData.items.map(item => ({ name: item.name, category: item.category })));
+        console.log(`Promotion categories:`, promotion.categories);
+        return false;
+      }
+      console.log(`✅ Has eligible items`);
+      
+      console.log(`🎉 Promotion ${promotion.name} is VALID!`);
+      return true;
+    });
+
+    // Return the highest priority promotion
+    return happyHourPromotions.sort((a, b) => (b.priority || 0) - (a.priority || 0))[0] || null;
+  }, [promotions, isCurrentDayValid, isCurrentTimeInSlot, hasEligibleItems]);
+
+  // Happy Hour detection and auto-application
+  useEffect(() => {
+    // Fetch active promotions when component mounts
+    if (promotions.length === 0 && !promotionsLoading) {
+      dispatch(fetchPromotions({ isActive: true, limit: 50 }));
+    }
+  }, [dispatch, promotions.length, promotionsLoading]);
+
+  // Auto-apply Happy Hour promotions
+  useEffect(() => {
+    if (cartData.items.length > 0 && promotions.length > 0) {
+      const currentHappyHourPromotion = findActiveHappyHourPromotion();
+        console.log('currentHappyHourPromotion', currentHappyHourPromotion)
+      // If there's an active happy hour promotion and no coupon is applied
+      if (currentHappyHourPromotion && !appliedCoupon) {
+        console.log('Auto-applying Happy Hour promotion:', currentHappyHourPromotion);
+        dispatch(applyCoupon(currentHappyHourPromotion));
+        enqueueSnackbar(`🎉 Happy Hour promotion applied: ${currentHappyHourPromotion.name}!`, {
+          variant: "success",
+        });
+      }
+      // If happy hour has ended and we have a happy hour coupon applied
+      else if (!currentHappyHourPromotion && appliedCoupon && appliedCoupon.type === 'happy_hour') {
+        console.log('Happy Hour ended, removing promotion');
+        dispatch(removeCoupon());
+        enqueueSnackbar('Happy Hour has ended. Promotion removed.', {
+          variant: "info",
+        });
+      }
+    }
+  }, [dispatch, cartData.items, promotions, appliedCoupon, findActiveHappyHourPromotion]);
+
+  // Ensure pricing is calculated when component mounts or cart changes
+  useEffect(() => {
+    dispatch(calculatePricing());
+  }, [dispatch, cartData.items.length, appliedCoupon]);
+
+  // Periodic check for Happy Hour status changes (every minute)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (cartData.items.length > 0 && promotions.length > 0) {
+        const currentHappyHourPromotion = findActiveHappyHourPromotion();
+        
+        // If there's an active happy hour promotion and no coupon is applied
+        if (currentHappyHourPromotion && !appliedCoupon) {
+          console.log('Auto-applying Happy Hour promotion (periodic check):', currentHappyHourPromotion);
+          dispatch(applyCoupon(currentHappyHourPromotion));
+          enqueueSnackbar(`🎉 Happy Hour promotion applied: ${currentHappyHourPromotion.name}!`, {
+            variant: "success",
+          });
+        }
+        // If happy hour has ended and we have a happy hour coupon applied
+        else if (!currentHappyHourPromotion && appliedCoupon && appliedCoupon.type === 'happy_hour') {
+          console.log('Happy Hour ended (periodic check), removing promotion');
+          dispatch(removeCoupon());
+          enqueueSnackbar('Happy Hour has ended. Promotion removed.', {
+            variant: "info",
+          });
+        }
+      }
+    }, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, [dispatch, cartData.items.length, promotions, appliedCoupon, findActiveHappyHourPromotion]);
   const paymentMethod = useSelector((state) => state.cart.paymentMethod);
   const thirdPartyVendor = useSelector((state) => state.cart.thirdPartyVendor);
 
@@ -119,7 +327,33 @@ const Bill = () => {
   ].filter((amount, index, arr) => arr.indexOf(amount) === index); // Remove duplicates
 
   const handlePlaceOrder = async () => {
-    // Place the order
+    // Enhanced order data with Happy Hour support
+    const enhancedItems = cartData.items.map(item => ({
+      ...item,
+      // Ensure original pricing is preserved
+      originalPricePerQuantity: item.originalPricePerQuantity || item.pricePerQuantity,
+      originalPrice: item.originalPrice || (item.originalPricePerQuantity || item.pricePerQuantity) * item.quantity,
+      // Add Happy Hour tracking if applicable
+      isHappyHourItem: appliedCoupon?.type === 'happy_hour' && 
+        (appliedCoupon.applicableItems === 'all_order' || 
+         appliedCoupon.specificDishes?.some(dishId => dishId === item.dishId) ||
+         appliedCoupon.categories?.some(categoryId => categoryId === item.category)),
+      happyHourDiscount: appliedCoupon?.type === 'happy_hour' ? 
+        ((item.originalPrice || item.price) - item.price) : 0,
+      // Add promotion details if Happy Hour is applied
+      promotionsApplied: appliedCoupon?.type === 'happy_hour' && 
+        (appliedCoupon.applicableItems === 'all_order' || 
+         appliedCoupon.specificDishes?.some(dishId => dishId === item.dishId) ||
+         appliedCoupon.categories?.some(categoryId => categoryId === item.category)) ? [{
+        promotionId: appliedCoupon._id,
+        promotionName: appliedCoupon.name,
+        promotionType: appliedCoupon.type,
+        discountAmount: (item.originalPrice || item.price) - item.price,
+        discountPercentage: appliedCoupon.discount?.percentage || null,
+        appliedAt: new Date().toISOString()
+      }] : []
+    }));
+
     const orderData = {
       customerDetails: {
         name: customerData.customerName,
@@ -128,11 +362,23 @@ const Bill = () => {
       },
       orderStatus: "progress",
       bills: {
+        subtotal: subtotal,
+        promotionDiscount: discount,
         total: total,
         tax: 0,
         totalWithTax: total,
       },
-      items: cartData.items,
+      appliedPromotions: appliedCoupon ? [{
+        promotionId: appliedCoupon._id,
+        name: appliedCoupon.name,
+        type: appliedCoupon.type,
+        discountAmount: discount,
+        code: appliedCoupon.code,
+        appliedToItems: enhancedItems
+          .filter(item => item.isHappyHourItem)
+          .map(item => item.dishId)
+      }] : [],
+      items: enhancedItems,
       paymentMethod: cartData.paymentMethod,
       thirdPartyVendor: cartData.thirdPartyVendor,
     };
@@ -216,16 +462,85 @@ const Bill = () => {
           
           <hr className="border-[#343434] my-3" />
           
-          <div className="flex items-center justify-between">
-            <p className="text-[#f5f5f5] font-bold">
-              Total ({cartData.items?.length || 0} items)
-            </p>
-            <h1 className="text-[#f6b100] text-xl font-bold">
-              {formatVND(total)}
-            </h1>
+          <div className="space-y-2">
+            {/* Subtotal */}
+            <div className="flex items-center justify-between">
+              <p className="text-[#ababab] text-sm">
+                Subtotal ({cartData.items?.length || 0} items)
+              </p>
+              <p className="text-[#f5f5f5]">
+                {formatVND(subtotal)}
+              </p>
+            </div>
+            
+            {/* Discount */}
+            {appliedCoupon && discount > 0 && (
+              <div className="flex items-center justify-between">
+                <p className="text-green-400 text-sm">
+                  Discount ({appliedCoupon.name})
+                </p>
+                <p className="text-green-400">
+                  -{formatVND(discount)}
+                </p>
+              </div>
+            )}
+            
+            {/* Divider */}
+            {appliedCoupon && discount > 0 && <hr className="border-[#343434]" />}
+            
+            {/* Final Total */}
+            <div className="flex items-center justify-between">
+              <p className="text-[#f5f5f5] font-bold">
+                Total
+              </p>
+              <h1 className="text-[#f6b100] text-xl font-bold">
+                {formatVND(total)}
+              </h1>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Coupon Selector */}
+      <div className="px-5 mt-4">
+        <CouponSelector />
+      </div>
+
+      {/* Happy Hour Status Indicator */}
+      {(() => {
+        const currentHappyHour = findActiveHappyHourPromotion();
+        if (currentHappyHour && appliedCoupon && appliedCoupon.type === 'happy_hour') {
+          return (
+            <div className="px-5 mt-4">
+              <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-10 h-10 bg-orange-500/20 rounded-full">
+                    <MdAccessTime size={20} className="text-orange-400" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-orange-400 font-semibold text-sm">🎉 Happy Hour Active!</h3>
+                      <span className="px-2 py-1 bg-orange-500/20 text-orange-300 text-xs rounded-full font-medium">
+                        AUTO-APPLIED
+                      </span>
+                    </div>
+                    <p className="text-[#f5f5f5] text-sm mt-1">{currentHappyHour.name}</p>
+                    <p className="text-[#ababab] text-xs mt-1">
+                      {currentHappyHour.discountType === 'percentage' && currentHappyHour.discount?.percentage && `${currentHappyHour.discount.percentage}% off`}
+                      {currentHappyHour.discountType === 'fixed_amount' && currentHappyHour.discount?.fixedAmount && `${formatVND(currentHappyHour.discount.fixedAmount)} off`}
+                      {currentHappyHour.discountType === 'uniform_price' && currentHappyHour.discount?.uniformPrice && `All variants ${formatVND(currentHappyHour.discount.uniformPrice)}`}
+                      {currentHappyHour.conditions?.timeSlots?.length > 0 && (
+                        ` • Valid ${currentHappyHour.conditions.timeSlots.map(slot => `${slot.start}-${slot.end}`).join(', ')}`
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        }
+        return null;
+      })()}
 
       {/* Third Party Vendor Selection - Accordion */}
       <div className="px-5 mt-4">

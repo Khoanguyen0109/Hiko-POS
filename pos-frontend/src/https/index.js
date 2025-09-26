@@ -95,3 +95,32 @@ export const updateTopping = ({ toppingId, ...toppingData }) =>
   axiosWrapper.put(`/api/topping/${toppingId}`, toppingData);
 export const deleteTopping = (toppingId) => axiosWrapper.delete(`/api/topping/${toppingId}`);
 export const toggleToppingAvailability = (toppingId) => axiosWrapper.patch(`/api/topping/${toppingId}/toggle-availability`);
+
+// Promotion Endpoints
+export const getPromotions = (params = {}) => {
+  const queryParams = new URLSearchParams();
+  
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== '' && value !== null && value !== undefined) {
+      queryParams.append(key, value);
+    }
+  });
+  
+  const queryString = queryParams.toString();
+  return axiosWrapper.get(`/api/promotion${queryString ? `?${queryString}` : ''}`);
+};
+export const getPromotionById = (promotionId) => axiosWrapper.get(`/api/promotion/${promotionId}`);
+export const addPromotion = (data) => axiosWrapper.post("/api/promotion/", data);
+export const updatePromotion = ({ promotionId, ...promotionData }) =>
+  axiosWrapper.put(`/api/promotion/${promotionId}`, promotionData);
+export const deletePromotion = (promotionId) => axiosWrapper.delete(`/api/promotion/${promotionId}`);
+export const togglePromotionStatus = (promotionId) => axiosWrapper.patch(`/api/promotion/${promotionId}/toggle-status`);
+export const getPromotionAnalytics = (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.startDate) queryParams.append('startDate', params.startDate);
+  if (params.endDate) queryParams.append('endDate', params.endDate);
+  
+  const queryString = queryParams.toString();
+  return axiosWrapper.get(`/api/promotion/analytics${queryString ? `?${queryString}` : ''}`);
+};
+export const validateCouponCode = (code) => axiosWrapper.post("/api/promotion/validate-coupon", { code });

@@ -448,7 +448,8 @@ export const ROUTES = {
   MEMBERS: "/members",
   ACCOUNT_SETTINGS: "/account-settings",
   SETTINGS: "/settings",
-  TOPPINGS: "/toppings"
+  TOPPINGS: "/toppings",
+  PROMOTIONS: "/promotions"
 };
 
 // Route configurations for optimized rendering
@@ -513,6 +514,10 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.TOPPINGS,
     componentName: "Toppings"
+  },
+  {
+    path: ROUTES.PROMOTIONS,
+    componentName: "PromotionManager"
   }
 ];
 

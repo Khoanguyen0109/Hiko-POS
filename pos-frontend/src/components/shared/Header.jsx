@@ -8,6 +8,7 @@ import { logoutUser, removeUser } from "../../redux/slices/userSlice";
 import { useNavigate } from "react-router-dom";
 import { clearAuthData } from "../../utils/auth";
 import { MdDashboard, MdPerson, MdSettings, MdKeyboardArrowDown } from "react-icons/md";
+import { MdLocalOffer as TagIcon } from "react-icons/md";
 import { useState, useRef, useEffect } from "react";
 import { ROUTES } from "../../constants";
 
@@ -123,6 +124,16 @@ const Header = () => {
 
               {/* Menu Items */}
               <div className="py-2">
+                {userData.role === "Admin" && (
+                  <button
+                    onClick={() => handleMenuClick(ROUTES.PROMOTIONS)}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-[#f5f5f5] hover:bg-[#262626] transition-colors text-left"
+                  >
+                    <TagIcon size={18} className="text-[#ababab]" />
+                    <span className="text-sm">Promotions</span>
+                  </button>
+                )}
+                
                 <button
                   onClick={() => handleMenuClick(ROUTES.ACCOUNT_SETTINGS)}
                   className="w-full flex items-center gap-3 px-4 py-3 text-[#f5f5f5] hover:bg-[#262626] transition-colors text-left"

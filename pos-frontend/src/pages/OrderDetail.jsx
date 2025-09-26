@@ -8,6 +8,7 @@ import {
   MdAccessTime,
   MdReceipt,
   MdPayment,
+  MdLocalOffer,
 } from "react-icons/md";
 import { FaCheckCircle, FaClock, FaSpinner, FaBan } from "react-icons/fa";
 import {
@@ -283,18 +284,93 @@ const OrderDetail = () => {
             </div>
           </div>
 
+          {/* Applied Promotions */}
+          {order.appliedPromotions && order.appliedPromotions.length > 0 && (
+            <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
+              <h2 className="text-[#f5f5f5] text-lg font-semibold mb-4 flex items-center gap-2">
+                <MdLocalOffer size={20} className="text-green-400" />
+                Applied Promotions
+              </h2>
+              <div className="space-y-3">
+                {order.appliedPromotions.map((promotion, index) => (
+                  <div
+                    key={index}
+                    className="p-4 bg-green-900/10 border border-green-500/20 rounded-lg"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                        <span className="text-[#f5f5f5] font-medium">
+                          {promotion.name}
+                        </span>
+                      </div>
+                      <span className="text-green-400 font-semibold">
+                        -{formatVND(promotion.discountAmount || 0)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm text-[#ababab]">
+                      {promotion.code && (
+                        <span>
+                          Code:{" "}
+                          <span className="text-[#f5f5f5]">
+                            {promotion.code}
+                          </span>
+                        </span>
+                      )}
+                      <span>
+                        Type:{" "}
+                        <span className="text-[#f5f5f5] capitalize">
+                          {promotion.type?.replace("_", " ")}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Bill Summary */}
           <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
             <h2 className="text-[#f5f5f5] text-lg font-semibold mb-4">
               Bill Summary
             </h2>
             <div className="space-y-3">
+              {/* Subtotal */}
               <div className="flex justify-between">
-                <span className="text-[#ababab]">Subtotal</span>
+                <span className="text-[#ababab]">
+                  Subtotal ({order.items?.length || 0} items)
+                </span>
                 <span className="text-[#f5f5f5]">
-                  {formatVND(order.bills?.total || 0)}
+                  {formatVND(order.bills?.subtotal || order.bills?.total || 0)}
                 </span>
               </div>
+
+              {/* Promotion Discount */}
+              {order.bills?.promotionDiscount > 0 && (
+                <div className="bg-green-900/10 rounded-md p-3 border border-green-500/20">
+                  <div className="flex justify-between items-center">
+                    <span className="text-green-400 font-medium">
+                      Promotion Discount
+                      {order.appliedPromotions?.[0]?.name &&
+                        ` (${order.appliedPromotions[0].name})`}
+                    </span>
+                    <span className="text-green-400 font-semibold">
+                      -{formatVND(order.bills.promotionDiscount)}
+                    </span>
+                  </div>
+                  {order.appliedPromotions?.[0]?.code && (
+                    <div className="mt-2 text-sm text-[#ababab]">
+                      Code:{" "}
+                      <span className="text-green-300">
+                        {order.appliedPromotions[0].code}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Tax */}
               {order.bills?.tax > 0 && (
                 <div className="flex justify-between">
                   <span className="text-[#ababab]">Tax</span>
@@ -303,11 +379,16 @@ const OrderDetail = () => {
                   </span>
                 </div>
               )}
+
               <hr className="border-[#343434]" />
+
+              {/* Final Total */}
               <div className="flex justify-between text-lg font-semibold">
                 <span className="text-[#f5f5f5]">Total</span>
                 <span className="text-[#f6b100]">
-                  {formatVND(order.bills?.totalWithTax || 0)}
+                  {formatVND(
+                    order.bills?.totalWithTax || order.bills?.total || 0
+                  )}
                 </span>
               </div>
             </div>
@@ -388,11 +469,12 @@ const OrderItem = ({ item }) => {
             {item.variant && (
               <div className="flex items-center gap-4">
                 <span className="text-[#ababab] text-xs">
-                  Size: <span className="text-[#f5f5f5]">{item.variant.size}</span>
+                  Size:{" "}
+                  <span className="text-[#f5f5f5]">{item.variant.size}</span>
                 </span>
               </div>
             )}
-            
+
             {/* Toppings info */}
             {item.toppings && item.toppings.length > 0 && (
               <div className="space-y-2">
@@ -404,7 +486,10 @@ const OrderItem = ({ item }) => {
                 </div>
                 <div className="bg-[#1f1f1f] rounded-md p-3 space-y-2">
                   {item.toppings.map((topping, index) => (
-                    <div key={index} className="flex items-center justify-between">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between"
+                    >
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 bg-[#f6b100] rounded-full"></div>
                         <span className="text-[#f5f5f5] text-xs">
@@ -419,7 +504,7 @@ const OrderItem = ({ item }) => {
                       </span>
                     </div>
                   ))}
-                  
+
                   {/* Total toppings price */}
                   {item.toppings.length > 1 && (
                     <div className="pt-2 mt-2 border-t border-[#343434] flex items-center justify-between">
@@ -427,7 +512,12 @@ const OrderItem = ({ item }) => {
                         Toppings Total:
                       </span>
                       <span className="text-[#f6b100] text-xs font-bold">
-                        {formatVND(item.toppings.reduce((sum, t) => sum + t.totalPrice, 0))}
+                        {formatVND(
+                          item.toppings.reduce(
+                            (sum, t) => sum + t.totalPrice,
+                            0
+                          )
+                        )}
                       </span>
                     </div>
                   )}
