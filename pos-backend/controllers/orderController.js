@@ -205,18 +205,33 @@ const addOrder = async (req, res, next) => {
         return next(error);
       }
       
-      // Validate final total considering promotion discounts
-      const expectedTotal = calculatedTotal - (bills.promotionDiscount || 0);
-      if (Math.abs(expectedTotal - bills.total) > 0.01) {
-        const error = createHttpError(400, `Bill total (${bills.total}) does not match calculated total minus discounts (${expectedTotal}). Calculated: ${calculatedTotal}, Discount: ${bills.promotionDiscount || 0}`);
-        return next(error);
-      }
-      
-      // For order-level promotions, validate discount calculation
+      // Validate final total considering promotion type
       const hasOrderLevelPromotions = finalAppliedPromotions?.some(promo => 
         promo.type === 'order_percentage' || promo.type === 'order_fixed'
       );
       
+      const hasItemLevelPromotions = finalAppliedPromotions?.some(promo => 
+        promo.type === 'happy_hour'
+      );
+      
+      let expectedTotal;
+      if (hasOrderLevelPromotions && !hasItemLevelPromotions) {
+        // For order-level promotions only: subtract discount from calculated total
+        expectedTotal = calculatedTotal - (bills.promotionDiscount || 0);
+      } else if (hasItemLevelPromotions && !hasOrderLevelPromotions) {
+        // For item-level promotions only (Happy Hour): calculated total already includes discounts
+        expectedTotal = calculatedTotal;
+      } else {
+        // Mixed promotions or no promotions: use calculated total
+        expectedTotal = calculatedTotal;
+      }
+      
+      if (Math.abs(expectedTotal - bills.total) > 0.01) {
+        const error = createHttpError(400, `Bill total (${bills.total}) does not match expected total (${expectedTotal}). Calculated: ${calculatedTotal}, Discount: ${bills.promotionDiscount || 0}, OrderLevel: ${hasOrderLevelPromotions}, ItemLevel: ${hasItemLevelPromotions}`);
+        return next(error);
+      }
+      
+      // Validate discount calculation based on promotion type
       if (hasOrderLevelPromotions) {
         // For order-level promotions, discount should be calculated from subtotal
         const expectedDiscount = finalAppliedPromotions.reduce((sum, promo) => {

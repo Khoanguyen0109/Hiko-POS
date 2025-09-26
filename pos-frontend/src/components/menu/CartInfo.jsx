@@ -107,12 +107,37 @@ const CartInfo = () => {
                     )}
                   </div>
                   <div className="text-right ml-3">
-                    <p className="text-[#f6b100] text-lg font-bold">
-                      {formatVND(item.price)}
-                    </p>
-                    <p className="text-[#ababab] text-xs">
-                      {formatVND(item.pricePerQuantity)} each
-                    </p>
+                    {/* Show original price if Happy Hour is applied */}
+                    {item.originalPrice && item.originalPrice !== item.price ? (
+                      <div>
+                        <p className="text-[#ababab] text-sm line-through">
+                          {formatVND(item.originalPrice)}
+                        </p>
+                        <p className="text-[#f6b100] text-lg font-bold">
+                          {formatVND(item.price)}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-[#f6b100] text-lg font-bold">
+                        {formatVND(item.price)}
+                      </p>
+                    )}
+                    
+                    {/* Show per-item price with Happy Hour indication */}
+                    {item.originalPricePerQuantity && item.originalPricePerQuantity !== item.pricePerQuantity ? (
+                      <div className="text-xs">
+                        <p className="text-[#ababab] line-through">
+                          {formatVND(item.originalPricePerQuantity)} each
+                        </p>
+                        <p className="text-green-400">
+                          {formatVND(item.pricePerQuantity)} each (Happy Hour)
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-[#ababab] text-xs">
+                        {formatVND(item.pricePerQuantity)} each
+                      </p>
+                    )}
                   </div>
                 </div>
 

@@ -17,8 +17,21 @@ const cartSlice = createSlice({
     initialState,
     reducers : {
         addItems : (state, action) => {
-            state.items.push(action.payload);
-            // Recalculate pricing when items are added
+            const newItem = action.payload;
+            
+            // If Happy Hour is already applied, preserve original prices for new items
+            if (state.appliedCoupon?.type === 'happy_hour') {
+                // Store original prices before applying Happy Hour
+                if (!newItem.originalPricePerQuantity) {
+                    newItem.originalPricePerQuantity = newItem.pricePerQuantity;
+                }
+                if (!newItem.originalPrice) {
+                    newItem.originalPrice = newItem.price;
+                }
+            }
+            
+            state.items.push(newItem);
+            // Recalculate pricing when items are added (this will apply Happy Hour to new items)
             cartSlice.caseReducers.calculatePricing(state);
         },
 
@@ -84,17 +97,39 @@ const cartSlice = createSlice({
         },
 
         calculatePricing: (state) => {
-            // Calculate subtotal
+            // Calculate subtotal using original prices if available (for Happy Hour)
             const subtotal = state.items.reduce((total, item) => {
-                let itemTotal = item.price;
-                const expectedPrice = item.pricePerQuantity * item.quantity;
-                if (Math.abs(itemTotal - expectedPrice) > 0.01) {
-                    itemTotal = expectedPrice;
+                // Use original price if available (Happy Hour), otherwise use current price
+                let itemTotal = item.originalPrice || item.price;
+                
+                // Fallback: if no originalPrice but has originalPricePerQuantity
+                if (!item.originalPrice && item.originalPricePerQuantity) {
+                    itemTotal = item.originalPricePerQuantity * item.quantity;
                 }
+                
+                // Final fallback: calculate from current price
+                if (!itemTotal) {
+                    const expectedPrice = item.pricePerQuantity * item.quantity;
+                    itemTotal = Math.abs(item.price - expectedPrice) > 0.01 ? expectedPrice : item.price;
+                }
+                
                 return total + itemTotal;
             }, 0);
 
             state.pricing.subtotal = subtotal;
+            
+            console.log('💰 Pricing calculation:', {
+                items: state.items.map(item => ({
+                    name: item.name,
+                    originalPrice: item.originalPrice,
+                    currentPrice: item.price,
+                    originalPricePerQuantity: item.originalPricePerQuantity,
+                    currentPricePerQuantity: item.pricePerQuantity,
+                    quantity: item.quantity
+                })),
+                calculatedSubtotal: subtotal,
+                appliedCoupon: state.appliedCoupon?.name
+            });
 
             // Calculate discount
             let discount = 0;

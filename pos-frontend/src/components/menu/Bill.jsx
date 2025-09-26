@@ -436,9 +436,23 @@ const Bill = () => {
               <div key={item.id} className="flex justify-between items-start text-sm">
                 <div className="flex-1">
                   <p className="text-[#f5f5f5] font-medium">{item.name}</p>
-                  <p className="text-[#ababab] text-xs">
-                    {formatVND(item.pricePerQuantity)} × {item.quantity}
-                  </p>
+                  <div className="text-xs">
+                    {/* Show original price if Happy Hour is applied */}
+                    {item.originalPricePerQuantity && item.originalPricePerQuantity !== item.pricePerQuantity ? (
+                      <div>
+                        <p className="text-[#ababab] line-through">
+                          {formatVND(item.originalPricePerQuantity)} × {item.quantity}
+                        </p>
+                        <p className="text-green-400">
+                          {formatVND(item.pricePerQuantity)} × {item.quantity} (Happy Hour)
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-[#ababab]">
+                        {formatVND(item.pricePerQuantity)} × {item.quantity}
+                      </p>
+                    )}
+                  </div>
                   {item.toppings && item.toppings.length > 0 && (
                     <div className="ml-2 mt-1">
                       {item.toppings.map((topping, tIndex) => (
@@ -449,9 +463,23 @@ const Bill = () => {
                     </div>
                   )}
                 </div>
-                <p className="text-[#f6b100] font-bold">
-                  {formatVND(item.price)}
-                </p>
+                <div className="text-right">
+                  {/* Show original total price if Happy Hour is applied */}
+                  {item.originalPrice && item.originalPrice !== item.price ? (
+                    <div>
+                      <p className="text-[#ababab] text-xs line-through">
+                        {formatVND(item.originalPrice)}
+                      </p>
+                      <p className="text-[#f6b100] font-bold">
+                        {formatVND(item.price)}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-[#f6b100] font-bold">
+                      {formatVND(item.price)}
+                    </p>
+                  )}
+                </div>
               </div>
             ))}
             
@@ -501,10 +529,12 @@ const Bill = () => {
         </div>
       </div>
 
-      {/* Coupon Selector */}
-      <div className="px-5 mt-4">
-        <CouponSelector />
-      </div>
+      {/* Coupon Selector - Hide when Happy Hour is active */}
+      {!appliedCoupon || appliedCoupon.type !== 'happy_hour' ? (
+        <div className="px-5 mt-4">
+          <CouponSelector />
+        </div>
+      ) : null}
 
       {/* Happy Hour Status Indicator */}
       {(() => {
