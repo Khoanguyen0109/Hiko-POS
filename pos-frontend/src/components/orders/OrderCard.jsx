@@ -57,9 +57,25 @@ const OrderCard = ({ order }) => {
           </div>
         </div>
       </div>
-      <div className="flex justify-between items-center mt-4 text-[#ababab] text-xs sm:text-sm">
+      <div className="flex justify-between items-start mt-4 text-[#ababab] text-xs sm:text-sm">
         <p className="truncate flex-1 mr-2">{formatDateAndTime(order.createdAt || order.orderDate)}</p>
-        <p className="flex-shrink-0">{order.items?.reduce((total, item) => total + (item.quantity || 0), 0) || 0} Items</p>
+        <div className="flex-shrink-0 max-w-[60%]">
+          <p className="text-right mb-1 font-medium">
+            {order.items?.reduce((total, item) => total + (item.quantity || 0), 0) || 0} Items
+          </p>
+          <div className="text-right space-y-0.5">
+            {order.items?.slice(0, 3).map((item, index) => (
+              <p key={index} className="text-[#ababab] text-xs truncate">
+                {item.quantity}× {item.name?.replace(/\s*\([^)]*\)/, '') || 'Unknown Item'}
+              </p>
+            ))}
+            {order.items?.length > 3 && (
+              <p className="text-[#ababab] text-xs font-medium">
+                +{order.items.length - 3} more...
+              </p>
+            )}
+          </div>
+        </div>
       </div>
       <hr className="w-full mt-4 border-t-1 border-gray-500" />
       <div className="flex items-center justify-between mt-4">
