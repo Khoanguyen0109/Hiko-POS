@@ -4,6 +4,7 @@ import { fetchDishes } from '../../redux/slices/dishSlice';
 import { fetchCategories } from '../../redux/slices/categorySlice';
 import { MdClose as XMarkIcon } from 'react-icons/md';
 import PropTypes from 'prop-types';
+import { FormField, FormSelect, FormTextarea, Button } from '../ui';
 
 const PromotionForm = ({ promotion, onSubmit, onClose }) => {
   const dispatch = useDispatch();
@@ -323,6 +324,12 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
     { value: 'happy_hour', label: 'Happy Hour Discount' }
   ];
 
+  const discountTypes = [
+    { value: 'percentage', label: 'Percentage Discount' },
+    { value: 'fixed_amount', label: 'Fixed Amount Discount' },
+    { value: 'uniform_price', label: 'Same Price for All Variants' }
+  ];
+
   const daysOfWeek = [
     'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'
   ];
@@ -347,91 +354,57 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-[#f5f5f5] mb-2">
-                Promotion Name *
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                className={`w-full px-3 py-2 bg-[#262626] border rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] ${
-                  errors.name ? 'border-red-500' : 'border-[#343434]'
-                }`}
-                placeholder="e.g., Weekend Special"
-              />
-              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-            </div>
+            <FormField
+              label="Promotion Name"
+              type="text"
+              value={formData.name}
+              onChange={(e) => handleInputChange('name', e.target.value)}
+              error={errors.name}
+              placeholder="e.g., Weekend Special"
+              required
+            />
 
-            <div>
-              <label className="block text-sm font-medium text-[#f5f5f5] mb-2">
-                Promotion Code
-              </label>
-              <input
-                type="text"
-                value={formData.code}
-                onChange={(e) => handleInputChange('code', e.target.value.toUpperCase())}
-                className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100]"
-                placeholder="e.g., WEEKEND20"
-              />
-              <p className="text-[#ababab] text-sm mt-1">Leave empty to auto-generate</p>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-[#f5f5f5] mb-2">
-              Description
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              rows={3}
-              className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100]"
-              placeholder="Describe this promotion..."
+            <FormField
+              label="Promotion Code"
+              type="text"
+              value={formData.code}
+              onChange={(e) => handleInputChange('code', e.target.value.toUpperCase())}
+              placeholder="e.g., WEEKEND20"
+              helpText="Leave empty to auto-generate"
             />
           </div>
 
+          <FormTextarea
+            label="Description"
+            value={formData.description}
+            onChange={(e) => handleInputChange('description', e.target.value)}
+            rows={3}
+            placeholder="Describe this promotion..."
+          />
+
           {/* Promotion Type & Discount */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-[#f5f5f5] mb-2">
-                Promotion Type *
-              </label>
-              <select
-                value={formData.type}
-                onChange={(e) => handleInputChange('type', e.target.value)}
-                className={`w-full px-3 py-2 bg-[#262626] border rounded-md text-[#f5f5f5] focus:outline-none focus:border-[#f6b100] ${
-                  errors.type ? 'border-red-500' : 'border-[#343434]'
-                }`}
-              >
-                {promotionTypes.map(type => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                ))}
-              </select>
-              {errors.type && <p className="text-red-500 text-sm mt-1">{errors.type}</p>}
-            </div>
+            <FormSelect
+              label="Promotion Type"
+              value={formData.type}
+              onChange={(e) => handleInputChange('type', e.target.value)}
+              options={promotionTypes}
+              error={errors.type}
+              required
+              placeholder="Select promotion type"
+            />
 
             {/* Happy Hour Discount Type Selection */}
             {formData.type === 'happy_hour' && (
-              <div>
-                <label className="block text-sm font-medium text-[#f5f5f5] mb-2">
-                  Discount Type *
-                </label>
-                <select
-                  value={formData.discountType}
-                  onChange={(e) => handleInputChange('discountType', e.target.value)}
-                  className={`w-full px-3 py-2 bg-[#262626] border rounded-md text-[#f5f5f5] focus:outline-none focus:border-[#f6b100] ${
-                    errors.discountType ? 'border-red-500' : 'border-[#343434]'
-                  }`}
-                >
-                  <option value="percentage">Percentage Discount</option>
-                  <option value="fixed_amount">Fixed Amount Discount</option>
-                  <option value="uniform_price">Same Price for All Variants</option>
-                </select>
-                {errors.discountType && <p className="text-red-500 text-sm mt-1">{errors.discountType}</p>}
-              </div>
+              <FormSelect
+                label="Discount Type"
+                value={formData.discountType}
+                onChange={(e) => handleInputChange('discountType', e.target.value)}
+                options={discountTypes}
+                error={errors.discountType}
+                required
+                placeholder="Select discount type"
+              />
             )}
 
             <div>

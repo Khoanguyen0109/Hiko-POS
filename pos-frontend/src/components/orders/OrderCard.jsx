@@ -1,7 +1,7 @@
-import { FaCheckDouble, FaCircle } from "react-icons/fa";
 import { formatDateAndTime, getAvatarName, formatVND } from "../../utils/index";
 import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
+import { Card, StatusBadge } from "../ui";
 
 const OrderCard = ({ order }) => {
   const navigate = useNavigate();
@@ -10,44 +10,16 @@ const OrderCard = ({ order }) => {
     navigate(`/orders/${order._id}`);
   };
 
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'ready':
-        return 'text-green-600 bg-[#2e4a40]';
-      case 'completed':
-        return 'text-green-600 bg-[#2e4a40]';
-      case 'progress':
-        return 'text-blue-600 bg-[#2e3a4a]';
-      case 'pending':
-        return 'text-yellow-600 bg-[#4a452e]';
-      case 'cancelled':
-        return 'text-red-600 bg-[#4a2e2e]';
-      default:
-        return 'text-yellow-600 bg-[#4a452e]';
-    }
-  };
-
-  const getStatusMessage = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'ready':
-        return 'Ready to serve';
-      case 'completed':
-        return 'Order completed';
-      case 'progress':
-        return 'Preparing your order';
-      case 'pending':
-        return 'Order received';
-      case 'cancelled':
-        return 'Order cancelled';
-      default:
-        return 'Processing order';
-    }
-  };
+  // Removed getStatusColor and getStatusMessage - now using StatusBadge component
 
   return (
-    <div 
-      className="w-full max-w-[500px] bg-[#262626] p-4 rounded-lg mb-4 cursor-pointer hover:bg-[#2a2a2a] transition-colors duration-200 border border-transparent hover:border-[#f6b100]/30"
+    <Card 
+      variant="elevated"
+      padding="md"
+      hover
+      clickable
       onClick={handleCardClick}
+      className="w-full max-w-[500px] mb-4"
     >
       <div className="flex items-center gap-3 sm:gap-5">
         <button className="bg-[#f6b100] p-2 sm:p-3 text-lg sm:text-xl font-bold rounded-lg flex-shrink-0">
@@ -64,23 +36,24 @@ const OrderCard = ({ order }) => {
             )}
           </div>
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
-            <p className={`px-2 py-1 rounded-lg text-xs sm:text-sm ${getStatusColor(order.orderStatus)}`}>
-              {order.orderStatus === "ready" ? (
-                <FaCheckDouble className="inline mr-1 sm:mr-2" size={12} />
-              ) : (
-                <FaCircle className="inline mr-1 sm:mr-2" size={8} />
-              )}
-              <span className="hidden sm:inline">
-                {order.orderStatus?.charAt(0).toUpperCase() + order.orderStatus?.slice(1)}
-              </span>
-              <span className="sm:hidden">
-                {order.orderStatus?.charAt(0).toUpperCase()}
-              </span>
-            </p>
-            <p className="text-[#ababab] text-xs sm:text-sm hidden sm:block">
-              <FaCircle className={`inline mr-2 ${order.orderStatus === 'ready' ? 'text-green-600' : order.orderStatus === 'completed' ? 'text-green-600' : order.orderStatus === 'progress' ? 'text-blue-600' : order.orderStatus === 'cancelled' ? 'text-red-600' : 'text-yellow-600'}`} size={8} />
-              {getStatusMessage(order.orderStatus)}
-            </p>
+            {/* Mobile Status - Icon + Short Text */}
+            <div className="sm:hidden">
+              <StatusBadge 
+                status={order.orderStatus}
+                type="order"
+                size="sm"
+                showText={false}
+              />
+            </div>
+            
+            {/* Desktop Status - Full Badge */}
+            <div className="hidden sm:block">
+              <StatusBadge 
+                status={order.orderStatus}
+                type="order"
+                size="md"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -93,7 +66,7 @@ const OrderCard = ({ order }) => {
         <h1 className="text-[#f5f5f5] text-base sm:text-lg font-semibold">Total</h1>
         <p className="text-[#f5f5f5] text-base sm:text-lg font-semibold">{formatVND(order.bills?.totalWithTax || 0)}</p>
       </div>
-    </div>
+    </Card>
   );
 };
 

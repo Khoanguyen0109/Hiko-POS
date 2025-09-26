@@ -8,6 +8,7 @@ import {
   MdPhone,
   MdLock,
 } from "react-icons/md";
+import { FormField, FormSelect, Modal, Button } from "../ui";
 import { enqueueSnackbar } from "notistack";
 import {
   createNewMember,
@@ -196,154 +197,96 @@ const MemberModal = ({ isOpen, onClose, mode, member }) => {
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Name Field */}
-          <div>
-            <label className="block text-[#ababab] mb-2 text-sm font-medium">
-              <MdPerson className="inline mr-2" size={16} />
-              Full Name
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              placeholder="Enter full name"
-              className={`w-full px-4 py-3 bg-[#262626] border rounded-lg text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] transition-colors ${
-                errors.name ? "border-red-500" : "border-[#343434]"
-              }`}
-            />
-            {errors.name && (
-              <p className="mt-1 text-red-400 text-sm">{errors.name}</p>
-            )}
-          </div>
+          <FormField
+            label="Full Name"
+            type="text"
+            value={formData.name}
+            onChange={(e) => handleInputChange({ target: { name: 'name', value: e.target.value } })}
+            error={errors.name}
+            placeholder="Enter full name"
+            icon={<MdPerson size={16} />}
+            required
+          />
 
           {/* Email Field */}
-          <div>
-            <label className="block text-[#ababab] mb-2 text-sm font-medium">
-              <MdEmail className="inline mr-2" size={16} />
-              Email Address (Optional)
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              placeholder="Enter email address (optional)"
-              className={`w-full px-4 py-3 bg-[#262626] border rounded-lg text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] transition-colors ${
-                errors.email ? "border-red-500" : "border-[#343434]"
-              }`}
-            />
-            {errors.email && (
-              <p className="mt-1 text-red-400 text-sm">{errors.email}</p>
-            )}
-          </div>
+          <FormField
+            label="Email Address (Optional)"
+            type="email"
+            value={formData.email}
+            onChange={(e) => handleInputChange({ target: { name: 'email', value: e.target.value } })}
+            error={errors.email}
+            placeholder="Enter email address (optional)"
+            icon={<MdEmail size={16} />}
+          />
 
           {/* Phone Field */}
-          <div>
-            <label className="block text-[#ababab] mb-2 text-sm font-medium">
-              <MdPhone className="inline mr-2" size={16} />
-              Phone Number
-            </label>
-            <input
-              type="text"
-              name="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              placeholder="Enter phone number (10 digits)"
-              className={`w-full px-4 py-3 bg-[#262626] border rounded-lg text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] transition-colors ${
-                errors.phone ? "border-red-500" : "border-[#343434]"
-              }`}
-            />
-            {errors.phone && (
-              <p className="mt-1 text-red-400 text-sm">{errors.phone}</p>
-            )}
-          </div>
+          <FormField
+            label="Phone Number"
+            type="tel"
+            value={formData.phone}
+            onChange={(e) => handleInputChange({ target: { name: 'phone', value: e.target.value } })}
+            error={errors.phone}
+            placeholder="Enter phone number (10 digits)"
+            icon={<MdPhone size={16} />}
+            required
+          />
 
           {/* Password Field - Only for create mode */}
           {!isEditMode && (
-            <div>
-              <label className="block text-[#ababab] mb-2 text-sm font-medium">
-                <MdLock className="inline mr-2" size={16} />
-                Password
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                placeholder="Enter password (min 6 characters)"
-                className={`w-full px-4 py-3 bg-[#262626] border rounded-lg text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] transition-colors ${
-                  errors.password ? "border-red-500" : "border-[#343434]"
-                }`}
-              />
-              {errors.password && (
-                <p className="mt-1 text-red-400 text-sm">{errors.password}</p>
-              )}
-            </div>
+            <FormField
+              label="Password"
+              type="password"
+              value={formData.password}
+              onChange={(e) => handleInputChange({ target: { name: 'password', value: e.target.value } })}
+              error={errors.password}
+              placeholder="Enter password (min 6 characters)"
+              icon={<MdLock size={16} />}
+              required
+              helpText="Minimum 6 characters required"
+            />
           )}
 
           {/* Role Field */}
-          <div>
-            <label className="block text-[#ababab] mb-2 text-sm font-medium">
-              <FaUserTag className="inline mr-2" size={16} />
-              Role
-            </label>
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleInputChange}
-              className={`w-full px-4 py-3 bg-[#262626] border rounded-lg text-[#f5f5f5] focus:outline-none focus:border-[#f6b100] transition-colors ${
-                errors.role ? "border-red-500" : "border-[#343434]"
-              }`}
-            >
-              {roleOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            {errors.role && (
-              <p className="mt-1 text-red-400 text-sm">{errors.role}</p>
-            )}
-
-            {/* Role description */}
-            <div className="mt-2 p-3 bg-[#262626] rounded-lg border border-[#343434]">
-              <p className="text-[#ababab] text-sm">
-                <strong>{formData.role}:</strong>{" "}
-                {
-                  roleOptions.find((opt) => opt.value === formData.role)
-                    ?.description
-                }
-              </p>
-            </div>
-          </div>
+          <FormSelect
+            label="Role"
+            value={formData.role}
+            onChange={(e) => handleInputChange({ target: { name: 'role', value: e.target.value } })}
+            options={roleOptions}
+            error={errors.role}
+            icon={<FaUserTag size={16} />}
+            required
+            placeholder="Select a role"
+            helpText={
+              formData.role ? 
+              `${formData.role}: ${roleOptions.find((opt) => opt.value === formData.role)?.description}` :
+              "Choose the appropriate role for this member"
+            }
+          />
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3 pt-4">
-            <button
+            <Button
               type="button"
+              variant="secondary"
               onClick={onClose}
               disabled={isLoading}
-              className="flex-1 px-4 py-3 bg-[#262626] text-[#f5f5f5] rounded-lg font-medium hover:bg-[#343434] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
+              variant="primary"
+              loading={isLoading}
               disabled={isLoading}
-              className="flex-1 px-4 py-3 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#f6b100]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              icon={<MdSave size={16} />}
+              className="flex-1"
             >
-              {isLoading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-[#1f1f1f] border-t-transparent rounded-full animate-spin"></div>
-                  {isEditMode ? "Updating..." : "Creating..."}
-                </>
-              ) : (
-                <>
-                  <MdSave size={16} />
-                  {isEditMode ? "Update Member" : "Create Member"}
-                </>
-              )}
-            </button>
+              {isLoading 
+                ? (isEditMode ? "Updating..." : "Creating...")
+                : (isEditMode ? "Update Member" : "Create Member")
+              }
+            </Button>
           </div>
         </form>
       </div>

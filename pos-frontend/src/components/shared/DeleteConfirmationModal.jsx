@@ -1,5 +1,6 @@
 import { MdClose, MdWarning } from "react-icons/md";
 import PropTypes from "prop-types";
+import { Button } from "../ui";
 
 const DeleteConfirmationModal = ({ 
   isOpen, 
@@ -41,29 +42,22 @@ const DeleteConfirmationModal = ({
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3">
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={onClose}
               disabled={loading}
-              className="flex-1 px-4 py-3 bg-[#262626] text-[#f5f5f5] rounded-lg font-medium hover:bg-[#343434] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1"
             >
               {cancelText}
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="danger"
               onClick={onConfirm}
-              disabled={loading}
-              className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              loading={loading}
+              className="flex-1"
             >
-              {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  Deleting...
-                </>
-              ) : (
-                confirmText
-              )}
-            </button>
+              {loading ? "Deleting..." : confirmText}
+            </Button>
           </div>
         </div>
       </div>
