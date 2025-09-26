@@ -52,7 +52,7 @@ const MenuOrder = () => {
       {/* Right Div - Cart Section (Hidden on mobile) */}
       <div className="hidden lg:flex lg:flex-[1] bg-[#1a1a1a] mt-4 mr-3 rounded-lg pt-2 flex-col">
         {/* Customer Info */}
-        <CustomerInfo />
+        {/* <CustomerInfo /> */}
         <hr className="border-[#2a2a2a] border-t-2" />
         {/* Cart Items */}
         <CartInfo />

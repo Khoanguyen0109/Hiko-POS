@@ -431,64 +431,8 @@ const Bill = () => {
       {/* Detailed Bill Breakdown */}
       <div className="px-5 mt-2">
         <div className="bg-[#262626] rounded-lg p-4 border border-[#343434]">
-          <div className="space-y-2">
-            {cartData.items?.map((item) => (
-              <div key={item.id} className="flex justify-between items-start text-sm">
-                <div className="flex-1">
-                  <p className="text-[#f5f5f5] font-medium">{item.name}</p>
-                  <div className="text-xs">
-                    {/* Show original price if Happy Hour is applied */}
-                    {item.originalPricePerQuantity && item.originalPricePerQuantity !== item.pricePerQuantity ? (
-                      <div>
-                        <p className="text-[#ababab] line-through">
-                          {formatVND(item.originalPricePerQuantity)} × {item.quantity}
-                        </p>
-                        <p className="text-green-400">
-                          {formatVND(item.pricePerQuantity)} × {item.quantity} (Happy Hour)
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="text-[#ababab]">
-                        {formatVND(item.pricePerQuantity)} × {item.quantity}
-                      </p>
-                    )}
-                  </div>
-                  {item.toppings && item.toppings.length > 0 && (
-                    <div className="ml-2 mt-1">
-                      {item.toppings.map((topping, tIndex) => (
-                        <p key={tIndex} className="text-[#ababab] text-xs">
-                          + {topping.name} ×{topping.quantity} ({formatVND(topping.totalPrice)})
-                        </p>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <div className="text-right">
-                  {/* Show original total price if Happy Hour is applied */}
-                  {item.originalPrice && item.originalPrice !== item.price ? (
-                    <div>
-                      <p className="text-[#ababab] text-xs line-through">
-                        {formatVND(item.originalPrice)}
-                      </p>
-                      <p className="text-[#f6b100] font-bold">
-                        {formatVND(item.price)}
-                      </p>
-                    </div>
-                  ) : (
-                    <p className="text-[#f6b100] font-bold">
-                      {formatVND(item.price)}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-            
-            {cartData.items?.length === 0 && (
-              <p className="text-[#ababab] text-center py-2">No items in cart</p>
-            )}
-          </div>
+        
           
-          <hr className="border-[#343434] my-3" />
           
           <div className="space-y-2">
             {/* Subtotal */}
@@ -537,7 +481,7 @@ const Bill = () => {
       ) : null}
 
       {/* Happy Hour Status Indicator */}
-      {(() => {
+      {/* {(() => {
         const currentHappyHour = findActiveHappyHourPromotion();
         if (currentHappyHour && appliedCoupon && appliedCoupon.type === 'happy_hour') {
           return (
@@ -570,7 +514,7 @@ const Bill = () => {
           );
         }
         return null;
-      })()}
+      })()} */}
 
       {/* Third Party Vendor Selection - Accordion */}
       <div className="px-5 mt-4">

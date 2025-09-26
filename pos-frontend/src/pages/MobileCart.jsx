@@ -56,9 +56,9 @@ const MobileCart = () => {
       {/* Cart Content */}
       <div className="flex flex-col h-[calc(100vh-140px)]">
         {/* Customer Info */}
-        <div className="flex-shrink-0">
+        {/* <div className="flex-shrink-0">
           <CustomerInfo />
-        </div>
+        </div> */}
         
         <hr className="border-[#2a2a2a] border-t-2" />
         
