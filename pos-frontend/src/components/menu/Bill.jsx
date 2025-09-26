@@ -236,7 +236,6 @@ const Bill = () => {
 
     return () => clearInterval(interval);
   }, [dispatch, cartData.items.length, promotions, appliedCoupon, findActiveHappyHourPromotion]);
-  const paymentMethod = useSelector((state) => state.cart.paymentMethod);
   const thirdPartyVendor = useSelector((state) => state.cart.thirdPartyVendor);
 
   const [showInvoice, setShowInvoice] = useState(false);
@@ -379,7 +378,6 @@ const Bill = () => {
           .map(item => item.dishId)
       }] : [],
       items: enhancedItems,
-      paymentMethod: cartData.paymentMethod,
       thirdPartyVendor: cartData.thirdPartyVendor,
     };
     
@@ -596,7 +594,7 @@ const Bill = () => {
           Print Receipt
         </button>
         <button
-          onClick={paymentMethod === "Cash" ? handleOpenCashModal : handlePlaceOrder}
+          onClick={handlePlaceOrder}
           disabled={cartData.items?.length === 0 || loading}
           className="bg-[#f6b100] px-4 py-3 w-full rounded-lg text-[#1f1f1f] font-semibold text-lg hover:bg-[#e09900] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >

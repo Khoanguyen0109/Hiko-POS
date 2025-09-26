@@ -2,7 +2,6 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
     items: [],
-    paymentMethod: "Cash", // Default payment method
     thirdPartyVendor: "None", // Default vendor
     appliedCoupon: null, // Applied coupon
     pricing: {
@@ -52,9 +51,6 @@ const cartSlice = createSlice({
             cartSlice.caseReducers.calculatePricing(state);
         },
 
-        setPaymentMethod: (state, action) => {
-            state.paymentMethod = action.payload;
-        },
 
         setThirdPartyVendor: (state, action) => {
             state.thirdPartyVendor = action.payload;
@@ -323,7 +319,6 @@ export const {
     addItems, 
     removeItem, 
     updateItemQuantity, 
-    setPaymentMethod, 
     setThirdPartyVendor, 
     removeAllItems,
     applyCoupon,

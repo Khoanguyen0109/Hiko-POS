@@ -153,7 +153,8 @@ const orderSchema = new mongoose.Schema({
     paymentMethod: {
         type: String,
         enum: ['Cash', 'Banking', 'Card'],
-        required: true
+        required: false,
+        default: null
     },
     thirdPartyVendor: {
         type: String,

@@ -9,8 +9,9 @@ import {
   MdReceipt,
   MdPayment,
   MdLocalOffer,
+  MdAccountBalance,
 } from "react-icons/md";
-import { FaCheckCircle, FaClock, FaSpinner, FaBan } from "react-icons/fa";
+import { FaCheckCircle, FaClock, FaSpinner, FaBan, FaMoneyBillWave } from "react-icons/fa";
 import {
   fetchOrderById,
   updateOrder,
@@ -20,6 +21,7 @@ import { enqueueSnackbar } from "notistack";
 import { formatDateAndTime, formatVND } from "../utils";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import BackButton from "../components/shared/BackButton";
+import { FormSelect, Button } from "../components/ui";
 import PropTypes from "prop-types";
 
 const OrderDetail = () => {
@@ -28,6 +30,7 @@ const OrderDetail = () => {
   const dispatch = useDispatch();
   const { currentOrder, loading, error } = useSelector((state) => state.orders);
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
 
   useEffect(() => {
     if (orderId) {
@@ -43,6 +46,7 @@ const OrderDetail = () => {
   useEffect(() => {
     if (currentOrder) {
       setSelectedStatus(currentOrder.orderStatus);
+      setSelectedPaymentMethod(currentOrder.paymentMethod || "");
     }
   }, [currentOrder]);
 
@@ -53,18 +57,43 @@ const OrderDetail = () => {
   }, [error]);
 
   const handleStatusUpdate = () => {
-    if (selectedStatus && selectedStatus !== currentOrder?.orderStatus) {
-      dispatch(updateOrder({ orderId, orderStatus: selectedStatus }))
-        .unwrap()
-        .then(() => {
-          enqueueSnackbar("Order status updated successfully!", {
-            variant: "success",
-          });
-        })
-        .catch((error) => {
-          enqueueSnackbar(error, { variant: "error" });
-        });
+    const hasStatusChange = selectedStatus && selectedStatus !== currentOrder?.orderStatus;
+    const hasPaymentChange = selectedPaymentMethod && selectedPaymentMethod !== currentOrder?.paymentMethod;
+    
+    if (!hasStatusChange && !hasPaymentChange) {
+      enqueueSnackbar("No changes to update", { variant: "info" });
+      return;
     }
+    
+    const updateData = { orderId };
+    
+    if (hasStatusChange) {
+      updateData.orderStatus = selectedStatus;
+    }
+    
+    if (hasPaymentChange) {
+      updateData.paymentMethod = selectedPaymentMethod;
+    }
+    
+    dispatch(updateOrder(updateData))
+      .unwrap()
+      .then(() => {
+        let message = "Order updated successfully!";
+        if (hasStatusChange && hasPaymentChange) {
+          message = "Order status and payment method updated successfully!";
+        } else if (hasStatusChange) {
+          message = "Order status updated successfully!";
+        } else if (hasPaymentChange) {
+          message = "Payment method updated successfully!";
+        }
+        
+        enqueueSnackbar(message, {
+          variant: "success",
+        });
+      })
+      .catch((error) => {
+        enqueueSnackbar(error, { variant: "error" });
+      });
   };
 
   const getStatusIcon = (status) => {
@@ -133,38 +162,96 @@ const OrderDetail = () => {
     { value: "cancelled", label: "Cancelled", icon: FaBan },
   ];
 
+  const paymentMethodOptions = [
+    { value: "Cash", label: "Cash Payment", icon: FaMoneyBillWave },
+    { value: "Banking", label: "Online Banking", icon: MdAccountBalance },
+    { value: "Card", label: "Card Payment", icon: MdPayment },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#0f0f0f] p-6 pb-20">
+    <div className="min-h-screen bg-[#0f0f0f] p-4 sm:p-6 pb-20">
       {/* Header */}
-      <div className="flex items-center flex-col sm:flex-row justify-between mb-6">
-        <div className="flex items-center gap-4">
+      <div className="flex items-start flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div className="flex items-center gap-4 w-full sm:w-auto">
           <BackButton />
-          <div>
-            <h1 className="text-[#f5f5f5] text-2xl font-bold">Order Details</h1>
-            <p className="text-[#ababab] text-sm">Order #{order._id}</p>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-[#f5f5f5] text-xl sm:text-2xl font-bold truncate">Order Details</h1>
+            <p className="text-[#ababab] text-xs sm:text-sm truncate">Order #{order._id}</p>
           </div>
         </div>
 
         {/* Status Update Section */}
-        <div className="flex items-center gap-3">
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-4 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100] transition-colors"
-          >
-            {statusOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <button
-            onClick={handleStatusUpdate}
-            disabled={loading || selectedStatus === order.orderStatus}
-            className="px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#e09900] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {loading ? "Updating..." : "Update Status"}
-          </button>
+        <div className="flex flex-col gap-4 w-full">
+          <div className="flex flex-col gap-3">
+            {/* Mobile: Stack vertically, Desktop: Horizontal layout */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {/* Status Selector */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[#ababab] text-xs font-medium">Order Status</label>
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="w-full px-4 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100] transition-colors"
+                >
+                  {statusOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {/* Payment Method Selector - Only for orders in progress or pending */}
+              {(order.orderStatus === 'progress' || order.orderStatus === 'pending' || selectedStatus === 'progress' || selectedStatus === 'pending') && (
+                <div className="flex flex-col gap-1">
+                  <label className="text-[#ababab] text-xs font-medium">Payment Method</label>
+                  <select
+                    value={selectedPaymentMethod}
+                    onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                    className="w-full px-4 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100] transition-colors"
+                  >
+                    <option value="">Select Payment Method</option>
+                    {paymentMethodOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+            
+            {/* Update Button - Full width on mobile, auto width on desktop */}
+            <div className="flex justify-start">
+              <button
+                onClick={handleStatusUpdate}
+                disabled={loading || (selectedStatus === order.orderStatus && selectedPaymentMethod === order.paymentMethod)}
+                className="w-full sm:w-auto px-6 py-2.5 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#e09900] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+              >
+                {loading ? "Updating..." : "Update Order"}
+              </button>
+            </div>
+          </div>
+          
+          {/* Helper Messages */}
+          <div className="flex flex-col gap-2">
+            {selectedStatus === 'completed' && !selectedPaymentMethod && !order.paymentMethod && (
+              <div className="text-yellow-400 bg-yellow-900/20 px-3 py-2 rounded-lg border border-yellow-500/30 text-xs sm:text-sm">
+                <div className="flex items-start gap-2">
+                  <span className="text-yellow-400 flex-shrink-0 mt-0.5">💡</span>
+                  <span>Payment method is required to complete the order</span>
+                </div>
+              </div>
+            )}
+            {(order.orderStatus === 'progress' || order.orderStatus === 'pending') && (
+              <div className="text-blue-400 bg-blue-900/20 px-3 py-2 rounded-lg border border-blue-500/30 text-xs sm:text-sm">
+                <div className="flex items-start gap-2">
+                  <span className="text-blue-400 flex-shrink-0 mt-0.5">ℹ️</span>
+                  <span>You can update both status and payment method simultaneously</span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -266,13 +353,28 @@ const OrderDetail = () => {
               <MdPayment size={20} />
               Payment Details
             </h2>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="flex justify-between">
-                <span className="text-[#ababab]">Payment Method</span>
+                <span className="text-[#ababab]">Current Payment Method</span>
                 <span className="text-[#f5f5f5] font-medium">
-                  {order.paymentMethod}
+                  {order.paymentMethod || "Not Set"}
                 </span>
               </div>
+              
+              {/* Payment Method Selection - Only for orders in progress */}
+              {(order.orderStatus === 'progress' || order.orderStatus === 'pending') && (
+                <div className="pt-3 border-t border-[#343434]">
+                  <FormSelect
+                    label="Update Payment Method"
+                    value={selectedPaymentMethod}
+                    onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                    options={paymentMethodOptions}
+                    placeholder="Select payment method"
+                    helpText="Use the 'Update Order' button above to save payment method changes"
+                  />
+                </div>
+              )}
+              
               {order.paymentData?.razorpay_payment_id && (
                 <div className="flex justify-between">
                   <span className="text-[#ababab]">Payment ID</span>

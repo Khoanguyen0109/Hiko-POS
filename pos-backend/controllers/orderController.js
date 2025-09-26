@@ -21,8 +21,9 @@ const addOrder = async (req, res, next) => {
       return next(error);
     }
 
-    if (!paymentMethod || !['Cash', 'Banking', 'Card'].includes(paymentMethod)) {
-      const error = createHttpError(400, "Valid payment method is required (Cash, Banking, or Card)");
+    // Payment method is optional during order creation
+    if (paymentMethod && !['Cash', 'Banking', 'Card'].includes(paymentMethod)) {
+      const error = createHttpError(400, "Invalid payment method. Must be 'Cash', 'Banking', or 'Card'");
       return next(error);
     }
 
@@ -414,7 +415,7 @@ const getOrders = async (req, res, next) => {
 
 const updateOrder = async (req, res, next) => {
   try {
-    const { orderStatus } = req.body;
+    const { orderStatus, paymentMethod } = req.body;
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -422,25 +423,64 @@ const updateOrder = async (req, res, next) => {
       return next(error);
     }
 
-    if (!orderStatus || !['pending', 'progress', 'ready', 'completed', 'cancelled'].includes(orderStatus)) {
-      const error = createHttpError(400, "Valid order status is required (pending, progress, ready, completed, cancelled)");
+    // Build update object based on provided fields
+    const updateFields = {};
+    let updateMessage = "Order updated successfully";
+
+    // Validate and add orderStatus if provided
+    if (orderStatus) {
+      if (!['pending', 'progress', 'ready', 'completed', 'cancelled'].includes(orderStatus)) {
+        const error = createHttpError(400, "Valid order status is required (pending, progress, ready, completed, cancelled)");
+        return next(error);
+      }
+      updateFields.orderStatus = orderStatus;
+      updateMessage = "Order status updated successfully";
+    }
+
+    // Validate and add paymentMethod if provided
+    if (paymentMethod) {
+      if (!['Cash', 'Banking', 'Card'].includes(paymentMethod)) {
+        const error = createHttpError(400, "Valid payment method is required (Cash, Banking, Card)");
+        return next(error);
+      }
+      updateFields.paymentMethod = paymentMethod;
+      updateMessage = orderStatus ? "Order status and payment method updated successfully" : "Payment method updated successfully";
+    }
+
+    // Ensure at least one field is being updated
+    if (Object.keys(updateFields).length === 0) {
+      const error = createHttpError(400, "At least one field (orderStatus or paymentMethod) must be provided");
+      return next(error);
+    }
+
+    // Get current order to check status restrictions for payment method updates
+    const currentOrder = await Order.findById(id);
+    if (!currentOrder) {
+      const error = createHttpError(404, "Order not found!");
+      return next(error);
+    }
+
+    // Restrict payment method updates to orders in progress or pending
+    if (paymentMethod && !orderStatus && !['pending', 'progress'].includes(currentOrder.orderStatus)) {
+      const error = createHttpError(400, "Payment method can only be updated for orders that are pending or in progress");
+      return next(error);
+    }
+
+    // If completing an order, ensure payment method is set
+    if (orderStatus === 'completed' && !currentOrder.paymentMethod && !paymentMethod) {
+      const error = createHttpError(400, "Payment method must be set before completing an order");
       return next(error);
     }
 
     const order = await Order.findByIdAndUpdate(
       id,
-      { orderStatus },
+      updateFields,
       { new: true }
     ).populate('items.dishId', 'name category price image');
 
-    if (!order) {
-      const error = createHttpError(404, "Order not found!");
-      return next(error);
-    }
-
     res.status(200).json({ 
       success: true, 
-      message: "Order status updated successfully", 
+      message: updateMessage, 
       data: order 
     });
   } catch (error) {

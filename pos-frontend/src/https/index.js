@@ -36,8 +36,12 @@ export const getOrders = (params = {}) => {
   return axiosWrapper.get(`/api/order${queryString ? `?${queryString}` : ''}`);
 };
 export const getOrderById = (orderId) => axiosWrapper.get(`/api/order/${orderId}`);
-export const updateOrderStatus = ({ orderId, orderStatus }) =>
-  axiosWrapper.put(`/api/order/${orderId}`, { orderStatus });
+export const updateOrderStatus = ({ orderId, orderStatus, paymentMethod }) => {
+  const updateData = {};
+  if (orderStatus !== undefined) updateData.orderStatus = orderStatus;
+  if (paymentMethod !== undefined) updateData.paymentMethod = paymentMethod;
+  return axiosWrapper.put(`/api/order/${orderId}`, updateData);
+};
 
 // Category Endpoints
 export const addCategory = (data) => axiosWrapper.post("/api/category/", data);
