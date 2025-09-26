@@ -147,10 +147,10 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose }) => {
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="bg-[#1f1f1f] rounded-lg shadow-lg w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="bg-[#1f1f1f] rounded-lg shadow-lg w-full max-w-lg max-h-[90vh] flex flex-col"
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#343434]">
+        <div className="flex items-center justify-between p-6 border-b border-[#343434] flex-shrink-0">
           <h2 className="text-[#f5f5f5] text-xl font-semibold">Select Options</h2>
           <button
             onClick={onClose}
@@ -160,6 +160,8 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose }) => {
           </button>
         </div>
 
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto">
         {/* Dish Image */}
         <div className="p-6 pb-4">
           <div className="w-full h-48 rounded-lg  bg-[#2a2a2a] relative mb-4">
@@ -205,7 +207,7 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose }) => {
         {dish.hasSizeVariants && dish.sizeVariants?.length > 0 && (
           <div className="px-6 pb-4">
             <h4 className="text-[#f5f5f5] font-semibold mb-3">Choose Size</h4>
-            <div className="grid grid-cols-1 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {dish.sizeVariants.map((variant, index) => {
                 const isSelected = selectedVariant?.size === variant.size;
                 const isDefault = variant.isDefault;
@@ -223,19 +225,14 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose }) => {
                     {isDefault && (
                       <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-[#1f1f1f]"></div>
                     )}
-                    <div className="flex items-center justify-between">
-                      <div>
+                    <div className="flex items-center flex-row justify-between">
+                      <div className="flex flex-1">
                         <span className="font-bold text-lg">{variant.size}</span>
                         {isDefault && (
                           <span className={`ml-2 text-xs ${isSelected ? 'text-[#1f1f1f]/70' : 'text-[#ababab]'}`}>
                             (Default)
                           </span>
                         )}
-                      </div>
-                      <div className="text-right">
-                        <span className={`font-bold text-lg ${isSelected ? 'text-[#1f1f1f]' : 'text-[#f6b100]'}`}>
-                          {formatVND(variant.price)}
-                        </span>
                       </div>
                     </div>
                   </button>
@@ -385,16 +382,13 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose }) => {
             {note.length}/200 characters
           </p>
         </div>
+        </div>
 
-        {/* Total and Add to Cart */}
-        <div className="p-6 border-t border-[#343434]">
+        {/* Sticky Footer - Total and Add to Cart */}
+        <div className="p-6 border-t border-[#343434] flex-shrink-0 bg-[#1f1f1f] rounded-b-lg">
           {/* Price Breakdown */}
           <div className="space-y-2 mb-4">
-            <div className="flex items-center justify-between">
-              <span className="text-[#ababab]">Dish Price:</span>
-              <span className="text-[#f5f5f5]">{formatVND(getCurrentPrice())}</span>
-            </div>
-            
+          
             {getToppingsPrice() > 0 && (
               <div className="flex items-center justify-between">
                 <span className="text-[#ababab]">Toppings:</span>
