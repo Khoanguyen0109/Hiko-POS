@@ -37,7 +37,18 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-      <div className="bg-white p-4 rounded-lg shadow-lg w-[400px]">
+      <div className="bg-white rounded-lg shadow-lg w-[400px]">
+        {/* Modal Header with Close Button */}
+        <div className="flex justify-between items-center p-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-800">Order Receipt</h2>
+          <button
+            onClick={() => setShowInvoice(false)}
+            className="text-gray-500 hover:text-gray-700 text-xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+          >
+            ×
+          </button>
+        </div>
+
         {/* Receipt Content for Printing */}
 
         <div ref={invoiceRef} className="p-4">
@@ -60,8 +71,7 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
             </motion.div>
           </div>
 
-          <h2 className="text-xl font-bold text-center mb-2">Order Receipt</h2>
-          <p className="text-gray-600 text-center">Thank you for your order!</p>
+          <p className="text-gray-600 text-center mb-2">Thank you for your order!</p>
 
           {/* Order Details */}
 
@@ -173,19 +183,13 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
           </div>
         </div>
 
-        {/* Buttons */}
-        <div className="flex justify-between mt-4">
+        {/* Print Button */}
+        <div className="flex justify-center p-4 border-t border-gray-200">
           <button
             onClick={handlePrint}
-            className="text-blue-500 hover:underline text-xs px-4 py-2 rounded-lg"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors font-medium"
           >
             Print Receipt
-          </button>
-          <button
-            onClick={() => setShowInvoice(false)}
-            className="text-red-500 hover:underline text-xs px-4 py-2 rounded-lg"
-          >
-            Close
           </button>
         </div>
       </div>

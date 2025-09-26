@@ -216,7 +216,7 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose }) => {
                   <button
                     key={index}
                     onClick={() => handleVariantChange(variant)}
-                    className={`relative p-4 rounded-lg text-left transition-all duration-200 border-2 ${
+                    className={`relative h-10 px-4 rounded-lg text-left transition-all duration-200 border-2 ${
                       isSelected 
                         ? 'bg-[#f6b100] text-[#1f1f1f] border-[#f6b100] shadow-lg' 
                         : 'bg-[#262626] text-[#f5f5f5] border-[#343434] hover:border-[#f6b100] hover:bg-[#343434]'
@@ -257,7 +257,7 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose }) => {
                   <div key={categoryName} className="border border-[#343434] rounded-lg overflow-hidden">
                     <button
                       onClick={() => toggleCategory(categoryName)}
-                      className="w-full p-4 bg-[#262626] hover:bg-[#343434] transition-colors flex items-center justify-between text-left"
+                      className="w-full h-10 px-4 bg-[#262626] hover:bg-[#343434] transition-colors flex items-center justify-between text-left"
                     >
                       <div className="flex items-center gap-3">
                         <span className="text-[#f5f5f5] font-medium">{categoryName}</span>
@@ -294,7 +294,7 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose }) => {
                                   <button
                                     onClick={() => handleToppingQuantityChange(topping._id, -1)}
                                     disabled={quantity <= 0}
-                                    className="p-2 rounded-lg bg-[#262626] text-[#f6b100] hover:bg-[#343434] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    className="h-10 w-10 rounded-lg bg-[#262626] text-[#f6b100] hover:bg-[#343434] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
                                   >
                                     <MdRemove size={16} />
                                   </button>
@@ -305,7 +305,7 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose }) => {
                                   
                                   <button
                                     onClick={() => handleToppingQuantityChange(topping._id, 1)}
-                                    className="p-2 rounded-lg bg-[#262626] text-[#f6b100] hover:bg-[#343434] transition-colors"
+                                    className="h-10 w-10 rounded-lg bg-[#262626] text-[#f6b100] hover:bg-[#343434] transition-colors flex items-center justify-center"
                                   >
                                     <MdAdd size={16} />
                                   </button>
@@ -351,18 +351,18 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose }) => {
             <button
               onClick={() => handleQuantityChange(-1)}
               disabled={quantity <= 1}
-              className="p-3 rounded-lg bg-[#262626] text-[#f6b100] hover:bg-[#343434] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="h-10 w-10 rounded-lg bg-[#262626] text-[#f6b100] hover:bg-[#343434] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
             >
-              <MdRemove size={20} />
+              <MdRemove size={16} />
             </button>
             <span className="text-[#f5f5f5] text-2xl font-bold min-w-[60px] text-center">
               {quantity}
             </span>
             <button
               onClick={() => handleQuantityChange(1)}
-              className="p-3 rounded-lg bg-[#262626] text-[#f6b100] hover:bg-[#343434] transition-colors"
+              className="h-10 w-10 rounded-lg bg-[#262626] text-[#f6b100] hover:bg-[#343434] transition-colors flex items-center justify-center"
             >
-              <MdAdd size={20} />
+              <MdAdd size={16} />
             </button>
           </div>
         </div>
@@ -412,9 +412,9 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose }) => {
           <button
             onClick={handleAddToCart}
             disabled={!dish.isAvailable}
-            className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-bold text-lg hover:bg-[#e09900] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full h-10 flex items-center justify-center gap-3 px-6 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-bold text-sm hover:bg-[#e09900] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            <FaShoppingCart size={20} />
+            <FaShoppingCart size={16} />
             {dish.isAvailable ? 'Add to Cart' : 'Not Available'}
           </button>
         </div>
