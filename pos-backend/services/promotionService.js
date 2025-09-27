@@ -74,30 +74,63 @@ class PromotionService {
      * Find active Happy Hour promotions for current time (Vietnam timezone)
      */
     static async findActiveHappyHourPromotions() {
-        const now = this.getCurrentVietnamTime();
-        
-        // Get all active Happy Hour promotions
-        const promotions = await Promotion.find({
-            type: 'happy_hour',
-            isActive: true,
-            startDate: { $lte: now },
-            endDate: { $gte: now }
-        }).populate('specificDishes categories');
-
-        // Filter by current day and time
-        const activePromotions = promotions.filter(promotion => {
-            // Check if current day is valid
-            if (!this.isCurrentDayValid(promotion.conditions?.daysOfWeek)) return false;
+        try {
+            const now = this.getCurrentVietnamTime();
+            console.log('🕐 Checking for active Happy Hour promotions at:', now.toLocaleString('en-US', {timeZone: 'Asia/Ho_Chi_Minh'}));
             
-            // Check if current time is within any time slot
-            const timeSlots = promotion.conditions?.timeSlots || [];
-            if (timeSlots.length === 0) return true; // No time restriction
-            
-            return timeSlots.some(slot => this.isCurrentTimeInSlot(slot));
-        });
+            // Get all active Happy Hour promotions
+            const promotions = await Promotion.find({
+                type: 'happy_hour',
+                isActive: true,
+                startDate: { $lte: now },
+                endDate: { $gte: now }
+            }).populate('specificDishes categories');
 
-        // Sort by priority (highest first)
-        return activePromotions.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+            console.log(`📋 Found ${promotions.length} Happy Hour promotions in database`);
+
+            // Filter by current day and time
+            const activePromotions = promotions.filter(promotion => {
+                console.log(`🔍 Checking promotion: ${promotion.name}`);
+                
+                // Check if current day is valid
+                const dayValid = this.isCurrentDayValid(promotion.conditions?.daysOfWeek);
+                if (!dayValid) {
+                    console.log(`❌ Day not valid for ${promotion.name}`);
+                    return false;
+                }
+                
+                // Check if current time is within any time slot
+                const timeSlots = promotion.conditions?.timeSlots || [];
+                if (timeSlots.length === 0) {
+                    console.log(`✅ No time restrictions for ${promotion.name}`);
+                    return true; // No time restriction
+                }
+                
+                const isInTimeSlot = timeSlots.some(slot => {
+                    const inSlot = this.isCurrentTimeInSlot(slot);
+                    console.log(`🕐 Time slot ${slot.start}-${slot.end} for ${promotion.name}: ${inSlot ? '✅' : '❌'}`);
+                    return inSlot;
+                });
+                
+                if (!isInTimeSlot) {
+                    console.log(`❌ Not in valid time slot for ${promotion.name}`);
+                    return false;
+                }
+                
+                console.log(`✅ Promotion ${promotion.name} is ACTIVE!`);
+                return true;
+            });
+
+            console.log(`🎯 Final active promotions: ${activePromotions.length}`);
+            activePromotions.forEach(p => console.log(`  - ${p.name} (${p.code})`));
+
+            // Sort by priority (highest first)
+            return activePromotions.sort((a, b) => (b.priority || 0) - (a.priority || 0));
+        } catch (error) {
+            console.error('❌ Error finding active Happy Hour promotions:', error.message);
+            // Return empty array if database query fails
+            return [];
+        }
     }
 
     /**

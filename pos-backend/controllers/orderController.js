@@ -137,18 +137,22 @@ const addOrder = async (req, res, next) => {
     
     if (!appliedPromotions || appliedPromotions.length === 0) {
       try {
+        // Only attempt to apply Happy Hour promotions if database is available
         const happyHourResult = await PromotionService.applyHappyHourPromotions(processedItems);
         finalProcessedItems = happyHourResult.items;
         finalAppliedPromotions = happyHourResult.appliedPromotions;
         
-        console.log('Happy Hour promotions applied:', {
+        console.log('Happy Hour promotions check completed:', {
           itemsProcessed: finalProcessedItems.length,
           promotionsApplied: finalAppliedPromotions.length,
-          totalDiscount: happyHourResult.totalDiscount
+          totalDiscount: happyHourResult.totalDiscount,
+          promotionsFound: finalAppliedPromotions.map(p => p.name)
         });
       } catch (error) {
         console.warn('Failed to apply Happy Hour promotions:', error.message);
         // Continue with original items if Happy Hour application fails
+        finalProcessedItems = processedItems;
+        finalAppliedPromotions = [];
       }
     } else {
       // Validate provided Happy Hour promotions
