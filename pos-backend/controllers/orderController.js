@@ -225,13 +225,31 @@ const addOrder = async (req, res, next) => {
         expectedTotal = calculatedTotal - (bills.promotionDiscount || 0);
       } else if (hasItemLevelPromotions && !hasOrderLevelPromotions) {
         // For item-level promotions only (Happy Hour): calculated total already includes discounts
-        expectedTotal = calculatedTotal;
+        // If promotions were applied automatically by backend, use calculated total
+        // If no promotions were provided in request, allow frontend total to be original price
+        if (!appliedPromotions || appliedPromotions.length === 0) {
+          // Backend applied Happy Hour automatically, frontend sent original price
+          expectedTotal = calculatedTotal;
+        } else {
+          // Frontend provided promotions, should match calculated total
+          expectedTotal = calculatedTotal;
+        }
       } else {
         // Mixed promotions or no promotions: use calculated total
         expectedTotal = calculatedTotal;
       }
       
-      if (Math.abs(expectedTotal - bills.total) > 0.01) {
+      // For automatic Happy Hour promotions, allow both original and discounted totals
+      if (hasItemLevelPromotions && (!appliedPromotions || appliedPromotions.length === 0)) {
+        // Backend applied Happy Hour automatically
+        const isOriginalTotal = Math.abs(bills.total - calculatedSubtotal) <= 0.01;
+        const isDiscountedTotal = Math.abs(bills.total - calculatedTotal) <= 0.01;
+        
+        if (!isOriginalTotal && !isDiscountedTotal) {
+          const error = createHttpError(400, `Bill total (${bills.total}) must match either original total (${calculatedSubtotal}) or discounted total (${calculatedTotal}) when Happy Hour promotions are applied automatically`);
+          return next(error);
+        }
+      } else if (Math.abs(expectedTotal - bills.total) > 0.01) {
         const error = createHttpError(400, `Bill total (${bills.total}) does not match expected total (${expectedTotal}). Calculated: ${calculatedTotal}, Discount: ${bills.promotionDiscount || 0}, OrderLevel: ${hasOrderLevelPromotions}, ItemLevel: ${hasItemLevelPromotions}`);
         return next(error);
       }
@@ -262,7 +280,21 @@ const addOrder = async (req, res, next) => {
       }
     } else {
       // Legacy structure - use calculated total for validation
-      if (Math.abs(calculatedTotal - bills.total) > 0.01) {
+      const hasItemLevelPromotions = finalAppliedPromotions?.some(promo => 
+        promo.type === 'happy_hour'
+      );
+      
+      // For automatic Happy Hour promotions, allow both original and discounted totals
+      if (hasItemLevelPromotions && (!appliedPromotions || appliedPromotions.length === 0)) {
+        // Backend applied Happy Hour automatically
+        const isOriginalTotal = Math.abs(bills.total - calculatedSubtotal) <= 0.01;
+        const isDiscountedTotal = Math.abs(bills.total - calculatedTotal) <= 0.01;
+        
+        if (!isOriginalTotal && !isDiscountedTotal) {
+          const error = createHttpError(400, `Bill total (${bills.total}) must match either original total (${calculatedSubtotal}) or discounted total (${calculatedTotal}) when Happy Hour promotions are applied automatically`);
+          return next(error);
+        }
+      } else if (Math.abs(calculatedTotal - bills.total) > 0.01) {
         const error = createHttpError(400, `Bill total (${bills.total}) does not match calculated total (${calculatedTotal})`);
         return next(error);
       }
