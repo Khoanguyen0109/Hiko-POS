@@ -131,43 +131,31 @@ const addOrder = async (req, res, next) => {
       return processedItem;
     }));
 
-    // Apply Happy Hour promotions if no specific promotions were provided
+    // No automatic promotion application - frontend handles all promotion logic
     let finalProcessedItems = processedItems;
     let finalAppliedPromotions = appliedPromotions || [];
     
-    if (!appliedPromotions || appliedPromotions.length === 0) {
+    // Only validate promotions if they were explicitly provided by frontend
+    if (appliedPromotions && appliedPromotions.length > 0) {
       try {
-        // Only attempt to apply Happy Hour promotions if database is available
-        const happyHourResult = await PromotionService.applyHappyHourPromotions(processedItems);
-        finalProcessedItems = happyHourResult.items;
-        finalAppliedPromotions = happyHourResult.appliedPromotions;
+        console.log('🔍 Validating frontend-provided promotions:', appliedPromotions.map(p => p.name || p.promotionName));
         
-        console.log('Happy Hour promotions check completed:', {
-          itemsProcessed: finalProcessedItems.length,
-          promotionsApplied: finalAppliedPromotions.length,
-          totalDiscount: happyHourResult.totalDiscount,
-          promotionsFound: finalAppliedPromotions.map(p => p.name)
-        });
-      } catch (error) {
-        console.warn('Failed to apply Happy Hour promotions:', error.message);
-        // Continue with original items if Happy Hour application fails
-        finalProcessedItems = processedItems;
-        finalAppliedPromotions = [];
-      }
-    } else {
-      // Validate provided Happy Hour promotions
-      try {
         const validationResults = await PromotionService.validateHappyHourPricing(processedItems, appliedPromotions);
         const invalidItems = validationResults.filter(r => !r.valid);
         
         if (invalidItems.length > 0) {
           const errorMessages = invalidItems.map(item => item.message).join('; ');
-          const error = createHttpError(400, `Happy Hour pricing validation failed: ${errorMessages}`);
+          const error = createHttpError(400, `Promotion pricing validation failed: ${errorMessages}`);
           return next(error);
         }
+        
+        console.log('✅ Frontend-provided promotions validated successfully');
       } catch (error) {
-        console.warn('Happy Hour validation failed:', error.message);
+        console.warn('Promotion validation failed:', error.message);
+        // Continue without validation if service is unavailable
       }
+    } else {
+      console.log('📝 No promotions provided by frontend - using original pricing');
     }
 
     // Calculate total items and verify bill total (including toppings)
@@ -202,99 +190,31 @@ const addOrder = async (req, res, next) => {
       promotionDiscount = finalAppliedPromotions.reduce((sum, promo) => sum + (promo.discountAmount || 0), 0);
     }
 
-    // Enhanced validation for Happy Hour promotions
+    // Simplified validation - frontend controls all promotion logic
     if (bills.subtotal !== undefined) {
-      // New promotion-aware structure
+      // Validate subtotal matches calculated subtotal
       if (Math.abs(calculatedSubtotal - bills.subtotal) > 0.01) {
         const error = createHttpError(400, `Bill subtotal (${bills.subtotal}) does not match calculated subtotal (${calculatedSubtotal})`);
         return next(error);
       }
       
-      // Validate final total considering promotion type
-      const hasOrderLevelPromotions = finalAppliedPromotions?.some(promo => 
-        promo.type === 'order_percentage' || promo.type === 'order_fixed'
-      );
-      
-      const hasItemLevelPromotions = finalAppliedPromotions?.some(promo => 
-        promo.type === 'happy_hour'
-      );
-      
-      let expectedTotal;
-      if (hasOrderLevelPromotions && !hasItemLevelPromotions) {
-        // For order-level promotions only: subtract discount from calculated total
-        expectedTotal = calculatedTotal - (bills.promotionDiscount || 0);
-      } else if (hasItemLevelPromotions && !hasOrderLevelPromotions) {
-        // For item-level promotions only (Happy Hour): calculated total already includes discounts
-        // If promotions were applied automatically by backend, use calculated total
-        // If no promotions were provided in request, allow frontend total to be original price
-        if (!appliedPromotions || appliedPromotions.length === 0) {
-          // Backend applied Happy Hour automatically, frontend sent original price
-          expectedTotal = calculatedTotal;
-        } else {
-          // Frontend provided promotions, should match calculated total
-          expectedTotal = calculatedTotal;
-        }
-      } else {
-        // Mixed promotions or no promotions: use calculated total
-        expectedTotal = calculatedTotal;
-      }
-      
-      // For automatic Happy Hour promotions, allow both original and discounted totals
-      if (hasItemLevelPromotions && (!appliedPromotions || appliedPromotions.length === 0)) {
-        // Backend applied Happy Hour automatically
-        const isOriginalTotal = Math.abs(bills.total - calculatedSubtotal) <= 0.01;
-        const isDiscountedTotal = Math.abs(bills.total - calculatedTotal) <= 0.01;
-        
-        if (!isOriginalTotal && !isDiscountedTotal) {
-          const error = createHttpError(400, `Bill total (${bills.total}) must match either original total (${calculatedSubtotal}) or discounted total (${calculatedTotal}) when Happy Hour promotions are applied automatically`);
-          return next(error);
-        }
-      } else if (Math.abs(expectedTotal - bills.total) > 0.01) {
-        const error = createHttpError(400, `Bill total (${bills.total}) does not match expected total (${expectedTotal}). Calculated: ${calculatedTotal}, Discount: ${bills.promotionDiscount || 0}, OrderLevel: ${hasOrderLevelPromotions}, ItemLevel: ${hasItemLevelPromotions}`);
+      // Validate total matches calculated total (frontend already applied any promotions)
+      if (Math.abs(calculatedTotal - bills.total) > 0.01) {
+        const error = createHttpError(400, `Bill total (${bills.total}) does not match calculated total (${calculatedTotal})`);
         return next(error);
       }
       
-      // Validate discount calculation based on promotion type
-      if (hasOrderLevelPromotions) {
-        // For order-level promotions, discount should be calculated from subtotal
-        const expectedDiscount = finalAppliedPromotions.reduce((sum, promo) => {
-          if (promo.type === 'order_percentage' && promo.discountAmount) {
-            return sum + promo.discountAmount;
-          } else if (promo.type === 'order_fixed' && promo.discountAmount) {
-            return sum + promo.discountAmount;
-          }
-          return sum;
-        }, 0);
-        
-        if (Math.abs(expectedDiscount - (bills.promotionDiscount || 0)) > 0.01) {
-          const error = createHttpError(400, `Bill promotion discount (${bills.promotionDiscount || 0}) does not match calculated order-level discount (${expectedDiscount})`);
-          return next(error);
-        }
-      } else {
-        // For item-level promotions (Happy Hour), discount is difference between subtotal and total
+      // Validate promotion discount if provided
+      if (finalAppliedPromotions && finalAppliedPromotions.length > 0) {
         const expectedDiscount = calculatedSubtotal - calculatedTotal;
         if (Math.abs(expectedDiscount - (bills.promotionDiscount || 0)) > 0.01) {
-          const error = createHttpError(400, `Bill promotion discount (${bills.promotionDiscount || 0}) does not match calculated item-level discount (${expectedDiscount})`);
+          const error = createHttpError(400, `Bill promotion discount (${bills.promotionDiscount || 0}) does not match calculated discount (${expectedDiscount})`);
           return next(error);
         }
       }
     } else {
-      // Legacy structure - use calculated total for validation
-      const hasItemLevelPromotions = finalAppliedPromotions?.some(promo => 
-        promo.type === 'happy_hour'
-      );
-      
-      // For automatic Happy Hour promotions, allow both original and discounted totals
-      if (hasItemLevelPromotions && (!appliedPromotions || appliedPromotions.length === 0)) {
-        // Backend applied Happy Hour automatically
-        const isOriginalTotal = Math.abs(bills.total - calculatedSubtotal) <= 0.01;
-        const isDiscountedTotal = Math.abs(bills.total - calculatedTotal) <= 0.01;
-        
-        if (!isOriginalTotal && !isDiscountedTotal) {
-          const error = createHttpError(400, `Bill total (${bills.total}) must match either original total (${calculatedSubtotal}) or discounted total (${calculatedTotal}) when Happy Hour promotions are applied automatically`);
-          return next(error);
-        }
-      } else if (Math.abs(calculatedTotal - bills.total) > 0.01) {
+      // Legacy structure - validate total matches calculated total
+      if (Math.abs(calculatedTotal - bills.total) > 0.01) {
         const error = createHttpError(400, `Bill total (${bills.total}) does not match calculated total (${calculatedTotal})`);
         return next(error);
       }
