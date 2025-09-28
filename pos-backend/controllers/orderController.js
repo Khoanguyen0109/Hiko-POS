@@ -158,30 +158,55 @@ const addOrder = async (req, res, next) => {
       console.log('📝 No promotions provided by frontend - using original pricing');
     }
 
-    // Calculate total items and verify bill total (including toppings)
-    // Note: item.price already includes toppings cost, so we don't need to add toppings separately
+    // Calculate totals based on promotion type
     const calculatedSubtotal = finalProcessedItems.reduce((sum, item) => {
       // Use original price for subtotal calculation
       return sum + (item.originalPrice || item.price);
     }, 0);
     
-    const calculatedTotal = finalProcessedItems.reduce((sum, item) => {
-      // Use final price (after discounts) for total calculation
-      return sum + item.price;
-    }, 0);
+    // Calculate total based on promotion type
+    let calculatedTotal;
+    const hasOrderLevelPromotions = finalAppliedPromotions?.some(promo => 
+      promo.type === 'order_percentage' || promo.type === 'order_fixed'
+    );
+    const hasItemLevelPromotions = finalAppliedPromotions?.some(promo => 
+      promo.type === 'happy_hour' || promo.type === 'item_percentage' || promo.type === 'item_fixed'
+    );
+    
+    if (hasOrderLevelPromotions && !hasItemLevelPromotions) {
+      // For order-level promotions: start with subtotal, then subtract order-level discounts
+      const orderLevelDiscount = finalAppliedPromotions
+        .filter(promo => promo.type === 'order_percentage' || promo.type === 'order_fixed')
+        .reduce((sum, promo) => sum + (promo.discountAmount || 0), 0);
+      calculatedTotal = calculatedSubtotal - orderLevelDiscount;
+    } else if (hasItemLevelPromotions && !hasOrderLevelPromotions) {
+      // For item-level promotions: sum up final item prices (already discounted)
+      calculatedTotal = finalProcessedItems.reduce((sum, item) => sum + item.price, 0);
+    } else if (hasOrderLevelPromotions && hasItemLevelPromotions) {
+      // Mixed promotions: start with item-level discounted prices, then apply order-level discounts
+      const itemLevelTotal = finalProcessedItems.reduce((sum, item) => sum + item.price, 0);
+      const orderLevelDiscount = finalAppliedPromotions
+        .filter(promo => promo.type === 'order_percentage' || promo.type === 'order_fixed')
+        .reduce((sum, promo) => sum + (promo.discountAmount || 0), 0);
+      calculatedTotal = itemLevelTotal - orderLevelDiscount;
+    } else {
+      // No promotions: use original item prices
+      calculatedTotal = calculatedSubtotal;
+    }
     
     console.log('Backend calculation debug:', {
-      finalProcessedItems: finalProcessedItems.map(item => ({
-        name: item.name,
-        originalPrice: item.originalPrice,
-        price: item.price,
-        isHappyHourItem: item.isHappyHourItem
-      })),
+      hasOrderLevelPromotions,
+      hasItemLevelPromotions,
+      promotions: finalAppliedPromotions?.map(p => ({ name: p.name, type: p.type, discountAmount: p.discountAmount })),
       calculatedSubtotal,
       calculatedTotal,
       billsSubtotal: bills.subtotal,
       billsTotal: bills.total,
-      appliedPromotionsLength: finalAppliedPromotions?.length || 0
+      itemPrices: finalProcessedItems.map(item => ({
+        name: item.name,
+        originalPrice: item.originalPrice || item.price,
+        finalPrice: item.price
+      }))
     });
 
     // Validate promotion discount if applied
