@@ -120,7 +120,6 @@ function Layout() {
 
           // Check if route requires admin access
           const isAdminRoute = [
-            "Home",
             "Dishes",
             "Categories",
             "Dashboard",
@@ -166,7 +165,8 @@ function ProtectedRoutes({ children }) {
 
 function AdminProtectedRoutes({ children }) {
   const { isAuth } = useSelector((state) => state.user);
-  if (!isAuth) {
+  const isAdmin = useSelector((state) => state.user.role) === "Admin";
+  if (!isAuth || !isAdmin) {
     return <Navigate to={ROUTES.AUTH} />;
   }
 

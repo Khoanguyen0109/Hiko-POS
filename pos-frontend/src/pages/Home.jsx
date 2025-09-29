@@ -3,11 +3,11 @@ import { useDispatch, useSelector } from "react-redux";
 import Greetings from "../components/home/Greetings";
 import { BsCashCoin } from "react-icons/bs";
 import { GrInProgress } from "react-icons/gr";
-import { MdRestaurantMenu } from "react-icons/md";
+import { MdRestaurantMenu, MdAccountBalance, MdMoney } from "react-icons/md";
 import MiniCard from "../components/home/MiniCard";
 import RecentOrders from "../components/home/RecentOrders";
 import { fetchOrders } from "../redux/slices/orderSlice";
-import { getTodayDate } from "../utils";
+import { getTodayDate, formatVND } from "../utils";
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -29,6 +29,8 @@ const Home = () => {
         totalOrders: 0,
         completedOrders: 0,
         totalDishesOrdered: 0,
+        totalCash: 0,
+        totalBanking: 0,
       };
     }
 
@@ -41,6 +43,15 @@ const Home = () => {
       (sum, order) => sum + (order.bills?.totalWithTax || 0),
       0
     );
+
+    // Calculate payment method totals from completed orders
+    const totalCash = completedOrders
+      .filter(order => order.paymentMethod === 'Cash')
+      .reduce((sum, order) => sum + (order.bills?.totalWithTax || 0), 0);
+
+    const totalBanking = completedOrders
+      .filter(order => order.paymentMethod === 'Banking')
+      .reduce((sum, order) => sum + (order.bills?.totalWithTax || 0), 0);
 
     // Calculate total dishes ordered across all orders (excluding cancelled orders)
     const totalDishesOrdered = orders.reduce((sum, order) => {
@@ -60,6 +71,8 @@ const Home = () => {
       totalOrders: orders.length,
       completedOrders: completedOrders.length,
       totalDishesOrdered,
+      totalCash,
+      totalBanking,
     };
   }, [orders]);
 
@@ -83,6 +96,20 @@ const Home = () => {
             title="Dishes Ordered"
             icon={<MdRestaurantMenu />}
             number={loading ? "..." : todayStats.totalDishesOrdered}
+          />
+        </div>
+        
+        {/* Payment Method Cards */}
+        <div className="flex flex-col sm:flex-row items-center w-full gap-3 px-4 sm:px-8 mt-4">
+          <MiniCard
+            title="Total Cash"
+            icon={<MdMoney />}
+            number={loading ? "..." : formatVND(todayStats.totalCash)}
+          />
+          <MiniCard
+            title="Total Banking"
+            icon={<MdAccountBalance />}
+            number={loading ? "..." : formatVND(todayStats.totalBanking)}
           />
         </div>
         <RecentOrders />

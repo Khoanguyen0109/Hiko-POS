@@ -2,12 +2,27 @@ import { formatDateAndTime, getAvatarName, formatVND } from "../../utils/index";
 import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import { Card, StatusBadge } from "../ui";
+import { MdPayment, MdCreditCard, MdAccountBalance, MdMoney } from "react-icons/md";
 
 const OrderCard = ({ order }) => {
   const navigate = useNavigate();
 
   const handleCardClick = () => {
     navigate(`/orders/${order._id}`);
+  };
+
+  // Helper function to get payment method icon and display info
+  const getPaymentMethodInfo = (paymentMethod) => {
+    switch (paymentMethod) {
+      case 'Cash':
+        return { icon: MdMoney, text: 'Cash', color: 'text-green-500' };
+      case 'Card':
+        return { icon: MdCreditCard, text: 'Card', color: 'text-blue-500' };
+      case 'Banking':
+        return { icon: MdAccountBalance, text: 'Banking', color: 'text-purple-500' };
+      default:
+        return { icon: MdPayment, text: 'Not Set', color: 'text-gray-500' };
+    }
   };
 
   // Removed getStatusColor and getStatusMessage - now using StatusBadge component
@@ -34,6 +49,17 @@ const OrderCard = ({ order }) => {
             {order.customerDetails?.phone && (
               <p className="text-[#ababab] text-xs sm:text-sm hidden sm:block">Phone: {order.customerDetails.phone}</p>
             )}
+            {/* Payment Method Display */}
+            {(() => {
+              const paymentInfo = getPaymentMethodInfo(order.paymentMethod);
+              const PaymentIcon = paymentInfo.icon;
+              return (
+                <div className="flex items-center gap-1 text-xs sm:text-sm">
+                  <PaymentIcon className={`${paymentInfo.color} text-sm`} />
+                  <span className={paymentInfo.color}>{paymentInfo.text}</span>
+                </div>
+              );
+            })()}
           </div>
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
             {/* Mobile Status - Icon + Short Text */}
@@ -96,6 +122,7 @@ OrderCard.propTypes = {
     orderDate: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]),
     createdAt: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]),
     orderStatus: PropTypes.string.isRequired,
+    paymentMethod: PropTypes.oneOf(['Cash', 'Card', 'Banking']),
     items: PropTypes.array,
     bills: PropTypes.shape({ 
       totalWithTax: PropTypes.number 

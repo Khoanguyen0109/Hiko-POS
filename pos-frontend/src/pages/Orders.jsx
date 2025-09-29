@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MdFilterList, MdRefresh, MdPerson, MdPayment, MdStore } from "react-icons/md";
 import OrderCard from "../components/orders/OrderCard";
 import BackButton from "../components/shared/BackButton";
@@ -21,6 +21,10 @@ const Orders = () => {
   const { members } = useSelector((state) => state.members);
   const isAdmin = role === "Admin";
 
+  // Scroll container ref for scroll position persistence
+  const scrollContainerRef = useRef(null);
+  const hasRestoredScroll = useRef(false);
+
   const [status, setStatus] = useState("all");
   const [startDate, setStartDate] = useState(getTodayDate());
   const [endDate, setEndDate] = useState(getTodayDate());
@@ -34,11 +38,43 @@ const Orders = () => {
 
   useEffect(() => {
     document.title = "POS | Orders";
+    // Reset the scroll restoration flag when component mounts
+    hasRestoredScroll.current = false;
+    
     // Fetch members for createdBy filter (Admin only)
     if (isAdmin) {
       dispatch(fetchMembers());
     }
   }, [dispatch, isAdmin]);
+
+  // Separate effect for scroll position restoration after data loads
+  useEffect(() => {
+    if (!loading && orders.length > 0 && scrollContainerRef.current && !hasRestoredScroll.current) {
+      const savedScrollPosition = sessionStorage.getItem('orders-scroll-position');
+      if (savedScrollPosition) {
+        // Use requestAnimationFrame to ensure DOM is fully rendered
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (scrollContainerRef.current) {
+              scrollContainerRef.current.scrollTop = parseInt(savedScrollPosition, 10);
+              hasRestoredScroll.current = true;
+            }
+          });
+        });
+      }
+    }
+  }, [loading, orders.length]);
+
+
+  // Save scroll position when component unmounts
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    return () => {
+      if (scrollContainer) {
+        sessionStorage.setItem('orders-scroll-position', scrollContainer.scrollTop.toString());
+      }
+    };
+  }, []);
 
   // Fetch orders when component mounts or filters change
   useEffect(() => {
@@ -61,6 +97,54 @@ const Orders = () => {
       enqueueSnackbar(error, { variant: "error" });
     }
   }, [error]);
+
+  // Add scroll event listener to save scroll position continuously
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      sessionStorage.setItem('orders-scroll-position', scrollContainer.scrollTop.toString());
+    };
+
+    // Throttle scroll events to improve performance
+    let timeoutId;
+    const throttledHandleScroll = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(handleScroll, 100);
+    };
+
+    scrollContainer.addEventListener('scroll', throttledHandleScroll);
+    
+    return () => {
+      scrollContainer.removeEventListener('scroll', throttledHandleScroll);
+      clearTimeout(timeoutId);
+    };
+  }, []);
+
+  // Listen for page visibility changes (when user navigates back)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && !hasRestoredScroll.current) {
+        // Page became visible again, try to restore scroll position
+        setTimeout(() => {
+          if (!loading && scrollContainerRef.current) {
+            const savedScrollPosition = sessionStorage.getItem('orders-scroll-position');
+            if (savedScrollPosition) {
+              scrollContainerRef.current.scrollTop = parseInt(savedScrollPosition, 10);
+              hasRestoredScroll.current = true;
+            }
+          }
+        }, 200);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [loading]);
 
   const handleDateChange = ({
     startDate: newStartDate,
@@ -416,7 +500,10 @@ const Orders = () => {
       </div>
 
       {/* Orders Grid */}
-      <div className="px-4 sm:px-10 py-4 overflow-y-scroll scrollbar-hide h-[calc(100vh-320px)] sm:h-[calc(100%-280px)]">
+      <div 
+        ref={scrollContainerRef}
+        className="px-4 sm:px-10 py-4 overflow-y-scroll scrollbar-hide h-[calc(100vh-320px)] sm:h-[calc(100%-280px)]"
+      >
         {filteredOrders.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
             {filteredOrders.map((order) => (

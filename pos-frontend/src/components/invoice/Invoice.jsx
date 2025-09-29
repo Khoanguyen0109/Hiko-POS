@@ -171,12 +171,7 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
                   <strong>3rd Party Vendor:</strong> {orderInfo.thirdPartyVendor || 'None'}
                 </p>
                 <p>
-                  <strong>Razorpay Order ID:</strong>{" "}
-                  {orderInfo.paymentData?.razorpay_order_id}
-                </p>
-                <p>
-                  <strong>Razorpay Payment ID:</strong>{" "}
-                  {orderInfo.paymentData?.razorpay_payment_id}
+                  <strong>Payment Status:</strong> Completed
                 </p>
               </>
             )}
@@ -234,8 +229,7 @@ Invoice.propTypes = {
     paymentMethod: PropTypes.string.isRequired,
     thirdPartyVendor: PropTypes.string,
     paymentData: PropTypes.shape({
-      razorpay_order_id: PropTypes.string,
-      razorpay_payment_id: PropTypes.string
+      paymentStatus: PropTypes.string
     })
   }).isRequired
 }

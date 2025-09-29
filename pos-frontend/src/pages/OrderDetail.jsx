@@ -375,11 +375,11 @@ const OrderDetail = () => {
                 </div>
               )}
               
-              {order.paymentData?.razorpay_payment_id && (
+              {order.paymentStatus && (
                 <div className="flex justify-between">
-                  <span className="text-[#ababab]">Payment ID</span>
+                  <span className="text-[#ababab]">Payment Status</span>
                   <span className="text-[#f5f5f5] font-medium text-xs">
-                    {order.paymentData.razorpay_payment_id}
+                    {order.paymentStatus}
                   </span>
                 </div>
               )}
