@@ -1,97 +1,91 @@
-const Razorpay = require("razorpay");
-const config = require("../config/config");
-const crypto = require("crypto");
 const Payment = require("../models/paymentModel");
 const { getCurrentVietnamTime, toVietnamTime } = require("../utils/dateUtils");
+const createHttpError = require("http-errors");
 
-const createOrder = async (req, res, next) => {
-  const razorpay = new Razorpay({
-    key_id: config.razorpayKeyId,
-    key_secret: config.razorpaySecretKey,
-  });
-
+// Simple cash payment processing
+const processCashPayment = async (req, res, next) => {
   try {
-    const { amount } = req.body;
-    const options = {
-      amount: amount * 100, // Amount in paisa (1 INR = 100 paisa)
-      currency: "INR",
-      receipt: `receipt_${getCurrentVietnamTime().getTime()}`,
-    };
+    const { amount, orderId, customerDetails } = req.body;
+    
+    if (!amount || !orderId) {
+      return next(createHttpError(400, "Amount and Order ID are required"));
+    }
 
-    const order = await razorpay.orders.create(options);
-    res.status(200).json({ success: true, order });
+    // Create payment record for cash transaction
+    const newPayment = new Payment({
+      paymentId: `cash_${getCurrentVietnamTime().getTime()}`,
+      orderId: orderId,
+      amount: amount,
+      currency: "VND",
+      status: "captured",
+      method: "cash",
+      email: customerDetails?.email || null,
+      contact: customerDetails?.phone || null,
+      createdAt: getCurrentVietnamTime()
+    });
+
+    await newPayment.save();
+    
+    res.status(200).json({ 
+      success: true, 
+      payment: newPayment,
+      message: "Cash payment processed successfully"
+    });
   } catch (error) {
     console.log(error);
     next(error);
   }
 };
 
-const verifyPayment = async (req, res, next) => {
+// Get payment by order ID
+const getPaymentByOrderId = async (req, res, next) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
-      req.body;
-
-    const expectedSignature = crypto
-      .createHmac("sha256", config.razorpaySecretKey)
-      .update(razorpay_order_id + "|" + razorpay_payment_id)
-      .digest("hex");
-
-    if (expectedSignature === razorpay_signature) {
-      res.json({ success: true, message: "Payment verified successfully!" });
-    } else {
-      const error = createHttpError(400, "Payment verification failed!");
-      return next(error);
+    const { orderId } = req.params;
+    
+    const payment = await Payment.findOne({ orderId });
+    
+    if (!payment) {
+      return next(createHttpError(404, "Payment not found"));
     }
+    
+    res.status(200).json({ success: true, payment });
   } catch (error) {
+    console.log(error);
     next(error);
   }
 };
 
-const webHookVerification = async (req, res, next) => {
+// Get all payments
+const getAllPayments = async (req, res, next) => {
   try {
-    const secret = config.razorpyWebhookSecret;
-    const signature = req.headers["x-razorpay-signature"];
-
-    const body = JSON.stringify(req.body);
-
-    // 🛑 Verify the signature
-    const expectedSignature = crypto
-      .createHmac("sha256", secret)
-      .update(body)
-      .digest("hex");
-
-    if (expectedSignature === signature) {
-      console.log("✅ Webhook verified:", req.body);
-
-      // ✅ Process payment (e.g., update DB, send confirmation email)
-      if (req.body.event === "payment.captured") {
-        const payment = req.body.payload.payment.entity;
-        console.log(`💰 Payment Captured: ${payment.amount / 100} INR`);
-
-        // Add Payment Details in Database
-        const newPayment = new Payment({
-          paymentId: payment.id,
-          orderId: payment.order_id,
-          amount: payment.amount / 100,
-          currency: payment.currency,
-          status: payment.status,
-          method: payment.method,
-          email: payment.email,
-          contact: payment.contact,
-          createdAt: toVietnamTime(new Date(payment.created_at * 1000)) 
-        })
-
-        await newPayment.save();
-      }
-
-      res.json({ success: true });
-    } else {
-      const error = createHttpError(400, "❌ Invalid Signature!");
-      return next(error);
-    }
+    const { page = 1, limit = 10, status, method } = req.query;
+    
+    const filter = {};
+    if (status) filter.status = status;
+    if (method) filter.method = method;
+    
+    const payments = await Payment.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+    
+    const total = await Payment.countDocuments(filter);
+    
+    res.status(200).json({ 
+      success: true, 
+      payments,
+      totalPages: Math.ceil(total / limit),
+      currentPage: page,
+      total
+    });
   } catch (error) {
+    console.log(error);
     next(error);
   }
 };
 
-module.exports = { createOrder, verifyPayment, webHookVerification };
+module.exports = { 
+  processCashPayment, 
+  getPaymentByOrderId, 
+  getAllPayments 
+};

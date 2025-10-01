@@ -5,7 +5,15 @@
   "scripts": {
     "dev": "nodemon app.js",
     "start": "node app.js",
-    "build": "echo 'No build step required for Node.js backend'"
+    "build": "echo 'No build step required for Node.js backend'",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest --testPathPatterns=orderController|promotionService",
+    "test:integration": "jest --testPathPatterns=integration",
+    "test:runner": "node test-runner.js",
+    "test:orders": "node manual-test-orders.js",
+    "test:orders:full": "node tests/order-promotion-tests.js"
   },
   "keywords": [
     "pos",
@@ -27,10 +35,12 @@
     "jsonwebtoken": "^9.0.2",
     "moment": "^2.30.1",
     "moment-timezone": "^0.6.0",
-    "mongoose": "^8.9.5",
-    "razorpay": "^2.9.5"
+    "mongoose": "^8.9.5"
   },
   "devDependencies": {
-    "nodemon": "^3.1.9"
+    "jest": "^30.2.0",
+    "mongodb-memory-server": "^10.2.1",
+    "nodemon": "^3.1.9",
+    "supertest": "^7.1.4"
   }
 }

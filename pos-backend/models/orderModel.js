@@ -161,9 +161,10 @@ const orderSchema = new mongoose.Schema({
         enum: ['None', 'Shopee', 'Grab'],
         default: 'None'
     },
-    paymentData: {
-        razorpay_order_id: { type: String, trim: true },
-        razorpay_payment_id: { type: String, trim: true }
+    paymentStatus: {
+        type: String,
+        enum: ['pending', 'processing', 'completed', 'failed'],
+        default: 'pending'
     },
     createdBy: {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },

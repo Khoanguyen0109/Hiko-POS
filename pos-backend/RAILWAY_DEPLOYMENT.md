@@ -6,7 +6,7 @@ This guide will help you deploy the Restaurant POS System backend to Railway.
 
 1. A Railway account (sign up at [railway.app](https://railway.app))
 2. A MongoDB database (MongoDB Atlas recommended for production)
-3. Razorpay account for payment processing
+3. Payment processing system (if needed)
 4. Your backend code ready for deployment
 
 ## Step 1: Prepare Your Repository
@@ -23,9 +23,6 @@ Required environment variables:
 - `NODE_ENV`: Set to `production`
 - `MONGODB_URI`: Your MongoDB connection string
 - `JWT_SECRET`: A strong secret key for JWT tokens
-- `RAZORPAY_KEY_ID`: Your Razorpay key ID
-- `RAZORPAY_KEY_SECRET`: Your Razorpay secret key
-- `RAZORPAY_WEBHOOK_SECRET`: Your Razorpay webhook secret
 - `FRONTEND_URL`: Your frontend domain URL
 
 ### 1.2 Update CORS Configuration
@@ -60,9 +57,6 @@ In the Railway dashboard:
 NODE_ENV=production
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/pos-db
 JWT_SECRET=your-super-secret-jwt-key-here
-RAZORPAY_KEY_ID=your-razorpay-key-id
-RAZORPAY_KEY_SECRET=your-razorpay-key-secret
-RAZORPAY_WEBHOOK_SECRET=your-razorpay-webhook-secret
 FRONTEND_URL=https://your-frontend-domain.com
 ```
 
@@ -161,7 +155,7 @@ The backend includes a health check endpoint at `/` that returns:
 - [ ] Database connection working
 - [ ] CORS origins updated
 - [ ] JWT secret is strong and unique
-- [ ] Razorpay credentials configured
+- [ ] Payment system configured (if needed)
 - [ ] Frontend URL updated
 - [ ] Health check endpoint responding
 - [ ] Logs are accessible
