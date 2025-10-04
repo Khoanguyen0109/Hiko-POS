@@ -36,6 +36,7 @@ app.use("/api/dish", require("./routes/dishRoute"));
 app.use("/api/customer", require("./routes/customerRoute"));
 app.use("/api/topping", require("./routes/toppingRoute"));
 app.use("/api/promotion", require("./routes/promotionRoute"));
+app.use("/api/spending", require("./routes/spendingRoute"));
 app.use("/api/test", require("./routes/testRoute"));
 
 // Global Error Handler

@@ -130,3 +130,24 @@ export const getPromotionAnalytics = (params = {}) => {
   return axiosWrapper.get(`/api/promotion/analytics${queryString ? `?${queryString}` : ''}`);
 };
 export const validateCouponCode = (code) => axiosWrapper.post("/api/promotion/validate-coupon", { code });
+
+// Spending Endpoints
+export {
+  addSpending,
+  getSpending,
+  getSpendingById,
+  updateSpending,
+  deleteSpending,
+  addSpendingCategory,
+  getSpendingCategories,
+  getSpendingCategoryById,
+  updateSpendingCategory,
+  deleteSpendingCategory,
+  addVendor,
+  getVendors,
+  getVendorById,
+  updateVendor,
+  deleteVendor,
+  getSpendingDashboard,
+  getSpendingAnalytics
+} from "./spendingApi";

@@ -22,6 +22,7 @@ import {
   NotFound,
   Toppings,
   PromotionManager,
+  SpendingManager,
 } from "./pages";
 import Header from "./components/shared/Header";
 import { useSelector, useDispatch } from "react-redux";
@@ -57,6 +58,7 @@ const COMPONENT_MAP = {
   NotFound,
   Toppings,
   PromotionManager,
+  SpendingManager,
 };
 
 function Layout() {
@@ -125,7 +127,8 @@ function Layout() {
             "Dashboard",
             "Members",
             "Toppings",
-          ].includes(route.componentName);
+            "SpendingManager",
+          ].includes(route.componentName) || route.adminOnly;
 
           return (
             <Route

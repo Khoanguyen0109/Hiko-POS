@@ -1,41 +1,205 @@
 import { useState, useEffect } from "react";
-import { MdTableBar, MdCategory, MdDateRange, MdToday, MdCalendarMonth, MdLocalOffer } from "react-icons/md";
+import { MdCategory, MdDateRange, MdToday, MdCalendarMonth, MdLocalOffer, MdAccountBalanceWallet, MdAnalytics, MdPayment, MdReceipt } from "react-icons/md";
 import { BiSolidDish } from "react-icons/bi";
 import { MdAddCircle } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import { ROUTES } from "../constants";
 import Metrics from "../components/dashboard/Metrics";
-import RecentOrders from "../components/dashboard/RecentOrders";
 import PromotionMetrics from "../components/dashboard/PromotionMetrics";
-import Modal from "../components/dashboard/Modal";
 import CategoryModal from "../components/dashboard/CategoryModal";
 import DishModal from "../components/dashboard/DishModal";
+import { getStoredUser } from "../utils/auth";
+import { formatVND } from "../utils";
+import { fetchSpendingDashboard } from "../redux/slices/spendingSlice";
 
-const buttons = [
-  { label: "Add Table", icon: <MdTableBar />, action: "table" },
-  { label: "Add Category", icon: <MdCategory />, action: "category" },
-  { label: "Add Dishes", icon: <BiSolidDish />, action: "dishes" },
-  { label: "Add Topping", icon: <MdAddCircle />, action: "topping" },
-  { label: "Add Promotion", icon: <MdLocalOffer />, action: "promotion" },
-];
+// Spending Analytics Component
+const SpendingAnalytics = ({ dashboardData, loading }) => {
+  if (loading) {
+    return (
+      <div className="text-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f6b100] mx-auto mb-4"></div>
+        <p className="text-[#ababab] text-lg">Loading analytics...</p>
+      </div>
+    );
+  }
 
-const tabs = ["Metrics", "Orders", "Promotions", "Payments"];
+  if (!dashboardData) {
+    return (
+      <div className="text-center py-12">
+        <MdAnalytics className="mx-auto text-6xl text-[#ababab] mb-4" />
+        <p className="text-[#ababab] text-lg">No analytics data available</p>
+      </div>
+    );
+  }
 
-const dateFilterOptions = [
-  { value: "today", label: "Today", icon: <MdToday /> },
-  { value: "week", label: "This Week", icon: <MdDateRange /> },
-  { value: "month", label: "This Month", icon: <MdCalendarMonth /> },
-  { value: "custom", label: "Custom Range", icon: <MdDateRange /> },
-];
+  const { monthlyStats, yearlyStats, recentSpending, upcomingPayments, topCategories, topVendors } = dashboardData;
+
+  return (
+    <div className="container mx-auto px-4 md:px-6">
+      <div className="space-y-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
+            <div className="flex items-center justify-between mb-4">
+              <MdAccountBalanceWallet className="text-2xl text-[#f6b100]" />
+              <span className="text-[#ababab] text-sm">This Month</span>
+            </div>
+            <h3 className="text-2xl font-bold text-[#f5f5f5] mb-1">
+              {formatVND(monthlyStats?.totalAmount || 0)}
+            </h3>
+            <p className="text-[#ababab] text-sm">Total Spending</p>
+          </div>
+
+          <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
+            <div className="flex items-center justify-between mb-4">
+              <MdReceipt className="text-2xl text-[#10B981]" />
+              <span className="text-[#ababab] text-sm">This Month</span>
+            </div>
+            <h3 className="text-2xl font-bold text-[#f5f5f5] mb-1">
+              {monthlyStats?.count || 0}
+            </h3>
+            <p className="text-[#ababab] text-sm">Total Records</p>
+          </div>
+
+          <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
+            <div className="flex items-center justify-between mb-4">
+              <MdPayment className="text-2xl text-[#EF4444]" />
+              <span className="text-[#ababab] text-sm">Pending</span>
+            </div>
+            <h3 className="text-2xl font-bold text-[#f5f5f5] mb-1">
+              {formatVND(monthlyStats?.pendingAmount || 0)}
+            </h3>
+            <p className="text-[#ababab] text-sm">Pending Payments</p>
+          </div>
+
+          <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
+            <div className="flex items-center justify-between mb-4">
+              <MdDateRange className="text-2xl text-[#8B5CF6]" />
+              <span className="text-[#ababab] text-sm">This Year</span>
+            </div>
+            <h3 className="text-2xl font-bold text-[#f5f5f5] mb-1">
+              {formatVND(yearlyStats?.totalAmount || 0)}
+            </h3>
+            <p className="text-[#ababab] text-sm">Yearly Total</p>
+          </div>
+        </div>
+
+        {/* Recent Spending & Upcoming Payments */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
+            <h3 className="text-[#f5f5f5] font-semibold text-lg mb-4">Recent Spending</h3>
+            <div className="space-y-3">
+              {recentSpending?.slice(0, 5).map((item) => (
+                <div key={item._id} className="flex items-center justify-between py-2 border-b border-[#343434] last:border-b-0">
+                  <div>
+                    <p className="text-[#f5f5f5] font-medium">{item.title}</p>
+                    <p className="text-[#ababab] text-sm">
+                      {new Date(item.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[#f5f5f5] font-semibold">{formatVND(item.amount)}</p>
+                    {item.category && (
+                      <span
+                        className="px-2 py-1 rounded text-xs font-medium text-white"
+                        style={{ backgroundColor: item.category.color }}
+                      >
+                        {item.category.name}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
+            <h3 className="text-[#f5f5f5] font-semibold text-lg mb-4">Upcoming Payments</h3>
+            <div className="space-y-3">
+              {upcomingPayments?.slice(0, 5).map((item) => (
+                <div key={item._id} className="flex items-center justify-between py-2 border-b border-[#343434] last:border-b-0">
+                  <div>
+                    <p className="text-[#f5f5f5] font-medium">{item.title}</p>
+                    <p className="text-[#ababab] text-sm">
+                      Due: {new Date(item.dueDate).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[#f5f5f5] font-semibold">{formatVND(item.amount)}</p>
+                    {item.vendor && (
+                      <p className="text-[#ababab] text-xs">{item.vendor.name}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Top Categories & Vendors */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
+            <h3 className="text-[#f5f5f5] font-semibold text-lg mb-4">Top Categories</h3>
+            <div className="space-y-3">
+              {topCategories?.map((item) => (
+                <div key={item._id} className="flex items-center justify-between py-2">
+                  <div>
+                    <p className="text-[#f5f5f5] font-medium">{item.categoryName}</p>
+                    <p className="text-[#ababab] text-sm">{item.count} records</p>
+                  </div>
+                  <p className="text-[#f5f5f5] font-semibold">{formatVND(item.totalAmount)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
+            <h3 className="text-[#f5f5f5] font-semibold text-lg mb-4">Top Vendors</h3>
+            <div className="space-y-3">
+              {topVendors?.map((item) => (
+                <div key={item._id} className="flex items-center justify-between py-2">
+                  <div>
+                    <p className="text-[#f5f5f5] font-medium">{item.vendorName}</p>
+                    <p className="text-[#ababab] text-sm">{item.count} records</p>
+                  </div>
+                  <p className="text-[#f5f5f5] font-semibold">{formatVND(item.totalAmount)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  
-  useEffect(() => {
-    document.title = "POS | Admin Dashboard";
-  }, []);
+  const dispatch = useDispatch();
+  const user = getStoredUser();
+  const isAdmin = user?.role === "Admin";
 
-  const [isTableModalOpen, setIsTableModalOpen] = useState(false);
+  // Redux state for spending analytics
+  const { dashboardData, loading: spendingLoading } = useSelector((state) => state.spending);
+
+  const buttons = [
+    { label: "Add Category", icon: <MdCategory />, action: "category" },
+    { label: "Add Dishes", icon: <BiSolidDish />, action: "dishes" },
+    { label: "Add Topping", icon: <MdAddCircle />, action: "topping" },
+    { label: "Add Promotion", icon: <MdLocalOffer />, action: "promotion" },
+    ...(isAdmin ? [{ label: "Spending", icon: <MdAccountBalanceWallet />, action: "spending" }] : []),
+  ];
+
+  const tabs = ["Metrics", "Promotions", ...(isAdmin ? ["Spending"] : [])];
+
+  const dateFilterOptions = [
+    { value: "today", label: "Today", icon: <MdToday /> },
+    { value: "week", label: "This Week", icon: <MdDateRange /> },
+    { value: "month", label: "This Month", icon: <MdCalendarMonth /> },
+    { value: "custom", label: "Custom Range", icon: <MdDateRange /> },
+  ];
+  
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isDishesModalOpen, setIsDishesModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("Metrics");
@@ -45,12 +209,33 @@ const Dashboard = () => {
     endDate: ""
   });
 
+  useEffect(() => {
+    document.title = "POS | Admin Dashboard";
+  }, []);
+
+  // Load spending dashboard data when Spending tab is active and user is admin
+  useEffect(() => {
+    if (isAdmin && activeTab === "Spending") {
+      // Prepare date filter parameters
+      const params = {};
+      
+      if (dateFilter === "custom" && customDateRange.startDate && customDateRange.endDate) {
+        params.startDate = customDateRange.startDate;
+        params.endDate = customDateRange.endDate;
+      } else if (dateFilter !== "custom") {
+        params.period = dateFilter; // today, week, month
+      }
+      
+      dispatch(fetchSpendingDashboard(params));
+    }
+  }, [dispatch, isAdmin, activeTab, dateFilter, customDateRange]);
+
   const handleOpenModal = (action) => {
-    if (action === "table") setIsTableModalOpen(true);
     if (action === "category") setIsCategoryModalOpen(true);
     if (action === "dishes") setIsDishesModalOpen(true);
     if (action === "topping") navigate(ROUTES.TOPPINGS);
     if (action === "promotion") navigate(ROUTES.PROMOTIONS);
+    if (action === "spending") navigate(ROUTES.SPENDING);
   };
 
   const handleDateFilterChange = (filterValue) => {
@@ -172,12 +357,6 @@ const Dashboard = () => {
           customDateRange={customDateRange}
         />
       )}
-      {activeTab === "Orders" && (
-        <RecentOrders 
-          dateFilter={dateFilter}
-          customDateRange={customDateRange}
-        />
-      )}
       {activeTab === "Promotions" && (
         <div className="container mx-auto px-4 md:px-6">
           <PromotionMetrics 
@@ -186,13 +365,13 @@ const Dashboard = () => {
           />
         </div>
       )}
-      {activeTab === "Payments" && (
-        <div className="text-white p-6 container mx-auto">
-          Payment Component Coming Soon
-        </div>
+      {activeTab === "Spending" && isAdmin && (
+        <SpendingAnalytics 
+          dashboardData={dashboardData}
+          loading={spendingLoading}
+        />
       )}
 
-      {isTableModalOpen && <Modal setIsTableModalOpen={setIsTableModalOpen} />}
       {isCategoryModalOpen && <CategoryModal setIsCategoryModalOpen={setIsCategoryModalOpen} />}
       {isDishesModalOpen && <DishModal setIsDishesModalOpen={setIsDishesModalOpen} />}
     </div>
