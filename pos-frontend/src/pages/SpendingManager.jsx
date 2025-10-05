@@ -486,7 +486,7 @@ const SpendingRecords = ({
                     <th className="text-left p-4 text-[#f5f5f5] font-semibold">Amount</th>
                     <th className="text-left p-4 text-[#f5f5f5] font-semibold">Category</th>
                     <th className="text-left p-4 text-[#f5f5f5] font-semibold">Vendor</th>
-                    <th className="text-left p-4 text-[#f5f5f5] font-semibold">Date</th>
+                    <th className="text-left p-4 text-[#f5f5f5] font-semibold">Payment Date</th>
                     <th className="text-left p-4 text-[#f5f5f5] font-semibold">Status</th>
                     <th className="text-left p-4 text-[#f5f5f5] font-semibold">Actions</th>
                   </tr>
@@ -517,7 +517,7 @@ const SpendingRecords = ({
                       </td>
                       <td className="p-4">
                         <p className="text-[#f5f5f5]">
-                          {new Date(item.createdAt).toLocaleDateString()}
+                          {item.paymentDate ? new Date(item.paymentDate).toLocaleDateString() : 'Not set'}
                         </p>
                       </td>
                       <td className="p-4">
@@ -575,8 +575,10 @@ const SpendingRecords = ({
                       <p className="text-[#f5f5f5] font-semibold">{formatVND(item.amount)}</p>
                     </div>
                     <div>
-                      <p className="text-[#ababab] text-xs">Date</p>
-                      <p className="text-[#f5f5f5]">{new Date(item.createdAt).toLocaleDateString()}</p>
+                      <p className="text-[#ababab] text-xs">Payment Date</p>
+                      <p className="text-[#f5f5f5]">
+                        {item.paymentDate ? new Date(item.paymentDate).toLocaleDateString() : 'Not set'}
+                      </p>
                     </div>
                   </div>
 
@@ -769,7 +771,7 @@ const AnalyticsTab = ({ dashboardData, loading }) => {
     );
   }
 
-  const { monthlyStats, yearlyStats, recentSpending, upcomingPayments, topCategories, topVendors } = dashboardData;
+  const { summary, spendingByCategory, spendingByVendor, monthlyTrend, paymentStatusBreakdown, overdueSpending } = dashboardData;
 
   return (
     <div className="space-y-8">
@@ -781,7 +783,7 @@ const AnalyticsTab = ({ dashboardData, loading }) => {
             <span className="text-[#ababab] text-sm">This Month</span>
           </div>
           <h3 className="text-2xl font-bold text-[#f5f5f5] mb-1">
-            {formatVND(monthlyStats?.totalAmount || 0)}
+            {formatVND(summary?.totalAmount || 0)}
           </h3>
           <p className="text-[#ababab] text-sm">Total Spending</p>
         </div>
@@ -789,10 +791,10 @@ const AnalyticsTab = ({ dashboardData, loading }) => {
         <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
           <div className="flex items-center justify-between mb-4">
             <MdReceipt className="text-2xl text-[#10B981]" />
-            <span className="text-[#ababab] text-sm">This Month</span>
+            <span className="text-[#ababab] text-sm">Records</span>
           </div>
           <h3 className="text-2xl font-bold text-[#f5f5f5] mb-1">
-            {monthlyStats?.count || 0}
+            {summary?.count || 0}
           </h3>
           <p className="text-[#ababab] text-sm">Total Records</p>
         </div>
@@ -803,7 +805,7 @@ const AnalyticsTab = ({ dashboardData, loading }) => {
             <span className="text-[#ababab] text-sm">Pending</span>
           </div>
           <h3 className="text-2xl font-bold text-[#f5f5f5] mb-1">
-            {formatVND(monthlyStats?.pendingAmount || 0)}
+            {formatVND(paymentStatusBreakdown?.find(item => item._id === 'pending')?.totalAmount || 0)}
           </h3>
           <p className="text-[#ababab] text-sm">Pending Payments</p>
         </div>
@@ -811,38 +813,32 @@ const AnalyticsTab = ({ dashboardData, loading }) => {
         <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
           <div className="flex items-center justify-between mb-4">
             <MdDateRange className="text-2xl text-[#8B5CF6]" />
-            <span className="text-[#ababab] text-sm">This Year</span>
+            <span className="text-[#ababab] text-sm">Average</span>
           </div>
           <h3 className="text-2xl font-bold text-[#f5f5f5] mb-1">
-            {formatVND(yearlyStats?.totalAmount || 0)}
+            {formatVND(summary?.avgAmount || 0)}
           </h3>
-          <p className="text-[#ababab] text-sm">Yearly Total</p>
+          <p className="text-[#ababab] text-sm">Avg per Record</p>
         </div>
       </div>
 
-      {/* Recent Spending & Upcoming Payments */}
+      {/* Payment Status & Category Breakdown */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
-          <h3 className="text-[#f5f5f5] font-semibold text-lg mb-4">Recent Spending</h3>
+          <h3 className="text-[#f5f5f5] font-semibold text-lg mb-4">Payment Status</h3>
           <div className="space-y-3">
-            {recentSpending?.slice(0, 5).map((item) => (
+            {paymentStatusBreakdown?.map((item) => (
               <div key={item._id} className="flex items-center justify-between py-2 border-b border-[#343434] last:border-b-0">
                 <div>
-                  <p className="text-[#f5f5f5] font-medium">{item.title}</p>
-                  <p className="text-[#ababab] text-sm">
-                    {new Date(item.spendingDate).toLocaleDateString()}
-                  </p>
+                  <p className="text-[#f5f5f5] font-medium capitalize">{item._id}</p>
+                  <p className="text-[#ababab] text-sm">{item.count} records</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[#f5f5f5] font-semibold">{formatVND(item.amount)}</p>
-                  {item.category && (
-                    <span
-                      className="px-2 py-1 rounded text-xs font-medium text-white"
-                      style={{ backgroundColor: item.category.color }}
-                    >
-                      {item.category.name}
-                    </span>
-                  )}
+                  <p className="text-[#f5f5f5] font-semibold">{formatVND(item.totalAmount)}</p>
+                  <div className={`w-3 h-3 rounded-full inline-block ml-2 ${
+                    item._id === 'paid' ? 'bg-green-500' : 
+                    item._id === 'pending' ? 'bg-yellow-500' : 'bg-red-500'
+                  }`}></div>
                 </div>
               </div>
             ))}
@@ -850,21 +846,21 @@ const AnalyticsTab = ({ dashboardData, loading }) => {
         </div>
 
         <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
-          <h3 className="text-[#f5f5f5] font-semibold text-lg mb-4">Upcoming Payments</h3>
+          <h3 className="text-[#f5f5f5] font-semibold text-lg mb-4">Monthly Trend</h3>
           <div className="space-y-3">
-            {upcomingPayments?.slice(0, 5).map((item) => (
-              <div key={item._id} className="flex items-center justify-between py-2 border-b border-[#343434] last:border-b-0">
+            {monthlyTrend?.map((item) => (
+              <div key={`${item._id.year}-${item._id.month}`} className="flex items-center justify-between py-2 border-b border-[#343434] last:border-b-0">
                 <div>
-                  <p className="text-[#f5f5f5] font-medium">{item.title}</p>
-                  <p className="text-[#ababab] text-sm">
-                    Due: {new Date(item.dueDate).toLocaleDateString()}
+                  <p className="text-[#f5f5f5] font-medium">
+                    {new Date(item._id.year, item._id.month - 1).toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'long' 
+                    })}
                   </p>
+                  <p className="text-[#ababab] text-sm">{item.count} records</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[#f5f5f5] font-semibold">{formatVND(item.amount)}</p>
-                  {item.vendor && (
-                    <p className="text-[#ababab] text-xs">{item.vendor.name}</p>
-                  )}
+                  <p className="text-[#f5f5f5] font-semibold">{formatVND(item.totalAmount)}</p>
                 </div>
               </div>
             ))}
@@ -877,13 +873,16 @@ const AnalyticsTab = ({ dashboardData, loading }) => {
         <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
           <h3 className="text-[#f5f5f5] font-semibold text-lg mb-4">Top Categories</h3>
           <div className="space-y-3">
-            {topCategories?.map((item) => (
-              <div key={item._id} className="flex items-center justify-between py-2">
+            {spendingByCategory?.slice(0, 5).map((item) => (
+              <div key={item._id} className="flex items-center justify-between py-2 border-b border-[#343434] last:border-b-0">
                 <div>
                   <p className="text-[#f5f5f5] font-medium">{item.categoryName}</p>
                   <p className="text-[#ababab] text-sm">{item.count} records</p>
                 </div>
-                <p className="text-[#f5f5f5] font-semibold">{formatVND(item.totalAmount)}</p>
+                <div className="text-right">
+                  <p className="text-[#f5f5f5] font-semibold">{formatVND(item.totalAmount)}</p>
+                  <p className="text-[#ababab] text-xs">Avg: {formatVND(item.avgAmount)}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -892,15 +891,20 @@ const AnalyticsTab = ({ dashboardData, loading }) => {
         <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
           <h3 className="text-[#f5f5f5] font-semibold text-lg mb-4">Top Vendors</h3>
           <div className="space-y-3">
-            {topVendors?.map((item) => (
-              <div key={item._id} className="flex items-center justify-between py-2">
+            {spendingByVendor?.length > 0 ? spendingByVendor.map((item) => (
+              <div key={item._id} className="flex items-center justify-between py-2 border-b border-[#343434] last:border-b-0">
                 <div>
                   <p className="text-[#f5f5f5] font-medium">{item.vendorName}</p>
                   <p className="text-[#ababab] text-sm">{item.count} records</p>
                 </div>
-                <p className="text-[#f5f5f5] font-semibold">{formatVND(item.totalAmount)}</p>
+                <div className="text-right">
+                  <p className="text-[#f5f5f5] font-semibold">{formatVND(item.totalAmount)}</p>
+                  <p className="text-[#ababab] text-xs">Avg: {formatVND(item.avgAmount)}</p>
+                </div>
               </div>
-            ))}
+            )) : (
+              <p className="text-[#ababab] text-center py-4">No vendor data available</p>
+            )}
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchOrders } from "../../redux/slices/orderSlice";
 import { fetchDishes } from "../../redux/slices/dishSlice";
 import { fetchCategories } from "../../redux/slices/categorySlice";
+import { fetchSpendingAnalytics } from "../../redux/slices/spendingSlice";
 import { getTodayDate, formatVND } from "../../utils";
 import { getDateRangeByPeriodVietnam } from "../../utils/dateUtils";
 import PropTypes from "prop-types";
@@ -22,6 +23,7 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
   const { items: orders, loading: ordersLoading } = useSelector((state) => state.orders);
   const { items: dishes, loading: dishesLoading } = useSelector((state) => state.dishes);
   const { items: categories, loading: categoriesLoading } = useSelector((state) => state.categories);
+  const { analyticsData: spendingData, analyticsLoading: spendingLoading } = useSelector((state) => state.spending);
 
   useEffect(() => {
     // Fetch data based on selected date range
@@ -63,22 +65,31 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
     dispatch(fetchOrders({ startDate, endDate }));
     dispatch(fetchDishes());
     dispatch(fetchCategories());
+    
+    // Fetch spending analytics with the same date range
+    const spendingParams = {};
+    if (dateFilter === "custom" && customDateRange.startDate && customDateRange.endDate) {
+      spendingParams.startDate = customDateRange.startDate;
+      spendingParams.endDate = customDateRange.endDate;
+    } else if (dateFilter !== "custom") {
+      spendingParams.period = dateFilter;
+    }
+    dispatch(fetchSpendingAnalytics(spendingParams));
   }, [dispatch, dateFilter, customDateRange]);
 
   // Calculate metrics data
   const metricsData = useMemo(() => {
-    if (!orders || orders.length === 0) {
-      return [
-        { title: "Revenue", value: formatVND(0), percentage: "0%", color: "#025cca", isIncrease: false },
-        { title: "Total Orders", value: "0", percentage: "0%", color: "#02ca3a", isIncrease: true },
-        { title: "Completed Orders", value: "0", percentage: "0%", color: "#f6b100", isIncrease: true },
-        { title: "Average Order Value", value: formatVND(0), percentage: "0%", color: "#be3e3f", isIncrease: false },
-      ];
-    }
-
-    const completedOrders = orders.filter(order => order.orderStatus === "completed");
+    const completedOrders = orders?.filter(order => order.orderStatus === "completed") || [];
     const totalRevenue = completedOrders.reduce((sum, order) => sum + (order.bills?.totalWithTax || 0), 0);
     const averageOrderValue = completedOrders.length > 0 ? totalRevenue / completedOrders.length : 0;
+    
+    // Get spending data
+    const totalSpending = spendingData?.summary?.totalAmount || 0;
+    const spendingCount = spendingData?.summary?.count || 0;
+    
+    // Calculate profit (revenue - spending)
+    const profit = totalRevenue - totalSpending;
+    const profitMargin = totalRevenue > 0 ? ((profit / totalRevenue) * 100).toFixed(1) : 0;
 
     return [
       { 
@@ -89,43 +100,42 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
         isIncrease: true 
       },
       { 
-        title: "Total Orders", 
-        value: orders.length.toString(), 
-        percentage: "16%", 
-        color: "#02ca3a", 
-        isIncrease: true 
+        title: "Total Spending", 
+        value: formatVND(totalSpending), 
+        percentage: spendingCount > 0 ? "8%" : "0%", 
+        color: "#EF4444", 
+        isIncrease: false 
       },
       { 
-        title: "Completed Orders", 
-        value: completedOrders.length.toString(), 
-        percentage: "10%", 
+        title: "Net Profit", 
+        value: formatVND(profit), 
+        percentage: `${profitMargin}%`, 
+        color: profit >= 0 ? "#02ca3a" : "#be3e3f", 
+        isIncrease: profit >= 0 
+      },
+      { 
+        title: "Total Orders", 
+        value: (orders?.length || 0).toString(), 
+        percentage: "16%", 
         color: "#f6b100", 
         isIncrease: true 
       },
-      { 
-        title: "Average Order Value", 
-        value: formatVND(averageOrderValue), 
-        percentage: "8%", 
-        color: "#be3e3f", 
-        isIncrease: false 
-      },
     ];
-  }, [orders]);
+  }, [orders, spendingData]);
 
   // Calculate items data
   const itemsData = useMemo(() => {
-    const activeCategories = categories.filter(cat => cat.isActive);
-    const availableDishes = dishes.filter(dish => dish.isAvailable);
-    const activeOrders = orders.filter(order => 
+    const activeCategories = categories?.filter(cat => cat.isActive) || [];
+    const availableDishes = dishes?.filter(dish => dish.isAvailable) || [];
+    const activeOrders = orders?.filter(order => 
       order.orderStatus === "progress" || order.orderStatus === "preparing"
-    );
+    ) || [];
     
-    const totalDishesOrdered = orders.reduce((sum, order) => {
-      if (order.items && Array.isArray(order.items)) {
-        return sum + order.items.reduce((itemSum, item) => itemSum + (item.quantity || 0), 0);
-      }
-      return sum;
-    }, 0);
+    // Get spending metrics
+    const spendingCategories = spendingData?.spendingByCategory?.length || 0;
+    const pendingPayments = spendingData?.paymentStatusBreakdown?.find(item => item._id === 'pending')?.count || 0;
+    const totalSpendingRecords = spendingData?.summary?.count || 0;
+    const avgSpendingAmount = spendingData?.summary?.avgAmount || 0;
 
     return [
       { 
@@ -143,21 +153,21 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
         isIncrease: true 
       },
       { 
-        title: "Active Orders", 
-        value: activeOrders.length.toString(), 
+        title: "Spending Records", 
+        value: totalSpendingRecords.toString(), 
         percentage: "8%", 
         color: "#735f32", 
         isIncrease: true 
       },
       { 
-        title: "Dishes Ordered", 
-        value: totalDishesOrdered.toString(), 
+        title: "Avg Spending", 
+        value: formatVND(avgSpendingAmount), 
         percentage: "15%", 
         color: "#7f167f", 
         isIncrease: true 
       }
     ];
-  }, [orders, dishes, categories]);
+  }, [orders, dishes, categories, spendingData]);
 
   // Get display label for current date filter
   const getDateFilterLabel = () => {
@@ -174,7 +184,7 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
     }
   };
 
-  if (ordersLoading || dishesLoading || categoriesLoading) {
+  if (ordersLoading || dishesLoading || categoriesLoading || spendingLoading) {
     return (
       <div className="container mx-auto py-2 px-6 md:px-4">
         <div className="flex items-center justify-center py-12">
@@ -320,6 +330,129 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
           <SalesHeatmapChart orders={orders} />
           <CustomerTrafficChart orders={orders} />
         </div>
+
+        {/* Spending Analytics Section */}
+        {spendingData && (
+          <>
+            <div className="mt-12 mb-8">
+              <h2 className="font-semibold text-[#f5f5f5] text-xl mb-2">
+                Spending & Cost Analytics
+              </h2>
+              <p className="text-sm text-[#ababab]">
+                Track expenses, vendor spending, and cost breakdown by category
+              </p>
+            </div>
+
+            {/* Spending Overview Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center">
+                    <span className="text-red-400 text-lg">💰</span>
+                  </div>
+                  <span className="text-[#ababab] text-sm">Total</span>
+                </div>
+                <h3 className="text-2xl font-bold text-[#f5f5f5] mb-1">
+                  {formatVND(spendingData.summary?.totalAmount || 0)}
+                </h3>
+                <p className="text-[#ababab] text-sm">Total Spending</p>
+              </div>
+
+              <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
+                    <span className="text-blue-400 text-lg">📊</span>
+                  </div>
+                  <span className="text-[#ababab] text-sm">Records</span>
+                </div>
+                <h3 className="text-2xl font-bold text-[#f5f5f5] mb-1">
+                  {spendingData.summary?.count || 0}
+                </h3>
+                <p className="text-[#ababab] text-sm">Spending Records</p>
+              </div>
+
+              <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 bg-yellow-500/20 rounded-full flex items-center justify-center">
+                    <span className="text-yellow-400 text-lg">⏳</span>
+                  </div>
+                  <span className="text-[#ababab] text-sm">Pending</span>
+                </div>
+                <h3 className="text-2xl font-bold text-[#f5f5f5] mb-1">
+                  {formatVND(spendingData.paymentStatusBreakdown?.find(item => item._id === 'pending')?.totalAmount || 0)}
+                </h3>
+                <p className="text-[#ababab] text-sm">Pending Payments</p>
+              </div>
+
+              <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center">
+                    <span className="text-green-400 text-lg">📈</span>
+                  </div>
+                  <span className="text-[#ababab] text-sm">Average</span>
+                </div>
+                <h3 className="text-2xl font-bold text-[#f5f5f5] mb-1">
+                  {formatVND(spendingData.summary?.avgAmount || 0)}
+                </h3>
+                <p className="text-[#ababab] text-sm">Avg per Record</p>
+              </div>
+            </div>
+
+            {/* Spending Breakdown */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Top Spending Categories */}
+              <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
+                <h3 className="text-[#f5f5f5] font-semibold text-lg mb-4">Top Spending Categories</h3>
+                <div className="space-y-4">
+                  {spendingData.spendingByCategory?.slice(0, 5).map((category, index) => (
+                    <div key={category._id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
+                          {index + 1}
+                        </div>
+                        <div>
+                          <p className="text-[#f5f5f5] font-medium">{category.categoryName}</p>
+                          <p className="text-[#ababab] text-sm">{category.count} records</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[#f5f5f5] font-semibold">{formatVND(category.totalAmount)}</p>
+                        <p className="text-[#ababab] text-xs">Avg: {formatVND(category.avgAmount)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Payment Status Breakdown */}
+              <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
+                <h3 className="text-[#f5f5f5] font-semibold text-lg mb-4">Payment Status</h3>
+                <div className="space-y-4">
+                  {spendingData.paymentStatusBreakdown?.map((status) => (
+                    <div key={status._id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-4 h-4 rounded-full ${
+                          status._id === 'paid' ? 'bg-green-500' : 
+                          status._id === 'pending' ? 'bg-yellow-500' : 'bg-red-500'
+                        }`}></div>
+                        <div>
+                          <p className="text-[#f5f5f5] font-medium capitalize">{status._id}</p>
+                          <p className="text-[#ababab] text-sm">{status.count} records</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[#f5f5f5] font-semibold">{formatVND(status.totalAmount)}</p>
+                        <p className="text-[#ababab] text-xs">
+                          {((status.totalAmount / (spendingData.summary?.totalAmount || 1)) * 100).toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
