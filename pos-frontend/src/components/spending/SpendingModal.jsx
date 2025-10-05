@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useDispatch } from "react-redux";
 import { MdClose, MdSave, MdCancel } from "react-icons/md";
 import { createSpending, editSpending } from "../../redux/slices/spendingSlice";
@@ -15,7 +15,7 @@ const SpendingModal = ({
   onSuccess 
 }) => {
   const dispatch = useDispatch();
-  const [formData, setFormData] = useState({
+  const initialFormData = useMemo(() => ({
     title: "",
     amount: "",
     currency: "VND",
@@ -28,7 +28,9 @@ const SpendingModal = ({
     paymentReference: "",
     receiptNumber: "",
     invoiceNumber: ""
-  });
+  }), []);
+
+  const [formData, setFormData] = useState(initialFormData);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -49,8 +51,14 @@ const SpendingModal = ({
         receiptNumber: spending.receiptNumber || "",
         invoiceNumber: spending.invoiceNumber || ""
       });
+    } else if (mode === "create") {
+      // Reset form for create mode
+      setFormData({
+        ...initialFormData,
+        paymentDate: new Date().toISOString().split('T')[0] // Always use current date
+      });
     }
-  }, [spending, mode]);
+  }, [spending, mode, initialFormData]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -88,6 +96,14 @@ const SpendingModal = ({
       }
 
       if (result.meta.requestStatus === 'fulfilled') {
+        // Reset form only for create mode
+        if (mode === "create") {
+          setFormData({
+            ...initialFormData,
+            paymentDate: new Date().toISOString().split('T')[0]
+          });
+          setError("");
+        }
         onSuccess?.(result.payload.data);
         onClose();
       } else {

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useDispatch } from "react-redux";
 import { MdClose, MdSave, MdCancel, MdBusiness, MdPhone } from "react-icons/md";
 import { createVendor, editVendor } from "../../redux/slices/spendingSlice";
@@ -12,11 +12,13 @@ const VendorModal = ({
   onSuccess 
 }) => {
   const dispatch = useDispatch();
-  const [formData, setFormData] = useState({
+  const initialFormData = useMemo(() => ({
     name: "",
     phone: "",
     isActive: true
-  });
+  }), []);
+
+  const [formData, setFormData] = useState(initialFormData);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -28,8 +30,11 @@ const VendorModal = ({
         phone: vendor.phone || "",
         isActive: vendor.isActive !== undefined ? vendor.isActive : true
       });
+    } else if (mode === "create") {
+      // Reset form for create mode
+      setFormData(initialFormData);
     }
-  }, [vendor, mode]);
+  }, [vendor, mode, initialFormData]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -62,6 +67,11 @@ const VendorModal = ({
       }
 
       if (result.meta.requestStatus === 'fulfilled') {
+        // Reset form only for create mode
+        if (mode === "create") {
+          setFormData(initialFormData);
+          setError("");
+        }
         onSuccess?.(result.payload);
         onClose();
       } else {

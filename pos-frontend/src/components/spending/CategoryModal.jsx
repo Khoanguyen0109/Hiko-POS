@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useDispatch } from "react-redux";
 import { MdClose, MdSave, MdCancel, MdColorLens } from "react-icons/md";
 import { createSpendingCategory, editSpendingCategory } from "../../redux/slices/spendingSlice";
@@ -12,12 +12,14 @@ const CategoryModal = ({
   onSuccess 
 }) => {
   const dispatch = useDispatch();
-  const [formData, setFormData] = useState({
+  const initialFormData = useMemo(() => ({
     name: "",
     description: "",
     color: "#3B82F6",
     isActive: true
-  });
+  }), []);
+
+  const [formData, setFormData] = useState(initialFormData);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -49,8 +51,11 @@ const CategoryModal = ({
         color: category.color || "#3B82F6",
         isActive: category.isActive !== undefined ? category.isActive : true
       });
+    } else if (mode === "create") {
+      // Reset form for create mode
+      setFormData(initialFormData);
     }
-  }, [category, mode]);
+  }, [category, mode, initialFormData]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -78,6 +83,11 @@ const CategoryModal = ({
       }
 
       if (result.meta.requestStatus === 'fulfilled') {
+        // Reset form only for create mode
+        if (mode === "create") {
+          setFormData(initialFormData);
+          setError("");
+        }
         onSuccess?.(result.payload);
         onClose();
       } else {
