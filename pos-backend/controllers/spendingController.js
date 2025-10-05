@@ -618,7 +618,40 @@ const getSpendingAnalytics = async (req, res, next) => {
         const { startDate, endDate, period = 'month' } = req.query;
         
         // Date range setup
-        const { start, end } = getDateRangeVietnam(startDate, endDate);
+        let start, end;
+        
+        if (startDate && endDate) {
+            // Use explicit date range
+            const dateRange = getDateRangeVietnam(startDate, endDate);
+            start = dateRange.start;
+            end = dateRange.end;
+        } else if (period) {
+            // Use period-based filtering
+            const today = getCurrentVietnamTime();
+            
+            switch (period) {
+                case 'today':
+                    start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                    end = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+                    break;
+                case 'week':
+                    // Get start of current week (Monday)
+                    const dayOfWeek = today.getDay();
+                    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday = 0, Monday = 1
+                    start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysToMonday);
+                    end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + (6 - daysToMonday), 23, 59, 59, 999);
+                    break;
+                case 'month':
+                    start = new Date(today.getFullYear(), today.getMonth(), 1);
+                    end = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+                    break;
+                default:
+                    // Default to current month
+                    start = new Date(today.getFullYear(), today.getMonth(), 1);
+                    end = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+            }
+        }
+        
         const dateFilter = {};
         if (start) dateFilter.$gte = start;
         if (end) dateFilter.$lte = end;
