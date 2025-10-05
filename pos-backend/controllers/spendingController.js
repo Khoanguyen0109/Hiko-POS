@@ -638,7 +638,7 @@ const getSpendingAnalytics = async (req, res, next) => {
         ] = await Promise.all([
             // Total spending summary
             Spending.aggregate([
-                { $match: { status: 'active', spendingDate: dateFilter } },
+                { $match: { status: 'active', createdAt: dateFilter } },
                 {
                     $group: {
                         _id: null,
@@ -662,7 +662,7 @@ const getSpendingAnalytics = async (req, res, next) => {
 
             // Payment status breakdown
             Spending.aggregate([
-                { $match: { status: 'active', spendingDate: dateFilter } },
+                { $match: { status: 'active', createdAt: dateFilter } },
                 {
                     $group: {
                         _id: '$paymentStatus',
@@ -730,7 +730,7 @@ const getSpendingDashboard = async (req, res, next) => {
                 {
                     $match: {
                         status: 'active',
-                        spendingDate: { $gte: startOfMonth }
+                        createdAt: { $gte: startOfMonth }
                     }
                 },
                 {
@@ -758,7 +758,7 @@ const getSpendingDashboard = async (req, res, next) => {
                 {
                     $match: {
                         status: 'active',
-                        spendingDate: { $gte: startOfYear }
+                        createdAt: { $gte: startOfYear }
                     }
                 },
                 {
@@ -797,7 +797,7 @@ const getSpendingDashboard = async (req, res, next) => {
                 {
                     $match: {
                         status: 'active',
-                        spendingDate: { $gte: startOfMonth }
+                        createdAt: { $gte: startOfMonth }
                     }
                 },
                 {
@@ -827,7 +827,7 @@ const getSpendingDashboard = async (req, res, next) => {
                     $match: {
                         status: 'active',
                         vendor: { $exists: true },
-                        spendingDate: { $gte: startOfMonth }
+                        createdAt: { $gte: startOfMonth }
                     }
                 },
                 {

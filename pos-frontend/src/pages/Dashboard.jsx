@@ -14,7 +14,7 @@ import { formatVND } from "../utils";
 import { fetchSpendingDashboard } from "../redux/slices/spendingSlice";
 
 // Spending Analytics Component
-const SpendingAnalytics = ({ dashboardData, loading }) => {
+const SpendingAnalytics = ({ dashboardData, loading, error }) => {
   if (loading) {
     return (
       <div className="text-center py-12">
@@ -24,11 +24,22 @@ const SpendingAnalytics = ({ dashboardData, loading }) => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <MdAnalytics className="mx-auto text-6xl text-red-500 mb-4" />
+        <p className="text-red-400 text-lg mb-2">Error loading analytics</p>
+        <p className="text-[#ababab] text-sm">{error}</p>
+      </div>
+    );
+  }
+
   if (!dashboardData) {
     return (
       <div className="text-center py-12">
         <MdAnalytics className="mx-auto text-6xl text-[#ababab] mb-4" />
         <p className="text-[#ababab] text-lg">No analytics data available</p>
+        <p className="text-[#ababab] text-sm mt-2">Try creating some spending records first</p>
       </div>
     );
   }
@@ -181,7 +192,7 @@ const Dashboard = () => {
   const isAdmin = user?.role === "Admin";
 
   // Redux state for spending analytics
-  const { dashboardData, loading: spendingLoading } = useSelector((state) => state.spending);
+  const { dashboardData, dashboardLoading, dashboardError } = useSelector((state) => state.spending);
 
   const buttons = [
     { label: "Add Category", icon: <MdCategory />, action: "category" },
@@ -368,7 +379,8 @@ const Dashboard = () => {
       {activeTab === "Spending" && isAdmin && (
         <SpendingAnalytics 
           dashboardData={dashboardData}
-          loading={spendingLoading}
+          loading={dashboardLoading}
+          error={dashboardError}
         />
       )}
 

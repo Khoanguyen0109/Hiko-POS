@@ -2,7 +2,7 @@ import { formatDateAndTime, getAvatarName, formatVND } from "../../utils/index";
 import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import { Card, StatusBadge } from "../ui";
-import { MdPayment, MdCreditCard, MdAccountBalance, MdMoney } from "react-icons/md";
+import { MdPayment, MdCreditCard, MdAccountBalance, MdMoney, MdStore, MdStorefront } from "react-icons/md";
 
 const OrderCard = ({ order }) => {
   const navigate = useNavigate();
@@ -22,6 +22,19 @@ const OrderCard = ({ order }) => {
         return { icon: MdAccountBalance, text: 'Banking', color: 'text-purple-500' };
       default:
         return { icon: MdPayment, text: 'Not Set', color: 'text-gray-500' };
+    }
+  };
+
+  // Helper function to get third-party vendor info
+  const getVendorInfo = (vendor) => {
+    switch (vendor) {
+      case 'Shopee':
+        return { icon: MdStorefront, text: 'Shopee', color: 'text-orange-500' };
+      case 'Grab':
+        return { icon: MdStore, text: 'Grab', color: 'text-green-600' };
+      case 'None':
+      default:
+        return null; // Don't show anything for direct orders
     }
   };
 
@@ -57,6 +70,20 @@ const OrderCard = ({ order }) => {
                 <div className="flex items-center gap-1 text-xs sm:text-sm">
                   <PaymentIcon className={`${paymentInfo.color} text-sm`} />
                   <span className={paymentInfo.color}>{paymentInfo.text}</span>
+                </div>
+              );
+            })()}
+            
+            {/* Third Party Vendor Display */}
+            {(() => {
+              const vendorInfo = getVendorInfo(order.thirdPartyVendor);
+              if (!vendorInfo) return null;
+              
+              const VendorIcon = vendorInfo.icon;
+              return (
+                <div className="flex items-center gap-1 text-xs sm:text-sm">
+                  <VendorIcon className={`${vendorInfo.color} text-sm`} />
+                  <span className={vendorInfo.color}>{vendorInfo.text}</span>
                 </div>
               );
             })()}
@@ -123,6 +150,7 @@ OrderCard.propTypes = {
     createdAt: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]),
     orderStatus: PropTypes.string.isRequired,
     paymentMethod: PropTypes.oneOf(['Cash', 'Card', 'Banking']),
+    thirdPartyVendor: PropTypes.oneOf(['None', 'Shopee', 'Grab']),
     items: PropTypes.array,
     bills: PropTypes.shape({ 
       totalWithTax: PropTypes.number 

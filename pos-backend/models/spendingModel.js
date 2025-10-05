@@ -188,20 +188,19 @@ const spendingSchema = new mongoose.Schema({
 });
 
 // Indexes for better query performance
-spendingSchema.index({ spendingDate: -1 });
+spendingSchema.index({ createdAt: -1 });
 spendingSchema.index({ category: 1 });
 spendingSchema.index({ vendor: 1 });
 spendingSchema.index({ paymentStatus: 1 });
 spendingSchema.index({ approvalStatus: 1 });
 spendingSchema.index({ 'createdBy.userId': 1 });
-spendingSchema.index({ createdAt: -1 });
 spendingSchema.index({ tags: 1 });
 spendingSchema.index({ isRecurring: 1, 'recurringPattern.nextDueDate': 1 });
 
 // Compound indexes for common queries
-spendingSchema.index({ spendingDate: -1, category: 1 });
-spendingSchema.index({ spendingDate: -1, paymentStatus: 1 });
-spendingSchema.index({ vendor: 1, spendingDate: -1 });
+spendingSchema.index({ createdAt: -1, category: 1 });
+spendingSchema.index({ createdAt: -1, paymentStatus: 1 });
+spendingSchema.index({ vendor: 1, createdAt: -1 });
 
 // Virtual for total amount including tax
 spendingSchema.virtual('totalAmount').get(function() {
@@ -246,11 +245,11 @@ spendingSchema.pre('save', function(next) {
 spendingSchema.statics.getSpendingByCategory = function(startDate, endDate) {
     const matchStage = {
         status: 'active',
-        spendingDate: {}
+        createdAt: {}
     };
     
-    if (startDate) matchStage.spendingDate.$gte = new Date(startDate);
-    if (endDate) matchStage.spendingDate.$lte = new Date(endDate);
+    if (startDate) matchStage.createdAt.$gte = new Date(startDate);
+    if (endDate) matchStage.createdAt.$lte = new Date(endDate);
     
     return this.aggregate([
         { $match: matchStage },
@@ -281,11 +280,11 @@ spendingSchema.statics.getSpendingByVendor = function(startDate, endDate) {
     const matchStage = {
         status: 'active',
         vendor: { $exists: true },
-        spendingDate: {}
+        createdAt: {}
     };
     
-    if (startDate) matchStage.spendingDate.$gte = new Date(startDate);
-    if (endDate) matchStage.spendingDate.$lte = new Date(endDate);
+    if (startDate) matchStage.createdAt.$gte = new Date(startDate);
+    if (endDate) matchStage.createdAt.$lte = new Date(endDate);
     
     return this.aggregate([
         { $match: matchStage },
@@ -320,14 +319,14 @@ spendingSchema.statics.getMonthlySpendingTrend = function(months = 12) {
         {
             $match: {
                 status: 'active',
-                spendingDate: { $gte: startDate }
+                createdAt: { $gte: startDate }
             }
         },
         {
             $group: {
                 _id: {
-                    year: { $year: '$spendingDate' },
-                    month: { $month: '$spendingDate' }
+                    year: { $year: '$createdAt' },
+                    month: { $month: '$createdAt' }
                 },
                 totalAmount: { $sum: '$amount' },
                 totalTax: { $sum: '$taxAmount' },
