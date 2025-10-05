@@ -70,14 +70,6 @@ const OrderDetail = () => {
   }, [error]);
 
   const handleStatusUpdate = () => {
-    // Check if user is admin
-    if (!isAdmin) {
-      enqueueSnackbar("Only administrators can edit orders", {
-        variant: "error",
-      });
-      return;
-    }
-
     const hasStatusChange =
       selectedStatus && selectedStatus !== currentOrder?.orderStatus;
     const hasPaymentChange =
@@ -487,37 +479,21 @@ const OrderDetail = () => {
                 </span>
               </div>
 
-              {/* Payment Method Selection - Only for orders in progress and admin users */}
-              {isAdmin &&
-                (order.orderStatus === "progress" ||
-                  order.orderStatus === "pending") && (
-                  <div className="pt-3 border-t border-[#343434]">
-                    <FormSelect
-                      label="Update Payment Method"
-                      value={selectedPaymentMethod}
-                      onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                      options={paymentMethodOptions}
-                      placeholder="Select payment method"
-                      helpText="Use the 'Update Order' button above to save payment method changes"
-                    />
-                  </div>
-                )}
+              {/* Payment Method Selection - For orders in progress or pending */}
+              {(order.orderStatus === "progress" ||
+                order.orderStatus === "pending") && (
+                <div className="pt-3 border-t border-[#343434]">
+                  <FormSelect
+                    label="Update Payment Method"
+                    value={selectedPaymentMethod}
+                    onChange={(e) => setSelectedPaymentMethod(e.target.value)}
+                    options={paymentMethodOptions}
+                    placeholder="Select payment method"
+                    helpText="Use the 'Update Order' button above to save payment method changes"
+                  />
+                </div>
+              )}
 
-              {/* Non-admin message */}
-              {!isAdmin &&
-                (order.orderStatus === "progress" ||
-                  order.orderStatus === "pending") && (
-                  <div className="pt-3 border-t border-[#343434]">
-                    <div className="bg-red-900/10 rounded-lg p-3 border border-red-500/20">
-                      <div className="flex items-center gap-2">
-                        <span className="text-red-400">🔒</span>
-                        <span className="text-red-400 text-sm">
-                          Admin access required to update payment method
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
               {order.paymentStatus && (
                 <div className="flex justify-between">
