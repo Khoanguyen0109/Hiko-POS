@@ -17,8 +17,6 @@ const addSpending = async (req, res, next) => {
             subcategory,
             vendor,
             vendorName,
-            spendingDate,
-            dueDate,
             paymentStatus,
             paymentMethod,
             paymentDate,
@@ -79,8 +77,6 @@ const addSpending = async (req, res, next) => {
             subcategory: subcategory?.trim(),
             vendor,
             vendorName: vendorName?.trim() || vendorInfo?.name,
-            spendingDate: spendingDate ? new Date(spendingDate) : getCurrentVietnamTime(),
-            dueDate: dueDate ? new Date(dueDate) : null,
             paymentStatus: paymentStatus || 'pending',
             paymentMethod: paymentMethod || 'cash',
             paymentDate: paymentDate ? new Date(paymentDate) : null,
@@ -160,7 +156,7 @@ const getSpending = async (req, res, next) => {
             isRecurring,
             page = 1,
             limit = 50,
-            sortBy = 'spendingDate',
+            sortBy = 'createdAt',
             sortOrder = 'desc'
         } = req.query;
 
@@ -169,11 +165,11 @@ const getSpending = async (req, res, next) => {
 
         // Date filtering using Vietnam timezone
         if (startDate || endDate) {
-            query.spendingDate = {};
+            query.createdAt = {};
             const { start, end } = getDateRangeVietnam(startDate, endDate);
             
-            if (start) query.spendingDate.$gte = start;
-            if (end) query.spendingDate.$lte = end;
+            if (start) query.createdAt.$gte = start;
+            if (end) query.createdAt.$lte = end;
         }
 
         // Category filtering
