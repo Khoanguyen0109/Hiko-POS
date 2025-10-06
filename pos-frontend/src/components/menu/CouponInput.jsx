@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchPromotions } from '../../redux/slices/promotionSlice';
 import { applyCoupon, removeCoupon, getAppliedCoupon } from '../../redux/slices/cartSlice';
-import { MdLocalOffer as TagIcon, MdCheck as CheckIcon, MdClose as XIcon, MdPercent as PercentIcon, MdExpandMore as ExpandMoreIcon, MdExpandLess as ExpandLessIcon } from 'react-icons/md';
+import { MdLocalOffer as TagIcon, MdCheck as CheckIcon, MdClose as XIcon, MdPercent as PercentIcon, MdExpandMore as ExpandMoreIcon, MdExpandLess as ExpandLessIcon, MdAccessTime as ClockIcon } from 'react-icons/md';
 
 const CouponSelector = () => {
   const dispatch = useDispatch();
@@ -11,7 +11,7 @@ const CouponSelector = () => {
   const { items: promotions, loading } = useSelector(state => state.promotions);
   const appliedCoupon = useSelector(getAppliedCoupon);
   
-  // Filter active coupons that are currently valid
+  // Filter active coupons that are currently valid (including happy hour)
   const activeCoupons = promotions.filter(promotion => {
     const now = new Date();
     const startDate = new Date(promotion.startDate);
@@ -20,7 +20,9 @@ const CouponSelector = () => {
     return promotion.isActive && 
            now >= startDate && 
            now <= endDate &&
-           (promotion.type === 'order_percentage' || promotion.type === 'order_fixed');
+           (promotion.type === 'order_percentage' || 
+            promotion.type === 'order_fixed' || 
+            promotion.type === 'happy_hour');
   });
 
   useEffect(() => {
@@ -38,6 +40,18 @@ const CouponSelector = () => {
   };
 
   const formatDiscount = (coupon) => {
+    if (coupon.type === 'happy_hour') {
+      if (coupon.discount?.percentage) {
+        return `${coupon.discount.percentage}% off (Happy Hour)`;
+      }
+      if (coupon.discount?.fixedAmount) {
+        return `${coupon.discount.fixedAmount.toLocaleString()}₫ off (Happy Hour)`;
+      }
+      if (coupon.discount?.uniformPrice) {
+        return `${coupon.discount.uniformPrice.toLocaleString()}₫ each (Happy Hour)`;
+      }
+      return 'Happy Hour Special';
+    }
     if (coupon.discount?.percentage) {
       return `${coupon.discount.percentage}% off`;
     }
@@ -47,6 +61,7 @@ const CouponSelector = () => {
     return 'Discount';
   };
 
+  console.log('appliedCoupon', appliedCoupon)
   return (
     <div className="bg-[#1a1a1a] rounded-lg border border-[#343434] p-4 mb-4">
       <div className="flex items-center space-x-2 mb-3">
@@ -57,11 +72,26 @@ const CouponSelector = () => {
       {/* Applied Coupon Display */}
       {appliedCoupon && (
         <div className="mb-4">
-          <div className="flex items-center justify-between p-3 bg-green-900/20 border border-green-500/30 rounded-md">
+          <div className={`flex items-center justify-between p-3 rounded-md ${
+            appliedCoupon.type === 'happy_hour' 
+              ? 'bg-orange-900/20 border border-orange-500/30' 
+              : 'bg-green-900/20 border border-green-500/30'
+          }`}>
             <div className="flex items-center space-x-2">
-              <CheckIcon size={16} className="text-green-400" />
+              {appliedCoupon.type === 'happy_hour' ? (
+                <ClockIcon size={16} className="text-orange-400" />
+              ) : (
+                <CheckIcon size={16} className="text-green-400" />
+              )}
               <div>
-                <div className="text-[#f5f5f5] font-medium">{appliedCoupon.name}</div>
+                <div className="text-[#f5f5f5] font-medium flex items-center space-x-2">
+                  <span>{appliedCoupon.name}</span>
+                  {appliedCoupon.type === 'happy_hour' && (
+                    <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full">
+                      Happy Hour Active
+                    </span>
+                  )}
+                </div>
                 <div className="text-sm text-[#ccc]">
                   {appliedCoupon.code && `Code: ${appliedCoupon.code} • `}
                   {formatDiscount(appliedCoupon)}
@@ -121,11 +151,26 @@ const CouponSelector = () => {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                          <div className="flex items-center justify-center w-8 h-8 bg-[#f6b100]/20 rounded-full">
-                            <PercentIcon size={14} className="text-[#f6b100]" />
+                          <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                            coupon.type === 'happy_hour' 
+                              ? 'bg-orange-500/20' 
+                              : 'bg-[#f6b100]/20'
+                          }`}>
+                            {coupon.type === 'happy_hour' ? (
+                              <ClockIcon size={14} className="text-orange-400" />
+                            ) : (
+                              <PercentIcon size={14} className="text-[#f6b100]" />
+                            )}
                           </div>
                           <div>
-                            <div className="text-[#f5f5f5] font-medium">{coupon.name}</div>
+                            <div className="text-[#f5f5f5] font-medium flex items-center space-x-2">
+                              <span>{coupon.name}</span>
+                              {coupon.type === 'happy_hour' && (
+                                <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full">
+                                  Happy Hour
+                                </span>
+                              )}
+                            </div>
                             <div className="text-sm text-[#ccc]">
                               {coupon.code && `${coupon.code} • `}
                               {formatDiscount(coupon)}
@@ -135,6 +180,13 @@ const CouponSelector = () => {
                             </div>
                             {coupon.description && (
                               <div className="text-xs text-[#ababab] mt-1">{coupon.description}</div>
+                            )}
+                            {coupon.type === 'happy_hour' && coupon.conditions?.timeSlots && (
+                              <div className="text-xs text-orange-400 mt-1">
+                                Available: {coupon.conditions.timeSlots.map(slot => 
+                                  `${slot.start}-${slot.end}`
+                                ).join(', ')}
+                              </div>
                             )}
                           </div>
                         </div>
