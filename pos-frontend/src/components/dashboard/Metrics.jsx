@@ -13,7 +13,11 @@ import {
   PaymentMethodChart,
   TopDishesChart,
   SalesHeatmapChart,
-  CustomerTrafficChart
+  CustomerTrafficChart,
+  VendorRevenueChart,
+  VendorOrdersChart,
+  VendorTrendChart,
+  VendorPerformanceChart
 } from "../charts";
 
 const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endDate: "" } }) => {
@@ -81,7 +85,6 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
   const metricsData = useMemo(() => {
     const completedOrders = orders?.filter(order => order.orderStatus === "completed") || [];
     const totalRevenue = completedOrders.reduce((sum, order) => sum + (order.bills?.totalWithTax || 0), 0);
-    const averageOrderValue = completedOrders.length > 0 ? totalRevenue / completedOrders.length : 0;
     
     // Get spending data
     const totalSpending = spendingData?.summary?.totalAmount || 0;
@@ -127,13 +130,8 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
   const itemsData = useMemo(() => {
     const activeCategories = categories?.filter(cat => cat.isActive) || [];
     const availableDishes = dishes?.filter(dish => dish.isAvailable) || [];
-    const activeOrders = orders?.filter(order => 
-      order.orderStatus === "progress" || order.orderStatus === "preparing"
-    ) || [];
     
     // Get spending metrics
-    const spendingCategories = spendingData?.spendingByCategory?.length || 0;
-    const pendingPayments = spendingData?.paymentStatusBreakdown?.find(item => item._id === 'pending')?.count || 0;
     const totalSpendingRecords = spendingData?.summary?.count || 0;
     const avgSpendingAmount = spendingData?.summary?.avgAmount || 0;
 
@@ -167,7 +165,7 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
         isIncrease: true 
       }
     ];
-  }, [orders, dishes, categories, spendingData]);
+  }, [dishes, categories, spendingData]);
 
   // Get display label for current date filter
   const getDateFilterLabel = () => {
@@ -329,6 +327,28 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <SalesHeatmapChart orders={orders} />
           <CustomerTrafficChart orders={orders} />
+        </div>
+
+        {/* Third Party Vendor Analytics Section */}
+        <div className="mt-12 mb-8">
+          <h2 className="font-semibold text-[#f5f5f5] text-xl mb-2">
+            Platform & Vendor Analytics
+          </h2>
+          <p className="text-sm text-[#ababab]">
+            Analyze performance across different delivery platforms and direct orders
+          </p>
+        </div>
+
+        {/* Vendor Charts Row 1 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <VendorRevenueChart orders={orders} />
+          <VendorOrdersChart orders={orders} />
+        </div>
+
+        {/* Vendor Charts Row 2 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <VendorTrendChart orders={orders} />
+          <VendorPerformanceChart orders={orders} />
         </div>
 
         {/* Spending Analytics Section */}

@@ -4,3 +4,7 @@ export { default as PaymentMethodChart } from './PaymentMethodChart';
 export { default as TopDishesChart } from './TopDishesChart';
 export { default as SalesHeatmapChart } from './SalesHeatmapChart';
 export { default as CustomerTrafficChart } from './CustomerTrafficChart';
+export { default as VendorRevenueChart } from './VendorRevenueChart';
+export { default as VendorOrdersChart } from './VendorOrdersChart';
+export { default as VendorTrendChart } from './VendorTrendChart';
+export { default as VendorPerformanceChart } from './VendorPerformanceChart';
