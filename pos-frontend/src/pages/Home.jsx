@@ -1,9 +1,8 @@
 import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import Greetings from "../components/home/Greetings";
 import { BsCashCoin } from "react-icons/bs";
 import { GrInProgress } from "react-icons/gr";
-import { MdRestaurantMenu, MdAccountBalance, MdMoney } from "react-icons/md";
+import { MdRestaurantMenu, MdAccountBalance, MdMoney, MdStore, MdStorefront } from "react-icons/md";
 import MiniCard from "../components/home/MiniCard";
 import RecentOrders from "../components/home/RecentOrders";
 import { fetchOrders } from "../redux/slices/orderSlice";
@@ -31,6 +30,11 @@ const Home = () => {
         totalDishesOrdered: 0,
         totalCash: 0,
         totalBanking: 0,
+        vendorBreakdown: {
+          None: { earnings: 0, orders: 0 },
+          Shopee: { earnings: 0, orders: 0 },
+          Grab: { earnings: 0, orders: 0 },
+        },
       };
     }
 
@@ -44,13 +48,13 @@ const Home = () => {
       0
     );
 
-    // Calculate payment method totals from completed orders
+    // Calculate payment method totals from completed orders (excluding 3rd party vendors for banking)
     const totalCash = completedOrders
       .filter(order => order.paymentMethod === 'Cash')
       .reduce((sum, order) => sum + (order.bills?.totalWithTax || 0), 0);
 
     const totalBanking = completedOrders
-      .filter(order => order.paymentMethod === 'Banking')
+      .filter(order => order.paymentMethod === 'Banking' && (order.thirdPartyVendor === 'None' || !order.thirdPartyVendor))
       .reduce((sum, order) => sum + (order.bills?.totalWithTax || 0), 0);
 
     // Calculate total dishes ordered across all orders (excluding cancelled orders)
@@ -66,6 +70,23 @@ const Home = () => {
       return sum;
     }, 0);
 
+    // Calculate income breakdown by third party vendor
+    const vendorBreakdown = {
+      None: { earnings: 0, orders: 0 },
+      Shopee: { earnings: 0, orders: 0 },
+      Grab: { earnings: 0, orders: 0 },
+    };
+
+    completedOrders.forEach(order => {
+      const vendor = order.thirdPartyVendor || 'None';
+      const earnings = order.bills?.totalWithTax || 0;
+      
+      if (vendorBreakdown[vendor]) {
+        vendorBreakdown[vendor].earnings += earnings;
+        vendorBreakdown[vendor].orders += 1;
+      }
+    });
+
     return {
       totalEarnings,
       totalOrders: orders.length,
@@ -73,6 +94,7 @@ const Home = () => {
       totalDishesOrdered,
       totalCash,
       totalBanking,
+      vendorBreakdown,
     };
   }, [orders]);
 
@@ -111,6 +133,96 @@ const Home = () => {
             number={loading ? "..." : formatVND(todayStats.totalBanking)}
           />
         </div>
+
+        {/* Third Party Vendor Income Breakdown */}
+        <div className="px-4 sm:px-8 mt-6">
+          <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
+            <div className="flex items-center gap-2 mb-4">
+              <MdStore className="text-[#f6b100]" size={20} />
+              <h2 className="text-[#f5f5f5] text-lg font-semibold">
+                Income by Platform
+              </h2>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Direct Orders */}
+              <div className="bg-[#1f1f1f] rounded-lg p-4 border border-[#343434]">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <MdStorefront className="text-green-400" size={18} />
+                    <span className="text-[#f5f5f5] font-medium text-sm">Direct</span>
+                  </div>
+                  <span className="text-xs text-[#ababab] bg-[#343434] px-2 py-1 rounded-full">
+                    {loading ? "..." : `${todayStats.vendorBreakdown.None.orders} orders`}
+                  </span>
+                </div>
+                <div className="text-green-400 font-bold text-lg">
+                  {loading ? "..." : formatVND(todayStats.vendorBreakdown.None.earnings)}
+                </div>
+                <div className="text-xs text-[#ababab] mt-1">
+                  Restaurant orders
+                </div>
+              </div>
+
+              {/* Shopee Orders */}
+              <div className="bg-[#1f1f1f] rounded-lg p-4 border border-[#343434]">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <MdStore className="text-orange-400" size={18} />
+                    <span className="text-[#f5f5f5] font-medium text-sm">Shopee</span>
+                  </div>
+                  <span className="text-xs text-[#ababab] bg-[#343434] px-2 py-1 rounded-full">
+                    {loading ? "..." : `${todayStats.vendorBreakdown.Shopee.orders} orders`}
+                  </span>
+                </div>
+                <div className="text-orange-400 font-bold text-lg">
+                  {loading ? "..." : formatVND(todayStats.vendorBreakdown.Shopee.earnings)}
+                </div>
+                <div className="text-xs text-[#ababab] mt-1">
+                  Shopee Food delivery
+                </div>
+              </div>
+
+              {/* Grab Orders */}
+              <div className="bg-[#1f1f1f] rounded-lg p-4 border border-[#343434]">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <MdStore className="text-blue-400" size={18} />
+                    <span className="text-[#f5f5f5] font-medium text-sm">Grab</span>
+                  </div>
+                  <span className="text-xs text-[#ababab] bg-[#343434] px-2 py-1 rounded-full">
+                    {loading ? "..." : `${todayStats.vendorBreakdown.Grab.orders} orders`}
+                  </span>
+                </div>
+                <div className="text-blue-400 font-bold text-lg">
+                  {loading ? "..." : formatVND(todayStats.vendorBreakdown.Grab.earnings)}
+                </div>
+                <div className="text-xs text-[#ababab] mt-1">
+                  Grab Food delivery
+                </div>
+              </div>
+            </div>
+
+            {/* Summary */}
+            <div className="mt-4 pt-4 border-t border-[#343434]">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-[#ababab]">Platform Distribution:</span>
+                <div className="flex items-center gap-4">
+                  <span className="text-green-400">
+                    Direct: {loading ? "..." : `${((todayStats.vendorBreakdown.None.earnings / todayStats.totalEarnings) * 100 || 0).toFixed(1)}%`}
+                  </span>
+                  <span className="text-orange-400">
+                    Shopee: {loading ? "..." : `${((todayStats.vendorBreakdown.Shopee.earnings / todayStats.totalEarnings) * 100 || 0).toFixed(1)}%`}
+                  </span>
+                  <span className="text-blue-400">
+                    Grab: {loading ? "..." : `${((todayStats.vendorBreakdown.Grab.earnings / todayStats.totalEarnings) * 100 || 0).toFixed(1)}%`}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <RecentOrders />
       </div>
     </section>
