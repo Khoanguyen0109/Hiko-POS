@@ -81,10 +81,43 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
     dispatch(fetchSpendingAnalytics(spendingParams));
   }, [dispatch, dateFilter, customDateRange]);
 
+  // Helper function to calculate number of days in the selected period
+  const calculateDaysInPeriod = useMemo(() => {
+    const today = getTodayDate();
+    
+    switch (dateFilter) {
+      case "today": {
+        return 1;
+      }
+      case "week": {
+        return 7;
+      }
+      case "month": {
+        return 30;
+      }
+      case "custom": {
+        if (customDateRange.startDate && customDateRange.endDate) {
+          const startDate = new Date(customDateRange.startDate);
+          const endDate = new Date(customDateRange.endDate);
+          const timeDiff = endDate.getTime() - startDate.getTime();
+          const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // +1 to include both start and end dates
+          return daysDiff > 0 ? daysDiff : 1;
+        }
+        return 1;
+      }
+      default: {
+        return 1;
+      }
+    }
+  }, [dateFilter, customDateRange]);
+
   // Calculate metrics data
   const metricsData = useMemo(() => {
     const completedOrders = orders?.filter(order => order.orderStatus === "completed") || [];
     const totalRevenue = completedOrders.reduce((sum, order) => sum + (order.bills?.totalWithTax || 0), 0);
+    
+    // Calculate average daily revenue
+    const averageRevenue = calculateDaysInPeriod > 0 ? totalRevenue / calculateDaysInPeriod : 0;
     
     // Get spending data
     const totalSpending = spendingData?.summary?.totalAmount || 0;
@@ -100,6 +133,13 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
         value: formatVND(totalRevenue), 
         percentage: "12%", 
         color: "#025cca", 
+        isIncrease: true 
+      },
+      { 
+        title: "Avg Daily Revenue", 
+        value: formatVND(averageRevenue), 
+        percentage: `${calculateDaysInPeriod} day${calculateDaysInPeriod !== 1 ? 's' : ''}`, 
+        color: "#10B981", 
         isIncrease: true 
       },
       { 
@@ -124,7 +164,7 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
         isIncrease: true 
       },
     ];
-  }, [orders, spendingData]);
+  }, [orders, spendingData, calculateDaysInPeriod]);
 
   // Calculate items data
   const itemsData = useMemo(() => {
@@ -213,7 +253,7 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
         </div>
       </div>
 
-      <div className="mt-6 grid grid-cols-4 gap-4">
+      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {metricsData.map((metric, index) => {
           return (
             <div
