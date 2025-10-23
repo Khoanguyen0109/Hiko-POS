@@ -120,21 +120,15 @@ function Layout() {
         {PROTECTED_ROUTES.map((route) => {
           const Component = COMPONENT_MAP[route.componentName];
 
-          // Check if route requires admin access
-          const isAdminRoute = [
-            "Dishes",
-            "Categories",
-            "Dashboard",
-            "Members",
-            "Toppings",
-          ].includes(route.componentName) || route.adminOnly;
+          // Check if route requires admin access from route configuration
+          const requiresAdmin = route.adminOnly === true;
 
           return (
             <Route
               key={route.path}
               path={route.path}
               element={
-                isAdminRoute ? (
+                requiresAdmin ? (
                   <AdminProtectedRoutes>
                     <Component />
                   </AdminProtectedRoutes>

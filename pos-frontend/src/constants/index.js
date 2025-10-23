@@ -494,19 +494,23 @@ export const PROTECTED_ROUTES = [
   },
   {
     path: ROUTES.DASHBOARD,
-    componentName: "Dashboard"
+    componentName: "Dashboard",
+    adminOnly: true
   },
   {
     path: ROUTES.DISHES,
-    componentName: "Dishes"
+    componentName: "Dishes",
+    adminOnly: true
   },
   {
     path: ROUTES.CATEGORIES,
-    componentName: "Categories"
+    componentName: "Categories",
+    adminOnly: true
   },
   {
     path: ROUTES.MEMBERS,
-    componentName: "Members"
+    componentName: "Members",
+    adminOnly: true
   },
   {
     path: ROUTES.ACCOUNT_SETTINGS,
@@ -514,16 +518,17 @@ export const PROTECTED_ROUTES = [
   },
   {
     path: ROUTES.TOPPINGS,
-    componentName: "Toppings"
+    componentName: "Toppings",
+    adminOnly: true
   },
   {
     path: ROUTES.PROMOTIONS,
-    componentName: "PromotionManager"
+    componentName: "PromotionManager",
+    adminOnly: true
   },
   {
     path: ROUTES.SPENDING,
-    componentName: "SpendingManager",
-    adminOnly: true
+    componentName: "SpendingManager"
   }
 ];
 

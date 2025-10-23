@@ -222,12 +222,31 @@ const getSpending = async (req, res, next) => {
             Spending.find(query)
                 .populate('category', 'name description color')
                 .populate('vendor', 'name contactPerson phone')
-                .populate('createdBy.userId', 'name')
+                .populate('createdBy.userId', 'name role')
                 .sort(sortOptions)
                 .skip(skip)
                 .limit(limitNum),
             Spending.countDocuments(query)
         ]);
+
+        // Transform spending data to include createdBy details
+        const transformedSpending = spending.map(item => {
+            const itemObj = item.toObject();
+            // If createdBy.userId is populated, format it properly
+            if (itemObj.createdBy && itemObj.createdBy.userId) {
+                itemObj.createdBy = {
+                    name: itemObj.createdBy.userId.name || itemObj.createdBy.userName || 'Unknown',
+                    role: itemObj.createdBy.userId.role || null
+                };
+            } else if (itemObj.createdBy && itemObj.createdBy.userName) {
+                // If userId is not populated, use userName
+                itemObj.createdBy = {
+                    name: itemObj.createdBy.userName,
+                    role: null
+                };
+            }
+            return itemObj;
+        });
 
         // Calculate pagination info
         const totalPages = Math.ceil(totalCount / limitNum);
@@ -236,7 +255,7 @@ const getSpending = async (req, res, next) => {
 
         res.status(200).json({
             success: true,
-            data: spending,
+            data: transformedSpending,
             pagination: {
                 currentPage: pageNum,
                 totalPages,

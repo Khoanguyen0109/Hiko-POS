@@ -26,7 +26,7 @@ import {
   setFilters,
   setPagination
 } from "../redux/slices/spendingSlice";
-import { formatVND } from "../utils";
+import { formatVND, getTodayDate } from "../utils";
 import SpendingModal from "../components/spending/SpendingModal";
 import CategoryModal from "../components/spending/CategoryModal";
 import VendorModal from "../components/spending/VendorModal";
@@ -53,10 +53,13 @@ const SpendingManager = () => {
   // Local UI state
   const [activeTab, setActiveTab] = useState("spending");
   
+  // Get today's date for default filtering
+  const today = getTodayDate();
+  
   // Local filter state (for form inputs before applying to Redux)
   const [localFilters, setLocalFilters] = useState({
-    startDate: "",
-    endDate: "",
+    startDate: today,
+    endDate: today,
     category: "all",
     vendor: "all",
     paymentStatus: "all",
@@ -115,25 +118,11 @@ const SpendingManager = () => {
     }
   }, [dispatch]);
 
-  // Effects after callback definitions
-  useEffect(() => {
-    document.title = "POS | Spending Management";
-    loadInitialData();
-  }, [loadInitialData]);
-
-  useEffect(() => {
-    if (activeTab === "spending") {
-      loadSpending();
-    } else if (activeTab === "analytics") {
-      loadDashboard();
-    }
-  }, [activeTab, reduxFilters, reduxPagination.currentPage, loadSpending, loadDashboard]);
-
   const handleFilterChange = (key, value) => {
     setLocalFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     // Convert local filters to Redux format
     const reduxFilterFormat = {
       startDate: localFilters.startDate || null,
@@ -145,7 +134,24 @@ const SpendingManager = () => {
     
     dispatch(setFilters(reduxFilterFormat));
     dispatch(setPagination({ currentPage: 1 }));
-  };
+  }, [localFilters, dispatch]);
+
+  // Effects after callback definitions
+  useEffect(() => {
+    document.title = "POS | Spending Management";
+    loadInitialData();
+    
+    // Apply default filters (today's date) on mount
+    applyFilters();
+  }, [loadInitialData, applyFilters]);
+
+  useEffect(() => {
+    if (activeTab === "spending") {
+      loadSpending();
+    } else if (activeTab === "analytics") {
+      loadDashboard();
+    }
+  }, [activeTab, reduxFilters, reduxPagination.currentPage, loadSpending, loadDashboard]);
 
   const handleDelete = async (id, type = "spending") => {
     if (!window.confirm("Are you sure you want to delete this item?")) return;
