@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { FaHome, FaUsers } from "react-icons/fa";
-import { MdOutlineReorder, MdTableBar } from "react-icons/md";
+import { MdOutlineReorder, MdTableBar, MdReceipt } from "react-icons/md";
 import { BiSolidDish } from "react-icons/bi";
 
 import { useNavigate, useLocation } from "react-router-dom";
@@ -64,6 +64,19 @@ const BottomNav = () => {
       >
         <MdOutlineReorder className="inline mr-1 sm:mr-2" size={16} /> 
         <p className="text-sm sm:text-base hidden xs:block">Orders</p>
+      </button>
+
+      {/* Expenses button - All users */}
+      <button
+        onClick={() => navigate(ROUTES.SPENDING)}
+        className={`flex items-center justify-center font-bold ${
+          isActive(ROUTES.SPENDING)
+            ? "text-[#f5f5f5] bg-[#343434]"
+            : "text-[#ababab]"
+        } flex-1 max-w-[120px] sm:max-w-[200px] md:max-w-[300px] rounded-[20px] py-2 px-2`}
+      >
+        <MdReceipt className="inline mr-1 sm:mr-2" size={16} /> 
+        <p className="text-sm sm:text-base hidden xs:block">Expenses</p>
       </button>
 
       {/* Dishes button - Admin only */}

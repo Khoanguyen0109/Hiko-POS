@@ -127,7 +127,6 @@ function Layout() {
             "Dashboard",
             "Members",
             "Toppings",
-            "SpendingManager",
           ].includes(route.componentName) || route.adminOnly;
 
           return (

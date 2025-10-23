@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import PropTypes from "prop-types";
 import { 
   MdAdd, 
   MdSearch, 
@@ -44,6 +45,10 @@ const SpendingManager = () => {
     filters: reduxFilters,
     pagination: reduxPagination
   } = useSelector((state) => state.spending);
+
+  // Get user role
+  const { role } = useSelector((state) => state.user);
+  const isAdmin = role === "Admin";
 
   // Local UI state
   const [activeTab, setActiveTab] = useState("spending");
@@ -278,6 +283,7 @@ const SpendingManager = () => {
             filters={localFilters}
             pagination={reduxPagination}
             loading={loading}
+            isAdmin={isAdmin}
             onFilterChange={handleFilterChange}
             onApplyFilters={applyFilters}
             onPageChange={(page) => dispatch(setPagination({ currentPage: page }))}
@@ -360,6 +366,7 @@ const SpendingRecords = ({
   filters, 
   pagination, 
   loading,
+  isAdmin,
   onFilterChange,
   onApplyFilters, 
   onPageChange, 
@@ -370,8 +377,9 @@ const SpendingRecords = ({
 }) => {
   return (
     <div className="space-y-6">
-      {/* Filters */}
-      <div className="bg-[#262626] rounded-lg p-4 border border-[#343434]">
+      {/* Filters - Admin Only */}
+      {isAdmin && (
+        <div className="bg-[#262626] rounded-lg p-4 border border-[#343434]">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className="block text-[#ababab] text-sm mb-2">Search</label>
@@ -460,7 +468,8 @@ const SpendingRecords = ({
             Apply Filters
           </button>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* Spending List */}
       <div className="bg-[#262626] rounded-lg border border-[#343434] overflow-hidden">
@@ -488,6 +497,7 @@ const SpendingRecords = ({
                     <th className="text-left p-4 text-[#f5f5f5] font-semibold">Vendor</th>
                     <th className="text-left p-4 text-[#f5f5f5] font-semibold">Payment Date</th>
                     <th className="text-left p-4 text-[#f5f5f5] font-semibold">Status</th>
+                    <th className="text-left p-4 text-[#f5f5f5] font-semibold">Created By</th>
                     <th className="text-left p-4 text-[#f5f5f5] font-semibold">Actions</th>
                   </tr>
                 </thead>
@@ -524,6 +534,14 @@ const SpendingRecords = ({
                         <span className={`px-2 py-1 rounded text-xs font-medium text-white ${getStatusColor(item.paymentStatus)}`}>
                           {item.paymentStatus.charAt(0).toUpperCase() + item.paymentStatus.slice(1)}
                         </span>
+                      </td>
+                      <td className="p-4">
+                        <div>
+                          <p className="text-[#f5f5f5]">{item.createdBy?.name || 'N/A'}</p>
+                          {item.createdBy?.role && (
+                            <p className="text-[#ababab] text-xs">{item.createdBy.role}</p>
+                          )}
+                        </div>
                       </td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
@@ -579,6 +597,13 @@ const SpendingRecords = ({
                       <p className="text-[#f5f5f5]">
                         {item.paymentDate ? new Date(item.paymentDate).toLocaleDateString() : 'Not set'}
                       </p>
+                    </div>
+                    <div>
+                      <p className="text-[#ababab] text-xs">Created By</p>
+                      <p className="text-[#f5f5f5]">{item.createdBy?.name || 'N/A'}</p>
+                      {item.createdBy?.role && (
+                        <p className="text-[#ababab] text-xs">{item.createdBy.role}</p>
+                      )}
                     </div>
                   </div>
 
@@ -656,6 +681,23 @@ const SpendingRecords = ({
   );
 };
 
+SpendingRecords.propTypes = {
+  spending: PropTypes.array.isRequired,
+  categories: PropTypes.array.isRequired,
+  vendors: PropTypes.array.isRequired,
+  filters: PropTypes.object.isRequired,
+  pagination: PropTypes.object.isRequired,
+  loading: PropTypes.bool.isRequired,
+  isAdmin: PropTypes.bool.isRequired,
+  onFilterChange: PropTypes.func.isRequired,
+  onApplyFilters: PropTypes.func.isRequired,
+  onPageChange: PropTypes.func.isRequired,
+  onEdit: PropTypes.func.isRequired,
+  onView: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired,
+  getStatusColor: PropTypes.func.isRequired
+};
+
 // Categories Tab Component
 const CategoriesTab = ({ categories, onEdit, onDelete }) => {
   return (
@@ -700,6 +742,12 @@ const CategoriesTab = ({ categories, onEdit, onDelete }) => {
       ))}
     </div>
   );
+};
+
+CategoriesTab.propTypes = {
+  categories: PropTypes.array.isRequired,
+  onEdit: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired
 };
 
 // Vendors Tab Component
@@ -751,6 +799,13 @@ const VendorsTab = ({ vendors, onEdit, onView, onDelete }) => {
   );
 };
 
+VendorsTab.propTypes = {
+  vendors: PropTypes.array.isRequired,
+  onEdit: PropTypes.func.isRequired,
+  onView: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired
+};
+
 // Analytics Tab Component
 const AnalyticsTab = ({ dashboardData, loading }) => {
   if (loading) {
@@ -771,7 +826,7 @@ const AnalyticsTab = ({ dashboardData, loading }) => {
     );
   }
 
-  const { summary, spendingByCategory, spendingByVendor, monthlyTrend, paymentStatusBreakdown, overdueSpending } = dashboardData;
+  const { summary, spendingByCategory, spendingByVendor, monthlyTrend, paymentStatusBreakdown } = dashboardData;
 
   return (
     <div className="space-y-8">
@@ -910,6 +965,11 @@ const AnalyticsTab = ({ dashboardData, loading }) => {
       </div>
     </div>
   );
+};
+
+AnalyticsTab.propTypes = {
+  dashboardData: PropTypes.object,
+  loading: PropTypes.bool.isRequired
 };
 
 export default SpendingManager;
