@@ -11,6 +11,9 @@ import tablesReducer from "./slices/tableSlice";
 import toppingReducer from "./slices/toppingSlice";
 import promotionReducer from "./slices/promotionSlice";
 import spendingReducer from "./slices/spendingSlice";
+import ingredientReducer from "./slices/ingredientSlice";
+import recipeReducer from "./slices/recipeSlice";
+import toppingRecipeReducer from "./slices/toppingRecipeSlice";
 
 const store = configureStore({
     reducer: {
@@ -25,7 +28,10 @@ const store = configureStore({
         tables: tablesReducer,
         toppings: toppingReducer,
         promotions: promotionReducer,
-        spending: spendingReducer
+        spending: spendingReducer,
+        ingredients: ingredientReducer,
+        recipes: recipeReducer,
+        toppingRecipes: toppingRecipeReducer
     },
 
     devTools: import.meta.env.NODE_ENV !== "production",

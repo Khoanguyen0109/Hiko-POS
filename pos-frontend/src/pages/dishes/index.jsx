@@ -1,5 +1,6 @@
 import { useState } from "react";
 import DishModal from "../../components/dashboard/DishModal";
+import RecipeModal from "../../components/dishes/RecipeModal";
 import BackButton from "../../components/shared/BackButton";
 import DishList from "./DishList";
 import { useNavigate } from "react-router-dom";
@@ -8,7 +9,9 @@ import { ROUTES } from "../../constants";
 const Dishes = () => {
   const navigate = useNavigate();
   const [isDishModalOpen, setIsDishModalOpen] = useState(false);
+  const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false);
   const [editingDish, setEditingDish] = useState(null);
+  const [recipeDish, setRecipeDish] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all"); // all, active, inactive
 
   const handleOpenModal = () => {
@@ -24,6 +27,16 @@ const Dishes = () => {
   const handleCloseModal = () => {
     setIsDishModalOpen(false);
     setEditingDish(null);
+  };
+
+  const handleRecipeDish = (dish) => {
+    setRecipeDish(dish);
+    setIsRecipeModalOpen(true);
+  };
+
+  const handleCloseRecipeModal = () => {
+    setIsRecipeModalOpen(false);
+    setRecipeDish(null);
   };
 
   return (
@@ -73,12 +86,24 @@ const Dishes = () => {
           </div>
         </div>
 
-        <DishList filterStatus={filterStatus} onEditDish={handleEditDish} />
+        <DishList 
+          filterStatus={filterStatus} 
+          onEditDish={handleEditDish}
+          onRecipeDish={handleRecipeDish}
+        />
       </section>
       {isDishModalOpen && (
         <DishModal 
           setIsDishModalOpen={handleCloseModal} 
           editingDish={editingDish}
+        />
+      )}
+      {isRecipeModalOpen && (
+        <RecipeModal
+          isOpen={isRecipeModalOpen}
+          onClose={handleCloseRecipeModal}
+          dish={recipeDish}
+          onSuccess={handleCloseRecipeModal}
         />
       )}
     </>

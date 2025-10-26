@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { enqueueSnackbar } from "notistack";
-import { MdAdd, MdEdit, MdDelete, MdToggleOn, MdToggleOff } from "react-icons/md";
+import { MdAdd, MdEdit, MdDelete, MdToggleOn, MdToggleOff, MdMenuBook } from "react-icons/md";
 import {
   fetchToppings,
   createTopping,
@@ -13,6 +13,7 @@ import {
 import { formatVND } from "../utils";
 import Modal from "../components/shared/Modal";
 import DeleteConfirmationModal from "../components/shared/DeleteConfirmationModal";
+import ToppingRecipeModal from "../components/toppings/ToppingRecipeModal";
 
 const Toppings = () => {
   const dispatch = useDispatch();
@@ -20,7 +21,9 @@ const Toppings = () => {
 
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showRecipeModal, setShowRecipeModal] = useState(false);
   const [selectedTopping, setSelectedTopping] = useState(null);
+  const [recipeTopping, setRecipeTopping] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [filterCategory, setFilterCategory] = useState("");
   const [filterAvailable, setFilterAvailable] = useState("");
@@ -127,6 +130,16 @@ const Toppings = () => {
     }
   };
 
+  const handleOpenRecipeModal = (topping) => {
+    setRecipeTopping(topping);
+    setShowRecipeModal(true);
+  };
+
+  const handleCloseRecipeModal = () => {
+    setShowRecipeModal(false);
+    setRecipeTopping(null);
+  };
+
 
   const filteredToppings = toppings.filter(topping => {
     if (filterCategory && topping.category !== filterCategory) return false;
@@ -212,6 +225,13 @@ const Toppings = () => {
 
               <div className="flex items-center justify-between mt-3">
                 <div className="flex gap-2">
+                  <button
+                    onClick={() => handleOpenRecipeModal(topping)}
+                    className="p-2 rounded-lg bg-purple-900/30 text-purple-400 hover:bg-purple-900/50 border border-purple-800 transition-colors duration-200"
+                    title="Manage recipe"
+                  >
+                    <MdMenuBook size={18} />
+                  </button>
                   <button
                     onClick={() => handleOpenModal(topping)}
                     className="text-[#f6b100] hover:text-[#e09900] transition-colors"
@@ -318,6 +338,16 @@ const Toppings = () => {
         itemName={selectedTopping?.name}
         itemType="topping"
       />
+
+      {/* Recipe Modal */}
+      {showRecipeModal && (
+        <ToppingRecipeModal
+          isOpen={showRecipeModal}
+          onClose={handleCloseRecipeModal}
+          topping={recipeTopping}
+          onSuccess={handleCloseRecipeModal}
+        />
+      )}
     </section>
   );
 };

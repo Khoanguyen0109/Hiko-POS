@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MdCategory, MdDateRange, MdToday, MdCalendarMonth, MdLocalOffer, MdAccountBalanceWallet, MdAnalytics, MdPayment, MdReceipt } from "react-icons/md";
+import { MdCategory, MdDateRange, MdToday, MdCalendarMonth, MdLocalOffer, MdAccountBalanceWallet, MdAnalytics, MdPayment, MdReceipt, MdInventory, MdMenuBook } from "react-icons/md";
 import { BiSolidDish } from "react-icons/bi";
 import { MdAddCircle } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
@@ -202,7 +202,10 @@ const Dashboard = () => {
     { label: "Add Dishes", icon: <BiSolidDish />, action: "dishes" },
     { label: "Add Topping", icon: <MdAddCircle />, action: "topping" },
     { label: "Add Promotion", icon: <MdLocalOffer />, action: "promotion" },
-    ...(isAdmin ? [{ label: "Spending", icon: <MdAccountBalanceWallet />, action: "spending" }] : []),
+    ...(isAdmin ? [
+      { label: "Spending", icon: <MdAccountBalanceWallet />, action: "spending" },
+      { label: "Ingredients", icon: <MdInventory />, action: "ingredients" }
+    ] : []),
   ];
 
   const tabs = ["Metrics", "Promotions", ...(isAdmin ? ["Spending"] : [])];
@@ -250,6 +253,7 @@ const Dashboard = () => {
     if (action === "topping") navigate(ROUTES.TOPPINGS);
     if (action === "promotion") navigate(ROUTES.PROMOTIONS);
     if (action === "spending") navigate(ROUTES.SPENDING);
+    if (action === "ingredients") navigate(ROUTES.INGREDIENTS);
   };
 
   const handleDateFilterChange = (filterValue) => {

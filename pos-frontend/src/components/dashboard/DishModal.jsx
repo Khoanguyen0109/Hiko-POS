@@ -18,7 +18,6 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
     name: "",
     price: "",
     category: "",
-    cost: "",
     note: "",
     image: "",
     hasSizeVariants: false,
@@ -26,7 +25,7 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
   });
 
   const [sizeVariants, setSizeVariants] = useState([
-    { size: 'Medium', price: '', cost: '', isDefault: true }
+    { size: 'Medium', price: '', isDefault: true }
   ]);
 
   // Initialize form data when editing
@@ -36,7 +35,6 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
         name: editingDish.name || "",
         price: editingDish.price?.toString() || "",
         category: editingDish.category?._id || editingDish.category || "",
-        cost: editingDish.cost?.toString() || "",
         note: editingDish.note || "",
         image: editingDish.image || "",
         hasSizeVariants: editingDish.hasSizeVariants || false,
@@ -47,11 +45,10 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
         setSizeVariants(editingDish.sizeVariants.map(variant => ({
           size: variant.size,
           price: variant.price?.toString() || '',
-          cost: variant.cost?.toString() || '',
           isDefault: variant.isDefault || false
         })));
       } else {
-        setSizeVariants([{ size: 'Medium', price: '', cost: '', isDefault: true }]);
+        setSizeVariants([{ size: 'Medium', price: '', isDefault: true }]);
       }
     } else {
       // Reset form for new dish
@@ -59,13 +56,12 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
         name: "",
         price: "",
         category: "",
-        cost: "",
         note: "",
         image: "",
         hasSizeVariants: false,
         isAvailable: true,
       });
-      setSizeVariants([{ size: 'Medium', price: '', cost: '', isDefault: true }]);
+      setSizeVariants([{ size: 'Medium', price: '', isDefault: true }]);
     }
   }, [editingDish]);
 
@@ -123,7 +119,7 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
     if (availableSize) {
       setSizeVariants(prev => [
         ...prev,
-        { size: availableSize, price: '', cost: '', isDefault: false }
+        { size: availableSize, price: '', isDefault: false }
       ]);
     }
   };
@@ -167,7 +163,6 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
       name: dishData.name,
       price: Number(dishData.price),
       category: dishData.category,
-      cost: dishData.cost ? Number(dishData.cost) : 0,
       note: dishData.note || "",
       image: dishData.image || "",
       hasSizeVariants: dishData.hasSizeVariants,
@@ -179,7 +174,6 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
       submitData.sizeVariants = sizeVariants.map(variant => ({
         size: variant.size,
         price: Number(variant.price),
-        cost: variant.cost ? Number(variant.cost) : 0,
         isDefault: variant.isDefault
       }));
     }
@@ -220,10 +214,10 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
           enqueueSnackbar("Dish created successfully!", { variant: "success" });
           // Reset form
           setDishData({ 
-            name: "", price: "", category: "", cost: "", note: "", 
+            name: "", price: "", category: "", note: "", 
             image: "", hasSizeVariants: false, isAvailable: true 
           });
-          setSizeVariants([{ size: 'Medium', price: '', cost: '', isDefault: true }]);
+          setSizeVariants([{ size: 'Medium', price: '', isDefault: true }]);
         } else {
           const errorMessage = resultAction.payload || "Failed to create dish";
           enqueueSnackbar(errorMessage, { variant: "error" });
@@ -367,7 +361,7 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-[#ababab] mb-1 text-xs">Size</label>
                       <select
@@ -393,62 +387,36 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
                         required
                       />
                     </div>
-                    <div>
-                      <label className="block text-[#ababab] mb-1 text-xs">Cost</label>
-                      <input
-                        type="number"
-                        value={variant.cost}
-                        onChange={(e) => handleSizeVariantChange(index, 'cost', e.target.value)}
-                        placeholder="Cost"
-                        min="0"
-                        step="0.01"
-                        className="w-full bg-[#262626] text-white rounded p-2 text-sm focus:outline-none"
-                      />
-                    </div>
                   </div>
+                  <p className="text-[#ababab] text-xs mt-2">
+                    💡 Cost will be calculated from recipe ingredients
+                  </p>
                 </div>
               ))}
             </div>
           ) : (
             <>
-              {/* Standard Price & Cost for non-variant dishes */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[#ababab] mb-2 text-sm font-medium">
-                    Price (₫) *
-                  </label>
-                  <div className="flex item-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
-                    <input
-                      type="number"
-                      name="price"
-                      value={dishData.price}
-                      onChange={handleInputChange}
-                      placeholder="Enter selling price"
-                      min="0"
-                      step="0.01"
-                      className="bg-transparent flex-1 text-white focus:outline-none"
-                      required
-                    />
-                  </div>
+              {/* Standard Price for non-variant dishes */}
+              <div>
+                <label className="block text-[#ababab] mb-2 text-sm font-medium">
+                  Price (₫) *
+                </label>
+                <div className="flex item-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
+                  <input
+                    type="number"
+                    name="price"
+                    value={dishData.price}
+                    onChange={handleInputChange}
+                    placeholder="Enter selling price"
+                    min="0"
+                    step="0.01"
+                    className="bg-transparent flex-1 text-white focus:outline-none"
+                    required
+                  />
                 </div>
-                
-                <div>
-                  <label className="block text-[#ababab] mb-2 text-sm font-medium">
-                    Cost (₫) <span className="text-xs">(Optional)</span>
-                  </label>
-                  <div className="flex item-center rounded-lg p-3 px-4 bg-[#1f1f1f]">
-                    <input
-                      type="number"
-                      name="cost"
-                      value={dishData.cost}
-                      onChange={handleInputChange}
-                      placeholder="Enter preparation cost"
-                      min="0"
-                      step="0.01"
-                      className="bg-transparent flex-1 text-white focus:outline-none"
-                    />
-                  </div>
-                </div>
+                <p className="text-[#ababab] text-xs mt-2">
+                  💡 Cost will be automatically calculated from recipe ingredients
+                </p>
               </div>
             </>
           )}

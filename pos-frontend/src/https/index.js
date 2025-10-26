@@ -151,3 +151,42 @@ export {
   getSpendingDashboard,
   getSpendingAnalytics
 } from "./spendingApi";
+
+// Ingredient Endpoints
+export const addIngredient = (data) => axiosWrapper.post("/api/ingredient/", data);
+export const getIngredients = (params) => axiosWrapper.get("/api/ingredient", { params });
+export const getIngredientById = (id) => axiosWrapper.get(`/api/ingredient/${id}`);
+export const updateIngredient = ({ ingredientId, ...data }) => 
+  axiosWrapper.put(`/api/ingredient/${ingredientId}`, data);
+export const deleteIngredient = (id) => axiosWrapper.delete(`/api/ingredient/${id}`);
+export const getLowStockIngredients = () => axiosWrapper.get("/api/ingredient/low-stock");
+export const getIngredientHistory = (id, params) => 
+  axiosWrapper.get(`/api/ingredient/${id}/history`, { params });
+
+// Ingredient Transaction Endpoints
+export const importIngredient = (data) => axiosWrapper.post("/api/ingredient-transaction/import", data);
+export const exportIngredient = (data) => axiosWrapper.post("/api/ingredient-transaction/export", data);
+export const adjustIngredient = (data) => axiosWrapper.post("/api/ingredient-transaction/adjust", data);
+export const getIngredientTransactions = (params) => 
+  axiosWrapper.get("/api/ingredient-transaction", { params });
+export const getTransactionById = (id) => axiosWrapper.get(`/api/ingredient-transaction/${id}`);
+export const deleteIngredientTransaction = (id) => axiosWrapper.delete(`/api/ingredient-transaction/${id}`);
+
+// Recipe Endpoints
+export const createOrUpdateRecipe = (data) => axiosWrapper.post("/api/recipe/", data);
+export const getAllRecipes = (params) => axiosWrapper.get("/api/recipe", { params });
+export const getRecipeByDishId = (dishId) => axiosWrapper.get(`/api/recipe/dish/${dishId}`);
+export const deleteRecipe = (dishId) => axiosWrapper.delete(`/api/recipe/dish/${dishId}`);
+export const recalculateAllCosts = () => axiosWrapper.post("/api/recipe/recalculate-all");
+export const calculateDishCost = (dishId, params) => axiosWrapper.get(`/api/recipe/dish/${dishId}/cost`, { params });
+export const exportIngredientsForOrder = (data) => axiosWrapper.post("/api/recipe/export-for-order", data);
+export const checkIngredientAvailability = (data) => axiosWrapper.post("/api/recipe/check-availability", data);
+
+// Topping Recipe Endpoints
+export const createOrUpdateToppingRecipe = (data) => axiosWrapper.post("/api/topping-recipe/", data);
+export const getAllToppingRecipes = (params) => axiosWrapper.get("/api/topping-recipe", { params });
+export const getToppingRecipeByToppingId = (toppingId) => axiosWrapper.get(`/api/topping-recipe/topping/${toppingId}`);
+export const deleteToppingRecipe = (toppingId) => axiosWrapper.delete(`/api/topping-recipe/topping/${toppingId}`);
+export const calculateToppingRecipeCost = (toppingId, params) => axiosWrapper.get(`/api/topping-recipe/topping/${toppingId}/cost`, { params });
+export const recalculateAllToppingCosts = () => axiosWrapper.post("/api/topping-recipe/recalculate-all");
+export const cloneToppingRecipe = (toppingId, data) => axiosWrapper.post(`/api/topping-recipe/topping/${toppingId}/clone`, data);

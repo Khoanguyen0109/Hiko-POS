@@ -450,7 +450,8 @@ export const ROUTES = {
   SETTINGS: "/settings",
   TOPPINGS: "/toppings",
   PROMOTIONS: "/promotions",
-  SPENDING: "/spending"
+  SPENDING: "/spending",
+  INGREDIENTS: "/ingredients"
 };
 
 // Route configurations for optimized rendering
@@ -529,6 +530,11 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.SPENDING,
     componentName: "SpendingManager"
+  },
+  {
+    path: ROUTES.INGREDIENTS,
+    componentName: "Ingredients",
+    adminOnly: true
   }
 ];
 

@@ -23,6 +23,7 @@ import {
   Toppings,
   PromotionManager,
   SpendingManager,
+  Ingredients,
 } from "./pages";
 import Header from "./components/shared/Header";
 import { useSelector, useDispatch } from "react-redux";
@@ -59,6 +60,7 @@ const COMPONENT_MAP = {
   Toppings,
   PromotionManager,
   SpendingManager,
+  Ingredients,
 };
 
 function Layout() {
