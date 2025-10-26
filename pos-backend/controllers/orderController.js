@@ -459,6 +459,160 @@ const updateOrder = async (req, res, next) => {
       { new: true }
     ).populate('items.dishId', 'name category price image');
 
+    // Auto-export ingredients if order is being completed
+    if (orderStatus === 'completed' && currentOrder.orderStatus !== 'completed') {
+      try {
+        const DishRecipe = require("../models/dishRecipeModel");
+        const ToppingRecipe = require("../models/toppingRecipeModel");
+        const Ingredient = require("../models/ingredientModel");
+        const IngredientTransaction = require("../models/ingredientTransactionModel");
+
+        // Process each order item
+        for (let item of order.items) {
+          const { dishId, quantity, variant, toppings } = item;
+          
+          // 1. Export ingredients for the dish
+          const recipe = await DishRecipe.findOne({ dishId: dishId._id, isActive: true })
+            .populate('ingredients.ingredientId')
+            .populate('sizeVariantRecipes.ingredients.ingredientId');
+
+          if (!recipe) {
+            console.warn(`No recipe found for dish: ${item.name || dishId._id}`);
+          } else {
+            // Get ingredients for this size
+            const recipeData = recipe.getRecipeForSize(variant?.size);
+            const ingredients = recipeData.ingredients;
+
+            // Export each ingredient for the dish
+            for (let recipeIng of ingredients) {
+              const ingredient = recipeIng.ingredientId;
+              if (!ingredient) continue;
+
+              const requiredQty = recipeIng.quantity * quantity; // recipe qty × order qty
+
+              // Check if enough stock
+              if (ingredient.inventory.currentStock < requiredQty) {
+                console.warn(
+                  `Insufficient stock for ${ingredient.name}. ` +
+                  `Required: ${requiredQty}${ingredient.unit}, ` +
+                  `Available: ${ingredient.inventory.currentStock}${ingredient.unit} ` +
+                  `(Order: ${order._id})`
+                );
+                continue;
+              }
+
+              // Create export transaction
+              const transactionNumber = `EXP-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+              const unitCost = ingredient.costs.averageCost || 0;
+              const totalCost = requiredQty * unitCost;
+              const stockBefore = ingredient.inventory.currentStock;
+              const stockAfter = stockBefore - requiredQty;
+
+              const transaction = new IngredientTransaction({
+                transactionNumber,
+                type: 'EXPORT',
+                ingredientId: ingredient._id,
+                quantity: requiredQty,
+                unit: ingredient.unit,
+                unitCost,
+                totalCost,
+                stockBefore,
+                stockAfter,
+                exportDetails: {
+                  orderId: order._id,
+                  dishId: dishId._id,
+                  dishName: item.name || 'Unknown Dish',
+                  reason: 'PRODUCTION'
+                },
+                notes: `Auto-export for order ${order._id} (dish: ${item.name || dishId._id})`
+              });
+
+              await transaction.save();
+
+              // Update ingredient stock
+              ingredient.inventory.currentStock = stockAfter;
+              await ingredient.save();
+
+              console.log(`✓ Exported ${requiredQty}${ingredient.unit} of ${ingredient.name} for dish in order ${order._id}`);
+            }
+          }
+
+          // 2. Export ingredients for toppings
+          if (toppings && toppings.length > 0) {
+            for (let topping of toppings) {
+              const toppingRecipe = await ToppingRecipe.findOne({ 
+                toppingId: topping.toppingId || topping._id, 
+                isActive: true 
+              }).populate('ingredients.ingredientId');
+
+              if (!toppingRecipe) {
+                console.warn(`No recipe found for topping: ${topping.name || topping.toppingId}`);
+                continue;
+              }
+
+              // Export each ingredient for the topping
+              for (let recipeIng of toppingRecipe.ingredients) {
+                const ingredient = recipeIng.ingredientId;
+                if (!ingredient) continue;
+
+                // topping quantity × order quantity
+                const toppingQty = topping.quantity || 1;
+                const requiredQty = recipeIng.quantity * toppingQty * quantity;
+
+                // Check if enough stock
+                if (ingredient.inventory.currentStock < requiredQty) {
+                  console.warn(
+                    `Insufficient stock for ${ingredient.name}. ` +
+                    `Required: ${requiredQty}${ingredient.unit}, ` +
+                    `Available: ${ingredient.inventory.currentStock}${ingredient.unit} ` +
+                    `(Order: ${order._id}, Topping: ${topping.name})`
+                  );
+                  continue;
+                }
+
+                // Create export transaction
+                const transactionNumber = `EXP-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+                const unitCost = ingredient.costs.averageCost || 0;
+                const totalCost = requiredQty * unitCost;
+                const stockBefore = ingredient.inventory.currentStock;
+                const stockAfter = stockBefore - requiredQty;
+
+                const transaction = new IngredientTransaction({
+                  transactionNumber,
+                  type: 'EXPORT',
+                  ingredientId: ingredient._id,
+                  quantity: requiredQty,
+                  unit: ingredient.unit,
+                  unitCost,
+                  totalCost,
+                  stockBefore,
+                  stockAfter,
+                  exportDetails: {
+                    orderId: order._id,
+                    dishId: dishId._id,
+                    dishName: `${item.name || 'Unknown Dish'} + ${topping.name || 'Unknown Topping'}`,
+                    reason: 'PRODUCTION'
+                  },
+                  notes: `Auto-export for order ${order._id} (topping: ${topping.name || topping.toppingId})`
+                });
+
+                await transaction.save();
+
+                // Update ingredient stock
+                ingredient.inventory.currentStock = stockAfter;
+                await ingredient.save();
+
+                console.log(`✓ Exported ${requiredQty}${ingredient.unit} of ${ingredient.name} for topping in order ${order._id}`);
+              }
+            }
+          }
+        }
+      } catch (exportError) {
+        // Log error but don't fail the order update
+        console.error('Error auto-exporting ingredients:', exportError);
+      }
+    }
+
     res.status(200).json({ 
       success: true, 
       message: updateMessage, 

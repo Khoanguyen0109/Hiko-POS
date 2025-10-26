@@ -37,6 +37,10 @@ app.use("/api/customer", require("./routes/customerRoute"));
 app.use("/api/topping", require("./routes/toppingRoute"));
 app.use("/api/promotion", require("./routes/promotionRoute"));
 app.use("/api/spending", require("./routes/spendingRoute"));
+app.use("/api/ingredient", require("./routes/ingredientRoute"));
+app.use("/api/ingredient-transaction", require("./routes/ingredientTransactionRoute"));
+app.use("/api/recipe", require("./routes/dishRecipeRoute"));
+app.use("/api/topping-recipe", require("./routes/toppingRecipeRoute"));
 app.use("/api/test", require("./routes/testRoute"));
 
 // Global Error Handler
