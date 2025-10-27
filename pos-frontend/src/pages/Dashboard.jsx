@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { MdCategory, MdDateRange, MdToday, MdCalendarMonth, MdLocalOffer, MdAccountBalanceWallet, MdAnalytics, MdPayment, MdReceipt, MdInventory, MdMenuBook } from "react-icons/md";
+import PropTypes from "prop-types";
+import { MdCategory, MdDateRange, MdToday, MdCalendarMonth, MdLocalOffer, MdAccountBalanceWallet, MdAnalytics, MdPayment, MdReceipt, MdInventory } from "react-icons/md";
 import { BiSolidDish } from "react-icons/bi";
 import { MdAddCircle } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
@@ -44,72 +45,74 @@ const SpendingAnalytics = ({ dashboardData, loading, error }) => {
     );
   }
 
-  const { summary, spendingByCategory, spendingByVendor, monthlyTrend, paymentStatusBreakdown, overdueSpending } = dashboardData;
+  const { summary, spendingByCategory, spendingByVendor, monthlyTrend, paymentStatusBreakdown } = dashboardData;
 
   return (
     <div className="container mx-auto px-4 md:px-6">
-      <div className="space-y-8">
+      <div className="space-y-4 sm:space-y-6 lg:space-y-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
-            <div className="flex items-center justify-between mb-4">
-              <MdAccountBalanceWallet className="text-2xl text-[#f6b100]" />
-              <span className="text-[#ababab] text-sm">This Month</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+          <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <MdAccountBalanceWallet className="text-xl sm:text-2xl text-[#f6b100]" />
+              <span className="text-[#ababab] text-xs sm:text-sm">This Month</span>
             </div>
-            <h3 className="text-2xl font-bold text-[#f5f5f5] mb-1">
+            <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#f5f5f5] mb-1">
               {formatVND(summary?.totalAmount || 0)}
             </h3>
-            <p className="text-[#ababab] text-sm">Total Spending</p>
+            <p className="text-[#ababab] text-xs sm:text-sm">Total Spending</p>
           </div>
 
-          <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
-            <div className="flex items-center justify-between mb-4">
-              <MdReceipt className="text-2xl text-[#10B981]" />
-              <span className="text-[#ababab] text-sm">This Month</span>
+          <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <MdReceipt className="text-xl sm:text-2xl text-[#10B981]" />
+              <span className="text-[#ababab] text-xs sm:text-sm">This Month</span>
             </div>
-            <h3 className="text-2xl font-bold text-[#f5f5f5] mb-1">
+            <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#f5f5f5] mb-1">
               {summary?.count || 0}
             </h3>
-            <p className="text-[#ababab] text-sm">Total Records</p>
+            <p className="text-[#ababab] text-xs sm:text-sm">Total Records</p>
           </div>
 
-          <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
-            <div className="flex items-center justify-between mb-4">
-              <MdPayment className="text-2xl text-[#EF4444]" />
-              <span className="text-[#ababab] text-sm">Pending</span>
+          <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <MdPayment className="text-xl sm:text-2xl text-[#EF4444]" />
+              <span className="text-[#ababab] text-xs sm:text-sm">Pending</span>
             </div>
-            <h3 className="text-2xl font-bold text-[#f5f5f5] mb-1">
+            <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#f5f5f5] mb-1">
               {formatVND(paymentStatusBreakdown?.find(item => item._id === 'pending')?.totalAmount || 0)}
             </h3>
-            <p className="text-[#ababab] text-sm">Pending Payments</p>
+            <p className="text-[#ababab] text-xs sm:text-sm">Pending Payments</p>
           </div>
 
-          <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
-            <div className="flex items-center justify-between mb-4">
-              <MdDateRange className="text-2xl text-[#8B5CF6]" />
-              <span className="text-[#ababab] text-sm">This Year</span>
+          <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <MdDateRange className="text-xl sm:text-2xl text-[#8B5CF6]" />
+              <span className="text-[#ababab] text-xs sm:text-sm">This Year</span>
             </div>
-            <h3 className="text-2xl font-bold text-[#f5f5f5] mb-1">
+            <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#f5f5f5] mb-1">
               {formatVND(monthlyTrend?.[0]?.totalAmount || 0)}
             </h3>
-            <p className="text-[#ababab] text-sm">Period Total</p>
+            <p className="text-[#ababab] text-xs sm:text-sm">Period Total</p>
           </div>
         </div>
 
         {/* Payment Status & Category Breakdown */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
-            <h3 className="text-[#f5f5f5] font-semibold text-lg mb-4">Payment Status</h3>
-            <div className="space-y-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+          <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
+            <h3 className="text-[#f5f5f5] font-semibold text-base sm:text-lg mb-3 sm:mb-4">Payment Status</h3>
+            <div className="space-y-2 sm:space-y-3">
               {paymentStatusBreakdown?.map((item) => (
                 <div key={item._id} className="flex items-center justify-between py-2 border-b border-[#343434] last:border-b-0">
-                  <div>
-                    <p className="text-[#f5f5f5] font-medium capitalize">{item._id}</p>
-                    <p className="text-[#ababab] text-sm">{item.count} records</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[#f5f5f5] font-medium capitalize text-sm sm:text-base truncate">{item._id}</p>
+                    <p className="text-[#ababab] text-xs sm:text-sm">{item.count} records</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[#f5f5f5] font-semibold">{formatVND(item.totalAmount)}</p>
-                    <div className={`w-3 h-3 rounded-full inline-block ml-2 ${
+                  <div className="text-right flex items-center gap-2">
+                    <div>
+                      <p className="text-[#f5f5f5] font-semibold text-sm sm:text-base">{formatVND(item.totalAmount)}</p>
+                    </div>
+                    <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0 ${
                       item._id === 'paid' ? 'bg-green-500' : 
                       item._id === 'pending' ? 'bg-yellow-500' : 'bg-red-500'
                     }`}></div>
@@ -119,17 +122,17 @@ const SpendingAnalytics = ({ dashboardData, loading, error }) => {
             </div>
           </div>
 
-          <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
-            <h3 className="text-[#f5f5f5] font-semibold text-lg mb-4">Top Categories</h3>
-            <div className="space-y-3">
+          <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
+            <h3 className="text-[#f5f5f5] font-semibold text-base sm:text-lg mb-3 sm:mb-4">Top Categories</h3>
+            <div className="space-y-2 sm:space-y-3">
               {spendingByCategory?.slice(0, 5).map((item) => (
                 <div key={item._id} className="flex items-center justify-between py-2 border-b border-[#343434] last:border-b-0">
-                  <div>
-                    <p className="text-[#f5f5f5] font-medium">{item.categoryName}</p>
-                    <p className="text-[#ababab] text-sm">{item.count} records</p>
+                  <div className="flex-1 min-w-0 pr-2">
+                    <p className="text-[#f5f5f5] font-medium text-sm sm:text-base truncate">{item.categoryName}</p>
+                    <p className="text-[#ababab] text-xs sm:text-sm">{item.count} records</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[#f5f5f5] font-semibold">{formatVND(item.totalAmount)}</p>
+                    <p className="text-[#f5f5f5] font-semibold text-sm sm:text-base whitespace-nowrap">{formatVND(item.totalAmount)}</p>
                     <p className="text-[#ababab] text-xs">Avg: {formatVND(item.avgAmount)}</p>
                   </div>
                 </div>
@@ -139,43 +142,43 @@ const SpendingAnalytics = ({ dashboardData, loading, error }) => {
         </div>
 
         {/* Top Vendors & Monthly Trend */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
-            <h3 className="text-[#f5f5f5] font-semibold text-lg mb-4">Top Vendors</h3>
-            <div className="space-y-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+          <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
+            <h3 className="text-[#f5f5f5] font-semibold text-base sm:text-lg mb-3 sm:mb-4">Top Vendors</h3>
+            <div className="space-y-2 sm:space-y-3">
               {spendingByVendor?.length > 0 ? spendingByVendor.map((item) => (
                 <div key={item._id} className="flex items-center justify-between py-2 border-b border-[#343434] last:border-b-0">
-                  <div>
-                    <p className="text-[#f5f5f5] font-medium">{item.vendorName}</p>
-                    <p className="text-[#ababab] text-sm">{item.count} records</p>
+                  <div className="flex-1 min-w-0 pr-2">
+                    <p className="text-[#f5f5f5] font-medium text-sm sm:text-base truncate">{item.vendorName}</p>
+                    <p className="text-[#ababab] text-xs sm:text-sm">{item.count} records</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[#f5f5f5] font-semibold">{formatVND(item.totalAmount)}</p>
+                    <p className="text-[#f5f5f5] font-semibold text-sm sm:text-base whitespace-nowrap">{formatVND(item.totalAmount)}</p>
                     <p className="text-[#ababab] text-xs">Avg: {formatVND(item.avgAmount)}</p>
                   </div>
                 </div>
               )) : (
-                <p className="text-[#ababab] text-center py-4">No vendor data available</p>
+                <p className="text-[#ababab] text-center py-4 text-sm">No vendor data available</p>
               )}
             </div>
           </div>
 
-          <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
-            <h3 className="text-[#f5f5f5] font-semibold text-lg mb-4">Monthly Trend</h3>
-            <div className="space-y-3">
+          <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
+            <h3 className="text-[#f5f5f5] font-semibold text-base sm:text-lg mb-3 sm:mb-4">Monthly Trend</h3>
+            <div className="space-y-2 sm:space-y-3">
               {monthlyTrend?.map((item) => (
                 <div key={`${item._id.year}-${item._id.month}`} className="flex items-center justify-between py-2 border-b border-[#343434] last:border-b-0">
-                  <div>
-                    <p className="text-[#f5f5f5] font-medium">
+                  <div className="flex-1 min-w-0 pr-2">
+                    <p className="text-[#f5f5f5] font-medium text-sm sm:text-base">
                       {new Date(item._id.year, item._id.month - 1).toLocaleDateString('en-US', { 
                         year: 'numeric', 
-                        month: 'long' 
+                        month: window.innerWidth < 640 ? 'short' : 'long'
                       })}
                     </p>
-                    <p className="text-[#ababab] text-sm">{item.count} records</p>
+                    <p className="text-[#ababab] text-xs sm:text-sm">{item.count} records</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[#f5f5f5] font-semibold">{formatVND(item.totalAmount)}</p>
+                    <p className="text-[#f5f5f5] font-semibold text-sm sm:text-base whitespace-nowrap">{formatVND(item.totalAmount)}</p>
                   </div>
                 </div>
               ))}
@@ -185,6 +188,21 @@ const SpendingAnalytics = ({ dashboardData, loading, error }) => {
       </div>
     </div>
   );
+};
+
+SpendingAnalytics.propTypes = {
+  dashboardData: PropTypes.shape({
+    summary: PropTypes.shape({
+      totalAmount: PropTypes.number,
+      count: PropTypes.number
+    }),
+    spendingByCategory: PropTypes.arrayOf(PropTypes.object),
+    spendingByVendor: PropTypes.arrayOf(PropTypes.object),
+    monthlyTrend: PropTypes.arrayOf(PropTypes.object),
+    paymentStatusBreakdown: PropTypes.arrayOf(PropTypes.object)
+  }),
+  loading: PropTypes.bool,
+  error: PropTypes.string
 };
 
 const Dashboard = () => {
@@ -271,100 +289,114 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="bg-[#1f1f1f] pb-20">
+    <div className="bg-[#1f1f1f] pb-20 min-h-screen">
       {/* Header Section with Action Buttons and Tabs */}
-      <div className="container mx-auto flex flex-col lg:flex-row items-start lg:items-center justify-between py-8 lg:py-14 px-4 md:px-6 gap-6 lg:gap-0">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
-          {buttons.map(({ label, icon, action }) => {
-            return (
-              <button
-                key={action}
-                onClick={() => handleOpenModal(action)}
-                className="bg-[#1a1a1a] hover:bg-[#262626] px-4 sm:px-6 lg:px-8 py-3 rounded-lg text-[#f5f5f5] font-semibold text-sm sm:text-md flex items-center gap-2 w-full sm:w-auto justify-center"
-              >
-                <span className="hidden sm:inline">{label}</span>
-                <span className="sm:hidden">{label.split(' ')[1] || label}</span>
-                {icon}
-              </button>
-            );
-          })}
+      <div className="container mx-auto py-4 sm:py-6 lg:py-8 px-4 md:px-6">
+        {/* Title - Mobile Only */}
+        <div className="mb-4 lg:hidden">
+          <h1 className="text-xl font-bold text-[#f5f5f5]">Dashboard</h1>
+          <p className="text-[#ababab] text-sm mt-1">Manage your restaurant</p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
-          {tabs.map((tab) => {
-            return (
-              <button
-                key={tab}
-                className={`
-                px-4 sm:px-6 lg:px-8 py-3 rounded-lg text-[#f5f5f5] font-semibold text-sm sm:text-md flex items-center gap-2 w-full sm:w-auto justify-center ${
-                  activeTab === tab
-                    ? "bg-[#262626]"
-                    : "bg-[#1a1a1a] hover:bg-[#262626]"
-                }`}
-                onClick={() => setActiveTab(tab)}
-              >
-                {tab}
-              </button>
-            );
-          })}
+        {/* Action Buttons */}
+        <div className="mb-4">
+          <h2 className="text-[#ababab] text-xs uppercase tracking-wider mb-2 lg:hidden">Quick Actions</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-wrap gap-2">
+            {buttons.map(({ label, icon, action }) => {
+              return (
+                <button
+                  key={action}
+                  onClick={() => handleOpenModal(action)}
+                  className="bg-[#1a1a1a] hover:bg-[#262626] px-3 py-2.5 sm:px-4 sm:py-3 rounded-lg text-[#f5f5f5] font-medium text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors"
+                >
+                  {icon}
+                  <span className="truncate">{label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="border-b border-[#343434]">
+          <h2 className="text-[#ababab] text-xs uppercase tracking-wider mb-2 lg:hidden">View</h2>
+          <div className="flex gap-1 overflow-x-auto pb-2 -mb-px scrollbar-hide">
+            {tabs.map((tab) => {
+              return (
+                <button
+                  key={tab}
+                  className={`
+                    px-4 py-2.5 sm:px-6 sm:py-3 rounded-t-lg text-[#f5f5f5] font-medium text-sm whitespace-nowrap transition-colors flex-shrink-0 ${
+                      activeTab === tab
+                        ? "bg-[#262626] border-b-2 border-[#f6b100]"
+                        : "bg-[#1a1a1a] hover:bg-[#262626]"
+                    }`}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  {tab}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
       {/* Date Filter Section */}
-      <div className="container mx-auto px-4 md:px-6 mb-6">
-        <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#343434]">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+      <div className="container mx-auto px-4 md:px-6 mb-4 sm:mb-6">
+        <div className="bg-[#1a1a1a] rounded-lg p-3 sm:p-4 border border-[#343434]">
+          <div className="flex flex-col gap-3 sm:gap-4">
+            {/* Title */}
             <div>
-              <h3 className="text-[#f5f5f5] font-semibold text-lg mb-1">Date Filter</h3>
-              <p className="text-[#ababab] text-sm">Filter data by time period</p>
+              <h3 className="text-[#f5f5f5] font-semibold text-base sm:text-lg mb-0.5 sm:mb-1">Date Filter</h3>
+              <p className="text-[#ababab] text-xs sm:text-sm">Filter data by time period</p>
             </div>
             
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
-              {/* Date Filter Buttons */}
-              <div className="flex flex-wrap gap-2">
-                {dateFilterOptions.map(({ value, label, icon }) => (
-                  <button
-                    key={value}
-                    onClick={() => handleDateFilterChange(value)}
-                    className={`
-                      flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                      ${dateFilter === value
-                        ? "bg-[#f6b100] text-[#1f1f1f]"
-                        : "bg-[#262626] text-[#f5f5f5] hover:bg-[#343434]"
-                      }
-                    `}
-                  >
-                    {icon}
-                    <span className="hidden sm:inline">{label}</span>
-                    <span className="sm:hidden">{label.split(' ')[0]}</span>
-                  </button>
-                ))}
-              </div>
+            {/* Date Filter Buttons - Mobile: 2x2 Grid, Tablet+: Horizontal */}
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+              {dateFilterOptions.map(({ value, label, icon }) => (
+                <button
+                  key={value}
+                  onClick={() => handleDateFilterChange(value)}
+                  className={`
+                    flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors
+                    ${dateFilter === value
+                      ? "bg-[#f6b100] text-[#1f1f1f]"
+                      : "bg-[#262626] text-[#f5f5f5] hover:bg-[#343434]"
+                    }
+                  `}
+                >
+                  <span className="text-base sm:text-lg">{icon}</span>
+                  <span className="hidden xs:inline sm:inline">{label}</span>
+                  <span className="xs:hidden">{label.split(' ').pop()}</span>
+                </button>
+              ))}
+            </div>
 
-              {/* Custom Date Range Inputs */}
-              {dateFilter === "custom" && (
-                <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+            {/* Custom Date Range Inputs */}
+            {dateFilter === "custom" && (
+              <div className="flex flex-col gap-2 pt-2 border-t border-[#343434]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                   <div className="flex flex-col">
-                    <label className="text-[#ababab] text-xs mb-1">From</label>
+                    <label className="text-[#ababab] text-xs mb-1.5">From Date</label>
                     <input
                       type="date"
                       value={customDateRange.startDate}
                       onChange={(e) => handleCustomDateChange("startDate", e.target.value)}
-                      className="bg-[#262626] text-[#f5f5f5] border border-[#343434] rounded px-3 py-2 text-sm focus:outline-none focus:border-[#f6b100]"
+                      className="bg-[#262626] text-[#f5f5f5] border border-[#343434] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#f6b100] w-full"
                     />
                   </div>
                   <div className="flex flex-col">
-                    <label className="text-[#ababab] text-xs mb-1">To</label>
+                    <label className="text-[#ababab] text-xs mb-1.5">To Date</label>
                     <input
                       type="date"
                       value={customDateRange.endDate}
                       onChange={(e) => handleCustomDateChange("endDate", e.target.value)}
-                      className="bg-[#262626] text-[#f5f5f5] border border-[#343434] rounded px-3 py-2 text-sm focus:outline-none focus:border-[#f6b100]"
+                      className="bg-[#262626] text-[#f5f5f5] border border-[#343434] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#f6b100] w-full"
                     />
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
