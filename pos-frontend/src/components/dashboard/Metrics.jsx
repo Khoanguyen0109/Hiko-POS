@@ -10,6 +10,7 @@ import PropTypes from "prop-types";
 import {
   RevenueTrendChart,
   RevenueByCategoryChart,
+  RevenueByDayOfWeekChart,
   PaymentMethodChart,
   TopDishesChart,
   SalesHeatmapChart,
@@ -343,6 +344,11 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <RevenueTrendChart orders={orders} dateRange={dateFilter} />
           <RevenueByCategoryChart orders={orders} />
+        </div>
+
+        {/* Revenue by Day of Week Chart - Full Width */}
+        <div className="mb-8">
+          <RevenueByDayOfWeekChart orders={orders} dateRange={dateFilter} />
         </div>
 
         {/* Payment Method Chart */}
