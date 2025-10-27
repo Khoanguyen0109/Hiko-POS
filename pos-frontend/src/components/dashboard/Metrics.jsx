@@ -14,6 +14,7 @@ import {
   PaymentMethodChart,
   TopDishesChart,
   SalesHeatmapChart,
+  WeeklyHeatmapChart,
   CustomerTrafficChart,
   VendorRevenueChart,
   VendorOrdersChart,
@@ -370,9 +371,14 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
         </div>
 
         {/* Traffic and Sales Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <SalesHeatmapChart orders={orders} />
           <CustomerTrafficChart orders={orders} />
+        </div>
+
+        {/* Weekly Traffic Heatmap - Full Width */}
+        <div className="mb-8">
+          <WeeklyHeatmapChart orders={orders} dateRange={dateFilter} />
         </div>
 
         {/* Third Party Vendor Analytics Section */}

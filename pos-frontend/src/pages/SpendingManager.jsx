@@ -13,7 +13,9 @@ import {
   MdAnalytics,
   MdDateRange,
   MdPayment,
-  MdReceipt
+  MdReceipt,
+  MdCheckCircle,
+  MdRadioButtonUnchecked
 } from "react-icons/md";
 import {
   fetchSpending,
@@ -23,6 +25,7 @@ import {
   removeSpending,
   removeSpendingCategory,
   removeVendor,
+  editSpending,
   setFilters,
   setPagination
 } from "../redux/slices/spendingSlice";
@@ -169,6 +172,24 @@ const SpendingManager = () => {
     }
   };
 
+  const handleTogglePaid = async (spending) => {
+    try {
+      const newStatus = spending.paymentStatus === "paid" ? "pending" : "paid";
+      const updateData = {
+        spendingId: spending._id,
+        paymentStatus: newStatus,
+        paymentDate: newStatus === "paid" ? new Date().toISOString() : spending.paymentDate
+      };
+      
+      await dispatch(editSpending(updateData)).unwrap();
+      // Reload spending to refresh the list
+      await loadSpending();
+    } catch (err) {
+      console.error("Error toggling payment status:", err);
+      alert(err || "Failed to update payment status");
+    }
+  };
+
   const openModal = (mode, item = null, type = "spending") => {
     setModalMode(mode);
     setSelectedItem(item);
@@ -296,6 +317,7 @@ const SpendingManager = () => {
             onEdit={(item) => openModal("edit", item, "spending")}
             onView={(item) => openModal("view", item, "spending")}
             onDelete={(id) => handleDelete(id, "spending")}
+            onTogglePaid={handleTogglePaid}
             getStatusColor={getStatusColor}
           />
         )}
@@ -379,6 +401,7 @@ const SpendingRecords = ({
   onEdit, 
   onView, 
   onDelete,
+  onTogglePaid,
   getStatusColor 
 }) => {
   return (
@@ -552,6 +575,17 @@ const SpendingRecords = ({
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <button
+                            onClick={() => onTogglePaid(item)}
+                            className={`transition-colors ${
+                              item.paymentStatus === "paid" 
+                                ? "text-green-500 hover:text-green-600" 
+                                : "text-[#ababab] hover:text-green-500"
+                            }`}
+                            title={item.paymentStatus === "paid" ? "Mark as Unpaid" : "Mark as Paid"}
+                          >
+                            {item.paymentStatus === "paid" ? <MdCheckCircle size={20} /> : <MdRadioButtonUnchecked size={20} />}
+                          </button>
+                          <button
                             onClick={() => onView(item)}
                             className="text-[#ababab] hover:text-[#f6b100] transition-colors"
                             title="View"
@@ -630,6 +664,17 @@ const SpendingRecords = ({
                     
                     <div className="flex items-center gap-2">
                       <button
+                        onClick={() => onTogglePaid(item)}
+                        className={`transition-colors p-1 ${
+                          item.paymentStatus === "paid" 
+                            ? "text-green-500 hover:text-green-600" 
+                            : "text-[#ababab] hover:text-green-500"
+                        }`}
+                        title={item.paymentStatus === "paid" ? "Mark as Unpaid" : "Mark as Paid"}
+                      >
+                        {item.paymentStatus === "paid" ? <MdCheckCircle size={20} /> : <MdRadioButtonUnchecked size={20} />}
+                      </button>
+                      <button
                         onClick={() => onView(item)}
                         className="text-[#ababab] hover:text-[#f6b100] transition-colors p-1"
                       >
@@ -701,6 +746,7 @@ SpendingRecords.propTypes = {
   onEdit: PropTypes.func.isRequired,
   onView: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
+  onTogglePaid: PropTypes.func.isRequired,
   getStatusColor: PropTypes.func.isRequired
 };
 

@@ -4,6 +4,7 @@ export { default as RevenueByDayOfWeekChart } from './RevenueByDayOfWeekChart';
 export { default as PaymentMethodChart } from './PaymentMethodChart';
 export { default as TopDishesChart } from './TopDishesChart';
 export { default as SalesHeatmapChart } from './SalesHeatmapChart';
+export { default as WeeklyHeatmapChart } from './WeeklyHeatmapChart';
 export { default as CustomerTrafficChart } from './CustomerTrafficChart';
 export { default as VendorRevenueChart } from './VendorRevenueChart';
 export { default as VendorOrdersChart } from './VendorOrdersChart';
