@@ -39,23 +39,32 @@ const VendorTrendChart = ({ orders }) => {
     const completedOrders = orders.filter(order => order.orderStatus === 'completed');
     
     completedOrders.forEach(order => {
-      const date = new Date(order.orderDate).toLocaleDateString();
+      // Use ISO date string (YYYY-MM-DD) for proper sorting
+      const orderDate = new Date(order.orderDate);
+      const dateKey = orderDate.toISOString().split('T')[0]; // YYYY-MM-DD format
       const vendor = order.thirdPartyVendor || 'None';
       const revenue = order.bills?.totalWithTax || 0;
       
-      if (!dateVendorData[date]) {
-        dateVendorData[date] = {};
+      if (!dateVendorData[dateKey]) {
+        dateVendorData[dateKey] = {};
       }
       
-      if (!dateVendorData[date][vendor]) {
-        dateVendorData[date][vendor] = 0;
+      if (!dateVendorData[dateKey][vendor]) {
+        dateVendorData[dateKey][vendor] = 0;
       }
       
-      dateVendorData[date][vendor] += revenue;
+      dateVendorData[dateKey][vendor] += revenue;
     });
 
-    // Sort dates and create datasets
-    const sortedDates = Object.keys(dateVendorData).sort((a, b) => new Date(a) - new Date(b));
+    // Sort dates chronologically (YYYY-MM-DD format sorts naturally)
+    const sortedDates = Object.keys(dateVendorData).sort();
+    
+    // Format dates for display
+    const displayDates = sortedDates.map(dateKey => {
+      const date = new Date(dateKey + 'T00:00:00');
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    });
+    
     const vendors = ['None', 'Shopee', 'Grab'];
     
     const datasets = vendors.map(vendor => {
@@ -86,7 +95,7 @@ const VendorTrendChart = ({ orders }) => {
     });
 
     return {
-      labels: sortedDates,
+      labels: displayDates,
       datasets: datasets
     };
   }, [orders]);
