@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getOrders, getOrderById, addOrder, updateOrderStatus } from "../../https";
+import { getOrders, getOrderById, addOrder, updateOrderStatus, deleteOrder as deleteOrderAPI } from "../../https";
 
 // Order async thunks
 export const fetchOrders = createAsyncThunk("orders/fetchAll", async (params = {}, thunkAPI) => {
@@ -35,6 +35,15 @@ export const updateOrder = createAsyncThunk("orders/updateStatus", async ({ orde
         return data.data;
     } catch (error) {
         return thunkAPI.rejectWithValue(error.response?.data?.message || "Failed to update order");
+    }
+});
+
+export const removeOrder = createAsyncThunk("orders/delete", async (orderId, thunkAPI) => {
+    try {
+        await deleteOrderAPI(orderId);
+        return orderId;
+    } catch (error) {
+        return thunkAPI.rejectWithValue(error.response?.data?.message || "Failed to delete order");
     }
 });
 
@@ -149,6 +158,31 @@ const orderSlice = createSlice({
             .addCase(updateOrder.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload || "Failed to update order status";
+            })
+
+            // Delete order
+            .addCase(removeOrder.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(removeOrder.fulfilled, (state, action) => {
+                state.loading = false;
+                const deletedOrderId = action.payload;
+                
+                // Remove from items array
+                state.items = state.items.filter(order => order._id !== deletedOrderId);
+                
+                // Remove from recent orders
+                state.recentOrders = state.recentOrders.filter(order => order._id !== deletedOrderId);
+                
+                // Clear current order if it matches
+                if (state.currentOrder && state.currentOrder._id === deletedOrderId) {
+                    state.currentOrder = null;
+                }
+            })
+            .addCase(removeOrder.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || "Failed to delete order";
             });
     }
 });

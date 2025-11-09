@@ -623,4 +623,36 @@ const updateOrder = async (req, res, next) => {
   }
 };
 
-module.exports = { addOrder, getOrderById, getOrders, updateOrder };
+const deleteOrder = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      const error = createHttpError(404, "Invalid order ID!");
+      return next(error);
+    }
+
+    const order = await Order.findById(id);
+    if (!order) {
+      const error = createHttpError(404, "Order not found!");
+      return next(error);
+    }
+
+    // Only allow deletion of pending or cancelled orders
+    if (!['pending', 'cancelled'].includes(order.orderStatus)) {
+      const error = createHttpError(400, "Only pending or cancelled orders can be deleted");
+      return next(error);
+    }
+
+    await Order.findByIdAndDelete(id);
+
+    res.status(200).json({ 
+      success: true, 
+      message: "Order deleted successfully" 
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { addOrder, getOrderById, getOrders, updateOrder, deleteOrder };

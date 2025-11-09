@@ -44,6 +44,7 @@ export const updateOrderStatus = ({ orderId, orderStatus, paymentMethod }) => {
   if (paymentMethod !== undefined) updateData.paymentMethod = paymentMethod;
   return axiosWrapper.put(`/api/order/${orderId}`, updateData);
 };
+export const deleteOrder = (orderId) => axiosWrapper.delete(`/api/order/${orderId}`);
 
 // Category Endpoints
 export const addCategory = (data) => axiosWrapper.post("/api/category/", data);

@@ -12,6 +12,7 @@ import {
   MdAccountBalance,
   MdStore,
   MdStorefront,
+  MdDelete,
 } from "react-icons/md";
 import {
   FaCheckCircle,
@@ -24,6 +25,7 @@ import {
   fetchOrderById,
   updateOrder,
   clearCurrentOrder,
+  removeOrder,
 } from "../redux/slices/orderSlice";
 import { enqueueSnackbar } from "notistack";
 import { formatDateAndTime, formatVND } from "../utils";
@@ -110,6 +112,30 @@ const OrderDetail = () => {
       .catch((error) => {
         enqueueSnackbar(error, { variant: "error" });
       });
+  };
+
+  const handleDelete = async () => {
+    if (!currentOrder) return;
+
+    // Only allow deletion of pending or cancelled orders
+    if (!['pending', 'cancelled'].includes(currentOrder.orderStatus)) {
+      enqueueSnackbar("Only pending or cancelled orders can be deleted", { variant: "warning" });
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete this order?\n\nOrder ID: ${currentOrder._id?.slice(-8)}\nCustomer: ${currentOrder.customerDetails?.name || 'Walk-in Customer'}\nTotal: ${formatVND(currentOrder.bills?.totalWithTax || 0)}\n\nThis action cannot be undone.`
+    );
+
+    if (confirmDelete) {
+      try {
+        await dispatch(removeOrder(currentOrder._id)).unwrap();
+        enqueueSnackbar("Order deleted successfully!", { variant: "success" });
+        navigate("/orders"); // Navigate back to orders list
+      } catch (error) {
+        enqueueSnackbar(error || "Failed to delete order", { variant: "error" });
+      }
+    }
   };
 
   const getStatusIcon = (status) => {
@@ -278,8 +304,8 @@ const OrderDetail = () => {
               )}
             </div>
 
-            {/* Update Button - Full width on mobile, auto width on desktop */}
-            <div className="flex justify-start">
+            {/* Action Buttons - Full width on mobile, auto width on desktop */}
+            <div className="flex flex-col sm:flex-row gap-3 justify-start">
               <button
                 onClick={handleStatusUpdate}
                 disabled={
@@ -291,6 +317,19 @@ const OrderDetail = () => {
               >
                 {loading ? "Updating..." : "Update Order"}
               </button>
+              
+              {/* Admin Delete Button - Only for pending or cancelled orders */}
+              {isAdmin && ['pending', 'cancelled'].includes(order.orderStatus) && (
+                <button
+                  onClick={handleDelete}
+                  disabled={loading}
+                  className="w-full sm:w-auto px-6 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm flex items-center justify-center gap-2"
+                  title="Delete Order (Admin Only)"
+                >
+                  <MdDelete size={18} />
+                  Delete Order
+                </button>
+              )}
             </div>
           </div>
 

@@ -1,14 +1,43 @@
 import { formatDateAndTime, getAvatarName, formatVND } from "../../utils/index";
 import { useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { removeOrder } from "../../redux/slices/orderSlice";
+import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
 import { Card, StatusBadge } from "../ui";
-import { MdPayment, MdCreditCard, MdAccountBalance, MdMoney, MdStore, MdStorefront } from "react-icons/md";
+import { MdPayment, MdCreditCard, MdAccountBalance, MdMoney, MdStore, MdStorefront, MdDelete } from "react-icons/md";
 
 const OrderCard = ({ order }) => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { role } = useSelector((state) => state.user);
+  const isAdmin = role === "Admin";
 
   const handleCardClick = () => {
     navigate(`/orders/${order._id}`);
+  };
+
+  const handleDelete = async (e) => {
+    e.stopPropagation(); // Prevent card click navigation
+    
+    // Only allow deletion of pending or cancelled orders
+    if (!['pending', 'cancelled'].includes(order.orderStatus)) {
+      enqueueSnackbar("Only pending or cancelled orders can be deleted", { variant: "warning" });
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      `Are you sure you want to delete this order?\n\nOrder ID: ${order._id?.slice(-8)}\nCustomer: ${order.customerDetails?.name || 'Walk-in Customer'}\nTotal: ${formatVND(order.bills?.totalWithTax || 0)}\n\nThis action cannot be undone.`
+    );
+
+    if (confirmDelete) {
+      try {
+        await dispatch(removeOrder(order._id)).unwrap();
+        enqueueSnackbar("Order deleted successfully!", { variant: "success" });
+      } catch (error) {
+        enqueueSnackbar(error || "Failed to delete order", { variant: "error" });
+      }
+    }
   };
 
   // Helper function to get payment method icon and display info
@@ -107,6 +136,18 @@ const OrderCard = ({ order }) => {
                 size="md"
               />
             </div>
+            
+            {/* Admin Delete Button - Only for pending or cancelled orders */}
+            {isAdmin && ['pending', 'cancelled'].includes(order.orderStatus) && (
+              <button
+                onClick={handleDelete}
+                className="flex items-center gap-1 px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs font-medium rounded transition-colors duration-200"
+                title="Delete Order (Admin Only)"
+              >
+                <MdDelete size={14} />
+                <span className="hidden sm:inline">Delete</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
