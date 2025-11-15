@@ -1,38 +1,19 @@
 import { useRef } from "react";
 import { motion } from "framer-motion";
 import { FaCheck } from "react-icons/fa6";
+import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import { formatVND } from "../../utils";
 const Invoice = ({ orderInfo, setShowInvoice }) => {
   console.log('orderInfo', orderInfo)
   const invoiceRef = useRef(null);
-  const handlePrint = () => {
-    console.log('2222')
-    const printContent = invoiceRef.current.innerHTML;
-    const WinPrint = window.open("", "", "width=900,height=650");
-    console.log("printContent", printContent);
-    WinPrint.document.write(`
-            <html>
-              <head>
-                <title>Order Receipt</title>
-                <style>
-                  body { font-family: Arial, sans-serif; padding: 20px; }
-                  .receipt-container { width: 300px; border: 1px solid #ddd; padding: 10px; }
-                  h2 { text-align: center; }
-                </style>
-              </head>
-              <body>
-                ${printContent}
-              </body>
-            </html>
-          `);
+  const navigate = useNavigate();
 
-    WinPrint.document.close();
-    WinPrint.focus();
-    setTimeout(() => {
-      WinPrint.print();
-      WinPrint.close();
-    }, 1000);
+  const handleViewOrderDetail = () => {
+    // Close the invoice modal
+    setShowInvoice(false);
+    // Navigate to the order detail page
+    navigate(`/orders/${orderInfo._id}`);
   };
 
   return (
@@ -178,13 +159,13 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
           </div>
         </div>
 
-        {/* Print Button */}
+        {/* Order Detail Button */}
         <div className="flex justify-center p-4 border-t border-gray-200">
           <button
-            onClick={handlePrint}
+            onClick={handleViewOrderDetail}
             className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors font-medium"
           >
-            Print Receipt
+            Order Detail
           </button>
         </div>
       </div>
@@ -195,6 +176,7 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
 Invoice.propTypes = {
   setShowInvoice: PropTypes.func.isRequired,
   orderInfo: PropTypes.shape({
+    _id: PropTypes.string.isRequired,
     orderDate: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]).isRequired,
     customerDetails: PropTypes.shape({
       name: PropTypes.string.isRequired,

@@ -396,7 +396,7 @@ const getOrders = async (req, res, next) => {
 
 const updateOrder = async (req, res, next) => {
   try {
-    const { orderStatus, paymentMethod } = req.body;
+    const { orderStatus, paymentMethod, thirdPartyVendor } = req.body;
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -407,6 +407,7 @@ const updateOrder = async (req, res, next) => {
     // Build update object based on provided fields
     const updateFields = {};
     let updateMessage = "Order updated successfully";
+    const updatedFields = [];
 
     // Validate and add orderStatus if provided
     if (orderStatus) {
@@ -415,7 +416,7 @@ const updateOrder = async (req, res, next) => {
         return next(error);
       }
       updateFields.orderStatus = orderStatus;
-      updateMessage = "Order status updated successfully";
+      updatedFields.push("status");
     }
 
     // Validate and add paymentMethod if provided
@@ -425,13 +426,28 @@ const updateOrder = async (req, res, next) => {
         return next(error);
       }
       updateFields.paymentMethod = paymentMethod;
-      updateMessage = orderStatus ? "Order status and payment method updated successfully" : "Payment method updated successfully";
+      updatedFields.push("payment method");
+    }
+
+    // Validate and add thirdPartyVendor if provided
+    if (thirdPartyVendor) {
+      if (!['None', 'Shopee', 'Grab'].includes(thirdPartyVendor)) {
+        const error = createHttpError(400, "Valid third party vendor is required (None, Shopee, Grab)");
+        return next(error);
+      }
+      updateFields.thirdPartyVendor = thirdPartyVendor;
+      updatedFields.push("vendor");
     }
 
     // Ensure at least one field is being updated
     if (Object.keys(updateFields).length === 0) {
-      const error = createHttpError(400, "At least one field (orderStatus or paymentMethod) must be provided");
+      const error = createHttpError(400, "At least one field (orderStatus, paymentMethod, or thirdPartyVendor) must be provided");
       return next(error);
+    }
+
+    // Update message based on what was updated
+    if (updatedFields.length > 0) {
+      updateMessage = `Order ${updatedFields.join(", ")} updated successfully`;
     }
 
     // Get current order to check status restrictions for payment method updates

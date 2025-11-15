@@ -2,12 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  MdPerson,
-  MdPhone,
-  MdGroup,
-  MdAccessTime,
   MdReceipt,
-  MdPayment,
   MdLocalOffer,
   MdAccountBalance,
   MdStore,
@@ -15,9 +10,6 @@ import {
   MdDelete,
 } from "react-icons/md";
 import {
-  FaCheckCircle,
-  FaClock,
-  FaSpinner,
   FaBan,
   FaMoneyBillWave,
 } from "react-icons/fa";
@@ -28,11 +20,10 @@ import {
   removeOrder,
 } from "../redux/slices/orderSlice";
 import { enqueueSnackbar } from "notistack";
-import { formatDateAndTime, formatVND } from "../utils";
+import { formatVND } from "../utils";
 import { getStoredUser } from "../utils/auth";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import BackButton from "../components/shared/BackButton";
-import { FormSelect } from "../components/ui";
 import PropTypes from "prop-types";
 
 const OrderDetail = () => {
@@ -40,8 +31,7 @@ const OrderDetail = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { currentOrder, loading, error } = useSelector((state) => state.orders);
-  const [selectedStatus, setSelectedStatus] = useState("");
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
+  const [selectedVendor, setSelectedVendor] = useState("");
 
   // Get user role for admin checking
   const user = getStoredUser();
@@ -60,8 +50,7 @@ const OrderDetail = () => {
 
   useEffect(() => {
     if (currentOrder) {
-      setSelectedStatus(currentOrder.orderStatus);
-      setSelectedPaymentMethod(currentOrder.paymentMethod || "");
+      setSelectedVendor(currentOrder.thirdPartyVendor || "None");
     }
   }, [currentOrder]);
 
@@ -71,14 +60,20 @@ const OrderDetail = () => {
     }
   }, [error]);
 
-  const handleStatusUpdate = () => {
-    const hasStatusChange =
-      selectedStatus && selectedStatus !== currentOrder?.orderStatus;
-    const hasPaymentChange =
-      selectedPaymentMethod &&
-      selectedPaymentMethod !== currentOrder?.paymentMethod;
+  const handleStatusUpdate = (status = null, paymentMethod = null) => {
+    const targetStatus = status;
+    const targetPayment = paymentMethod;
+    const targetVendor = selectedVendor;
 
-    if (!hasStatusChange && !hasPaymentChange) {
+    const hasStatusChange =
+      targetStatus && targetStatus !== currentOrder?.orderStatus;
+    const hasPaymentChange =
+      targetPayment &&
+      targetPayment !== currentOrder?.paymentMethod;
+    const hasVendorChange =
+      targetVendor && targetVendor !== currentOrder?.thirdPartyVendor;
+
+    if (!hasStatusChange && !hasPaymentChange && !hasVendorChange) {
       enqueueSnackbar("No changes to update", { variant: "info" });
       return;
     }
@@ -86,23 +81,28 @@ const OrderDetail = () => {
     const updateData = { orderId };
 
     if (hasStatusChange) {
-      updateData.orderStatus = selectedStatus;
+      updateData.orderStatus = targetStatus;
     }
 
     if (hasPaymentChange) {
-      updateData.paymentMethod = selectedPaymentMethod;
+      updateData.paymentMethod = targetPayment;
+    }
+
+    if (hasVendorChange) {
+      updateData.thirdPartyVendor = targetVendor;
     }
 
     dispatch(updateOrder(updateData))
       .unwrap()
       .then(() => {
         let message = "Order updated successfully!";
-        if (hasStatusChange && hasPaymentChange) {
-          message = "Order status and payment method updated successfully!";
-        } else if (hasStatusChange) {
-          message = "Order status updated successfully!";
-        } else if (hasPaymentChange) {
-          message = "Payment method updated successfully!";
+        const changes = [];
+        if (hasStatusChange) changes.push("status");
+        if (hasPaymentChange) changes.push("payment method");
+        if (hasVendorChange) changes.push("vendor");
+        
+        if (changes.length > 0) {
+          message = `Order ${changes.join(", ")} updated successfully!`;
         }
 
         enqueueSnackbar(message, {
@@ -138,71 +138,6 @@ const OrderDetail = () => {
     }
   };
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "pending":
-        return <FaClock className="text-yellow-500" />;
-      case "progress":
-        return <FaSpinner className="text-blue-500" />;
-      case "ready":
-        return <FaCheckCircle className="text-green-500" />;
-      case "completed":
-        return <FaCheckCircle className="text-green-600" />;
-      case "cancelled":
-        return <FaBan className="text-red-500" />;
-      default:
-        return <FaClock className="text-gray-500" />;
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "pending":
-        return "bg-yellow-900/20 text-yellow-400 border-yellow-700";
-      case "progress":
-        return "bg-blue-900/20 text-blue-400 border-blue-700";
-      case "ready":
-        return "bg-green-900/20 text-green-400 border-green-700";
-      case "completed":
-        return "bg-green-900/30 text-green-300 border-green-600";
-      case "cancelled":
-        return "bg-red-900/20 text-red-400 border-red-700";
-      default:
-        return "bg-gray-900/20 text-gray-400 border-gray-700";
-    }
-  };
-
-  // Helper function to get third-party vendor info
-  const getVendorInfo = (vendor) => {
-    switch (vendor) {
-      case "Shopee":
-        return {
-          icon: MdStorefront,
-          text: "Shopee",
-          color: "text-orange-500",
-          bgColor: "bg-orange-900/20",
-          borderColor: "border-orange-500/30",
-        };
-      case "Grab":
-        return {
-          icon: MdStore,
-          text: "Grab",
-          color: "text-green-600",
-          bgColor: "bg-green-900/20",
-          borderColor: "border-green-500/30",
-        };
-      case "None":
-      default:
-        return {
-          icon: MdStore,
-          text: "Direct Order",
-          color: "text-blue-500",
-          bgColor: "bg-blue-900/20",
-          borderColor: "border-blue-500/30",
-        };
-    }
-  };
-
   if (loading && !currentOrder) return <FullScreenLoader />;
 
   if (error && !currentOrder) {
@@ -227,20 +162,6 @@ const OrderDetail = () => {
   const order = currentOrder;
   if (!order) return null;
 
-  const statusOptions = [
-    { value: "pending", label: "Pending", icon: FaClock },
-    { value: "progress", label: "In Progress", icon: FaSpinner },
-    { value: "ready", label: "Ready", icon: FaCheckCircle },
-    { value: "completed", label: "Completed", icon: FaCheckCircle },
-    { value: "cancelled", label: "Cancelled", icon: FaBan },
-  ];
-
-  const paymentMethodOptions = [
-    { value: "Cash", label: "Cash Payment", icon: FaMoneyBillWave },
-    { value: "Banking", label: "Online Banking", icon: MdAccountBalance },
-    { value: "Card", label: "Card Payment", icon: MdPayment },
-  ];
-
   return (
     <div className="min-h-screen bg-[#0f0f0f] p-4 sm:p-6 pb-20">
       {/* Header */}
@@ -258,108 +179,121 @@ const OrderDetail = () => {
         </div>
 
         <div className="flex flex-col gap-4 w-full">
-          <div className="flex flex-col gap-3">
-            {/* Mobile: Stack vertically, Desktop: Horizontal layout */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {/* Status Selector */}
-              <div className="flex flex-col gap-1">
-                <label className="text-[#ababab] text-xs font-medium">
-                  Order Status
-                </label>
-                <select
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="w-full px-4 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100] transition-colors"
-                >
-                  {statusOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Payment Method Selector - Only for orders in progress or pending */}
-              {(order.orderStatus === "progress" ||
-                order.orderStatus === "pending" ||
-                selectedStatus === "progress" ||
-                selectedStatus === "pending") && (
-                <div className="flex flex-col gap-1">
-                  <label className="text-[#ababab] text-xs font-medium">
-                    Payment Method
-                  </label>
-                  <select
-                    value={selectedPaymentMethod}
-                    onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                    className="w-full px-4 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100] transition-colors"
-                  >
-                    <option value="">Select Payment Method</option>
-                    {paymentMethodOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
-
-            {/* Action Buttons - Full width on mobile, auto width on desktop */}
-            <div className="flex flex-col sm:flex-row gap-3 justify-start">
+          {/* Third Party Vendor Selection */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[#ababab] text-xs font-medium">
+              Order Source / Vendor
+            </label>
+            <div className="flex flex-wrap gap-2">
               <button
-                onClick={handleStatusUpdate}
-                disabled={
-                  loading ||
-                  (selectedStatus === order.orderStatus &&
-                    selectedPaymentMethod === order.paymentMethod)
-                }
-                className="w-full sm:w-auto px-6 py-2.5 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#e09900] disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                onClick={() => setSelectedVendor("None")}
+                disabled={loading}
+                className={`px-4 py-2 rounded-lg font-medium transition-all text-sm flex items-center gap-2 ${
+                  selectedVendor === "None"
+                    ? "bg-blue-600 text-white border-2 border-blue-400 shadow-lg"
+                    : "bg-[#262626] text-[#f5f5f5] border border-[#343434] hover:border-blue-500"
+                }`}
               >
-                {loading ? "Updating..." : "Update Order"}
+                <MdStore size={16} />
+                Direct
               </button>
-              
-              {/* Admin Delete Button - Only for pending or cancelled orders */}
-              {isAdmin && ['pending', 'cancelled'].includes(order.orderStatus) && (
-                <button
-                  onClick={handleDelete}
-                  disabled={loading}
-                  className="w-full sm:w-auto px-6 py-2.5 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm flex items-center justify-center gap-2"
-                  title="Delete Order (Admin Only)"
-                >
-                  <MdDelete size={18} />
-                  Delete Order
-                </button>
-              )}
+              <button
+                onClick={() => setSelectedVendor("Shopee")}
+                disabled={loading}
+                className={`px-4 py-2 rounded-lg font-medium transition-all text-sm flex items-center gap-2 ${
+                  selectedVendor === "Shopee"
+                    ? "bg-orange-600 text-white border-2 border-orange-400 shadow-lg"
+                    : "bg-[#262626] text-[#f5f5f5] border border-[#343434] hover:border-orange-500"
+                }`}
+              >
+                <MdStorefront size={16} />
+                Shopee
+              </button>
+              <button
+                onClick={() => setSelectedVendor("Grab")}
+                disabled={loading}
+                className={`px-4 py-2 rounded-lg font-medium transition-all text-sm flex items-center gap-2 ${
+                  selectedVendor === "Grab"
+                    ? "bg-green-600 text-white border-2 border-green-400 shadow-lg"
+                    : "bg-[#262626] text-[#f5f5f5] border border-[#343434] hover:border-green-500"
+                }`}
+              >
+                <MdStore size={16} />
+                Grab
+              </button>
             </div>
           </div>
 
+          {/* Quick Payment Action Buttons */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[#ababab] text-xs font-medium">
+              Quick Actions (Payment & Status)
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => handleStatusUpdate("completed", "Cash")}
+                disabled={loading}
+                className={`px-5 py-3 rounded-lg font-medium transition-all text-sm flex items-center gap-2 ${
+                  order.paymentMethod === "Cash" && order.orderStatus === "completed"
+                    ? "bg-green-600 text-white border-2 border-green-400 shadow-lg"
+                    : "bg-[#262626] text-[#f5f5f5] border border-[#343434] hover:border-green-500"
+                }`}
+              >
+                <FaMoneyBillWave size={16} />
+                Cash Payment
+              </button>
+              <button
+                onClick={() => handleStatusUpdate("completed", "Banking")}
+                disabled={loading}
+                className={`px-5 py-3 rounded-lg font-medium transition-all text-sm flex items-center gap-2 ${
+                  order.paymentMethod === "Banking" && order.orderStatus === "completed"
+                    ? "bg-blue-600 text-white border-2 border-blue-400 shadow-lg"
+                    : "bg-[#262626] text-[#f5f5f5] border border-[#343434] hover:border-blue-500"
+                }`}
+              >
+                <MdAccountBalance size={16} />
+                Banking
+              </button>
+              <button
+                onClick={() => handleStatusUpdate("cancelled", null)}
+                disabled={loading}
+                className={`px-5 py-3 rounded-lg font-medium transition-all text-sm flex items-center gap-2 ${
+                  order.orderStatus === "cancelled"
+                    ? "bg-red-600 text-white border-2 border-red-400 shadow-lg"
+                    : "bg-[#262626] text-[#f5f5f5] border border-[#343434] hover:border-red-500"
+                }`}
+              >
+                <FaBan size={16} />
+                Cancel Order
+              </button>
+            </div>
+          </div>
+
+          {/* Admin Delete Button - Only for pending or cancelled orders */}
+          {isAdmin && ['pending', 'cancelled'].includes(order.orderStatus) && (
+            <div className="flex gap-3">
+              <button
+                onClick={handleDelete}
+                disabled={loading}
+                className="px-6 py-2.5 bg-red-700 text-white rounded-lg font-medium hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm flex items-center justify-center gap-2 border border-red-600"
+                title="Delete Order (Admin Only)"
+              >
+                <MdDelete size={18} />
+                Delete Order (Admin)
+              </button>
+            </div>
+          )}
+
           {/* Helper Messages */}
           <div className="flex flex-col gap-2">
-            {selectedStatus === "completed" &&
-              !selectedPaymentMethod &&
-              !order.paymentMethod && (
-                <div className="text-yellow-400 bg-yellow-900/20 px-3 py-2 rounded-lg border border-yellow-500/30 text-xs sm:text-sm">
-                  <div className="flex items-start gap-2">
-                    <span className="text-yellow-400 flex-shrink-0 mt-0.5">
-                      💡
-                    </span>
-                    <span>
-                      Payment method is required to complete the order
-                    </span>
-                  </div>
-                </div>
-              )}
-            {(order.orderStatus === "progress" ||
-              order.orderStatus === "pending") && (
-              <div className="text-blue-400 bg-blue-900/20 px-3 py-2 rounded-lg border border-blue-500/30 text-xs sm:text-sm">
-                <div className="flex items-start gap-2">
-                  <span className="text-blue-400 flex-shrink-0 mt-0.5">ℹ️</span>
-                  <span>
-                    You can update both status and payment method simultaneously
-                  </span>
-                </div>
+            <div className="text-blue-400 bg-blue-900/20 px-3 py-2 rounded-lg border border-blue-500/30 text-xs sm:text-sm">
+              <div className="flex items-start gap-2">
+                <span className="text-blue-400 flex-shrink-0 mt-0.5">💡</span>
+                <span>
+                  Use quick action buttons to complete payment or cancel the order. Update vendor if needed.
+                </span>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
@@ -367,128 +301,6 @@ const OrderDetail = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Order Information */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Order Status Card */}
-          <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
-            <h2 className="text-[#f5f5f5] text-lg font-semibold mb-4 flex items-center gap-2">
-              <MdReceipt size={20} />
-              Order Status
-            </h2>
-            <div className="flex items-center gap-3">
-              {getStatusIcon(order.orderStatus)}
-              <span
-                className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(
-                  order.orderStatus
-                )}`}
-              >
-                {order.orderStatus.charAt(0).toUpperCase() +
-                  order.orderStatus.slice(1)}
-              </span>
-              <span className="text-[#ababab] text-sm">
-                Created {formatDateAndTime(order.createdAt)}
-              </span>
-            </div>
-          </div>
-
-          {/* Customer Information */}
-          <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
-            <h2 className="text-[#f5f5f5] text-lg font-semibold mb-4 flex items-center gap-2">
-              <MdPerson size={20} />
-              Customer Information
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {order.customerDetails?.name && (
-                <div className="flex items-center gap-3">
-                  <MdPerson className="text-[#f6b100]" size={18} />
-                  <div>
-                    <p className="text-[#ababab] text-xs">Name</p>
-                    <p className="text-[#f5f5f5] font-medium">
-                      {order.customerDetails?.name}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {order.customerDetails?.phone && (
-                <div className="flex items-center gap-3">
-                  <MdPhone className="text-[#f6b100]" size={18} />
-                  <div>
-                    <p className="text-[#ababab] text-xs">Phone</p>
-                    <p className="text-[#f5f5f5] font-medium">
-                      {order.customerDetails.phone}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {order.customerDetails?.guests && (
-                <div className="flex items-center gap-3">
-                  <MdGroup className="text-[#f6b100]" size={18} />
-                  <div>
-                    <p className="text-[#ababab] text-xs">Guests</p>
-                    <p className="text-[#f5f5f5] font-medium">
-                      {order.customerDetails.guests}
-                    </p>
-                  </div>
-                </div>
-              )}
-              <div className="flex items-center gap-3">
-                <MdAccessTime className="text-[#f6b100]" size={18} />
-                <div>
-                  <p className="text-[#ababab] text-xs">Order Time</p>
-                  <p className="text-[#f5f5f5] font-medium">
-                    {formatDateAndTime(order.createdAt)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Third Party Vendor Information */}
-          {(() => {
-            const vendorInfo = getVendorInfo(order.thirdPartyVendor);
-            const VendorIcon = vendorInfo.icon;
-
-            return (
-              <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
-                <h2 className="text-[#f5f5f5] text-lg font-semibold mb-4 flex items-center gap-2">
-                  <VendorIcon size={20} className={vendorInfo.color} />
-                  Order Source
-                </h2>
-                <div
-                  className={`p-4 rounded-lg border ${vendorInfo.bgColor} ${vendorInfo.borderColor}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <VendorIcon className={vendorInfo.color} size={24} />
-                    <div>
-                      <p className="text-[#ababab] text-xs">Platform</p>
-                      <p
-                        className={`font-semibold text-lg ${vendorInfo.color}`}
-                      >
-                        {vendorInfo.text}
-                      </p>
-                    </div>
-                  </div>
-
-                  {order.thirdPartyVendor !== "None" && (
-                    <div className="mt-3 pt-3 border-t border-[#343434]">
-                      <p className="text-[#ababab] text-xs mb-1">Order Type</p>
-                      <p className="text-[#f5f5f5] text-sm">
-                        Third-Party Delivery
-                      </p>
-                    </div>
-                  )}
-
-                  {order.thirdPartyVendor === "None" && (
-                    <div className="mt-3 pt-3 border-t border-[#343434]">
-                      <p className="text-[#ababab] text-xs mb-1">Order Type</p>
-                      <p className="text-[#f5f5f5] text-sm">
-                        Direct Restaurant Order
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })()}
-
           {/* Order Items */}
           <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
             <h2 className="text-[#f5f5f5] text-lg font-semibold mb-4">
@@ -504,47 +316,6 @@ const OrderDetail = () => {
 
         {/* Order Summary */}
         <div className="space-y-6">
-          {/* Payment Information */}
-          <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
-            <h2 className="text-[#f5f5f5] text-lg font-semibold mb-4 flex items-center gap-2">
-              <MdPayment size={20} />
-              Payment Details
-            </h2>
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <span className="text-[#ababab]">Current Payment Method</span>
-                <span className="text-[#f5f5f5] font-medium">
-                  {order.paymentMethod || "Not Set"}
-                </span>
-              </div>
-
-              {/* Payment Method Selection - For orders in progress or pending */}
-              {(order.orderStatus === "progress" ||
-                order.orderStatus === "pending") && (
-                <div className="pt-3 border-t border-[#343434]">
-                  <FormSelect
-                    label="Update Payment Method"
-                    value={selectedPaymentMethod}
-                    onChange={(e) => setSelectedPaymentMethod(e.target.value)}
-                    options={paymentMethodOptions}
-                    placeholder="Select payment method"
-                    helpText="Use the 'Update Order' button above to save payment method changes"
-                  />
-                </div>
-              )}
-
-
-              {order.paymentStatus && (
-                <div className="flex justify-between">
-                  <span className="text-[#ababab]">Payment Status</span>
-                  <span className="text-[#f5f5f5] font-medium text-xs">
-                    {order.paymentStatus}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
           {/* Applied Promotions */}
           {order.appliedPromotions && order.appliedPromotions.length > 0 && (
             <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
