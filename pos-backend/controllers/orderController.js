@@ -450,16 +450,10 @@ const updateOrder = async (req, res, next) => {
       updateMessage = `Order ${updatedFields.join(", ")} updated successfully`;
     }
 
-    // Get current order to check status restrictions for payment method updates
+    // Get current order to check if order exists and for ingredient export logic
     const currentOrder = await Order.findById(id);
     if (!currentOrder) {
       const error = createHttpError(404, "Order not found!");
-      return next(error);
-    }
-
-    // Restrict payment method updates to orders in progress or pending
-    if (paymentMethod && !orderStatus && !['pending', 'progress'].includes(currentOrder.orderStatus)) {
-      const error = createHttpError(400, "Payment method can only be updated for orders that are pending or in progress");
       return next(error);
     }
 
