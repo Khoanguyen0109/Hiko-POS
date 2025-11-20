@@ -221,6 +221,17 @@ const OrderDetail = () => {
                 <MdStore size={16} />
                 Grab
               </button>
+              
+              {/* Update Vendor Button - Shows when vendor changed */}
+              {selectedVendor !== order.thirdPartyVendor && (
+                <button
+                  onClick={() => handleStatusUpdate(null, null)}
+                  disabled={loading}
+                  className="px-4 py-2 rounded-lg font-medium transition-all text-sm flex items-center gap-2 bg-[#f6b100] text-[#1f1f1f] hover:bg-[#e09900] border-2 border-[#f6b100] shadow-lg"
+                >
+                  Update Vendor
+                </button>
+              )}
             </div>
           </div>
 
