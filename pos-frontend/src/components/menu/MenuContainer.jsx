@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { MdCategory, MdRestaurantMenu, MdExpandMore, MdExpandLess } from "react-icons/md";
+import { MdCategory, MdRestaurantMenu, MdExpandMore, MdExpandLess, MdSearch, MdClose } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCategories } from "../../redux/slices/categorySlice";
 import { fetchDishes } from "../../redux/slices/dishSlice";
@@ -24,6 +24,7 @@ const MenuContainer = () => {
   const [selectedDish, setSelectedDish] = useState(null);
   const [isDishModalOpen, setIsDishModalOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false); // Accordion state
+  const [searchTerm, setSearchTerm] = useState(""); // Search state
 
   // Fetch data on component mount
   useEffect(() => {
@@ -31,23 +32,33 @@ const MenuContainer = () => {
     dispatch(fetchDishes());
   }, [dispatch]);
 
-  // Filter dishes when category or dishes change
+  // Filter dishes when category, search term, or dishes change
   useEffect(() => {
     if (dishes.length > 0) {
+      let filtered = [];
+      
       if (selectedCategory === "all") {
-        // Show all available dishes (reversed order - newest first)
-        const availableDishes = dishes.filter((dish) => dish.isAvailable);
-        setFilteredDishes([...availableDishes].reverse());
+        // Show all available dishes
+        filtered = dishes.filter((dish) => dish.isAvailable);
       } else if (selectedCategory && typeof selectedCategory === "object") {
-        // Show dishes from selected category (reversed order - newest first)
-        const categoryDishes = dishes.filter(
+        // Show dishes from selected category
+        filtered = dishes.filter(
           (dish) =>
             dish.category._id === selectedCategory._id && dish.isAvailable
         );
-        setFilteredDishes([...categoryDishes].reverse());
       }
+      
+      // Apply search filter if search term exists
+      if (searchTerm.trim()) {
+        filtered = filtered.filter((dish) =>
+          dish.name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+      
+      // Reverse to show newest first
+      setFilteredDishes([...filtered].reverse());
     }
-  }, [selectedCategory, dishes]);
+  }, [selectedCategory, dishes, searchTerm]);
 
   const handleCategorySelect = (category) => {
     setSelectedCategory(category);
@@ -90,20 +101,20 @@ const MenuContainer = () => {
           onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
         >
           <h2 className="text-[#f5f5f5] text-base sm:text-lg font-semibold flex items-center gap-2">
-            <MdCategory size={18} className="sm:hidden" />
-            <MdCategory size={20} className="hidden sm:block" />
-            Categories
+          <MdCategory size={18} className="sm:hidden" />
+          <MdCategory size={20} className="hidden sm:block" />
+          Categories
             <span className="text-[#ababab] text-sm font-normal">
               ({activeCategories.length + 1} total)
             </span>
-          </h2>
+        </h2>
           <div className="flex items-center gap-2">
             {selectedCategory !== "all" && selectedCategory && (
               <span className="text-xs sm:text-sm text-[#f6b100] bg-[#f6b100]/10 px-2 py-1 rounded-md border border-[#f6b100]/30">
                 {selectedCategory.name}
               </span>
             )}
-            {selectedCategory === "all" && (
+              {selectedCategory === "all" && (
               <span className="text-xs sm:text-sm text-[#f6b100] bg-[#f6b100]/10 px-2 py-1 rounded-md border border-[#f6b100]/30">
                 All Categories
               </span>
@@ -131,29 +142,29 @@ const MenuContainer = () => {
               onSelect={() => handleCategorySelect("all")}
             />
 
-            {/* Regular Categories */}
-            {activeCategories.length === 0 ? (
-              <div className="col-span-full text-center py-8">
-                <MdCategory size={48} className="text-[#343434] mx-auto mb-4" />
-                <p className="text-[#ababab]">No active categories found</p>
-              </div>
-            ) : (
-              activeCategories.map((category) => {
-                const categoryDishCount = dishes.filter(
-                  (dish) => dish.category._id === category._id && dish.isAvailable
-                ).length;
+          {/* Regular Categories */}
+          {activeCategories.length === 0 ? (
+            <div className="col-span-full text-center py-8">
+              <MdCategory size={48} className="text-[#343434] mx-auto mb-4" />
+              <p className="text-[#ababab]">No active categories found</p>
+            </div>
+          ) : (
+            activeCategories.map((category) => {
+              const categoryDishCount = dishes.filter(
+                (dish) => dish.category._id === category._id && dish.isAvailable
+              ).length;
 
-                return (
+              return (
                   <CategoryCard
-                    key={category._id}
+                   key={category._id}
                     category={category}
                     isSelected={selectedCategory?._id === category._id}
                     dishCount={categoryDishCount}
                     onSelect={() => handleCategorySelect(category)}
                   />
-                );
-              })
-            )}
+              );
+            })
+          )}
           </div>
         </div>
       </div>
@@ -179,6 +190,37 @@ const MenuContainer = () => {
           </span>
         </div>
 
+        {/* Search Bar */}
+        <div className="relative mb-4">
+          <div className="relative">
+            <MdSearch 
+              size={20} 
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#ababab]" 
+            />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search dishes by name..."
+              className="w-full bg-[#1a1a1a] text-[#f5f5f5] pl-10 pr-10 py-2.5 rounded-lg border border-[#343434] focus:outline-none focus:border-[#f6b100] transition-colors text-sm"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#ababab] hover:text-[#f5f5f5] transition-colors"
+                title="Clear search"
+              >
+                <MdClose size={20} />
+              </button>
+            )}
+          </div>
+          {searchTerm && (
+            <p className="text-xs text-[#ababab] mt-2">
+              Searching for: <span className="text-[#f6b100]">&quot;{searchTerm}&quot;</span>
+            </p>
+          )}
+        </div>
+
         {filteredDishes.length === 0 ? (
           <div className="text-center py-12">
             <MdRestaurantMenu
@@ -186,15 +228,32 @@ const MenuContainer = () => {
               className="text-[#343434] mx-auto mb-4"
             />
             <h3 className="text-[#ababab] text-lg font-medium mb-2">
-              No dishes available
+              {searchTerm ? "No dishes found" : "No dishes available"}
             </h3>
             <p className="text-[#ababab] text-sm">
-              {selectedCategory === "all"
-                ? "No dishes available at the moment"
-                : selectedCategory && typeof selectedCategory === "object"
-                ? `No available dishes in ${selectedCategory.name} category`
-                : "No dishes available at the moment"}
+              {searchTerm ? (
+                <>
+                  No dishes match &quot;{searchTerm}&quot;
+                  {selectedCategory !== "all" && selectedCategory && (
+                    <> in {selectedCategory.name} category</>
+                  )}
+                </>
+              ) : (
+                selectedCategory === "all"
+                  ? "No dishes available at the moment"
+                  : selectedCategory && typeof selectedCategory === "object"
+                  ? `No available dishes in ${selectedCategory.name} category`
+                  : "No dishes available at the moment"
+              )}
             </p>
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm("")}
+                className="mt-4 px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#e09900] transition-colors text-sm"
+              >
+                Clear Search
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4">

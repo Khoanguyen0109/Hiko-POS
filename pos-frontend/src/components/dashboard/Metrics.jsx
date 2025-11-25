@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchOrders } from "../../redux/slices/orderSlice";
 import { fetchDishes } from "../../redux/slices/dishSlice";
@@ -7,6 +7,7 @@ import { fetchSpendingAnalytics } from "../../redux/slices/spendingSlice";
 import { getTodayDate, formatVND } from "../../utils";
 import { getDateRangeByPeriodVietnam } from "../../utils/dateUtils";
 import PropTypes from "prop-types";
+import { Pie } from "react-chartjs-2";
 import {
   RevenueTrendChart,
   RevenueByCategoryChart,
@@ -30,6 +31,12 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
   const { items: dishes, loading: dishesLoading } = useSelector((state) => state.dishes);
   const { items: categories, loading: categoriesLoading } = useSelector((state) => state.categories);
   const { analyticsData: spendingData, analyticsLoading: spendingLoading } = useSelector((state) => state.spending);
+  
+  // Local state for dish filters
+  const [selectedDishId, setSelectedDishId] = useState("all");
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("all");
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState("all");
+  const [dishSortBy, setDishSortBy] = useState("quantity");
 
   useEffect(() => {
     // Fetch data based on selected date range
@@ -127,6 +134,18 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
     const profit = totalRevenue - totalSpending;
     const profitMargin = totalRevenue > 0 ? ((profit / totalRevenue) * 100).toFixed(1) : 0;
 
+    // Calculate total quantity of all dishes sold across all orders in date range
+    let totalDishesSold = 0;
+    orders?.forEach(order => {
+      order.items?.forEach(item => {
+        totalDishesSold += item.quantity || 0;
+      });
+    });
+
+    // Calculate average dishes per order
+    const totalOrdersCount = orders?.length || 0;
+    const avgDishesPerOrder = totalOrdersCount > 0 ? (totalDishesSold / totalOrdersCount).toFixed(1) : 0;
+
     return [
       { 
         title: "Revenue", 
@@ -161,6 +180,20 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
         value: (orders?.length || 0).toString(), 
         percentage: "16%", 
         color: "#f6b100", 
+        isIncrease: true 
+      },
+      { 
+        title: "Total Dishes Sold", 
+        value: totalDishesSold.toString(), 
+        percentage: "8%", 
+        color: "#1e5a8e", 
+        isIncrease: true 
+      },
+      { 
+        title: "Avg Dishes/Order", 
+        value: avgDishesPerOrder.toString(), 
+        percentage: "items", 
+        color: "#8b5cf6", 
         isIncrease: true 
       },
     ];
@@ -422,6 +455,403 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
           <VendorTrendChart orders={orders} />
           <VendorPerformanceChart orders={orders} />
+        </div>
+
+        {/* Dish Analytics Section */}
+        <div className="mt-8 sm:mt-10 lg:mt-12 mb-6 sm:mb-8">
+          <div className="mb-4 sm:mb-6">
+            <h2 className="font-semibold text-[#f5f5f5] text-lg sm:text-xl mb-1 sm:mb-2">
+              Dish Performance Analytics
+            </h2>
+            <p className="text-xs sm:text-sm text-[#ababab]">
+              Analyze individual dish performance and order distribution
+            </p>
+          </div>
+
+          {/* Filters Panel */}
+          <div className="bg-[#262626] rounded-lg p-4 border border-[#343434] mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              {/* Dish Filter */}
+              <div>
+                <label className="block text-[#ababab] text-xs mb-2">Select Dish</label>
+                <select
+                  value={selectedDishId}
+                  onChange={(e) => setSelectedDishId(e.target.value)}
+                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] px-3 py-2 rounded-lg border border-[#343434] focus:outline-none focus:border-[#f6b100] transition-colors text-xs sm:text-sm"
+                >
+                  <option value="all">All Dishes</option>
+                  {dishes?.map((dish) => (
+                    <option key={dish._id} value={dish._id}>
+                      {dish.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Category Filter */}
+              <div>
+                <label className="block text-[#ababab] text-xs mb-2">Filter by Category</label>
+                <select
+                  value={selectedCategoryFilter}
+                  onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] px-3 py-2 rounded-lg border border-[#343434] focus:outline-none focus:border-[#f6b100] transition-colors text-xs sm:text-sm"
+                >
+                  <option value="all">All Categories</option>
+                  {categories?.filter(cat => cat.isActive).map((category) => (
+                    <option key={category._id} value={category._id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Order Status Filter */}
+              <div>
+                <label className="block text-[#ababab] text-xs mb-2">Filter by Status</label>
+                <select
+                  value={selectedStatusFilter}
+                  onChange={(e) => setSelectedStatusFilter(e.target.value)}
+                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] px-3 py-2 rounded-lg border border-[#343434] focus:outline-none focus:border-[#f6b100] transition-colors text-xs sm:text-sm"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="completed">Completed</option>
+                  <option value="pending">Pending</option>
+                  <option value="progress">In Progress</option>
+                  <option value="ready">Ready</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              {/* Sort By */}
+              <div>
+                <label className="block text-[#ababab] text-xs mb-2">Sort By</label>
+                <select
+                  value={dishSortBy}
+                  onChange={(e) => setDishSortBy(e.target.value)}
+                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] px-3 py-2 rounded-lg border border-[#343434] focus:outline-none focus:border-[#f6b100] transition-colors text-xs sm:text-sm"
+                >
+                  <option value="quantity">Highest Quantity</option>
+                  <option value="revenue">Highest Revenue</option>
+                  <option value="orders">Most Orders</option>
+                  <option value="name">Dish Name (A-Z)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Active Filters Display */}
+            {(selectedDishId !== "all" || selectedCategoryFilter !== "all" || selectedStatusFilter !== "all") && (
+              <div className="mt-3 pt-3 border-t border-[#343434]">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[#ababab] text-xs">Active Filters:</span>
+                  {selectedDishId !== "all" && (
+                    <span className="bg-blue-500/20 text-blue-400 px-2 py-1 rounded-md text-xs border border-blue-500/30">
+                      Dish: {dishes?.find(d => d._id === selectedDishId)?.name}
+                    </span>
+                  )}
+                  {selectedCategoryFilter !== "all" && (
+                    <span className="bg-purple-500/20 text-purple-400 px-2 py-1 rounded-md text-xs border border-purple-500/30">
+                      Category: {categories?.find(c => c._id === selectedCategoryFilter)?.name}
+                    </span>
+                  )}
+                  {selectedStatusFilter !== "all" && (
+                    <span className="bg-green-500/20 text-green-400 px-2 py-1 rounded-md text-xs border border-green-500/30">
+                      Status: {selectedStatusFilter.charAt(0).toUpperCase() + selectedStatusFilter.slice(1)}
+                    </span>
+                  )}
+                  <button
+                    onClick={() => {
+                      setSelectedDishId("all");
+                      setSelectedCategoryFilter("all");
+                      setSelectedStatusFilter("all");
+                    }}
+                    className="text-red-400 hover:text-red-300 text-xs underline ml-2"
+                  >
+                    Clear All
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Dish Metrics Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {(() => {
+              // Apply all filters to orders
+              let filteredOrders = orders;
+
+              // Filter by order status
+              if (selectedStatusFilter !== "all") {
+                filteredOrders = filteredOrders?.filter(order => order.orderStatus === selectedStatusFilter);
+              }
+
+              // Filter by dish or category
+              if (selectedDishId !== "all") {
+                filteredOrders = filteredOrders?.filter(order => 
+                  order.items?.some(item => {
+                    const dishId = typeof item.dishId === 'object' ? item.dishId._id : item.dishId;
+                    return dishId === selectedDishId;
+                  })
+                );
+              } else if (selectedCategoryFilter !== "all") {
+                filteredOrders = filteredOrders?.filter(order => 
+                  order.items?.some(item => {
+                    const categoryId = typeof item.dishId === 'object' && item.dishId.category 
+                      ? (typeof item.dishId.category === 'object' ? item.dishId.category._id : item.dishId.category)
+                      : item.category;
+                    return categoryId === selectedCategoryFilter || item.category === categories?.find(c => c._id === selectedCategoryFilter)?.name;
+                  })
+                );
+              }
+
+              // Calculate metrics based on filtered orders
+              let totalQuantity = 0;
+              let totalRevenue = 0;
+              let orderCount = filteredOrders?.length || 0;
+
+              filteredOrders?.forEach(order => {
+                order.items?.forEach(item => {
+                  // Check if item matches filters
+                  const dishId = typeof item.dishId === 'object' ? item.dishId._id : item.dishId;
+                  const categoryId = typeof item.dishId === 'object' && item.dishId.category 
+                    ? (typeof item.dishId.category === 'object' ? item.dishId.category._id : item.dishId.category)
+                    : item.category;
+                  const categoryName = categories?.find(c => c._id === selectedCategoryFilter)?.name;
+
+                  let includeItem = true;
+
+                  // Check dish filter
+                  if (selectedDishId !== "all" && dishId !== selectedDishId) {
+                    includeItem = false;
+                  }
+
+                  // Check category filter
+                  if (selectedCategoryFilter !== "all" && selectedDishId === "all") {
+                    if (categoryId !== selectedCategoryFilter && item.category !== categoryName) {
+                      includeItem = false;
+                    }
+                  }
+
+                  if (includeItem) {
+                    totalQuantity += item.quantity || 0;
+                    totalRevenue += item.price || 0;
+                  }
+                });
+              });
+
+              const avgQuantityPerOrder = orderCount > 0 ? (totalQuantity / orderCount).toFixed(1) : 0;
+
+              return (
+                <>
+                  <div className="bg-[#262626] rounded-lg p-4 sm:p-5 border border-[#343434]">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
+                        <span className="text-blue-400 text-base sm:text-lg">📦</span>
+                      </div>
+                      <span className="text-[#ababab] text-xs">Total</span>
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-bold text-[#f5f5f5] mb-1">
+                      {totalQuantity}
+                    </h3>
+                    <p className="text-[#ababab] text-xs sm:text-sm">Dishes Sold</p>
+                  </div>
+
+                  <div className="bg-[#262626] rounded-lg p-4 sm:p-5 border border-[#343434]">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-green-500/20 rounded-full flex items-center justify-center">
+                        <span className="text-green-400 text-base sm:text-lg">💰</span>
+                      </div>
+                      <span className="text-[#ababab] text-xs">Revenue</span>
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-bold text-[#f5f5f5] mb-1">
+                      {formatVND(totalRevenue)}
+                    </h3>
+                    <p className="text-[#ababab] text-xs sm:text-sm">Total Revenue</p>
+                  </div>
+
+                  <div className="bg-[#262626] rounded-lg p-4 sm:p-5 border border-[#343434]">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-yellow-500/20 rounded-full flex items-center justify-center">
+                        <span className="text-yellow-400 text-base sm:text-lg">📋</span>
+                      </div>
+                      <span className="text-[#ababab] text-xs">Orders</span>
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-bold text-[#f5f5f5] mb-1">
+                      {orderCount}
+                    </h3>
+                    <p className="text-[#ababab] text-xs sm:text-sm">Total Orders</p>
+                  </div>
+
+                  <div className="bg-[#262626] rounded-lg p-4 sm:p-5 border border-[#343434]">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-500/20 rounded-full flex items-center justify-center">
+                        <span className="text-purple-400 text-base sm:text-lg">📊</span>
+                      </div>
+                      <span className="text-[#ababab] text-xs">Average</span>
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-bold text-[#f5f5f5] mb-1">
+                      {avgQuantityPerOrder}
+                    </h3>
+                    <p className="text-[#ababab] text-xs sm:text-sm">Avg per Order</p>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+
+          {/* Dish Orders Pie Chart */}
+          <div className="bg-[#262626] rounded-lg p-4 sm:p-6 border border-[#343434]">
+            <h3 className="text-[#f5f5f5] font-semibold text-base sm:text-lg mb-4">
+              {selectedDishId === "all" ? "Top Dishes Distribution" : "Order Distribution"}
+            </h3>
+            {(() => {
+              // Apply filters to orders for chart
+              let filteredChartOrders = orders;
+
+              // Filter by order status
+              if (selectedStatusFilter !== "all") {
+                filteredChartOrders = filteredChartOrders?.filter(order => order.orderStatus === selectedStatusFilter);
+              }
+
+              // Prepare pie chart data
+              let chartData;
+              
+              if (selectedDishId === "all") {
+                // Show top dishes with filters applied
+                const dishSales = {};
+                const categoryName = categories?.find(c => c._id === selectedCategoryFilter)?.name;
+                
+                filteredChartOrders?.forEach(order => {
+                  order.items?.forEach(item => {
+                    const dishId = typeof item.dishId === 'object' ? item.dishId._id : item.dishId;
+                    const dishName = item.name;
+                    const categoryId = typeof item.dishId === 'object' && item.dishId.category 
+                      ? (typeof item.dishId.category === 'object' ? item.dishId.category._id : item.dishId.category)
+                      : item.category;
+                    
+                    // Apply category filter if set
+                    if (selectedCategoryFilter !== "all") {
+                      if (categoryId !== selectedCategoryFilter && item.category !== categoryName) {
+                        return; // Skip this item
+                      }
+                    }
+                    
+                    if (!dishSales[dishId]) {
+                      dishSales[dishId] = { 
+                        name: dishName, 
+                        quantity: 0, 
+                        revenue: 0, 
+                        orders: new Set() 
+                      };
+                    }
+                    dishSales[dishId].quantity += item.quantity || 0;
+                    dishSales[dishId].revenue += item.price || 0;
+                    dishSales[dishId].orders.add(order._id);
+                  });
+                });
+
+                // Convert orders Set to count
+                Object.values(dishSales).forEach(dish => {
+                  dish.orderCount = dish.orders.size;
+                  delete dish.orders;
+                });
+
+                // Sort based on selected sort option
+                let sortedDishes = Object.values(dishSales);
+                switch (dishSortBy) {
+                  case "quantity":
+                    sortedDishes.sort((a, b) => b.quantity - a.quantity);
+                    break;
+                  case "revenue":
+                    sortedDishes.sort((a, b) => b.revenue - a.revenue);
+                    break;
+                  case "orders":
+                    sortedDishes.sort((a, b) => b.orderCount - a.orderCount);
+                    break;
+                  case "name":
+                    sortedDishes.sort((a, b) => a.name.localeCompare(b.name));
+                    break;
+                  default:
+                    sortedDishes.sort((a, b) => b.quantity - a.quantity);
+                }
+
+                const topDishes = sortedDishes.slice(0, 10);
+
+                chartData = {
+                  labels: topDishes.map(d => d.name),
+                  datasets: [{
+                    data: topDishes.map(d => d.quantity),
+                    backgroundColor: [
+                      '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
+                      '#EC4899', '#14B8A6', '#F97316', '#6366F1', '#84CC16'
+                    ],
+                    borderColor: '#1f1f1f',
+                    borderWidth: 2,
+                  }]
+                };
+              } else {
+                // Show order status distribution for selected dish
+                const statusCounts = { completed: 0, pending: 0, progress: 0, ready: 0, cancelled: 0 };
+                filteredChartOrders?.forEach(order => {
+                  const hasDish = order.items?.some(item => {
+                    const dishId = typeof item.dishId === 'object' ? item.dishId._id : item.dishId;
+                    return dishId === selectedDishId;
+                  });
+                  if (hasDish) {
+                    statusCounts[order.orderStatus] = (statusCounts[order.orderStatus] || 0) + 1;
+                  }
+                });
+
+                chartData = {
+                  labels: Object.keys(statusCounts).map(s => s.charAt(0).toUpperCase() + s.slice(1)),
+                  datasets: [{
+                    data: Object.values(statusCounts),
+                    backgroundColor: ['#10B981', '#F59E0B', '#3B82F6', '#8B5CF6', '#EF4444'],
+                    borderColor: '#1f1f1f',
+                    borderWidth: 2,
+                  }]
+                };
+              }
+
+              const options = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'bottom',
+                    labels: {
+                      color: '#f5f5f5',
+                      padding: 15,
+                      font: { size: 12 }
+                    }
+                  },
+                  tooltip: {
+                    backgroundColor: '#1f1f1f',
+                    titleColor: '#f5f5f5',
+                    bodyColor: '#f5f5f5',
+                    borderColor: '#343434',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: true,
+                    callbacks: {
+                      label: function(context) {
+                        const label = context.label || '';
+                        const value = context.parsed || 0;
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                        return `${label}: ${value} (${percentage}%)`;
+                      }
+                    }
+                  }
+                }
+              };
+
+              return (
+                <div style={{ height: '400px' }}>
+                  <Pie data={chartData} options={options} />
+                </div>
+              );
+            })()}
+          </div>
         </div>
 
         {/* Spending Analytics Section */}
