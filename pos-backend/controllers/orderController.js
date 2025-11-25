@@ -396,11 +396,18 @@ const getOrders = async (req, res, next) => {
 
 const updateOrder = async (req, res, next) => {
   try {
-    const { orderStatus, paymentMethod, thirdPartyVendor } = req.body;
+    const { orderStatus, paymentMethod, thirdPartyVendor, appliedPromotions } = req.body;
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       const error = createHttpError(404, "Invalid order ID!");
+      return next(error);
+    }
+
+    // Get current order to check if order exists
+    const currentOrder = await Order.findById(id);
+    if (!currentOrder) {
+      const error = createHttpError(404, "Order not found!");
       return next(error);
     }
 
@@ -439,22 +446,92 @@ const updateOrder = async (req, res, next) => {
       updatedFields.push("vendor");
     }
 
+    // Handle promotion updates
+    if (appliedPromotions !== undefined) {
+      // If appliedPromotions is null or empty array, remove promotions
+      if (!appliedPromotions || appliedPromotions.length === 0) {
+        updateFields.appliedPromotions = [];
+        
+        // Recalculate bills without promotions
+        const subtotal = currentOrder.items.reduce((sum, item) => {
+          return sum + (item.originalPrice || item.price);
+        }, 0);
+        
+        const total = subtotal;
+        const tax = currentOrder.bills.tax || 0;
+        const totalWithTax = total + tax;
+        
+        updateFields.bills = {
+          subtotal,
+          promotionDiscount: 0,
+          total,
+          tax,
+          totalWithTax
+        };
+        
+        updatedFields.push("promotions removed");
+      } else {
+        // Validate and apply new promotions
+        if (!Array.isArray(appliedPromotions)) {
+          const error = createHttpError(400, "appliedPromotions must be an array");
+          return next(error);
+        }
+
+        // Calculate subtotal from original prices
+        const subtotal = currentOrder.items.reduce((sum, item) => {
+          return sum + (item.originalPrice || item.price);
+        }, 0);
+
+        // Calculate total discount from all promotions
+        let totalDiscount = 0;
+        const formattedPromotions = appliedPromotions.map(promo => {
+          let discountAmount = 0;
+          
+          // Calculate discount based on promotion type
+          if (promo.type === 'order_percentage') {
+            discountAmount = subtotal * (promo.discount?.percentage || 0) / 100;
+          } else if (promo.type === 'order_fixed') {
+            discountAmount = promo.discount?.fixedAmount || 0;
+          }
+          
+          totalDiscount += discountAmount;
+          
+          return {
+            promotionId: promo.promotionId || promo._id,
+            name: promo.name,
+            type: promo.type,
+            discountAmount,
+            code: promo.code,
+            appliedToItems: promo.appliedToItems || []
+          };
+        });
+
+        const total = Math.max(0, subtotal - totalDiscount);
+        const tax = currentOrder.bills.tax || 0;
+        const totalWithTax = total + tax;
+
+        updateFields.appliedPromotions = formattedPromotions;
+        updateFields.bills = {
+          subtotal,
+          promotionDiscount: totalDiscount,
+          total,
+          tax,
+          totalWithTax
+        };
+        
+        updatedFields.push("promotions");
+      }
+    }
+
     // Ensure at least one field is being updated
     if (Object.keys(updateFields).length === 0) {
-      const error = createHttpError(400, "At least one field (orderStatus, paymentMethod, or thirdPartyVendor) must be provided");
+      const error = createHttpError(400, "At least one field (orderStatus, paymentMethod, thirdPartyVendor, or appliedPromotions) must be provided");
       return next(error);
     }
 
     // Update message based on what was updated
     if (updatedFields.length > 0) {
       updateMessage = `Order ${updatedFields.join(", ")} updated successfully`;
-    }
-
-    // Get current order to check if order exists and for ingredient export logic
-    const currentOrder = await Order.findById(id);
-    if (!currentOrder) {
-      const error = createHttpError(404, "Order not found!");
-      return next(error);
     }
 
     // If completing an order, ensure payment method is set

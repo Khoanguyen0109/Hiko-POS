@@ -377,7 +377,7 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-10 lg:mb-12">
           <PaymentMethodChart orders={orders} />
           <div className="lg:col-span-2">
-            <TopDishesChart orders={orders} limit={8} />
+            <TopDishesChart orders={orders} />
           </div>
         </div>
 

@@ -38,11 +38,12 @@ export const getOrders = (params = {}) => {
   return axiosWrapper.get(`/api/order${queryString ? `?${queryString}` : ''}`);
 };
 export const getOrderById = (orderId) => axiosWrapper.get(`/api/order/${orderId}`);
-export const updateOrderStatus = ({ orderId, orderStatus, paymentMethod, thirdPartyVendor }) => {
+export const updateOrderStatus = ({ orderId, orderStatus, paymentMethod, thirdPartyVendor, appliedPromotions }) => {
   const updateData = {};
   if (orderStatus !== undefined) updateData.orderStatus = orderStatus;
   if (paymentMethod !== undefined) updateData.paymentMethod = paymentMethod;
   if (thirdPartyVendor !== undefined) updateData.thirdPartyVendor = thirdPartyVendor;
+  if (appliedPromotions !== undefined) updateData.appliedPromotions = appliedPromotions;
   return axiosWrapper.put(`/api/order/${orderId}`, updateData);
 };
 export const deleteOrder = (orderId) => axiosWrapper.delete(`/api/order/${orderId}`);

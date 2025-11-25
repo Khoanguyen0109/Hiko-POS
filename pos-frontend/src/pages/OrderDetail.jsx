@@ -8,6 +8,12 @@ import {
   MdStore,
   MdStorefront,
   MdDelete,
+  MdExpandMore,
+  MdExpandLess,
+  MdPercent,
+  MdCheck,
+  MdClose,
+  MdAccessTime,
 } from "react-icons/md";
 import {
   FaBan,
@@ -19,6 +25,7 @@ import {
   clearCurrentOrder,
   removeOrder,
 } from "../redux/slices/orderSlice";
+import { fetchPromotions } from "../redux/slices/promotionSlice";
 import { enqueueSnackbar } from "notistack";
 import { formatVND } from "../utils";
 import { getStoredUser } from "../utils/auth";
@@ -31,7 +38,10 @@ const OrderDetail = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { currentOrder, loading, error } = useSelector((state) => state.orders);
+  const { items: promotions, loading: promotionsLoading } = useSelector(state => state.promotions);
   const [selectedVendor, setSelectedVendor] = useState("");
+  const [isCouponAccordionOpen, setIsCouponAccordionOpen] = useState(false);
+  const [selectedPromotion, setSelectedPromotion] = useState(null);
 
   // Get user role for admin checking
   const user = getStoredUser();
@@ -41,6 +51,9 @@ const OrderDetail = () => {
     if (orderId) {
       dispatch(fetchOrderById(orderId));
     }
+    
+    // Fetch available promotions
+    dispatch(fetchPromotions({ isActive: true, limit: 50 }));
 
     // Cleanup on unmount
     return () => {
@@ -51,6 +64,13 @@ const OrderDetail = () => {
   useEffect(() => {
     if (currentOrder) {
       setSelectedVendor(currentOrder.thirdPartyVendor || "None");
+      
+      // Set selected promotion from order's applied promotions
+      if (currentOrder.appliedPromotions && currentOrder.appliedPromotions.length > 0) {
+        setSelectedPromotion(currentOrder.appliedPromotions[0]);
+      } else {
+        setSelectedPromotion(null);
+      }
     }
   }, [currentOrder]);
 
@@ -138,6 +158,84 @@ const OrderDetail = () => {
     }
   };
 
+  const handleApplyCoupon = (promotion) => {
+    setSelectedPromotion(promotion);
+    setIsCouponAccordionOpen(false);
+    
+    // Immediately apply the coupon
+    dispatch(updateOrder({ 
+      orderId, 
+      appliedPromotions: [promotion]
+    }))
+      .unwrap()
+      .then(() => {
+        enqueueSnackbar("Coupon applied successfully!", { variant: "success" });
+      })
+      .catch((error) => {
+        enqueueSnackbar(error, { variant: "error" });
+        // Revert on error
+        setSelectedPromotion(null);
+      });
+  };
+
+  const handleRemoveCoupon = () => {
+    setSelectedPromotion(null);
+    
+    // Immediately remove the coupon
+    dispatch(updateOrder({ 
+      orderId, 
+      appliedPromotions: []
+    }))
+      .unwrap()
+      .then(() => {
+        enqueueSnackbar("Coupon removed successfully!", { variant: "success" });
+      })
+      .catch((error) => {
+        enqueueSnackbar(error, { variant: "error" });
+        // Revert on error
+        if (currentOrder?.appliedPromotions?.[0]) {
+          setSelectedPromotion(currentOrder.appliedPromotions[0]);
+        }
+      });
+  };
+
+  const formatDiscount = (coupon) => {
+    if (!coupon) return '';
+    
+    if (coupon.type === 'happy_hour') {
+      if (coupon.discount?.percentage) {
+        return `${coupon.discount.percentage}% off (Happy Hour)`;
+      }
+      if (coupon.discount?.fixedAmount) {
+        return `${formatVND(coupon.discount.fixedAmount)} off (Happy Hour)`;
+      }
+      if (coupon.discount?.uniformPrice) {
+        return `${formatVND(coupon.discount.uniformPrice)} each (Happy Hour)`;
+      }
+      return 'Happy Hour Special';
+    }
+    if (coupon.discount?.percentage) {
+      return `${coupon.discount.percentage}% off`;
+    }
+    if (coupon.discount?.fixedAmount) {
+      return `${formatVND(coupon.discount.fixedAmount)} off`;
+    }
+    return 'Discount';
+  };
+
+  // Filter active coupons that are currently valid
+  const activeCoupons = promotions.filter(promotion => {
+    const now = new Date();
+    const startDate = new Date(promotion.startDate);
+    const endDate = new Date(promotion.endDate);
+    
+    return promotion.isActive && 
+           now >= startDate && 
+           now <= endDate &&
+           (promotion.type === 'order_percentage' || 
+            promotion.type === 'order_fixed');
+  });
+
   if (loading && !currentOrder) return <FullScreenLoader />;
 
   if (error && !currentOrder) {
@@ -181,44 +279,44 @@ const OrderDetail = () => {
         <div className="flex flex-col gap-4 w-full">
           {/* Third Party Vendor Selection */}
           <div className="flex flex-col gap-2">
-            <label className="text-[#ababab] text-xs font-medium">
+                <label className="text-[#ababab] text-xs font-medium">
               Order Source / Vendor
-            </label>
+                </label>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setSelectedVendor("None")}
                 disabled={loading}
-                className={`px-4 py-2 rounded-lg font-medium transition-all text-sm flex items-center gap-2 ${
+                className={`px-3 py-2 rounded-md font-medium transition-all text-xs flex items-center gap-1.5 ${
                   selectedVendor === "None"
                     ? "bg-blue-600 text-white border-2 border-blue-400 shadow-lg"
                     : "bg-[#262626] text-[#f5f5f5] border border-[#343434] hover:border-blue-500"
                 }`}
               >
-                <MdStore size={16} />
+                <MdStore size={14} />
                 Direct
               </button>
               <button
                 onClick={() => setSelectedVendor("Shopee")}
                 disabled={loading}
-                className={`px-4 py-2 rounded-lg font-medium transition-all text-sm flex items-center gap-2 ${
+                className={`px-3 py-2 rounded-md font-medium transition-all text-xs flex items-center gap-1.5 ${
                   selectedVendor === "Shopee"
                     ? "bg-orange-600 text-white border-2 border-orange-400 shadow-lg"
                     : "bg-[#262626] text-[#f5f5f5] border border-[#343434] hover:border-orange-500"
                 }`}
               >
-                <MdStorefront size={16} />
+                <MdStorefront size={14} />
                 Shopee
               </button>
               <button
                 onClick={() => setSelectedVendor("Grab")}
                 disabled={loading}
-                className={`px-4 py-2 rounded-lg font-medium transition-all text-sm flex items-center gap-2 ${
+                className={`px-3 py-2 rounded-md font-medium transition-all text-xs flex items-center gap-1.5 ${
                   selectedVendor === "Grab"
                     ? "bg-green-600 text-white border-2 border-green-400 shadow-lg"
                     : "bg-[#262626] text-[#f5f5f5] border border-[#343434] hover:border-green-500"
                 }`}
               >
-                <MdStore size={16} />
+                <MdStore size={14} />
                 Grab
               </button>
               
@@ -227,12 +325,132 @@ const OrderDetail = () => {
                 <button
                   onClick={() => handleStatusUpdate(null, null)}
                   disabled={loading}
-                  className="px-4 py-2 rounded-lg font-medium transition-all text-sm flex items-center gap-2 bg-[#f6b100] text-[#1f1f1f] hover:bg-[#e09900] border-2 border-[#f6b100] shadow-lg"
+                  className="px-3 py-2 rounded-md font-medium transition-all text-xs flex items-center gap-1.5 bg-[#f6b100] text-[#1f1f1f] hover:bg-[#e09900] border-2 border-[#f6b100] shadow-lg"
                 >
                   Update Vendor
                 </button>
               )}
             </div>
+          </div>
+
+          {/* Coupon Selection */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[#ababab] text-xs font-medium">
+              Apply Coupon / Promotion
+            </label>
+            
+            {/* Applied Coupon Display */}
+            {selectedPromotion ? (
+              <div className={`flex items-center justify-between p-3 rounded-lg ${
+                selectedPromotion.type === 'happy_hour' 
+                  ? 'bg-orange-900/20 border border-orange-500/30' 
+                  : 'bg-green-900/20 border border-green-500/30'
+              }`}>
+                <div className="flex items-center space-x-2 flex-1 min-w-0">
+                  {selectedPromotion.type === 'happy_hour' ? (
+                    <MdAccessTime size={18} className="text-orange-400 flex-shrink-0" />
+                  ) : (
+                    <MdCheck size={18} className="text-green-400 flex-shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[#f5f5f5] text-sm font-medium flex items-center space-x-1 flex-wrap">
+                      <span className="truncate">{selectedPromotion.name}</span>
+                      {selectedPromotion.type === 'happy_hour' && (
+                        <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded-full flex-shrink-0">
+                          Happy Hour
+                    </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-[#ccc]">
+                      {formatDiscount(selectedPromotion)}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={handleRemoveCoupon}
+                  disabled={loading}
+                  className="text-red-400 hover:text-red-300 transition-colors ml-2 flex-shrink-0"
+                  title="Remove coupon"
+                >
+                  <MdClose size={18} />
+                </button>
+              </div>
+            ) : (
+              /* Coupon Selection Accordion */
+              <div className="bg-[#262626] rounded-lg border border-[#343434]">
+                {/* Accordion Header */}
+                <button
+                  onClick={() => setIsCouponAccordionOpen(!isCouponAccordionOpen)}
+                  disabled={loading}
+                  className="w-full flex items-center justify-between p-3 hover:bg-[#2a2a2a] transition-colors rounded-lg focus:outline-none"
+                >
+                  <div className="flex items-center space-x-2">
+                    <MdLocalOffer size={18} className="text-[#f6b100]" />
+                    <span className="text-[#f5f5f5] text-sm font-medium">
+                      {promotionsLoading ? 'Loading...' : `Available Coupons (${activeCoupons.length})`}
+                    </span>
+                  </div>
+                  {isCouponAccordionOpen ? (
+                    <MdExpandLess size={20} className="text-[#ababab]" />
+                  ) : (
+                    <MdExpandMore size={20} className="text-[#ababab]" />
+                  )}
+                </button>
+
+                {/* Accordion Content */}
+                {isCouponAccordionOpen && (
+                  <div className="border-t border-[#343434] p-3">
+                    {promotionsLoading ? (
+                      <div className="text-[#ababab] text-center py-3 text-sm">Loading...</div>
+                    ) : activeCoupons.length === 0 ? (
+                      <div className="text-[#ababab] text-center py-3 text-sm">No coupons available</div>
+                    ) : (
+                      <div className="space-y-2">
+                        {activeCoupons.map(coupon => (
+                          <div
+                            key={coupon._id}
+                            onClick={() => handleApplyCoupon(coupon)}
+                            className="p-3 bg-[#1a1a1a] border border-[#343434] rounded-md hover:border-[#f6b100] hover:bg-[#222] cursor-pointer transition-all"
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex items-start space-x-2 flex-1 min-w-0">
+                                <div className={`flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0 ${
+                                  coupon.type === 'happy_hour' 
+                                    ? 'bg-orange-500/20' 
+                                    : 'bg-[#f6b100]/20'
+                                }`}>
+                                  {coupon.type === 'happy_hour' ? (
+                                    <MdAccessTime size={14} className="text-orange-400" />
+                                  ) : (
+                                    <MdPercent size={14} className="text-[#f6b100]" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-[#f5f5f5] text-sm font-medium flex items-center space-x-1 flex-wrap">
+                                    <span className="truncate">{coupon.name}</span>
+                                  </div>
+                                  <div className="text-xs text-[#ccc]">
+                                    {formatDiscount(coupon)}
+                                    {coupon.conditions?.minOrderAmount && 
+                                      ` • Min: ${formatVND(coupon.conditions.minOrderAmount)}`
+                                    }
+                                  </div>
+                                  {coupon.code && (
+                                    <div className="text-xs text-[#f6b100] mt-1">
+                                      Code: {coupon.code}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Quick Payment Action Buttons */}
@@ -244,37 +462,37 @@ const OrderDetail = () => {
               <button
                 onClick={() => handleStatusUpdate("completed", "Cash")}
                 disabled={loading}
-                className={`px-5 py-3 rounded-lg font-medium transition-all text-sm flex items-center gap-2 ${
+                className={`px-3 py-2 rounded-md font-medium transition-all text-xs flex items-center gap-1.5 ${
                   order.paymentMethod === "Cash" && order.orderStatus === "completed"
                     ? "bg-green-600 text-white border-2 border-green-400 shadow-lg"
                     : "bg-[#262626] text-[#f5f5f5] border border-[#343434] hover:border-green-500"
                 }`}
               >
-                <FaMoneyBillWave size={16} />
+                <FaMoneyBillWave size={14} />
                 Cash Payment
               </button>
               <button
                 onClick={() => handleStatusUpdate("completed", "Banking")}
                 disabled={loading}
-                className={`px-5 py-3 rounded-lg font-medium transition-all text-sm flex items-center gap-2 ${
+                className={`px-3 py-2 rounded-md font-medium transition-all text-xs flex items-center gap-1.5 ${
                   order.paymentMethod === "Banking" && order.orderStatus === "completed"
                     ? "bg-blue-600 text-white border-2 border-blue-400 shadow-lg"
                     : "bg-[#262626] text-[#f5f5f5] border border-[#343434] hover:border-blue-500"
                 }`}
               >
-                <MdAccountBalance size={16} />
+                <MdAccountBalance size={14} />
                 Banking
               </button>
               <button
                 onClick={() => handleStatusUpdate("cancelled", null)}
                 disabled={loading}
-                className={`px-5 py-3 rounded-lg font-medium transition-all text-sm flex items-center gap-2 ${
+                className={`px-3 py-2 rounded-md font-medium transition-all text-xs flex items-center gap-1.5 ${
                   order.orderStatus === "cancelled"
                     ? "bg-red-600 text-white border-2 border-red-400 shadow-lg"
                     : "bg-[#262626] text-[#f5f5f5] border border-[#343434] hover:border-red-500"
                 }`}
               >
-                <FaBan size={16} />
+                <FaBan size={14} />
                 Cancel Order
               </button>
             </div>
@@ -286,10 +504,10 @@ const OrderDetail = () => {
               <button
                 onClick={handleDelete}
                 disabled={loading}
-                className="px-6 py-2.5 bg-red-700 text-white rounded-lg font-medium hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm flex items-center justify-center gap-2 border border-red-600"
+                className="px-4 py-2 bg-red-700 text-white rounded-md font-medium hover:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-xs flex items-center justify-center gap-1.5 border border-red-600"
                 title="Delete Order (Admin Only)"
               >
-                <MdDelete size={18} />
+                <MdDelete size={14} />
                 Delete Order (Admin)
               </button>
             </div>
@@ -297,14 +515,14 @@ const OrderDetail = () => {
 
           {/* Helper Messages */}
           <div className="flex flex-col gap-2">
-            <div className="text-blue-400 bg-blue-900/20 px-3 py-2 rounded-lg border border-blue-500/30 text-xs sm:text-sm">
-              <div className="flex items-start gap-2">
+              <div className="text-blue-400 bg-blue-900/20 px-3 py-2 rounded-lg border border-blue-500/30 text-xs sm:text-sm">
+                <div className="flex items-start gap-2">
                 <span className="text-blue-400 flex-shrink-0 mt-0.5">💡</span>
-                <span>
+                  <span>
                   Use quick action buttons to complete payment or cancel the order. Update vendor if needed.
-                </span>
+                  </span>
+                </div>
               </div>
-            </div>
           </div>
         </div>
       </div>

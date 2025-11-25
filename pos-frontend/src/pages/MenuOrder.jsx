@@ -33,17 +33,6 @@ const MenuOrder = () => {
               Menu
             </h1>
           </div>
-          <div className="flex items-center gap-3 cursor-pointer">
-            <MdRestaurantMenu className="text-[#f5f5f5] text-2xl sm:text-4xl" />
-            <div className="flex flex-col items-start">
-              <h1 className="text-sm sm:text-md text-[#f5f5f5] font-semibold tracking-wide">
-                {customerData.customerName || "Customer Name"}
-              </h1>
-              <p className="text-xs text-[#ababab] font-medium">
-                Table : {customerData.table?.tableNo || "N/A"}
-              </p>
-            </div>
-          </div>
         </div>
 
         <MenuContainer />

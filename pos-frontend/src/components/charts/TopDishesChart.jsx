@@ -20,7 +20,7 @@ ChartJS.register(
   Legend
 );
 
-const TopDishesChart = ({ orders, limit = 10 }) => {
+const TopDishesChart = ({ orders, limit }) => {
   const chartData = useMemo(() => {
     if (!orders || orders.length === 0) {
       return {
@@ -51,10 +51,14 @@ const TopDishesChart = ({ orders, limit = 10 }) => {
       }
     });
 
-    // Sort dishes by quantity sold and get top dishes
-    const sortedDishes = Object.entries(dishSales)
-      .sort(([,a], [,b]) => b - a)
-      .slice(0, limit);
+    // Sort dishes by quantity sold and optionally limit
+    let sortedDishes = Object.entries(dishSales)
+      .sort(([,a], [,b]) => b - a);
+    
+    // Only apply limit if provided
+    if (limit && limit > 0) {
+      sortedDishes = sortedDishes.slice(0, limit);
+    }
 
     const dishNames = sortedDishes.map(([name]) => name);
     const quantities = sortedDishes.map(([, quantity]) => quantity);
@@ -94,7 +98,7 @@ const TopDishesChart = ({ orders, limit = 10 }) => {
       },
       title: {
         display: true,
-        text: `Top ${limit} Selling Dishes`,
+        text: limit ? `Top ${limit} Selling Dishes` : 'All Dishes Sales',
         color: '#f5f5f5',
         font: {
           size: 16,
@@ -138,7 +142,7 @@ const TopDishesChart = ({ orders, limit = 10 }) => {
           font: {
             size: 11
           },
-          callback: function(value, index) {
+          callback: function(value) {
             const label = this.getLabelForValue(value);
             return label.length > 20 ? label.substring(0, 20) + '...' : label;
           }
@@ -151,9 +155,19 @@ const TopDishesChart = ({ orders, limit = 10 }) => {
     },
   };
 
+  // Calculate dynamic height based on number of dishes
+  const chartHeight = useMemo(() => {
+    const dishCount = chartData.labels.length;
+    if (dishCount === 0) return 'h-96';
+    // Minimum height of 384px (h-96), add 30px per dish for better visibility
+    const minHeight = 384;
+    const dynamicHeight = Math.max(minHeight, dishCount * 40 + 100);
+    return `${dynamicHeight}px`;
+  }, [chartData.labels.length]);
+
   return (
     <div className="bg-[#1a1a1a] rounded-lg p-6 border border-[#343434]">
-      <div className="h-96">
+      <div style={{ height: chartHeight }}>
         <Bar data={chartData} options={options} />
       </div>
     </div>

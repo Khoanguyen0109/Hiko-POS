@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { GrRadialSelected } from "react-icons/gr";
-import { MdCategory, MdRestaurantMenu } from "react-icons/md";
+import { MdCategory, MdRestaurantMenu, MdExpandMore, MdExpandLess } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCategories } from "../../redux/slices/categorySlice";
 import { fetchDishes } from "../../redux/slices/dishSlice";
 import defaultDishImage from "../../assets/images/hyderabadibiryani.jpg";
 import DishSelectionModal from "./DishSelectionModal";
+import CategoryCard from "./CategoryCard";
 
 const MenuContainer = () => {
   const dispatch = useDispatch();
@@ -23,6 +23,7 @@ const MenuContainer = () => {
   const [filteredDishes, setFilteredDishes] = useState([]);
   const [selectedDish, setSelectedDish] = useState(null);
   const [isDishModalOpen, setIsDishModalOpen] = useState(false);
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false); // Accordion state
 
   // Fetch data on component mount
   useEffect(() => {
@@ -34,15 +35,16 @@ const MenuContainer = () => {
   useEffect(() => {
     if (dishes.length > 0) {
       if (selectedCategory === "all") {
-        // Show all available dishes
-        setFilteredDishes(dishes.filter((dish) => dish.isAvailable));
+        // Show all available dishes (reversed order - newest first)
+        const availableDishes = dishes.filter((dish) => dish.isAvailable);
+        setFilteredDishes([...availableDishes].reverse());
       } else if (selectedCategory && typeof selectedCategory === "object") {
-        // Show dishes from selected category
+        // Show dishes from selected category (reversed order - newest first)
         const categoryDishes = dishes.filter(
           (dish) =>
             dish.category._id === selectedCategory._id && dish.isAvailable
         );
-        setFilteredDishes(categoryDishes);
+        setFilteredDishes([...categoryDishes].reverse());
       }
     }
   }, [selectedCategory, dishes]);
@@ -80,77 +82,79 @@ const MenuContainer = () => {
 
   return (
     <>
-      {/* Categories Section */}
-      <div className="px-4 sm:px-6 lg:px-10 py-4 overflow-y-auto">
-        <h2 className="text-[#f5f5f5] text-base sm:text-lg font-semibold mb-4 flex items-center gap-2">
-          <MdCategory size={18} className="sm:hidden" />
-          <MdCategory size={20} className="hidden sm:block" />
-          Categories
-        </h2>
-
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
-          {/* All Categories Option */}
-          <div
-            className="flex flex-col items-start justify-between p-2 sm:p-4 rounded-lg h-[70px] sm:h-[100px] cursor-pointer transition-all duration-200 hover:scale-105"
-            style={{
-              backgroundColor: "#f6b100",
-              opacity: selectedCategory === "all" ? 1 : 0.8,
-            }}
-            onClick={() => handleCategorySelect("all")}
-          >
-            <div className="flex items-center justify-between w-full">
-              <h3 className="text-[#1f1f1f] text-sm sm:text-lg font-semibold">
-                All
-              </h3>
-              {selectedCategory === "all" && (
-                <GrRadialSelected className="text-[#1f1f1f]" size={14} />
-              )}
-            </div>
-            <p className="text-[#1f1f1f]/80 text-xs sm:text-sm font-medium">
-              {totalAvailableDishes} Dishes
-            </p>
+      {/* Categories Section with Accordion */}
+      <div className="px-4 sm:px-6 lg:px-10 py-4">
+        {/* Accordion Header */}
+        <div 
+          className="flex items-center justify-between cursor-pointer hover:bg-[#1a1a1a] p-3 rounded-lg transition-colors duration-200 mb-2"
+          onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
+        >
+          <h2 className="text-[#f5f5f5] text-base sm:text-lg font-semibold flex items-center gap-2">
+            <MdCategory size={18} className="sm:hidden" />
+            <MdCategory size={20} className="hidden sm:block" />
+            Categories
+            <span className="text-[#ababab] text-sm font-normal">
+              ({activeCategories.length + 1} total)
+            </span>
+          </h2>
+          <div className="flex items-center gap-2">
+            {selectedCategory !== "all" && selectedCategory && (
+              <span className="text-xs sm:text-sm text-[#f6b100] bg-[#f6b100]/10 px-2 py-1 rounded-md border border-[#f6b100]/30">
+                {selectedCategory.name}
+              </span>
+            )}
+            {selectedCategory === "all" && (
+              <span className="text-xs sm:text-sm text-[#f6b100] bg-[#f6b100]/10 px-2 py-1 rounded-md border border-[#f6b100]/30">
+                All Categories
+              </span>
+            )}
+            {isCategoriesOpen ? (
+              <MdExpandLess size={24} className="text-[#f5f5f5]" />
+            ) : (
+              <MdExpandMore size={24} className="text-[#f5f5f5]" />
+            )}
           </div>
+        </div>
 
-          {/* Regular Categories */}
-          {activeCategories.length === 0 ? (
-            <div className="col-span-full text-center py-8">
-              <MdCategory size={48} className="text-[#343434] mx-auto mb-4" />
-              <p className="text-[#ababab]">No active categories found</p>
-            </div>
-          ) : (
-            activeCategories.map((category) => {
-              const categoryDishCount = dishes.filter(
-                (dish) => dish.category._id === category._id && dish.isAvailable
-              ).length;
+        {/* Accordion Content */}
+        <div 
+          className={`overflow-hidden transition-all duration-300 ease-in-out ${
+            isCategoriesOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
+          }`}
+        >
+          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 pt-2">
+            {/* All Categories Option */}
+            <CategoryCard
+              isAllCategory={true}
+              isSelected={selectedCategory === "all"}
+              dishCount={totalAvailableDishes}
+              onSelect={() => handleCategorySelect("all")}
+            />
 
-              return (
-                 <div
-                   key={category._id}
-                   className="flex flex-col items-start justify-between p-2 sm:p-4 rounded-lg h-[70px] sm:h-[100px] cursor-pointer transition-all duration-200 hover:scale-105"
-                  style={{
-                    backgroundColor: category.color,
-                    opacity: selectedCategory?._id === category._id ? 1 : 0.8,
-                  }}
-                  onClick={() => handleCategorySelect(category)}
-                >
-                   <div className="flex items-center justify-between w-full">
-                     <h3 className="text-white text-sm sm:text-lg font-semibold truncate pr-2">
-                       {category.name}
-                     </h3>
-                     {selectedCategory?._id === category._id && (
-                       <GrRadialSelected
-                         className="text-white flex-shrink-0"
-                         size={14}
-                       />
-                     )}
-                   </div>
-                   <p className="text-white/80 text-xs sm:text-sm font-medium">
-                     {categoryDishCount} Dishes
-                   </p>
-                </div>
-              );
-            })
-          )}
+            {/* Regular Categories */}
+            {activeCategories.length === 0 ? (
+              <div className="col-span-full text-center py-8">
+                <MdCategory size={48} className="text-[#343434] mx-auto mb-4" />
+                <p className="text-[#ababab]">No active categories found</p>
+              </div>
+            ) : (
+              activeCategories.map((category) => {
+                const categoryDishCount = dishes.filter(
+                  (dish) => dish.category._id === category._id && dish.isAvailable
+                ).length;
+
+                return (
+                  <CategoryCard
+                    key={category._id}
+                    category={category}
+                    isSelected={selectedCategory?._id === category._id}
+                    dishCount={categoryDishCount}
+                    onSelect={() => handleCategorySelect(category)}
+                  />
+                );
+              })
+            )}
+          </div>
         </div>
       </div>
 

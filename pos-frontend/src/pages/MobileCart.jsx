@@ -1,16 +1,16 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { MdShoppingCart, MdArrowBack } from "react-icons/md";
-import CustomerInfo from "../components/menu/CustomerInfo";
+import { useSelector } from "react-redux";
+import { MdShoppingCart, MdArrowBack, MdPrint } from "react-icons/md";
+import { FaShoppingCart } from "react-icons/fa";
 import CartInfo from "../components/menu/CartInfo";
 import Bill from "../components/menu/Bill";
-import { useSelector } from "react-redux";
 
 const MobileCart = () => {
   const navigate = useNavigate();
-  const customerData = useSelector((state) => state.customer);
-  
-  const cartItems = useSelector((state) => state.cart);
+  const billRef = useRef();
+  const { loading } = useSelector((state) => state.orders);
+  const cartData = useSelector((state) => state.cart);
 
   useEffect(() => {
     document.title = "POS | Cart";
@@ -20,58 +20,69 @@ const MobileCart = () => {
     navigate(-1); // Go back to previous page (menu)
   };
 
+  const handlePrintReceipt = () => {
+    if (billRef.current) {
+      billRef.current.handlePrintReceipt();
+    }
+  };
+
+  const handlePlaceOrder = () => {
+    if (billRef.current) {
+      billRef.current.handlePlaceOrder();
+    }
+  };
+
   return (
     <section className="bg-[#1f1f1f] pb-20 min-h-screen">
       {/* Mobile Cart Header */}
-      <div className="flex items-center justify-between px-4 py-4 border-b border-[#343434] bg-[#1a1a1a]">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between px-3 py-2.5 border-b border-[#343434] bg-[#1a1a1a]">
+        <div className="flex items-center gap-2">
           <button
             onClick={handleBackToMenu}
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-[#262626] text-[#f5f5f5] hover:bg-[#343434] transition-colors"
+            className="flex items-center justify-center w-8 h-8 rounded-full bg-[#262626] text-[#f5f5f5] hover:bg-[#343434] transition-colors"
           >
-            <MdArrowBack size={20} />
+            <MdArrowBack size={18} />
           </button>
-          <div>
-            <h1 className="text-[#f5f5f5] text-xl font-bold tracking-wider flex items-center gap-2">
-              <MdShoppingCart size={24} />
-              Cart
-            </h1>
-            <p className="text-[#ababab] text-sm">
-              {cartItems?.items?.length || 0} items • {customerData.customerName || "Customer"}
-            </p>
-          </div>
+          <h1 className="text-[#f5f5f5] text-lg font-bold tracking-wider flex items-center gap-2">
+            <MdShoppingCart size={20} />
+            Cart
+          </h1>
         </div>
-        
-        {/* Table Info */}
-        <div className="text-right">
-          <p className="text-[#f5f5f5] text-sm font-medium">
-            Table {customerData.table?.tableNo || "N/A"}
-          </p>
-          <p className="text-[#ababab] text-xs">
-            {customerData.table?.seats || 0} seats
-          </p>
+
+        {/* Action Buttons - Visible only on mobile */}
+        <div className="flex items-center gap-2 md:hidden">
+          <button
+            onClick={handlePrintReceipt}
+            className="flex items-center justify-center w-9 h-9 rounded-lg bg-[#025cca] text-[#f5f5f5] hover:bg-[#0248a3] transition-colors"
+            title="Print Receipt"
+          >
+            <MdPrint size={18} />
+          </button>
+          <button
+            onClick={handlePlaceOrder}
+            disabled={cartData.items?.length === 0 || loading}
+            className="flex items-center justify-center w-9 h-9 rounded-lg bg-[#f6b100] text-[#1f1f1f] hover:bg-[#e09900] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title="Place Order"
+          >
+            <FaShoppingCart size={16} />
+          </button>
         </div>
       </div>
 
       {/* Cart Content */}
       <div className="flex flex-col h-[calc(100vh-140px)]">
-        {/* Customer Info */}
-        {/* <div className="flex-shrink-0">
-          <CustomerInfo />
-        </div> */}
-        
         <hr className="border-[#2a2a2a] border-t-2" />
-        
+
         {/* Cart Items - Scrollable */}
         <div className="flex-1 overflow-y-auto">
           <CartInfo />
         </div>
-        
+
         <hr className="border-[#2a2a2a] border-t-2" />
-        
+
         {/* Bill Section - Fixed at bottom */}
         <div className="flex-shrink-0 bg-[#1a1a1a]">
-          <Bill />
+          <Bill ref={billRef} />
         </div>
       </div>
     </section>

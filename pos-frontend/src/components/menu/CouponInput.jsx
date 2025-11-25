@@ -63,135 +63,114 @@ const CouponSelector = () => {
 
   console.log('appliedCoupon', appliedCoupon)
   return (
-    <div className="bg-[#1a1a1a] rounded-lg border border-[#343434] p-4 mb-4">
-      <div className="flex items-center space-x-2 mb-3">
-        <TagIcon size={20} className="text-[#f6b100]" />
-        <h3 className="text-lg font-semibold text-[#f5f5f5]">Available Coupons</h3>
-      </div>
-
+    <div className="bg-[#262626] rounded-lg border border-[#343434]">
       {/* Applied Coupon Display */}
-      {appliedCoupon && (
-        <div className="mb-4">
-          <div className={`flex items-center justify-between p-3 rounded-md ${
-            appliedCoupon.type === 'happy_hour' 
-              ? 'bg-orange-900/20 border border-orange-500/30' 
-              : 'bg-green-900/20 border border-green-500/30'
-          }`}>
-            <div className="flex items-center space-x-2">
-              {appliedCoupon.type === 'happy_hour' ? (
-                <ClockIcon size={16} className="text-orange-400" />
-              ) : (
-                <CheckIcon size={16} className="text-green-400" />
-              )}
-              <div>
-                <div className="text-[#f5f5f5] font-medium flex items-center space-x-2">
-                  <span>{appliedCoupon.name}</span>
-                  {appliedCoupon.type === 'happy_hour' && (
-                    <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full">
-                      Happy Hour Active
-                    </span>
-                  )}
-                </div>
-                <div className="text-sm text-[#ccc]">
-                  {appliedCoupon.code && `Code: ${appliedCoupon.code} • `}
-                  {formatDiscount(appliedCoupon)}
-                </div>
+      {appliedCoupon ? (
+        <div className={`flex items-center justify-between p-3 rounded-lg ${
+          appliedCoupon.type === 'happy_hour' 
+            ? 'bg-orange-900/20 border border-orange-500/30' 
+            : 'bg-green-900/20 border border-green-500/30'
+        }`}>
+          <div className="flex items-center space-x-2 flex-1 min-w-0">
+            {appliedCoupon.type === 'happy_hour' ? (
+              <ClockIcon size={16} className="text-orange-400 flex-shrink-0" />
+            ) : (
+              <CheckIcon size={16} className="text-green-400 flex-shrink-0" />
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="text-[#f5f5f5] text-sm font-medium flex items-center space-x-1 flex-wrap">
+                <span className="truncate">{appliedCoupon.name}</span>
+                {appliedCoupon.type === 'happy_hour' && (
+                  <span className="text-xs bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                    Happy Hour
+                  </span>
+                )}
+              </div>
+              <div className="text-xs text-[#ccc]">
+                {formatDiscount(appliedCoupon)}
               </div>
             </div>
-            <button
-              onClick={handleRemoveCoupon}
-              className="text-red-400 hover:text-red-300 transition-colors"
-              title="Remove coupon"
-            >
-              <XIcon size={16} />
-            </button>
           </div>
-          {appliedCoupon.description && (
-            <div className="text-sm text-[#ccc] mt-2 px-3">{appliedCoupon.description}</div>
-          )}
+          <button
+            onClick={handleRemoveCoupon}
+            className="text-red-400 hover:text-red-300 transition-colors ml-2 flex-shrink-0"
+            title="Remove coupon"
+          >
+            <XIcon size={16} />
+          </button>
         </div>
-      )}
-
-      {/* Coupon Selection Accordion */}
-      {!appliedCoupon && (
-        <div className="bg-[#262626] rounded-lg border border-[#343434]">
+      ) : (
+        /* Coupon Selection Accordion */
+        <>
           {/* Accordion Header */}
           <button
             onClick={() => setIsAccordionOpen(!isAccordionOpen)}
-            className="w-full flex items-center justify-between p-4 hover:bg-[#2a2a2a] transition-colors rounded-lg focus:outline-none"
+            className="w-full flex items-center justify-between p-3 hover:bg-[#2a2a2a] transition-colors rounded-lg focus:outline-none"
           >
             <div className="flex items-center space-x-2">
-              <PercentIcon size={18} className="text-[#f6b100]" />
-              <span className="text-[#f5f5f5] font-medium">
-                {loading ? 'Loading coupons...' : `Available Coupons (${activeCoupons.length})`}
+              <TagIcon size={16} className="text-[#f6b100]" />
+              <span className="text-[#f5f5f5] text-sm font-medium">
+                {loading ? 'Loading...' : `Coupons (${activeCoupons.length})`}
               </span>
             </div>
             {isAccordionOpen ? (
-              <ExpandLessIcon size={20} className="text-[#ababab]" />
+              <ExpandLessIcon size={18} className="text-[#ababab]" />
             ) : (
-              <ExpandMoreIcon size={20} className="text-[#ababab]" />
+              <ExpandMoreIcon size={18} className="text-[#ababab]" />
             )}
           </button>
 
           {/* Accordion Content */}
           {isAccordionOpen && (
-            <div className="border-t border-[#343434] p-4">
+            <div className="border-t border-[#343434] p-3">
               {loading ? (
-                <div className="text-[#ababab] text-center py-4">Loading available coupons...</div>
+                <div className="text-[#ababab] text-center py-3 text-sm">Loading...</div>
               ) : activeCoupons.length === 0 ? (
-                <div className="text-[#ababab] text-center py-4">No active coupons available</div>
+                <div className="text-[#ababab] text-center py-3 text-sm">No coupons available</div>
               ) : (
-                <div className="space-y-3">
-                  <div className="text-sm text-[#ababab] mb-3">Select a coupon to apply:</div>
+                <div className="space-y-2">
                   {activeCoupons.map(coupon => (
                     <div
                       key={coupon._id}
                       onClick={() => handleSelectCoupon(coupon)}
-                      className="p-3 bg-[#1a1a1a] border border-[#343434] rounded-md hover:border-[#f6b100] hover:bg-[#222] cursor-pointer transition-all"
+                      className="p-2.5 bg-[#1a1a1a] border border-[#343434] rounded-md hover:border-[#f6b100] hover:bg-[#222] cursor-pointer transition-all"
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start space-x-2 flex-1 min-w-0">
+                          <div className={`flex items-center justify-center w-7 h-7 rounded-full flex-shrink-0 ${
                             coupon.type === 'happy_hour' 
                               ? 'bg-orange-500/20' 
                               : 'bg-[#f6b100]/20'
                           }`}>
                             {coupon.type === 'happy_hour' ? (
-                              <ClockIcon size={14} className="text-orange-400" />
+                              <ClockIcon size={12} className="text-orange-400" />
                             ) : (
-                              <PercentIcon size={14} className="text-[#f6b100]" />
+                              <PercentIcon size={12} className="text-[#f6b100]" />
                             )}
                           </div>
-                          <div>
-                            <div className="text-[#f5f5f5] font-medium flex items-center space-x-2">
-                              <span>{coupon.name}</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[#f5f5f5] text-sm font-medium flex items-center space-x-1 flex-wrap">
+                              <span className="truncate">{coupon.name}</span>
                               {coupon.type === 'happy_hour' && (
-                                <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full">
+                                <span className="text-xs bg-orange-500/20 text-orange-400 px-1.5 py-0.5 rounded-full flex-shrink-0">
                                   Happy Hour
                                 </span>
                               )}
                             </div>
-                            <div className="text-sm text-[#ccc]">
-                              {coupon.code && `${coupon.code} • `}
+                            <div className="text-xs text-[#ccc]">
                               {formatDiscount(coupon)}
                               {coupon.conditions?.minOrderAmount && 
-                                ` • Min order: ${coupon.conditions.minOrderAmount.toLocaleString()}₫`
+                                ` • Min: ${coupon.conditions.minOrderAmount.toLocaleString()}₫`
                               }
                             </div>
-                            {coupon.description && (
-                              <div className="text-xs text-[#ababab] mt-1">{coupon.description}</div>
-                            )}
                             {coupon.type === 'happy_hour' && coupon.conditions?.timeSlots && (
-                              <div className="text-xs text-orange-400 mt-1">
-                                Available: {coupon.conditions.timeSlots.map(slot => 
+                              <div className="text-xs text-orange-400 mt-0.5">
+                                {coupon.conditions.timeSlots.map(slot => 
                                   `${slot.start}-${slot.end}`
                                 ).join(', ')}
                               </div>
                             )}
                           </div>
-                        </div>
-                        <div className="text-xs text-[#ababab]">
-                          Expires: {new Date(coupon.endDate).toLocaleDateString()}
                         </div>
                       </div>
                     </div>
@@ -200,7 +179,7 @@ const CouponSelector = () => {
               )}
             </div>
           )}
-        </div>
+        </>
       )}
     </div>
   );
