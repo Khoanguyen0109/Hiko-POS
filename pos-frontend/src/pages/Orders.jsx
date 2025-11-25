@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { MdFilterList, MdRefresh, MdPerson, MdPayment, MdStore } from "react-icons/md";
+import { MdFilterList, MdPerson, MdPayment, MdStore } from "react-icons/md";
 import OrderCard from "../components/orders/OrderCard";
 import BackButton from "../components/shared/BackButton";
 import DateFilter from "../components/shared/DateFilter";
@@ -85,6 +85,11 @@ const Orders = () => {
       params.createdBy = createdBy;
       params.paymentMethod = paymentMethod;
       params.thirdPartyVendor = thirdPartyVendor;
+    } else {
+      // Non-admin users only see today's orders
+      const today = getTodayDate();
+      params.startDate = today;
+      params.endDate = today;
     }
 
     dispatch(setFilters(params));
@@ -154,19 +159,6 @@ const Orders = () => {
     setEndDate(newEndDate);
   };
 
-  const handleRefresh = () => {
-    const params = { status };
-    if (isAdmin) {
-      params.startDate = startDate;
-      params.endDate = endDate;
-      params.createdBy = createdBy;
-      params.paymentMethod = paymentMethod;
-      params.thirdPartyVendor = thirdPartyVendor;
-    }
-    dispatch(fetchOrders(params));
-    enqueueSnackbar("Orders refreshed!", { variant: "success" });
-  };
-
   // Filter orders by status on frontend (createdBy filtering is now done on backend)
   const filteredOrders = orders.filter((order) => {
     // Filter by status
@@ -180,11 +172,6 @@ const Orders = () => {
       key: "progress",
       label: "In Progress",
       count: orders?.filter((o) => o.orderStatus === "progress").length || 0,
-    },
-    {
-      key: "ready",
-      label: "Ready",
-      count: orders?.filter((o) => o.orderStatus === "ready").length || 0,
     },
     {
       key: "completed",
@@ -243,7 +230,6 @@ const Orders = () => {
                   </span>
                 )}
               </span>
-              {loading && <span className="text-[#f6b100]">• Refreshing...</span>}
             </div>
           </div>
         </div>
@@ -297,14 +283,6 @@ const Orders = () => {
               </button>
             </>
           )}
-          <button
-            onClick={handleRefresh}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <MdRefresh size={16} className={loading ? "animate-spin" : ""} />
-            Refresh
-          </button>
         </div>
       </div>
 
@@ -457,14 +435,7 @@ const Orders = () => {
 
       {/* Status Filter Section */}
       <div className="px-4 sm:px-10 py-4 border-b border-[#343434]">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
-          <h3 className="text-[#f5f5f5] text-sm font-semibold">
-            Filter by Status
-          </h3>
-          <span className="text-[#ababab] text-xs">
-            Showing {filteredOrders.length} of {orders.length} orders
-          </span>
-        </div>
+     
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           {statusButtons.map(({ key, label, count }) => (
             <button
