@@ -5,6 +5,7 @@ const {
     createMember, 
     updateMember, 
     deleteMember,
+    toggleMemberActiveStatus,
     getOwnProfile,
     updateOwnProfile,
     changePassword
@@ -30,5 +31,9 @@ router.route("/:id")
     .get(isVerifiedUser, isAdmin, getMemberById)
     .put(isVerifiedUser, isAdmin, updateMember)
     .delete(isVerifiedUser, isAdmin, deleteMember);
+
+// Toggle member active status
+router.route("/:id/toggle-active")
+    .patch(isVerifiedUser, isAdmin, toggleMemberActiveStatus);
 
 module.exports = router; 

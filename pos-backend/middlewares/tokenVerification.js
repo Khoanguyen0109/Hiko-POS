@@ -26,6 +26,12 @@ const isVerifiedUser = async (req, res, next) => {
             return next(error);
         }
 
+        // Check if user account is inactive
+        if(user.isActive === false){
+            const error = createHttpError(403, "Your account has been deactivated. Please contact administrator.");
+            return next(error);
+        }
+
         req.user = user;
         next();
 

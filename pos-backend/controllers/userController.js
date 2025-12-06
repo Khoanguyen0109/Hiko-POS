@@ -58,6 +58,12 @@ const login = async (req, res, next) => {
             return next(error);
         }
 
+        // Check if user account is inactive
+        if(isUserPresent.isActive === false){
+            const error = createHttpError(403, "Your account has been deactivated. Please contact administrator.");
+            return next(error);
+        }
+
         const accessToken = jwt.sign({_id: isUserPresent._id}, config.accessTokenSecret, {
             expiresIn : '1d'
         });
@@ -72,7 +78,8 @@ const login = async (req, res, next) => {
                     name: isUserPresent.name,
                     phone: isUserPresent.phone,
                     email: isUserPresent.email,
-                    role: isUserPresent.role
+                    role: isUserPresent.role,
+                    isActive: isUserPresent.isActive !== false // Default to true if undefined
                 }
             }
         });
@@ -87,6 +94,13 @@ const getUserData = async (req, res, next) => {
     try {
         
         const user = await User.findById(req.user._id);
+        
+        // Check if user account is inactive
+        if(user && user.isActive === false){
+            const error = createHttpError(403, "Your account has been deactivated. Please contact administrator.");
+            return next(error);
+        }
+        
         res.status(200).json({success: true, data: user});
 
     } catch (error) {

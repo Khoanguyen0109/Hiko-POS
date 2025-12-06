@@ -210,6 +210,46 @@ const deleteMember = async (req, res, next) => {
     }
 };
 
+// Admin: Toggle member active status
+const toggleMemberActiveStatus = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            const error = createHttpError(400, "Member ID is required!");
+            return next(error);
+        }
+
+        const member = await User.findById(id);
+        if (!member) {
+            const error = createHttpError(404, "Member not found!");
+            return next(error);
+        }
+
+        // Prevent toggling admin accounts
+        if (member.role === userRoles.ADMIN) {
+            const error = createHttpError(403, "Cannot modify admin accounts!");
+            return next(error);
+        }
+
+        // Toggle the active status
+        member.isActive = !member.isActive;
+        await member.save();
+
+        // Return member data without password
+        const memberData = member.toObject();
+        delete memberData.password;
+
+        res.status(200).json({
+            success: true,
+            message: `Member ${member.isActive ? 'activated' : 'deactivated'} successfully!`,
+            data: memberData
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // Member: Get own profile
 const getOwnProfile = async (req, res, next) => {
     try {
@@ -326,6 +366,7 @@ module.exports = {
     createMember,
     updateMember,
     deleteMember,
+    toggleMemberActiveStatus,
     
     // Member functions
     getOwnProfile,
