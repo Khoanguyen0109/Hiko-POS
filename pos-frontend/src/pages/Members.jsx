@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { MdAdd, MdEdit, MdDelete, MdSearch, MdRefresh } from "react-icons/md";
+import { MdAdd, MdEdit, MdDelete, MdSearch, MdRefresh, MdToggleOn, MdToggleOff } from "react-icons/md";
 import { FaUser, FaEnvelope, FaPhone } from "react-icons/fa";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
-import { fetchMembers, removeMember, clearError } from "../redux/slices/memberSlice";
+import { fetchMembers, removeMember, toggleActiveStatus, clearError } from "../redux/slices/memberSlice";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import BackButton from "../components/shared/BackButton";
 import MemberModal from "../components/members/MemberModal";
@@ -12,10 +12,11 @@ import DeleteConfirmationModal from "../components/shared/DeleteConfirmationModa
 
 const Members = () => {
   const dispatch = useDispatch();
-  const { members, loading, error, deleteLoading } = useSelector((state) => state.members);
+  const { members, loading, error, deleteLoading, toggleLoading } = useSelector((state) => state.members);
   const { role } = useSelector((state) => state.user);
   
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all"); // all, active, inactive
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -40,17 +41,25 @@ const Members = () => {
 
   useEffect(() => {
     if (members.length > 0) {
-      const filtered = members.filter(member =>
+      let filtered = members.filter(member =>
         member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
         member.phone.includes(searchTerm) ||
         member.role.toLowerCase().includes(searchTerm.toLowerCase())
       );
+
+      // Apply status filter
+      if (statusFilter === "active") {
+        filtered = filtered.filter(member => member.isActive !== false);
+      } else if (statusFilter === "inactive") {
+        filtered = filtered.filter(member => member.isActive === false);
+      }
+
       setFilteredMembers(filtered);
     } else {
       setFilteredMembers([]);
     }
-  }, [members, searchTerm]);
+  }, [members, searchTerm, statusFilter]);
 
   const handleCreateMember = () => {
     setSelectedMember(null);
@@ -65,6 +74,16 @@ const Members = () => {
   const handleDeleteMember = (member) => {
     setSelectedMember(member);
     setShowDeleteModal(true);
+  };
+
+  const handleToggleActiveStatus = async (member) => {
+    try {
+      await dispatch(toggleActiveStatus(member._id)).unwrap();
+      const statusText = member.isActive === false ? "activated" : "deactivated";
+      enqueueSnackbar(`Member ${statusText} successfully!`, { variant: "success" });
+    } catch (error) {
+      enqueueSnackbar(error || "Failed to toggle member status", { variant: "error" });
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -144,6 +163,17 @@ const Members = () => {
               className="w-full pl-10 pr-4 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] transition-colors"
             />
           </div>
+          <div className="relative">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-4 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-[#f6b100] transition-colors cursor-pointer min-w-[140px]"
+            >
+              <option value="all">All Members</option>
+              <option value="active">Active Only</option>
+              <option value="inactive">Inactive Only</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -159,6 +189,8 @@ const Members = () => {
                 member={member}
                 onEdit={handleEditMember}
                 onDelete={handleDeleteMember}
+                onToggleActive={handleToggleActiveStatus}
+                toggleLoading={toggleLoading}
               />
             ))}
           </div>
@@ -219,7 +251,9 @@ const Members = () => {
 };
 
 // Member Card Component
-const MemberCard = ({ member, onEdit, onDelete }) => {
+const MemberCard = ({ member, onEdit, onDelete, onToggleActive, toggleLoading }) => {
+  const isActive = member.isActive !== false; // Default to true if undefined
+  
   const getRoleColor = (role) => {
     switch (role?.toLowerCase()) {
       case 'admin':
@@ -251,15 +285,33 @@ const MemberCard = ({ member, onEdit, onDelete }) => {
   };
 
   return (
-    <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434] hover:border-[#f6b100]/30 transition-all duration-200">
+    <div className={`bg-[#1f1f1f] rounded-lg p-6 border transition-all duration-200 ${
+      isActive 
+        ? 'border-[#343434] hover:border-[#f6b100]/30' 
+        : 'border-red-900/50 opacity-75'
+    }`}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <div className="w-12 h-12 bg-[#f6b100] rounded-full flex items-center justify-center">
+        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+          isActive ? 'bg-[#f6b100]' : 'bg-gray-600'
+        }`}>
           <span className="text-[#1f1f1f] font-bold text-lg">
             {member.name?.charAt(0).toUpperCase()}
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => onToggleActive(member)}
+            disabled={toggleLoading}
+            className={`p-2 rounded-lg hover:bg-[#343434] transition-colors ${
+              isActive 
+                ? 'bg-[#262626] text-green-400' 
+                : 'bg-[#262626] text-gray-500'
+            }`}
+            title={isActive ? "Deactivate Member" : "Activate Member"}
+          >
+            {isActive ? <MdToggleOn size={16} /> : <MdToggleOff size={16} />}
+          </button>
           <button
             onClick={() => onEdit(member)}
             className="p-2 bg-[#262626] text-[#f6b100] rounded-lg hover:bg-[#343434] transition-colors"
@@ -280,7 +332,16 @@ const MemberCard = ({ member, onEdit, onDelete }) => {
       {/* Member Info */}
       <div className="space-y-3">
         <div>
-          <h3 className="text-[#f5f5f5] text-lg font-semibold mb-1">{member.name}</h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-[#f5f5f5] text-lg font-semibold">{member.name}</h3>
+            <div className={`px-2 py-1 rounded text-xs font-medium ${
+              isActive 
+                ? 'bg-green-900/30 text-green-400 border border-green-700' 
+                : 'bg-red-900/30 text-red-400 border border-red-700'
+            }`}>
+              {isActive ? 'Active' : 'Inactive'}
+            </div>
+          </div>
           <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${getRoleColor(member.role)}`}>
             <span>{getRoleIcon(member.role)}</span>
             <span>{member.role}</span>
@@ -321,10 +382,13 @@ MemberCard.propTypes = {
     email: PropTypes.string,
     phone: PropTypes.string.isRequired,
     role: PropTypes.string.isRequired,
+    isActive: PropTypes.bool,
     createdAt: PropTypes.string.isRequired
   }).isRequired,
   onEdit: PropTypes.func.isRequired,
-  onDelete: PropTypes.func.isRequired
+  onDelete: PropTypes.func.isRequired,
+  onToggleActive: PropTypes.func.isRequired,
+  toggleLoading: PropTypes.bool.isRequired
 };
 
 export default Members; 

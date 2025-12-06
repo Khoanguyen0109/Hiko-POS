@@ -81,6 +81,7 @@ export const getMemberById = (id) => axiosWrapper.get(`/api/member/${id}`);
 export const createMember = (data) => axiosWrapper.post("/api/member/", data);
 export const updateMember = (id, data) => axiosWrapper.put(`/api/member/${id}`, data);
 export const deleteMember = (id) => axiosWrapper.delete(`/api/member/${id}`);
+export const toggleMemberActiveStatus = (id) => axiosWrapper.patch(`/api/member/${id}/toggle-active`);
 
 // Member Profile Endpoints
 export const getOwnProfile = () => axiosWrapper.get("/api/member/profile");

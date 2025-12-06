@@ -5,6 +5,7 @@ import {
     createMember, 
     updateMember, 
     deleteMember,
+    toggleMemberActiveStatus,
     getOwnProfile,
     updateOwnProfile,
     changePassword
@@ -71,6 +72,18 @@ export const removeMember = createAsyncThunk(
     }
 );
 
+export const toggleActiveStatus = createAsyncThunk(
+    "members/toggleActiveStatus",
+    async (id, { rejectWithValue }) => {
+        try {
+            const response = await toggleMemberActiveStatus(id);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || "Failed to toggle member status");
+        }
+    }
+);
+
 // Async thunks for member profile (All authenticated users)
 export const fetchOwnProfile = createAsyncThunk(
     "members/fetchOwnProfile",
@@ -124,6 +137,7 @@ const initialState = {
     createLoading: false,
     updateLoading: false,
     deleteLoading: false,
+    toggleLoading: false,
     passwordLoading: false,
 };
 
@@ -149,6 +163,7 @@ const memberSlice = createSlice({
             state.createLoading = false;
             state.updateLoading = false;
             state.deleteLoading = false;
+            state.toggleLoading = false;
         },
     },
     extraReducers: (builder) => {
@@ -239,6 +254,29 @@ const memberSlice = createSlice({
             })
             .addCase(removeMember.rejected, (state, action) => {
                 state.deleteLoading = false;
+                state.error = action.payload;
+            });
+
+        // Toggle member active status
+        builder
+            .addCase(toggleActiveStatus.pending, (state) => {
+                state.toggleLoading = true;
+                state.error = null;
+            })
+            .addCase(toggleActiveStatus.fulfilled, (state, action) => {
+                state.toggleLoading = false;
+                const updatedMember = action.payload.data;
+                const index = state.members.findIndex(member => member._id === updatedMember._id);
+                if (index !== -1) {
+                    state.members[index] = updatedMember;
+                }
+                if (state.selectedMember && state.selectedMember._id === updatedMember._id) {
+                    state.selectedMember = updatedMember;
+                }
+                state.error = null;
+            })
+            .addCase(toggleActiveStatus.rejected, (state, action) => {
+                state.toggleLoading = false;
                 state.error = action.payload;
             });
 
