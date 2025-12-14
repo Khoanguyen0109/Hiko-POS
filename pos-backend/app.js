@@ -13,8 +13,9 @@ connectDB();
 // Middlewares
 app.use(cors({
     origin: ['http://localhost:5173', 'https://hiko-pos.vercel.app'],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
 }))
 app.use(express.json()); // parse incoming request in json format
 
@@ -41,6 +42,8 @@ app.use("/api/ingredient", require("./routes/ingredientRoute"));
 app.use("/api/ingredient-transaction", require("./routes/ingredientTransactionRoute"));
 app.use("/api/recipe", require("./routes/dishRecipeRoute"));
 app.use("/api/topping-recipe", require("./routes/toppingRecipeRoute"));
+app.use("/api/shift-template", require("./routes/shiftTemplateRoute"));
+app.use("/api/schedule", require("./routes/scheduleRoute"));
 app.use("/api/test", require("./routes/testRoute"));
 
 // Global Error Handler

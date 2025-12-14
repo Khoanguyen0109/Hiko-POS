@@ -53,11 +53,17 @@ const getMemberById = async (req, res, next) => {
 // Admin: Create new member
 const createMember = async (req, res, next) => {
     try {
-        const { name, email, phone, password, role } = req.body;
+        const { name, email, phone, password, role, salary } = req.body;
 
         // Validate required fields
         if (!name || !email || !phone || !password || !role) {
             const error = createHttpError(400, "All fields are required!");
+            return next(error);
+        }
+
+        // Validate salary if provided
+        if (salary !== undefined && salary < 0) {
+            const error = createHttpError(400, "Salary cannot be negative!");
             return next(error);
         }
 
@@ -87,7 +93,8 @@ const createMember = async (req, res, next) => {
             email: email.trim().toLowerCase(),
             phone: phone.trim(),
             password,
-            role
+            role,
+            salary: salary !== undefined ? salary : 0
         });
 
         await newMember.save();
@@ -110,10 +117,16 @@ const createMember = async (req, res, next) => {
 const updateMember = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { name, email, phone, role } = req.body;
+        const { name, email, phone, role, salary } = req.body;
 
         if (!id) {
             const error = createHttpError(400, "Member ID is required!");
+            return next(error);
+        }
+
+        // Validate salary if provided
+        if (salary !== undefined && salary < 0) {
+            const error = createHttpError(400, "Salary cannot be negative!");
             return next(error);
         }
 
@@ -160,6 +173,7 @@ const updateMember = async (req, res, next) => {
         if (email) updateData.email = email.trim().toLowerCase();
         if (phone) updateData.phone = phone.trim();
         if (role) updateData.role = role;
+        if (salary !== undefined) updateData.salary = salary;
 
         const updatedMember = await User.findByIdAndUpdate(
             id,
