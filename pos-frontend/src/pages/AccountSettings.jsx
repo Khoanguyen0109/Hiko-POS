@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { MdPerson, MdEmail, MdPhone, MdLock, MdSave, MdVisibility, MdVisibilityOff } from "react-icons/md";
+import { MdPerson, MdEmail, MdPhone, MdLock, MdSave, MdVisibility, MdVisibilityOff, MdAttachMoney, MdCalendarToday, MdAccessTime } from "react-icons/md";
 import { enqueueSnackbar } from "notistack";
 import { fetchOwnProfile, updateProfile, updatePassword, clearError } from "../redux/slices/memberSlice";
+import { getMonthlySalary } from "../https/salaryApi";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import BackButton from "../components/shared/BackButton";
 
@@ -30,11 +31,37 @@ const AccountSettings = () => {
   
   const [errors, setErrors] = useState({});
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Salary calculator state
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [salaryData, setSalaryData] = useState(null);
+  const [salaryLoading, setSalaryLoading] = useState(false);
+  const [showShiftDetails, setShowShiftDetails] = useState(false);
 
   useEffect(() => {
     document.title = "POS | Account Settings";
     dispatch(fetchOwnProfile());
   }, [dispatch]);
+
+  const fetchSalaryData = useCallback(async () => {
+    try {
+      setSalaryLoading(true);
+      const response = await getMonthlySalary(selectedYear, selectedMonth);
+      setSalaryData(response.data.data);
+    } catch (error) {
+      console.error('Error fetching salary:', error);
+      enqueueSnackbar(error.response?.data?.message || 'Failed to fetch salary data', { variant: 'error' });
+      setSalaryData(null);
+    } finally {
+      setSalaryLoading(false);
+    }
+  }, [selectedYear, selectedMonth]);
+
+  // Fetch salary data when month/year changes
+  useEffect(() => {
+    fetchSalaryData();
+  }, [fetchSalaryData]);
 
   useEffect(() => {
     if (profileError) {
@@ -216,6 +243,226 @@ const AccountSettings = () => {
       </div>
 
       <div className="max-w-4xl mx-auto space-y-8">
+        {/* Monthly Salary Calculator */}
+        <div className="bg-gradient-to-br from-[#1f1f1f] to-[#1a1a1a] rounded-xl border border-[#343434] shadow-xl overflow-hidden">
+          {/* Header with gradient */}
+          <div className="bg-gradient-to-r from-[#4ECDC4]/10 to-[#f6b100]/10 p-6 border-b border-[#343434]">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-[#f5f5f5] text-2xl font-bold flex items-center gap-3">
+                  <div className="p-2 bg-gradient-to-br from-[#4ECDC4] to-[#f6b100] rounded-lg">
+                    <MdAttachMoney size={24} className="text-[#1f1f1f]" />
+                  </div>
+                  Monthly Salary
+                </h2>
+                <p className="text-[#ababab] text-sm mt-2 ml-14">Track your earnings based on shifts worked</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-6">
+            {/* Month and Year Selector - Enhanced */}
+            <div className="bg-[#262626]/50 rounded-lg p-4 border border-[#3a3a3a]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="flex items-center gap-2 text-[#ababab] text-sm font-medium mb-2">
+                    <MdCalendarToday size={16} />
+                    Select Month
+                  </label>
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                    className="w-full px-4 py-3 bg-[#1f1f1f] text-[#f5f5f5] border border-[#3a3a3a] rounded-lg focus:outline-none focus:border-[#4ECDC4] focus:ring-2 focus:ring-[#4ECDC4]/20 transition-all cursor-pointer hover:border-[#4ECDC4]/50"
+                  >
+                    {Array.from({ length: 12 }, (_, i) => {
+                      const monthDate = new Date(2000, i, 1);
+                      return (
+                        <option key={i + 1} value={i + 1}>
+                          {monthDate.toLocaleString('en-US', { month: 'long' })}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[#ababab] text-sm font-medium mb-2">
+                    Select Year
+                  </label>
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                    className="w-full px-4 py-3 bg-[#1f1f1f] text-[#f5f5f5] border border-[#3a3a3a] rounded-lg focus:outline-none focus:border-[#4ECDC4] focus:ring-2 focus:ring-[#4ECDC4]/20 transition-all cursor-pointer hover:border-[#4ECDC4]/50"
+                  >
+                    {Array.from({ length: 5 }, (_, i) => {
+                      const year = new Date().getFullYear() - 2 + i;
+                      return (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Salary Summary */}
+            {salaryLoading ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[#4ECDC4] mb-4"></div>
+                <p className="text-[#ababab] text-sm">Loading salary data...</p>
+              </div>
+            ) : salaryData ? (
+              <>
+                {/* Summary Cards - Enhanced */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Total Shifts Card */}
+                  <div className="bg-gradient-to-br from-[#262626] to-[#1f1f1f] rounded-xl p-5 border border-[#3a3a3a] hover:border-[#4ECDC4]/50 transition-all">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-[#ababab] text-xs font-medium uppercase tracking-wide">Total Shifts</p>
+                      <MdCalendarToday className="text-[#6a6a6a]" size={18} />
+                    </div>
+                    <p className="text-[#f5f5f5] text-3xl font-bold">{salaryData.summary.totalShifts}</p>
+                    <p className="text-[#6a6a6a] text-xs mt-2">shifts this month</p>
+                  </div>
+
+                  {/* Total Hours Card */}
+                  <div className="bg-gradient-to-br from-[#262626] to-[#1f1f1f] rounded-xl p-5 border border-[#3a3a3a] hover:border-[#f6b100]/50 transition-all">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-[#ababab] text-xs font-medium uppercase tracking-wide">Total Hours</p>
+                      <MdAccessTime className="text-[#6a6a6a]" size={18} />
+                    </div>
+                    <p className="text-[#f6b100] text-3xl font-bold">{salaryData.summary.totalHours}h</p>
+                    <p className="text-[#6a6a6a] text-xs mt-2">hours worked</p>
+                  </div>
+
+                  {/* Hourly Rate Card */}
+                  <div className="bg-gradient-to-br from-[#262626] to-[#1f1f1f] rounded-xl p-5 border border-[#3a3a3a] hover:border-[#4ECDC4]/50 transition-all">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-[#ababab] text-xs font-medium uppercase tracking-wide">Hourly Rate</p>
+                      <MdAttachMoney className="text-[#6a6a6a]" size={18} />
+                    </div>
+                    <p className="text-[#f5f5f5] text-3xl font-bold">${salaryData.summary.hourlyRate}</p>
+                    <p className="text-[#6a6a6a] text-xs mt-2">per hour</p>
+                  </div>
+
+                  {/* Total Salary Card - Highlighted */}
+                  <div className="bg-gradient-to-br from-[#4ECDC4]/20 via-[#4ECDC4]/10 to-[#f6b100]/10 rounded-xl p-5 border-2 border-[#4ECDC4]/50 shadow-lg shadow-[#4ECDC4]/10 hover:shadow-[#4ECDC4]/20 transition-all relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-20 h-20 bg-[#4ECDC4]/10 rounded-full blur-2xl"></div>
+                    <div className="relative z-10">
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-[#4ECDC4] text-xs font-bold uppercase tracking-wide">Total Salary</p>
+                        <MdAttachMoney className="text-[#4ECDC4]" size={20} />
+                      </div>
+                      <p className="text-[#4ECDC4] text-4xl font-bold">${salaryData.summary.totalSalary.toLocaleString()}</p>
+                      <p className="text-[#4ECDC4]/70 text-xs mt-2 font-medium">monthly earnings</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Shift Details Toggle - Enhanced */}
+                {salaryData.shifts && salaryData.shifts.length > 0 && (
+                  <div className="bg-[#262626]/30 rounded-xl border border-[#3a3a3a] overflow-hidden">
+                    <button
+                      onClick={() => setShowShiftDetails(!showShiftDetails)}
+                      className="w-full flex items-center justify-between px-6 py-4 bg-[#262626]/50 hover:bg-[#2a2a2a] transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg transition-all ${showShiftDetails ? 'bg-[#4ECDC4]/20' : 'bg-[#3a3a3a]'}`}>
+                          <MdCalendarToday size={18} className={showShiftDetails ? 'text-[#4ECDC4]' : 'text-[#ababab]'} />
+                        </div>
+                        <div className="text-left">
+                          <span className="text-[#f5f5f5] font-semibold">Shift Details</span>
+                          <p className="text-[#ababab] text-xs mt-0.5">{salaryData.shifts.length} shifts recorded</p>
+                        </div>
+                      </div>
+                      <div className={`p-2 rounded-lg transition-all ${showShiftDetails ? 'bg-[#4ECDC4]/10 rotate-180' : 'bg-[#3a3a3a]'}`}>
+                        <span className="text-[#ababab] font-bold">▼</span>
+                      </div>
+                    </button>
+
+                    {/* Shift Details List - Enhanced */}
+                    {showShiftDetails && (
+                      <div className="p-4 space-y-3 max-h-[500px] overflow-y-auto bg-[#1f1f1f]/50">
+                        {salaryData.shifts.map((shift, index) => (
+                          <div
+                            key={index}
+                            className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-[#262626] rounded-lg hover:bg-[#2a2a2a] transition-all border border-[#3a3a3a] hover:border-[#4ECDC4]/30 group"
+                          >
+                            <div className="flex items-center gap-4 mb-3 sm:mb-0">
+                              <div
+                                className="w-1 h-12 rounded-full group-hover:shadow-lg transition-all"
+                                style={{ 
+                                  backgroundColor: shift.color,
+                                  boxShadow: `0 0 10px ${shift.color}40`
+                                }}
+                              />
+                              <div>
+                                <p className="text-[#f5f5f5] font-semibold text-sm">
+                                  {new Date(shift.date).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    weekday: 'short',
+                                    year: 'numeric'
+                                  })}
+                                </p>
+                                <p className="text-[#ababab] text-xs mt-0.5 flex items-center gap-1">
+                                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: shift.color }}></span>
+                                  {shift.shiftName}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-3 gap-4 sm:gap-6">
+                              <div className="text-center sm:text-right">
+                                <p className="text-[#6a6a6a] text-xs uppercase tracking-wide mb-1">Time</p>
+                                <p className="text-[#f5f5f5] text-sm font-medium flex items-center gap-1 justify-center sm:justify-end">
+                                  <MdAccessTime size={14} className="text-[#4ECDC4]" />
+                                  <span className="text-xs">{shift.startTime}</span>
+                                  <span className="text-[#6a6a6a]">-</span>
+                                  <span className="text-xs">{shift.endTime}</span>
+                                </p>
+                              </div>
+                              <div className="text-center sm:text-right">
+                                <p className="text-[#6a6a6a] text-xs uppercase tracking-wide mb-1">Hours</p>
+                                <p className="text-[#f6b100] text-lg font-bold">{shift.hours}h</p>
+                              </div>
+                              <div className="text-center sm:text-right">
+                                <p className="text-[#6a6a6a] text-xs uppercase tracking-wide mb-1">Earned</p>
+                                <p className="text-[#4ECDC4] text-lg font-bold">
+                                  ${(shift.hours * salaryData.summary.hourlyRate).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* No Shifts Message - Enhanced */}
+                {salaryData.shifts && salaryData.shifts.length === 0 && (
+                  <div className="text-center py-16 bg-[#262626]/30 rounded-xl border border-dashed border-[#3a3a3a]">
+                    <div className="inline-block p-4 bg-[#1f1f1f] rounded-full mb-4">
+                      <MdCalendarToday size={48} className="text-[#3a3a3a]" />
+                    </div>
+                    <p className="text-[#ababab] text-lg font-medium">No shifts assigned for this month</p>
+                    <p className="text-[#6a6a6a] text-sm mt-2 max-w-md mx-auto">
+                      Your salary will be calculated once shifts are assigned to you by the administrator
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="text-center py-16 bg-[#262626]/30 rounded-xl border border-dashed border-[#3a3a3a]">
+                <p className="text-[#ababab] text-lg">Unable to load salary data</p>
+                <p className="text-[#6a6a6a] text-sm mt-2">Please try again later or contact support</p>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Profile Information Section */}
         <div className="bg-[#1f1f1f] rounded-lg border border-[#343434]">
           <div className="p-6 border-b border-[#343434]">
