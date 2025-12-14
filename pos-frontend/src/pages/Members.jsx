@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { MdAdd, MdEdit, MdDelete, MdSearch, MdRefresh, MdToggleOn, MdToggleOff } from "react-icons/md";
+import { MdAdd, MdEdit, MdDelete, MdSearch, MdRefresh, MdToggleOn, MdToggleOff, MdAttachMoney } from "react-icons/md";
 import { FaUser, FaEnvelope, FaPhone } from "react-icons/fa";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
@@ -357,6 +357,12 @@ const MemberCard = ({ member, onEdit, onDelete, onToggleActive, toggleLoading })
             <FaPhone size={14} />
             <span className="text-sm">{member.phone}</span>
           </div>
+          <div className="flex items-center gap-3 text-[#f6b100]">
+            <MdAttachMoney size={14} />
+            <span className="text-sm font-medium">
+              {member.salary ? `${member.salary.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '0.00'}
+            </span>
+          </div>
         </div>
 
         {/* Created Date */}
@@ -382,6 +388,7 @@ MemberCard.propTypes = {
     email: PropTypes.string,
     phone: PropTypes.string.isRequired,
     role: PropTypes.string.isRequired,
+    salary: PropTypes.number,
     isActive: PropTypes.bool,
     createdAt: PropTypes.string.isRequired
   }).isRequired,

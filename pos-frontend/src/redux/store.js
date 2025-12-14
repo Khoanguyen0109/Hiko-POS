@@ -14,6 +14,8 @@ import spendingReducer from "./slices/spendingSlice";
 import ingredientReducer from "./slices/ingredientSlice";
 import recipeReducer from "./slices/recipeSlice";
 import toppingRecipeReducer from "./slices/toppingRecipeSlice";
+import shiftTemplateReducer from "./slices/shiftTemplateSlice";
+import scheduleReducer from "./slices/scheduleSlice";
 
 const store = configureStore({
     reducer: {
@@ -31,7 +33,9 @@ const store = configureStore({
         spending: spendingReducer,
         ingredients: ingredientReducer,
         recipes: recipeReducer,
-        toppingRecipes: toppingRecipeReducer
+        toppingRecipes: toppingRecipeReducer,
+        shiftTemplates: shiftTemplateReducer,
+        schedules: scheduleReducer
     },
 
     devTools: import.meta.env.NODE_ENV !== "production",

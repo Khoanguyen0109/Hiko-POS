@@ -24,6 +24,8 @@ import {
   PromotionManager,
   SpendingManager,
   Ingredients,
+  WeeklySchedule,
+  ShiftTemplates,
 } from "./pages";
 import Header from "./components/shared/Header";
 import { useSelector, useDispatch } from "react-redux";
@@ -61,6 +63,8 @@ const COMPONENT_MAP = {
   PromotionManager,
   SpendingManager,
   Ingredients,
+  WeeklySchedule,
+  ShiftTemplates,
 };
 
 function Layout() {

@@ -7,6 +7,7 @@ import {
   MdEmail,
   MdPhone,
   MdLock,
+  MdAttachMoney,
 } from "react-icons/md";
 import { FormField, FormSelect, Modal, Button } from "../ui";
 import { enqueueSnackbar } from "notistack";
@@ -30,6 +31,7 @@ const MemberModal = ({ isOpen, onClose, mode, member }) => {
     phone: "",
     password: "",
     role: "User",
+    salary: 0,
   });
 
   const [errors, setErrors] = useState({});
@@ -51,6 +53,7 @@ const MemberModal = ({ isOpen, onClose, mode, member }) => {
         phone: member.phone || "",
         password: "", // Don't populate password in edit mode
         role: member.role || "User",
+        salary: member.salary || 0,
       });
     } else {
       setFormData({
@@ -59,6 +62,7 @@ const MemberModal = ({ isOpen, onClose, mode, member }) => {
         phone: "",
         password: "",
         role: "User",
+        salary: 0,
       });
     }
     setErrors({});
@@ -91,6 +95,10 @@ const MemberModal = ({ isOpen, onClose, mode, member }) => {
 
     if (!formData.role) {
       newErrors.role = "Role is required";
+    }
+
+    if (formData.salary !== undefined && formData.salary < 0) {
+      newErrors.salary = "Salary cannot be negative";
     }
 
     setErrors(newErrors);
@@ -128,6 +136,7 @@ const MemberModal = ({ isOpen, onClose, mode, member }) => {
         if (formData.email !== member.email) updateData.email = formData.email;
         if (formData.phone !== member.phone) updateData.phone = formData.phone;
         if (formData.role !== member.role) updateData.role = formData.role;
+        if (formData.salary !== member.salary) updateData.salary = formData.salary;
 
         if (Object.keys(updateData).length === 0) {
           enqueueSnackbar("No changes detected", { variant: "info" });
@@ -150,6 +159,7 @@ const MemberModal = ({ isOpen, onClose, mode, member }) => {
           phone: formData.phone.trim(),
           password: formData.password,
           role: formData.role,
+          salary: formData.salary || 0,
         };
 
         await dispatch(createNewMember(createData)).unwrap();
@@ -261,6 +271,20 @@ const MemberModal = ({ isOpen, onClose, mode, member }) => {
               `${formData.role}: ${roleOptions.find((opt) => opt.value === formData.role)?.description}` :
               "Choose the appropriate role for this member"
             }
+          />
+
+          {/* Salary Field */}
+          <FormField
+            label="Salary"
+            type="number"
+            value={formData.salary}
+            onChange={(e) => handleInputChange({ target: { name: 'salary', value: Number(e.target.value) } })}
+            error={errors.salary}
+            placeholder="Enter salary amount"
+            icon={<MdAttachMoney size={16} />}
+            helpText="Monthly salary in your currency"
+            min="0"
+            step="0.01"
           />
 
           {/* Action Buttons */}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FaHome, FaUsers } from "react-icons/fa";
+import { FaHome, FaUsers, FaCalendarAlt } from "react-icons/fa";
 import { MdOutlineReorder, MdTableBar, MdReceipt } from "react-icons/md";
 import { BiSolidDish } from "react-icons/bi";
 
@@ -109,9 +109,24 @@ const BottomNav = () => {
         </button>
       )}
 
+      {/* Schedules button - Admin only */}
+      {isAdmin && (
+        <button
+          onClick={() => navigate(ROUTES.SCHEDULES)}
+          className={`flex items-center justify-center font-bold ${
+            isActive(ROUTES.SCHEDULES)
+              ? "text-[#f5f5f5] bg-[#343434]"
+              : "text-[#ababab]"
+          } flex-1 max-w-[120px] sm:max-w-[200px] md:max-w-[300px] rounded-[20px] py-2 px-2`}
+        >
+          <FaCalendarAlt className="inline mr-1 sm:mr-2" size={16} /> 
+          <p className="text-sm sm:text-base hidden xs:block">Schedules</p>
+        </button>
+      )}
+
       <button
         onClick={handleCreateOrder}
-        className="absolute bottom-6 right-4 bg-[#F6B100] text-[#f5f5f5] rounded-full p-3 md:p-4 items-center shadow-lg"
+        className="absolute bottom-14 right-4 bg-[#F6B100] text-[#f5f5f5] rounded-full p-3 md:p-4 items-center shadow-lg"
       >
         <BiSolidDish size={32} className="md:hidden" />
         <BiSolidDish size={40} className="hidden md:block" />

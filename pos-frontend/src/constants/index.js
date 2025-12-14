@@ -451,7 +451,9 @@ export const ROUTES = {
   TOPPINGS: "/toppings",
   PROMOTIONS: "/promotions",
   SPENDING: "/spending",
-  INGREDIENTS: "/ingredients"
+  INGREDIENTS: "/ingredients",
+  SCHEDULES: "/schedules",
+  SHIFT_TEMPLATES: "/shift-templates"
 };
 
 // Route configurations for optimized rendering
@@ -534,6 +536,16 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.INGREDIENTS,
     componentName: "Ingredients",
+    adminOnly: true
+  },
+  {
+    path: ROUTES.SCHEDULES,
+    componentName: "WeeklySchedule",
+    adminOnly: true
+  },
+  {
+    path: ROUTES.SHIFT_TEMPLATES,
+    componentName: "ShiftTemplates",
     adminOnly: true
   }
 ];
