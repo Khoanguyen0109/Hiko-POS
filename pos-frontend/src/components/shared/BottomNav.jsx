@@ -49,7 +49,7 @@ const BottomNav = () => {
             : "text-[#ababab]"
         } flex-1 max-w-[120px] sm:max-w-[200px] md:max-w-[300px] rounded-[20px] py-2 px-2`}
       >
-        <FaHome className="inline mr-1 sm:mr-2" size={16} /> 
+        <FaHome className="inline mr-1 sm:mr-2" size={16} />
         <p className="text-sm sm:text-base hidden xs:block">Home</p>
       </button>
 
@@ -62,7 +62,7 @@ const BottomNav = () => {
             : "text-[#ababab]"
         } flex-1 max-w-[120px] sm:max-w-[200px] md:max-w-[300px] rounded-[20px] py-2 px-2`}
       >
-        <MdOutlineReorder className="inline mr-1 sm:mr-2" size={16} /> 
+        <MdOutlineReorder className="inline mr-1 sm:mr-2" size={16} />
         <p className="text-sm sm:text-base hidden xs:block">Orders</p>
       </button>
 
@@ -75,7 +75,7 @@ const BottomNav = () => {
             : "text-[#ababab]"
         } flex-1 max-w-[120px] sm:max-w-[200px] md:max-w-[300px] rounded-[20px] py-2 px-2`}
       >
-        <MdReceipt className="inline mr-1 sm:mr-2" size={16} /> 
+        <MdReceipt className="inline mr-1 sm:mr-2" size={16} />
         <p className="text-sm sm:text-base hidden xs:block">Expenses</p>
       </button>
 
@@ -89,7 +89,7 @@ const BottomNav = () => {
               : "text-[#ababab]"
           } flex-1 max-w-[120px] sm:max-w-[200px] md:max-w-[300px] rounded-[20px] py-2 px-2`}
         >
-          <MdTableBar className="inline mr-1 sm:mr-2" size={16} /> 
+          <MdTableBar className="inline mr-1 sm:mr-2" size={16} />
           <p className="text-sm sm:text-base hidden xs:block">Dishes</p>
         </button>
       )}
@@ -104,25 +104,23 @@ const BottomNav = () => {
               : "text-[#ababab]"
           } flex-1 max-w-[120px] sm:max-w-[200px] md:max-w-[300px] rounded-[20px] py-2 px-2`}
         >
-          <FaUsers className="inline mr-1 sm:mr-2" size={16} /> 
+          <FaUsers className="inline mr-1 sm:mr-2" size={16} />
           <p className="text-sm sm:text-base hidden xs:block">Members</p>
         </button>
       )}
 
-      {/* Schedules button - Admin only */}
-      {isAdmin && (
-        <button
-          onClick={() => navigate(ROUTES.SCHEDULES)}
-          className={`flex items-center justify-center font-bold ${
-            isActive(ROUTES.SCHEDULES)
-              ? "text-[#f5f5f5] bg-[#343434]"
-              : "text-[#ababab]"
-          } flex-1 max-w-[120px] sm:max-w-[200px] md:max-w-[300px] rounded-[20px] py-2 px-2`}
-        >
-          <FaCalendarAlt className="inline mr-1 sm:mr-2" size={16} /> 
-          <p className="text-sm sm:text-base hidden xs:block">Schedules</p>
-        </button>
-      )}
+      {/* Schedules button - All users can view */}
+      <button
+        onClick={() => navigate(ROUTES.SCHEDULES)}
+        className={`flex items-center justify-center font-bold ${
+          isActive(ROUTES.SCHEDULES)
+            ? "text-[#f5f5f5] bg-[#343434]"
+            : "text-[#ababab]"
+        } flex-1 max-w-[120px] sm:max-w-[200px] md:max-w-[300px] rounded-[20px] py-2 px-2`}
+      >
+        <FaCalendarAlt className="inline mr-1 sm:mr-2" size={16} />
+        <p className="text-sm sm:text-base hidden xs:block">Schedules</p>
+      </button>
 
       <button
         onClick={handleCreateOrder}

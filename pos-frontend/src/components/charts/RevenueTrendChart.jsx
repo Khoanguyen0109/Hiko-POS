@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { getCurrentVietnamTime, toVietnamTime, formatVietnamTime } from '../../utils/dateUtils';
+import { getCurrentVietnamTime, toVietnamTime, formatDateForInputVietnam, formatVietnamDateOnly } from '../../utils/dateUtils';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -25,11 +25,13 @@ ChartJS.register(
 );
 
 const RevenueTrendChart = ({ orders, dateRange }) => {
+  console.log('orders', orders);
   const chartData = useMemo(() => {
     if (!orders || orders.length === 0) {
       // Show current date with 0 revenue for empty data
       const today = getCurrentVietnamTime();
-      const todayLabel = formatVietnamTime(today, 'MMM DD');
+      const todayLabel = formatVietnamDateOnly(today);
+      console.log('todayLabel', todayLabel);
       return {
         labels: [todayLabel],
         datasets: [{
@@ -65,26 +67,32 @@ const RevenueTrendChart = ({ orders, dateRange }) => {
         if (isNaN(dateObj.getTime())) {
           dateObj = getCurrentVietnamTime(); // Fallback to current date in Vietnam timezone
         }
-      } catch (error) {
+      } catch {
         dateObj = getCurrentVietnamTime(); // Fallback to current date in Vietnam timezone
       }
       
       // Use Vietnam timezone date string for consistent grouping (YYYY-MM-DD)
-      const dateKey = formatVietnamTime(dateObj, 'YYYY-MM-DD');
+      // This ensures all orders on the same date are grouped together
+      const dateKey = formatDateForInputVietnam(dateObj);
       
       if (!revenueByDate[dateKey]) {
         revenueByDate[dateKey] = 0;
       }
+      // Accumulate revenue for this date
       revenueByDate[dateKey] += order.bills?.totalWithTax || 0;
     });
 
-    // Sort dates and prepare data
-    const sortedDates = Object.keys(revenueByDate).sort((a, b) => new Date(a) - new Date(b));
+    // Debug: Log grouped data
+    console.log('📊 Revenue Grouped by Date:', revenueByDate);
+    console.log('📅 Total dates with orders:', Object.keys(revenueByDate).length);
+
+    // Sort dates chronologically (YYYY-MM-DD format sorts naturally)
+    const sortedDates = Object.keys(revenueByDate).sort();
     
     // If no completed orders, show current date with 0 revenue
     if (sortedDates.length === 0) {
       const today = getCurrentVietnamTime();
-      const todayLabel = formatVietnamTime(today, 'MMM DD');
+      const todayLabel = formatVietnamDateOnly(today, 'MMM DD');
       return {
         labels: [todayLabel],
         datasets: [{
@@ -108,7 +116,10 @@ const RevenueTrendChart = ({ orders, dateRange }) => {
 
     // Format labels based on date range
     const formatLabel = (dateString) => {
-      const d = toVietnamTime(dateString);
+      // dateString is in YYYY-MM-DD format from Vietnam timezone
+      // Parse it as a local date (not UTC) to avoid timezone shifts
+      const [year, month, day] = dateString.split('-').map(Number);
+      const d = new Date(year, month - 1, day); // Create local date
       
       // Ensure we have a valid date
       if (isNaN(d.getTime())) {
@@ -116,17 +127,18 @@ const RevenueTrendChart = ({ orders, dateRange }) => {
         return 'Invalid Date';
       }
       
+      // Format based on date range
       switch (dateRange) {
         case 'today':
-          return formatVietnamTime(d, 'MMM DD');
+          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' });
         case 'week':
-          return formatVietnamTime(d, 'ddd DD');
+          return d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' });
         case 'month':
-          return formatVietnamTime(d, 'MMM DD');
+          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' });
         case 'custom':
-          return formatVietnamTime(d, 'MMM DD');
+          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' });
         default:
-          return formatVietnamTime(d, 'MMM DD');
+          return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'Asia/Ho_Chi_Minh' });
       }
     };
 
@@ -152,6 +164,8 @@ const RevenueTrendChart = ({ orders, dateRange }) => {
       ]
     };
   }, [orders, dateRange]);
+
+  console.log('chartData', chartData);
 
   const options = {
     responsive: true,

@@ -172,7 +172,8 @@ const SpendingAnalytics = ({ dashboardData, loading, error }) => {
                     <p className="text-[#f5f5f5] font-medium text-sm sm:text-base">
                       {new Date(item._id.year, item._id.month - 1).toLocaleDateString('en-US', { 
                         year: 'numeric', 
-                        month: window.innerWidth < 640 ? 'short' : 'long'
+                        month: window.innerWidth < 640 ? 'short' : 'long',
+                        timeZone: 'Asia/Ho_Chi_Minh'
                       })}
                     </p>
                     <p className="text-[#ababab] text-xs sm:text-sm">{item.count} records</p>

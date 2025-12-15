@@ -541,7 +541,6 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.SCHEDULES,
     componentName: "WeeklySchedule",
-    adminOnly: true
   },
   {
     path: ROUTES.SHIFT_TEMPLATES,

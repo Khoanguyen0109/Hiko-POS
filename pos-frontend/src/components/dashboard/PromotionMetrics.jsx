@@ -8,43 +8,43 @@ import {
   MdAttachMoney as MoneyIcon,
   MdBarChart as ChartBarIcon
 } from 'react-icons/md';
+import { toVietnamTime } from '../../utils/dateUtils';
 
 const PromotionMetrics = ({ dateFilter, customDateRange }) => {
   const dispatch = useDispatch();
   const { analytics, loading } = useSelector(state => state.promotions);
 
-  // Convert dashboard date filter to API parameters
+  // Convert dashboard date filter to API parameters (Vietnam timezone)
   const getDateRange = () => {
-    const today = new Date();
+    const today = toVietnamTime(new Date());
     let startDate, endDate;
 
     switch (dateFilter) {
       case 'today':
-        startDate = new Date(today.setHours(0, 0, 0, 0));
-        endDate = new Date(today.setHours(23, 59, 59, 999));
+        startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+        endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
         break;
       case 'week':
         const weekStart = new Date(today);
         weekStart.setDate(today.getDate() - today.getDay());
         weekStart.setHours(0, 0, 0, 0);
         startDate = weekStart;
-        endDate = new Date();
+        endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
         break;
       case 'month':
-        startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-        endDate = new Date();
+        startDate = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
+        endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
         break;
       case 'custom':
         if (customDateRange.startDate && customDateRange.endDate) {
-          startDate = new Date(customDateRange.startDate);
-          endDate = new Date(customDateRange.endDate);
-          endDate.setHours(23, 59, 59, 999);
+          startDate = new Date(customDateRange.startDate + 'T00:00:00');
+          endDate = new Date(customDateRange.endDate + 'T23:59:59');
         }
         break;
       default:
         // Default to today
-        startDate = new Date(today.setHours(0, 0, 0, 0));
-        endDate = new Date(today.setHours(23, 59, 59, 999));
+        startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
+        endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
     }
 
     return {

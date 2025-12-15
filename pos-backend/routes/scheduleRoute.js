@@ -23,28 +23,29 @@ const router = express.Router();
 router.route("/my-schedule")
     .get(isVerifiedUser, getMySchedules);
 
-// Admin routes
+// View routes - All authenticated users can view schedules
+router.route("/week/:year/:week")
+    .get(isVerifiedUser, getSchedulesByWeek);
+
+router.route("/date/:date")
+    .get(isVerifiedUser, getSchedulesByDate);
+
+router.route("/range")
+    .get(isVerifiedUser, getSchedulesByDateRange);
+
+router.route("/member/:memberId")
+    .get(isVerifiedUser, getSchedulesByMember);
+
+// Admin routes - Only admins can create/modify schedules
 router.route("/")
-    .get(isVerifiedUser, isAdmin, getAllSchedules)
+    .get(isVerifiedUser, getAllSchedules)
     .post(isVerifiedUser, isAdmin, createSchedule);
 
 router.route("/bulk")
     .post(isVerifiedUser, isAdmin, bulkCreateSchedules);
 
-router.route("/range")
-    .get(isVerifiedUser, isAdmin, getSchedulesByDateRange);
-
-router.route("/week/:year/:week")
-    .get(isVerifiedUser, isAdmin, getSchedulesByWeek);
-
-router.route("/date/:date")
-    .get(isVerifiedUser, isAdmin, getSchedulesByDate);
-
-router.route("/member/:memberId")
-    .get(isVerifiedUser, isAdmin, getSchedulesByMember);
-
 router.route("/:id")
-    .get(isVerifiedUser, isAdmin, getScheduleById)
+    .get(isVerifiedUser, getScheduleById)
     .put(isVerifiedUser, isAdmin, updateSchedule)
     .delete(isVerifiedUser, isAdmin, deleteSchedule);
 

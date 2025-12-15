@@ -13,6 +13,7 @@ import {
 import { Line } from 'react-chartjs-2';
 import PropTypes from 'prop-types';
 import { formatVND } from '../../utils';
+import { toVietnamTime, formatVietnamTime } from '../../utils/dateUtils';
 
 ChartJS.register(
   CategoryScale,
@@ -34,35 +35,41 @@ const VendorTrendChart = ({ orders }) => {
       };
     }
 
-    // Group orders by date and vendor
+    // Group orders by date and vendor (using Vietnam timezone)
     const dateVendorData = {};
     const completedOrders = orders.filter(order => order.orderStatus === 'completed');
     
     completedOrders.forEach(order => {
-      // Use ISO date string (YYYY-MM-DD) for proper sorting
-      const orderDate = new Date(order.orderDate);
-      const dateKey = orderDate.toISOString().split('T')[0]; // YYYY-MM-DD format
-      const vendor = order.thirdPartyVendor || 'None';
-      const revenue = order.bills?.totalWithTax || 0;
-      
-      if (!dateVendorData[dateKey]) {
-        dateVendorData[dateKey] = {};
+      try {
+        // Use Vietnam timezone for date grouping
+        const orderDate = order.createdAt || order.orderDate || order.date || new Date().toISOString();
+        const dateObj = toVietnamTime(orderDate);
+        
+        // Group by date only (YYYY-MM-DD) in Vietnam timezone
+        const dateKey = formatVietnamTime(dateObj, 'YYYY-MM-DD');
+        const vendor = order.thirdPartyVendor || 'None';
+        const revenue = order.bills?.totalWithTax || 0;
+        
+        if (!dateVendorData[dateKey]) {
+          dateVendorData[dateKey] = {};
+        }
+        
+        if (!dateVendorData[dateKey][vendor]) {
+          dateVendorData[dateKey][vendor] = 0;
+        }
+        
+        dateVendorData[dateKey][vendor] += revenue;
+      } catch (error) {
+        console.warn('Error processing order date in VendorTrendChart:', error);
       }
-      
-      if (!dateVendorData[dateKey][vendor]) {
-        dateVendorData[dateKey][vendor] = 0;
-      }
-      
-      dateVendorData[dateKey][vendor] += revenue;
     });
 
     // Sort dates chronologically (YYYY-MM-DD format sorts naturally)
     const sortedDates = Object.keys(dateVendorData).sort();
     
-    // Format dates for display
+    // Format dates for display using Vietnam timezone
     const displayDates = sortedDates.map(dateKey => {
-      const date = new Date(dateKey + 'T00:00:00');
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return formatVietnamTime(new Date(dateKey), 'MMM DD');
     });
     
     const vendors = ['None', 'Shopee', 'Grab'];

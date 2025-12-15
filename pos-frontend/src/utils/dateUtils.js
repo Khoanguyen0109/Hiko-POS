@@ -251,6 +251,18 @@ export const formatVietnamTime = (date, includeSeconds = false) => {
     return `${dateStr} ${timeStr}`;
 };
 
+// Format Vietnam date only (without time) - DD/MM/YYYY
+export const formatVietnamDateOnly = (date) => {
+    if (!date) return '';
+    const d = toVietnamTime(date);
+    
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    
+    return `${day}/${month}/${year}`;
+};
+
 // Get date range by period preset (Vietnam timezone)
 export const getDateRangeByPeriodVietnam = (period) => {
     const today = toVietnamTime(new Date());
