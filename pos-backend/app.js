@@ -45,6 +45,7 @@ app.use("/api/topping-recipe", require("./routes/toppingRecipeRoute"));
 app.use("/api/shift-template", require("./routes/shiftTemplateRoute"));
 app.use("/api/schedule", require("./routes/scheduleRoute"));
 app.use("/api/salary", require("./routes/salaryRoute"));
+app.use("/api/extra-work", require("./routes/extraWorkRoute"));
 app.use("/api/test", require("./routes/testRoute"));
 
 // Global Error Handler

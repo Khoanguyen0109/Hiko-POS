@@ -1,5 +1,6 @@
 const Schedule = require('../models/scheduleModel');
 const User = require('../models/userModel');
+const ExtraWork = require('../models/extraWorkModel');
 const createHttpError = require('http-errors');
 
 /**
@@ -73,8 +74,43 @@ const getMonthlySalary = async (req, res, next) => {
             }
         }
 
-        // Calculate total salary
-        const totalSalary = totalHours * hourlyRate;
+        // Calculate total salary from regular shifts
+        const regularSalary = totalHours * hourlyRate;
+
+        // Fetch extra work entries for this member in the selected month
+        const extraWorkEntries = await ExtraWork.find({
+            member: memberId,
+            date: {
+                $gte: startDate,
+                $lte: endDate
+            }
+        })
+        .sort({ date: 1 });
+
+        // Calculate extra work totals
+        let extraWorkHours = 0;
+        let extraWorkPayment = 0;
+        const extraWorkDetails = [];
+
+        for (const entry of extraWorkEntries) {
+            extraWorkHours += entry.durationHours || 0;
+            extraWorkPayment += entry.paymentAmount || 0;
+            
+            extraWorkDetails.push({
+                date: entry.date,
+                durationHours: entry.durationHours,
+                workType: entry.workType,
+                description: entry.description,
+                hourlyRate: entry.hourlyRate,
+                paymentAmount: entry.paymentAmount,
+                isApproved: entry.isApproved,
+                isPaid: entry.isPaid
+            });
+        }
+
+        // Calculate combined totals
+        const combinedTotalHours = totalHours + extraWorkHours;
+        const combinedTotalSalary = regularSalary + extraWorkPayment;
 
         res.status(200).json({
             success: true,
@@ -92,11 +128,16 @@ const getMonthlySalary = async (req, res, next) => {
                 },
                 summary: {
                     totalShifts: totalShifts,
-                    totalHours: Math.round(totalHours * 100) / 100, // Round to 2 decimals
+                    regularHours: Math.round(totalHours * 100) / 100,
+                    extraWorkHours: Math.round(extraWorkHours * 100) / 100,
+                    totalHours: Math.round(combinedTotalHours * 100) / 100,
                     hourlyRate: hourlyRate,
-                    totalSalary: Math.round(totalSalary * 100) / 100
+                    regularSalary: Math.round(regularSalary * 100) / 100,
+                    extraWorkPayment: Math.round(extraWorkPayment * 100) / 100,
+                    totalSalary: Math.round(combinedTotalSalary * 100) / 100
                 },
-                shifts: shiftDetails
+                shifts: shiftDetails,
+                extraWork: extraWorkDetails
             }
         });
 

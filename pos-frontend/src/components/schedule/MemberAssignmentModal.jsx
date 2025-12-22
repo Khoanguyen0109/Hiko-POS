@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { enqueueSnackbar } from "notistack";
-import { MdClose, MdPerson, MdCheck } from "react-icons/md";
+import { MdClose, MdPerson, MdCheck, MdAccessTime } from "react-icons/md";
 import { fetchMembers } from "../../redux/slices/memberSlice";
 import { assignMember, unassignMember } from "../../redux/slices/scheduleSlice";
 import FullScreenLoader from "../shared/FullScreenLoader";
+import ExtraWorkModal from "../extrawork/ExtraWorkModal";
 
-const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate }) => {
+const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLogExtraWork }) => {
   const dispatch = useDispatch();
   const { members, loading: membersLoading } = useSelector((state) => state.members);
   const { assignLoading } = useSelector((state) => state.schedules);
@@ -198,12 +199,26 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate }) => 
             <div className="text-sm text-[#ababab]">
               {selectedMembers.length} member(s) assigned
             </div>
-            <button
-              onClick={handleClose}
-              className="px-6 py-2 bg-[#3a3a3a] hover:bg-[#4a4a4a] text-[#f5f5f5] rounded-lg transition-colors"
-            >
-              Done
-            </button>
+            <div className="flex items-center gap-3">
+              {onLogExtraWork && schedule && selectedMembers.length > 0 && (
+                <button
+                  onClick={() => {
+                    handleClose();
+                    onLogExtraWork(schedule.date, selectedMembers[0]);
+                  }}
+                  className="px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#f6b100]/90 transition-colors flex items-center gap-2"
+                  title="Log extra work for assigned members"
+                >
+                  <MdAccessTime size={16} /> Log Extra Work
+                </button>
+              )}
+              <button
+                onClick={handleClose}
+                className="px-6 py-2 bg-[#3a3a3a] hover:bg-[#4a4a4a] text-[#f5f5f5] rounded-lg transition-colors"
+              >
+                Done
+              </button>
+            </div>
           </div>
         </div>
       </div>

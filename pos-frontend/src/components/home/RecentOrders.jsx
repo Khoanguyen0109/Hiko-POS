@@ -9,7 +9,7 @@ import { ROUTES } from "../../constants";
 
 const RecentOrders = () => {
   const dispatch = useDispatch();
-  const { recentOrders, loading, error } = useSelector((state) => state.orders);
+  const { items, loading, error } = useSelector((state) => state.orders);
 
   // Fetch all orders for today
   useEffect(() => {
@@ -23,8 +23,8 @@ const RecentOrders = () => {
 
   // Filter orders for "progress" status on frontend
   const ordersInProgress = useMemo(() => {
-    return recentOrders?.filter(order => order.orderStatus === 'progress') || [];
-  }, [recentOrders]);
+    return items?.filter(order => order.orderStatus === 'progress') || [];
+  }, [items]);
 
   useEffect(() => {
     if (error) {
