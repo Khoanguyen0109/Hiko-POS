@@ -8,6 +8,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { ROUTES } from "../constants";
 import Metrics from "../components/dashboard/Metrics";
 import PromotionMetrics from "../components/dashboard/PromotionMetrics";
+import SalaryMetrics from "../components/dashboard/SalaryMetrics";
 import CategoryModal from "../components/dashboard/CategoryModal";
 import DishModal from "../components/dashboard/DishModal";
 import { getStoredUser } from "../utils/auth";
@@ -227,7 +228,7 @@ const Dashboard = () => {
     ] : []),
   ];
 
-  const tabs = ["Metrics", "Promotions", ...(isAdmin ? ["Spending"] : [])];
+  const tabs = ["Metrics", "Promotions", ...(isAdmin ? ["Spending", "Salary"] : [])];
 
   const dateFilterOptions = [
     { value: "today", label: "Today", icon: <MdToday /> },
@@ -422,6 +423,14 @@ const Dashboard = () => {
           loading={dashboardLoading}
           error={dashboardError}
         />
+      )}
+      {activeTab === "Salary" && isAdmin && (
+        <div className="container mx-auto px-4 md:px-6">
+          <SalaryMetrics 
+            dateFilter={dateFilter}
+            customDateRange={customDateRange}
+          />
+        </div>
       )}
 
       {isCategoryModalOpen && <CategoryModal setIsCategoryModalOpen={setIsCategoryModalOpen} />}

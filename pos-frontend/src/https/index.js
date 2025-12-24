@@ -232,3 +232,9 @@ export {
   markAsPaid,
   getMyExtraWork
 } from "./extraWorkApi";
+
+// Salary Endpoints
+export {
+  getMonthlySalary,
+  getAllMembersSalarySummary
+} from "./salaryApi";

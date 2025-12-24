@@ -52,7 +52,7 @@ const WeeklySchedule = () => {
     // Everyone can view schedules and templates
     dispatch(fetchActiveShiftTemplates());
     dispatch(fetchSchedulesByWeek(currentWeek));
-    
+
     // Only admins need to fetch members (for assignment)
     if (isAdmin) {
       dispatch(fetchMembers());
@@ -66,7 +66,7 @@ const WeeklySchedule = () => {
       if (extraWorkFilters.memberId) filters.memberId = extraWorkFilters.memberId;
       if (extraWorkFilters.startDate) filters.startDate = extraWorkFilters.startDate;
       if (extraWorkFilters.endDate) filters.endDate = extraWorkFilters.endDate;
-      
+
       dispatch(fetchExtraWork(filters));
     }
   }, [dispatch, isAdmin, extraWorkFilters]);
@@ -85,19 +85,19 @@ const WeeklySchedule = () => {
   // Find schedule for a specific date and shift template
   const findSchedule = (date, shiftTemplateId) => {
     if (!schedules || schedules.length === 0) return null;
-    
+
     // Compare dates using LOCAL date strings (YYYY-MM-DD in Vietnam timezone)
     // This ensures calendar dates match schedule dates correctly
     const targetDateStr = getLocalDateString(date);
-    
+
     return schedules.find(schedule => {
       // Backend sends dates as ISO strings, convert to local date string for comparison
       const scheduleDateStr = getLocalDateString(new Date(schedule.date));
-      
-      const scheduleTemplateId = typeof schedule.shiftTemplate === 'string' 
-        ? schedule.shiftTemplate 
+
+      const scheduleTemplateId = typeof schedule.shiftTemplate === 'string'
+        ? schedule.shiftTemplate
         : schedule.shiftTemplate?._id;
-      
+
       return scheduleDateStr === targetDateStr && scheduleTemplateId === shiftTemplateId;
     });
   };
@@ -126,7 +126,7 @@ const WeeklySchedule = () => {
         const scheduleDate = new Date(date);
         const year = scheduleDate.getFullYear();
         const weekNumber = getWeekNumber(scheduleDate);
-        
+
         const result = await dispatch(createNewSchedule({
           date: dateStr, // ISO format
           shiftTemplateId: shiftTemplate._id,
@@ -323,7 +323,7 @@ const WeeklySchedule = () => {
                         </td>
                         {weekDates.map((date, dateIndex) => {
                           const schedule = findSchedule(date, template._id);
-                          
+
                           return (
                             <td
                               key={dateIndex}
@@ -347,45 +347,6 @@ const WeeklySchedule = () => {
             </div>
 
             {/* Instructions */}
-            <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
-              <h4 className="text-[#f5f5f5] text-lg font-semibold mb-4">
-                📅 How to Use Weekly Schedule
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-[#ababab]">
-                <div className="flex items-start gap-3">
-                  <span className="text-[#f6b100] text-lg">1.</span>
-                  <div>
-                    <strong className="text-[#f5f5f5]">Navigate Weeks:</strong> Use the arrows to move between different weeks
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-[#f6b100] text-lg">2.</span>
-                  <div>
-                    <strong className="text-[#f5f5f5]">Assign Members:</strong> Click on any shift cell to assign or manage members
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-[#f6b100] text-lg">3.</span>
-                  <div>
-                    <strong className="text-[#f5f5f5]">Manage Templates:</strong> Click "Manage Templates" to add/edit shift types
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="text-[#f6b100] text-lg">4.</span>
-                  <div>
-                    <strong className="text-[#f5f5f5]">View Assignments:</strong> Assigned members appear in each shift cell with color indicators
-                  </div>
-                </div>
-                {isAdmin && (
-                  <div className="flex items-start gap-3">
-                    <span className="text-[#f6b100] text-lg">5.</span>
-                    <div>
-                      <strong className="text-[#f5f5f5]">Log Extra Work:</strong> Click "Log Extra Work" button to record overtime, deductions, or adjustments for members
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
 
             {/* Summary Stats */}
             {schedules && schedules.length > 0 && (
@@ -501,17 +462,15 @@ const WeeklySchedule = () => {
                       </div>
                       <div className="bg-[#262626] rounded-lg p-3">
                         <div className="text-[#ababab] text-xs mb-1">Total Hours</div>
-                        <div className={`text-xl font-bold ${
-                          totalHours < 0 ? "text-red-400" : "text-[#4ECDC4]"
-                        }`}>
+                        <div className={`text-xl font-bold ${totalHours < 0 ? "text-red-400" : "text-[#4ECDC4]"
+                          }`}>
                           {totalHours.toFixed(2)}h
                         </div>
                       </div>
                       <div className="bg-[#262626] rounded-lg p-3">
                         <div className="text-[#ababab] text-xs mb-1">Total Payment</div>
-                        <div className={`text-xl font-bold ${
-                          totalPayment < 0 ? "text-red-400" : "text-[#f6b100]"
-                        }`}>
+                        <div className={`text-xl font-bold ${totalPayment < 0 ? "text-red-400" : "text-[#f6b100]"
+                          }`}>
                           ${totalPayment.toFixed(2)}
                         </div>
                       </div>
@@ -557,9 +516,8 @@ const WeeklySchedule = () => {
                             <td className="px-4 py-3 text-[#f5f5f5] text-sm">
                               {entry.member?.name || "Unknown"}
                             </td>
-                            <td className={`px-4 py-3 text-sm font-medium ${
-                              entry.durationHours < 0 ? "text-red-400" : "text-[#4ECDC4]"
-                            }`}>
+                            <td className={`px-4 py-3 text-sm font-medium ${entry.durationHours < 0 ? "text-red-400" : "text-[#4ECDC4]"
+                              }`}>
                               {entry.durationHours.toFixed(2)}h
                             </td>
                             <td className="px-4 py-3">
@@ -567,18 +525,16 @@ const WeeklySchedule = () => {
                                 {entry.workType.replace('_', ' ')}
                               </span>
                             </td>
-                            <td className={`px-4 py-3 text-sm font-medium ${
-                              entry.paymentAmount < 0 ? "text-red-400" : "text-[#f6b100]"
-                            }`}>
+                            <td className={`px-4 py-3 text-sm font-medium ${entry.paymentAmount < 0 ? "text-red-400" : "text-[#f6b100]"
+                              }`}>
                               ${entry.paymentAmount.toFixed(2)}
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex flex-col gap-1">
-                                <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${
-                                  entry.isApproved 
-                                    ? 'bg-green-900/30 text-green-400' 
+                                <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${entry.isApproved
+                                    ? 'bg-green-900/30 text-green-400'
                                     : 'bg-yellow-900/30 text-yellow-400'
-                                }`}>
+                                  }`}>
                                   {entry.isApproved ? (
                                     <>
                                       <MdCheckCircle size={12} className="mr-1" /> Approved
@@ -590,11 +546,10 @@ const WeeklySchedule = () => {
                                   )}
                                 </span>
                                 {entry.isApproved && (
-                                  <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${
-                                    entry.isPaid 
-                                      ? 'bg-blue-900/30 text-blue-400' 
+                                  <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${entry.isPaid
+                                      ? 'bg-blue-900/30 text-blue-400'
                                       : 'bg-orange-900/30 text-orange-400'
-                                  }`}>
+                                    }`}>
                                     {entry.isPaid ? (
                                       <>
                                         <MdAttachMoney size={12} className="mr-1" /> Paid
@@ -637,7 +592,7 @@ const WeeklySchedule = () => {
         memberId={selectedMemberForExtraWork}
         date={selectedDate}
       />
-      
+
       {/* Loading Overlay for Schedule Creation */}
       {createLoading && <FullScreenLoader />}
     </div>

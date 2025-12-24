@@ -146,7 +146,159 @@ const getMonthlySalary = async (req, res, next) => {
     }
 };
 
+/**
+ * Get salary summary for all members (Admin only)
+ * Returns aggregated salary data for all members for a given month/year
+ */
+const getAllMembersSalarySummary = async (req, res, next) => {
+    try {
+        const { year, month } = req.query;
+
+        // Validate year and month
+        const yearNum = year ? parseInt(year) : new Date().getFullYear();
+        const monthNum = month ? parseInt(month) : new Date().getMonth() + 1;
+
+        if (!yearNum || !monthNum || monthNum < 1 || monthNum > 12) {
+            const error = createHttpError(400, "Invalid year or month!");
+            return next(error);
+        }
+
+        // Calculate date range for the month
+        const startDate = new Date(yearNum, monthNum - 1, 1); // First day of month
+        const endDate = new Date(yearNum, monthNum, 0, 23, 59, 59); // Last day of month
+
+        // Get all active members (excluding admins)
+        const members = await User.find({ 
+            role: { $ne: 'Admin' },
+            isActive: true 
+        }).select('_id name salary role');
+
+        const salarySummaries = [];
+
+        for (const member of members) {
+            const memberId = member._id;
+            const hourlyRate = member.salary || 0;
+
+            // Find all schedules where this member is assigned
+            const schedules = await Schedule.find({
+                'assignedMembers.member': memberId,
+                date: {
+                    $gte: startDate,
+                    $lte: endDate
+                }
+            })
+            .populate('shiftTemplate', 'durationHours')
+            .sort({ date: 1 });
+
+            // Calculate regular hours and shifts
+            let totalHours = 0;
+            let totalShifts = 0;
+
+            for (const schedule of schedules) {
+                const memberAssignment = schedule.assignedMembers.find(
+                    am => am.member.toString() === memberId.toString()
+                );
+
+                if (memberAssignment && schedule.shiftTemplate) {
+                    const hours = schedule.shiftTemplate.durationHours || 0;
+                    totalHours += hours;
+                    totalShifts++;
+                }
+            }
+
+            // Calculate regular salary
+            const regularSalary = totalHours * hourlyRate;
+
+            // Fetch extra work entries
+            const extraWorkEntries = await ExtraWork.find({
+                member: memberId,
+                date: {
+                    $gte: startDate,
+                    $lte: endDate
+                }
+            });
+
+            // Calculate extra work totals
+            let extraWorkHours = 0;
+            let extraWorkPayment = 0;
+
+            for (const entry of extraWorkEntries) {
+                extraWorkHours += entry.durationHours || 0;
+                extraWorkPayment += entry.paymentAmount || 0;
+            }
+
+            // Calculate combined totals
+            const combinedTotalHours = totalHours + extraWorkHours;
+            const combinedTotalSalary = regularSalary + extraWorkPayment;
+
+            salarySummaries.push({
+                member: {
+                    id: member._id,
+                    name: member.name,
+                    role: member.role,
+                    hourlyRate: hourlyRate
+                },
+                summary: {
+                    totalShifts: totalShifts,
+                    regularHours: Math.round(totalHours * 100) / 100,
+                    extraWorkHours: Math.round(extraWorkHours * 100) / 100,
+                    totalHours: Math.round(combinedTotalHours * 100) / 100,
+                    hourlyRate: hourlyRate,
+                    regularSalary: Math.round(regularSalary * 100) / 100,
+                    extraWorkPayment: Math.round(extraWorkPayment * 100) / 100,
+                    totalSalary: Math.round(combinedTotalSalary * 100) / 100
+                }
+            });
+        }
+
+        // Calculate overall totals
+        const overallSummary = salarySummaries.reduce((acc, member) => {
+            acc.totalMembers += 1;
+            acc.totalRegularHours += member.summary.regularHours;
+            acc.totalExtraWorkHours += member.summary.extraWorkHours;
+            acc.totalHours += member.summary.totalHours;
+            acc.totalRegularSalary += member.summary.regularSalary;
+            acc.totalExtraWorkPayment += member.summary.extraWorkPayment;
+            acc.totalSalary += member.summary.totalSalary;
+            return acc;
+        }, {
+            totalMembers: 0,
+            totalRegularHours: 0,
+            totalExtraWorkHours: 0,
+            totalHours: 0,
+            totalRegularSalary: 0,
+            totalExtraWorkPayment: 0,
+            totalSalary: 0
+        });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                period: {
+                    year: yearNum,
+                    month: monthNum,
+                    monthName: new Date(yearNum, monthNum - 1).toLocaleString('en-US', { month: 'long' })
+                },
+                overallSummary: {
+                    totalMembers: overallSummary.totalMembers,
+                    totalRegularHours: Math.round(overallSummary.totalRegularHours * 100) / 100,
+                    totalExtraWorkHours: Math.round(overallSummary.totalExtraWorkHours * 100) / 100,
+                    totalHours: Math.round(overallSummary.totalHours * 100) / 100,
+                    totalRegularSalary: Math.round(overallSummary.totalRegularSalary * 100) / 100,
+                    totalExtraWorkPayment: Math.round(overallSummary.totalExtraWorkPayment * 100) / 100,
+                    totalSalary: Math.round(overallSummary.totalSalary * 100) / 100
+                },
+                members: salarySummaries
+            }
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
-    getMonthlySalary
+    getMonthlySalary,
+    getAllMembersSalarySummary
 };
 

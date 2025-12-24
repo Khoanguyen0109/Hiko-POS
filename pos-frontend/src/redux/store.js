@@ -17,6 +17,7 @@ import toppingRecipeReducer from "./slices/toppingRecipeSlice";
 import shiftTemplateReducer from "./slices/shiftTemplateSlice";
 import scheduleReducer from "./slices/scheduleSlice";
 import extraWorkReducer from "./slices/extraWorkSlice";
+import salaryReducer from "./slices/salarySlice";
 
 const store = configureStore({
     reducer: {
@@ -37,7 +38,8 @@ const store = configureStore({
         toppingRecipes: toppingRecipeReducer,
         shiftTemplates: shiftTemplateReducer,
         schedules: scheduleReducer,
-        extraWork: extraWorkReducer
+        extraWork: extraWorkReducer,
+        salary: salaryReducer
     },
 
     devTools: import.meta.env.NODE_ENV !== "production",

@@ -28,15 +28,39 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
         dispatch(fetchMembers());
       }
       
-      // Set default hourly rate from member's salary if member is selected
-      if (memberId && members.length > 0) {
-        const member = members.find(m => m._id === memberId);
-        if (member && member.salary) {
-          setFormData(prev => ({ ...prev, hourlyRate: member.salary }));
-        }
+      // Reset form data when modal opens
+      setFormData({
+        memberId: memberId || "",
+        date: date ? getLocalDateString(new Date(date)) : getLocalDateString(new Date()),
+        durationHours: "",
+        workType: "overtime",
+        description: "",
+        hourlyRate: "",
+        notes: ""
+      });
+    } else {
+      // Clear form data when modal closes
+      setFormData({
+        memberId: "",
+        date: getLocalDateString(new Date()),
+        durationHours: "",
+        workType: "overtime",
+        description: "",
+        hourlyRate: "",
+        notes: ""
+      });
+    }
+  }, [isOpen, memberId, date, members, dispatch]);
+
+  useEffect(() => {
+    // Set default hourly rate from member's salary if member is selected
+    if (isOpen && memberId && members && members.length > 0) {
+      const member = members.find(m => m._id === memberId);
+      if (member && member.salary) {
+        setFormData(prev => ({ ...prev, hourlyRate: member.salary }));
       }
     }
-  }, [isOpen, memberId, members, dispatch]);
+  }, [isOpen, memberId, members]);
 
   useEffect(() => {
     if (error) {
@@ -98,9 +122,10 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
   };
 
   const handleClose = () => {
+    // Clear form data
     setFormData({
-      memberId: memberId || "",
-      date: date ? getLocalDateString(new Date(date)) : getLocalDateString(new Date()),
+      memberId: "",
+      date: getLocalDateString(new Date()),
       durationHours: "",
       workType: "overtime",
       description: "",
