@@ -14,39 +14,28 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
   const dispatch = useDispatch();
   const { summaryData, loading, error } = useSelector(state => state.salary);
   
-  // Get current month/year from date filter
-  const getMonthYear = () => {
-    const today = toVietnamTime(new Date());
-    let year, month;
-
-    switch (dateFilter) {
-      case 'today':
-      case 'week':
-      case 'month':
-        year = today.getFullYear();
-        month = today.getMonth() + 1;
-        break;
-      case 'custom':
-        if (customDateRange.startDate) {
-          const customDate = new Date(customDateRange.startDate);
-          year = customDate.getFullYear();
-          month = customDate.getMonth() + 1;
-        } else {
-          year = today.getFullYear();
-          month = today.getMonth() + 1;
-        }
-        break;
-      default:
-        year = today.getFullYear();
-        month = today.getMonth() + 1;
+  // Prepare API parameters based on date filter
+  const getApiParams = () => {
+    const params = {};
+    
+    if (dateFilter === "custom" && customDateRange.startDate && customDateRange.endDate) {
+      // Use explicit date range for custom filter
+      params.startDate = customDateRange.startDate;
+      params.endDate = customDateRange.endDate;
+    } else if (dateFilter !== "custom") {
+      // Use period-based filtering (today, week, month)
+      params.period = dateFilter;
+    } else {
+      // Fallback to current month if custom range is incomplete
+      params.period = "month";
     }
-
-    return { year, month };
+    
+    return params;
   };
 
   useEffect(() => {
-    const { year, month } = getMonthYear();
-    dispatch(fetchSalarySummary({ year, month }));
+    const params = getApiParams();
+    dispatch(fetchSalarySummary(params));
   }, [dispatch, dateFilter, customDateRange]);
 
   // Format currency (no dollar sign, as per previous requirements)
@@ -111,7 +100,12 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
           <div>
             <h2 className="text-xl font-semibold text-[#f5f5f5]">Salary Summary</h2>
             <p className="text-sm text-[#ababab]">
-              {period?.monthName} {period?.year}
+              {period?.monthName && period?.year 
+                ? `${period.monthName} ${period.year}`
+                : period?.startDateString && period?.endDateString
+                ? `${period.startDateString} to ${period.endDateString}`
+                : 'Current Period'
+              }
             </p>
           </div>
         </div>
