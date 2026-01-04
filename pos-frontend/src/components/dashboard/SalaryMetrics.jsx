@@ -242,7 +242,7 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
             </thead>
             <tbody className="divide-y divide-[#343434]">
               {members && members.length > 0 ? (
-                members
+                [...members]
                   .sort((a, b) => (b.summary?.totalSalary || 0) - (a.summary?.totalSalary || 0))
                   .map((member) => (
                     <tr key={member.member.id} className="hover:bg-[#1a1a1a]/50 transition-colors">

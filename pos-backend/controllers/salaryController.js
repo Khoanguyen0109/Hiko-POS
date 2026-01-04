@@ -48,6 +48,8 @@ const getMonthlySalary = async (req, res, next) => {
         .sort({ date: 1 });
 
         // Calculate total hours and shifts
+        // Only count shifts with valid statuses (exclude "absent" and "cancelled")
+        const validStatuses = ["scheduled", "confirmed", "completed"];
         let totalHours = 0;
         let totalShifts = 0;
         const shiftDetails = [];
@@ -58,7 +60,8 @@ const getMonthlySalary = async (req, res, next) => {
                 am => am.member._id.toString() === memberId.toString()
             );
 
-            if (memberAssignment && schedule.shiftTemplate) {
+            // Only count shifts with valid statuses
+            if (memberAssignment && schedule.shiftTemplate && validStatuses.includes(memberAssignment.status)) {
                 const hours = schedule.shiftTemplate.durationHours || 0;
                 totalHours += hours;
                 totalShifts++;
@@ -242,15 +245,23 @@ const getAllMembersSalarySummary = async (req, res, next) => {
             .sort({ date: 1 });
 
             // Calculate regular hours and shifts
+            // Only count shifts with valid statuses (exclude "absent" and "cancelled")
+            const validStatuses = ["scheduled", "confirmed", "completed"];
             let totalHours = 0;
             let totalShifts = 0;
 
             for (const schedule of schedules) {
+                // Handle both populated and unpopulated member references
                 const memberAssignment = schedule.assignedMembers.find(
-                    am => am.member.toString() === memberId.toString()
+                    am => {
+                        // If member is populated (object), use _id; otherwise use the ObjectId directly
+                        const memberRefId = am.member?._id ? am.member._id.toString() : am.member.toString();
+                        return memberRefId === memberId.toString();
+                    }
                 );
 
-                if (memberAssignment && schedule.shiftTemplate) {
+                // Only count shifts with valid statuses
+                if (memberAssignment && schedule.shiftTemplate && validStatuses.includes(memberAssignment.status)) {
                     const hours = schedule.shiftTemplate.durationHours || 0;
                     totalHours += hours;
                     totalShifts++;
