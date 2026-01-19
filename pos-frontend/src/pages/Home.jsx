@@ -2,7 +2,7 @@ import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { BsCashCoin } from "react-icons/bs";
 import { GrInProgress } from "react-icons/gr";
-import { MdRestaurantMenu, MdAccountBalance, MdMoney, MdStore, MdStorefront } from "react-icons/md";
+import { MdRestaurantMenu, MdAccountBalance, MdMoney, MdStore, MdStorefront, MdAccessTime } from "react-icons/md";
 import MiniCard from "../components/home/MiniCard";
 import RecentOrders from "../components/home/RecentOrders";
 import { fetchOrders } from "../redux/slices/orderSlice";
@@ -27,6 +27,8 @@ const Home = () => {
         totalEarnings: 0,
         totalOrders: 0,
         completedOrders: 0,
+        inProgressOrders: 0,
+        totalInProgressValue: 0,
         totalDishesOrdered: 0,
         totalCash: 0,
         totalBanking: 0,
@@ -41,6 +43,17 @@ const Home = () => {
     // Filter orders for today and completed status for earnings
     const completedOrders = orders.filter(
       (order) => order.orderStatus === "completed"
+    );
+
+    // Filter in-progress orders
+    const inProgressOrders = orders.filter(
+      (order) => order.orderStatus === "progress"
+    );
+
+    // Calculate total value of in-progress orders
+    const totalInProgressValue = inProgressOrders.reduce(
+      (sum, order) => sum + (order.bills?.totalWithTax || 0),
+      0
     );
 
     const totalEarnings = completedOrders.reduce(
@@ -91,6 +104,8 @@ const Home = () => {
       totalEarnings,
       totalOrders: orders.length,
       completedOrders: completedOrders.length,
+      inProgressOrders: inProgressOrders.length,
+      totalInProgressValue,
       totalDishesOrdered,
       totalCash,
       totalBanking,
@@ -112,6 +127,11 @@ const Home = () => {
             title="Total Orders"
             icon={<GrInProgress />}
             number={loading ? "..." : todayStats.totalOrders}
+          />
+          <MiniCard
+            title="In Progress"
+            icon={<MdAccessTime />}
+            number={loading ? "..." : formatVND(todayStats.totalInProgressValue)}
           />
           <MiniCard
             title="Dishes Ordered"
