@@ -158,7 +158,7 @@ const orderSchema = new mongoose.Schema({
     },
     thirdPartyVendor: {
         type: String,
-        enum: ['None', 'Shopee', 'Grab'],
+        enum: ['None', 'Shopee', 'Grab', 'BeFood', 'XanhSM'],
         default: 'None'
     },
     paymentStatus: {

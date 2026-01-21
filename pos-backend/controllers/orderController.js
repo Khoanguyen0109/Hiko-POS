@@ -28,8 +28,8 @@ const addOrder = async (req, res, next) => {
     }
 
     // Validate thirdPartyVendor if provided
-    if (thirdPartyVendor && !['None', 'Shopee', 'Grab'].includes(thirdPartyVendor)) {
-      const error = createHttpError(400, "Invalid third party vendor. Must be 'None', 'Shopee', or 'Grab'");
+    if (thirdPartyVendor && !['None', 'Shopee', 'Grab', 'BeFood', 'XanhSM'].includes(thirdPartyVendor)) {
+      const error = createHttpError(400, "Invalid third party vendor. Must be 'None', 'Shopee', 'Grab', 'BeFood', or 'XanhSM'");
       return next(error);
     }
 
@@ -438,8 +438,8 @@ const updateOrder = async (req, res, next) => {
 
     // Validate and add thirdPartyVendor if provided
     if (thirdPartyVendor) {
-      if (!['None', 'Shopee', 'Grab'].includes(thirdPartyVendor)) {
-        const error = createHttpError(400, "Valid third party vendor is required (None, Shopee, Grab)");
+      if (!['None', 'Shopee', 'Grab', 'BeFood', 'XanhSM'].includes(thirdPartyVendor)) {
+        const error = createHttpError(400, "Valid third party vendor is required (None, Shopee, Grab, BeFood, XanhSM)");
         return next(error);
       }
       updateFields.thirdPartyVendor = thirdPartyVendor;
