@@ -35,4 +35,3 @@ export const getAllMembersSalarySummary = (params = {}) => {
     const queryString = queryParams.toString();
     return axiosWrapper.get(`/api/salary/summary/all${queryString ? `?${queryString}` : ''}`);
 };
-

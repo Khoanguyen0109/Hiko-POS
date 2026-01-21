@@ -36,6 +36,8 @@ const Home = () => {
           None: { earnings: 0, orders: 0 },
           Shopee: { earnings: 0, orders: 0 },
           Grab: { earnings: 0, orders: 0 },
+          BeFood: { earnings: 0, orders: 0 },
+          XanhSM: { earnings: 0, orders: 0 },
         },
       };
     }
@@ -88,6 +90,8 @@ const Home = () => {
       None: { earnings: 0, orders: 0 },
       Shopee: { earnings: 0, orders: 0 },
       Grab: { earnings: 0, orders: 0 },
+      BeFood: { earnings: 0, orders: 0 },
+      XanhSM: { earnings: 0, orders: 0 },
     };
 
     completedOrders.forEach(order => {
@@ -164,7 +168,7 @@ const Home = () => {
               </h2>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Direct Orders */}
               <div className="bg-[#1f1f1f] rounded-lg p-4 border border-[#343434]">
                 <div className="flex items-center justify-between mb-2">
@@ -221,13 +225,51 @@ const Home = () => {
                   Grab Food delivery
                 </div>
               </div>
+
+              {/* BeFood Orders */}
+              <div className="bg-[#1f1f1f] rounded-lg p-4 border border-[#343434]">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <MdStore className="text-purple-400" size={18} />
+                    <span className="text-[#f5f5f5] font-medium text-sm">BeFood</span>
+                  </div>
+                  <span className="text-xs text-[#ababab] bg-[#343434] px-2 py-1 rounded-full">
+                    {loading ? "..." : `${todayStats.vendorBreakdown.BeFood.orders} orders`}
+                  </span>
+                </div>
+                <div className="text-purple-400 font-bold text-lg">
+                  {loading ? "..." : formatVND(todayStats.vendorBreakdown.BeFood.earnings)}
+                </div>
+                <div className="text-xs text-[#ababab] mt-1">
+                  BeFood delivery
+                </div>
+              </div>
+
+              {/* XanhSM Orders */}
+              <div className="bg-[#1f1f1f] rounded-lg p-4 border border-[#343434]">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <MdStore className="text-teal-400" size={18} />
+                    <span className="text-[#f5f5f5] font-medium text-sm">XanhSM</span>
+                  </div>
+                  <span className="text-xs text-[#ababab] bg-[#343434] px-2 py-1 rounded-full">
+                    {loading ? "..." : `${todayStats.vendorBreakdown.XanhSM.orders} orders`}
+                  </span>
+                </div>
+                <div className="text-teal-400 font-bold text-lg">
+                  {loading ? "..." : formatVND(todayStats.vendorBreakdown.XanhSM.earnings)}
+                </div>
+                <div className="text-xs text-[#ababab] mt-1">
+                  XanhSM delivery
+                </div>
+              </div>
             </div>
 
             {/* Summary */}
             <div className="mt-4 pt-4 border-t border-[#343434]">
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-sm">
                 <span className="text-[#ababab]">Platform Distribution:</span>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                   <span className="text-green-400">
                     Direct: {loading ? "..." : `${((todayStats.vendorBreakdown.None.earnings / todayStats.totalEarnings) * 100 || 0).toFixed(1)}%`}
                   </span>
@@ -236,6 +278,12 @@ const Home = () => {
                   </span>
                   <span className="text-blue-400">
                     Grab: {loading ? "..." : `${((todayStats.vendorBreakdown.Grab.earnings / todayStats.totalEarnings) * 100 || 0).toFixed(1)}%`}
+                  </span>
+                  <span className="text-purple-400">
+                    BeFood: {loading ? "..." : `${((todayStats.vendorBreakdown.BeFood.earnings / todayStats.totalEarnings) * 100 || 0).toFixed(1)}%`}
+                  </span>
+                  <span className="text-teal-400">
+                    XanhSM: {loading ? "..." : `${((todayStats.vendorBreakdown.XanhSM.earnings / todayStats.totalEarnings) * 100 || 0).toFixed(1)}%`}
                   </span>
                 </div>
               </div>

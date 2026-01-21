@@ -312,12 +312,36 @@ const OrderDetail = () => {
                 disabled={loading}
                 className={`px-3 py-2 rounded-md font-medium transition-all text-xs flex items-center gap-1.5 ${
                   selectedVendor === "Grab"
-                    ? "bg-green-600 text-white border-2 border-green-400 shadow-lg"
-                    : "bg-[#262626] text-[#f5f5f5] border border-[#343434] hover:border-green-500"
+                    ? "bg-blue-600 text-white border-2 border-blue-400 shadow-lg"
+                    : "bg-[#262626] text-[#f5f5f5] border border-[#343434] hover:border-blue-500"
                 }`}
               >
                 <MdStore size={14} />
                 Grab
+              </button>
+              <button
+                onClick={() => setSelectedVendor("BeFood")}
+                disabled={loading}
+                className={`px-3 py-2 rounded-md font-medium transition-all text-xs flex items-center gap-1.5 ${
+                  selectedVendor === "BeFood"
+                    ? "bg-purple-600 text-white border-2 border-purple-400 shadow-lg"
+                    : "bg-[#262626] text-[#f5f5f5] border border-[#343434] hover:border-purple-500"
+                }`}
+              >
+                <MdStore size={14} />
+                BeFood
+              </button>
+              <button
+                onClick={() => setSelectedVendor("XanhSM")}
+                disabled={loading}
+                className={`px-3 py-2 rounded-md font-medium transition-all text-xs flex items-center gap-1.5 ${
+                  selectedVendor === "XanhSM"
+                    ? "bg-teal-600 text-white border-2 border-teal-400 shadow-lg"
+                    : "bg-[#262626] text-[#f5f5f5] border border-[#343434] hover:border-teal-500"
+                }`}
+              >
+                <MdStore size={14} />
+                XanhSM
               </button>
               
               {/* Update Vendor Button - Shows when vendor changed */}
