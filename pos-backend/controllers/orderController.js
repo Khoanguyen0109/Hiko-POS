@@ -627,13 +627,48 @@ const updateOrder = async (req, res, next) => {
           // 2. Export ingredients for toppings
           if (toppings && toppings.length > 0) {
             for (let topping of toppings) {
+              // Get toppingId - handle both ObjectId and string formats
+              const toppingIdValue = topping.toppingId || topping._id;
+              if (!toppingIdValue) {
+                console.warn(`Topping missing ID: ${topping.name || JSON.stringify(topping)}`);
+                continue;
+              }
+
+              // Convert to ObjectId if it's a string, otherwise use as-is
+              let toppingId;
+              if (typeof toppingIdValue === 'string' && mongoose.Types.ObjectId.isValid(toppingIdValue)) {
+                toppingId = new mongoose.Types.ObjectId(toppingIdValue);
+              } else if (toppingIdValue instanceof mongoose.Types.ObjectId) {
+                toppingId = toppingIdValue;
+              } else {
+                // Try to convert anyway
+                toppingId = mongoose.Types.ObjectId.isValid(toppingIdValue) 
+                  ? new mongoose.Types.ObjectId(toppingIdValue)
+                  : toppingIdValue;
+              }
+
+              // First check if recipe exists at all (for better error messages)
+              const anyRecipe = await ToppingRecipe.findOne({ toppingId });
+              
+              // Then find active recipe
               const toppingRecipe = await ToppingRecipe.findOne({ 
-                toppingId: topping.toppingId || topping._id, 
+                toppingId: toppingId, 
                 isActive: true 
               }).populate('ingredients.ingredientId');
 
               if (!toppingRecipe) {
-                console.warn(`No recipe found for topping: ${topping.name || topping.toppingId}`);
+                if (anyRecipe) {
+                  console.warn(
+                    `Recipe found but inactive for topping: ${topping.name || toppingId}. ` +
+                    `Topping ID: ${toppingId}, Recipe exists but isActive=false`
+                  );
+                } else {
+                  console.warn(
+                    `No recipe found for topping: ${topping.name || toppingId}. ` +
+                    `Topping ID: ${toppingId}. ` +
+                    `Please create a recipe for this topping in the recipe management system.`
+                  );
+                }
                 continue;
               }
 

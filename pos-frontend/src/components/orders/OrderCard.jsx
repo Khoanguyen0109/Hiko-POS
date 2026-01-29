@@ -1,4 +1,4 @@
-import { formatDateAndTime, getAvatarName, formatVND } from "../../utils/index";
+import { formatDateAndTime, formatVND } from "../../utils/index";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { removeOrder } from "../../redux/slices/orderSlice";
@@ -83,6 +83,10 @@ const OrderCard = ({ order }) => {
         return { icon: MdStorefront, text: "Shopee", color: "text-orange-500" };
       case "Grab":
         return { icon: MdStore, text: "Grab", color: "text-green-600" };
+      case "BeFood":
+        return { icon: MdStore, text: "BeFood", color: "text-purple-500" };
+      case "XanhSM":
+        return { icon: MdStore, text: "XanhSM", color: "text-teal-500" };
       case "None":
       default:
         return null; // Don't show anything for direct orders
@@ -217,7 +221,7 @@ OrderCard.propTypes = {
     ]),
     orderStatus: PropTypes.string.isRequired,
     paymentMethod: PropTypes.oneOf(["Cash", "Card", "Banking"]),
-    thirdPartyVendor: PropTypes.oneOf(["None", "Shopee", "Grab"]),
+    thirdPartyVendor: PropTypes.oneOf(["None", "Shopee", "Grab", "BeFood", "XanhSM"]),
     items: PropTypes.array,
     bills: PropTypes.shape({
       totalWithTax: PropTypes.number,
