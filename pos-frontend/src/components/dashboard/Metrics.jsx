@@ -146,6 +146,25 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
     const totalOrdersCount = orders?.length || 0;
     const avgDishesPerOrder = totalOrdersCount > 0 ? (totalDishesSold / totalOrdersCount).toFixed(1) : 0;
 
+    // Calculate revenue by payment method
+    const cashRevenue = completedOrders
+      .filter(order => order.paymentMethod === "Cash")
+      .reduce((sum, order) => sum + (order.bills?.totalWithTax || 0), 0);
+    
+    const bankingRevenue = completedOrders
+      .filter(order => order.paymentMethod === "Banking")
+      .reduce((sum, order) => sum + (order.bills?.totalWithTax || 0), 0);
+
+    // Calculate revenue by third-party vendors
+    const thirdPartyVendorRevenue = completedOrders
+      .filter(order => order.thirdPartyVendor && order.thirdPartyVendor !== "None")
+      .reduce((sum, order) => sum + (order.bills?.totalWithTax || 0), 0);
+
+    // Calculate percentages
+    const cashPercentage = totalRevenue > 0 ? ((cashRevenue / totalRevenue) * 100).toFixed(1) : 0;
+    const bankingPercentage = totalRevenue > 0 ? ((bankingRevenue / totalRevenue) * 100).toFixed(1) : 0;
+    const vendorPercentage = totalRevenue > 0 ? ((thirdPartyVendorRevenue / totalRevenue) * 100).toFixed(1) : 0;
+
     return [
       { 
         title: "Revenue", 
@@ -194,6 +213,27 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
         value: avgDishesPerOrder.toString(), 
         percentage: "items", 
         color: "#8b5cf6", 
+        isIncrease: true 
+      },
+      { 
+        title: "Cash Revenue", 
+        value: formatVND(cashRevenue), 
+        percentage: `${cashPercentage}%`, 
+        color: "#10B981", 
+        isIncrease: true 
+      },
+      { 
+        title: "Banking Revenue", 
+        value: formatVND(bankingRevenue), 
+        percentage: `${bankingPercentage}%`, 
+        color: "#8B5CF6", 
+        isIncrease: true 
+      },
+      { 
+        title: "3rd Party Vendors", 
+        value: formatVND(thirdPartyVendorRevenue), 
+        percentage: `${vendorPercentage}%`, 
+        color: "#F59E0B", 
         isIncrease: true 
       },
     ];
