@@ -2,7 +2,6 @@ const createHttpError = require("http-errors");
 const mongoose = require("mongoose");
 const Dish = require("../models/dishModel");
 const Category = require("../models/categoryModel");
-const DishRecipe = require("../models/dishRecipeModel");
 
 const addDish = async (req, res, next) => {
     try {
@@ -15,8 +14,7 @@ const addDish = async (req, res, next) => {
             image, 
             hasSizeVariants, 
             sizeVariants, 
-            isAvailable, 
-            ingredients 
+            isAvailable
         } = req.body;
 
         // Basic validation
@@ -55,11 +53,6 @@ const addDish = async (req, res, next) => {
                     return next(error);
                 }
                 
-                // Cost is now managed by recipes - ignore manual cost input
-                // if (variant.cost !== undefined && (typeof variant.cost !== 'number' || variant.cost < 0)) {
-                //     const error = createHttpError(400, "Size variant cost must be a non-negative number!");
-                //     return next(error);
-                // }
             }
 
             // Validate that sizes are unique
@@ -92,36 +85,17 @@ const addDish = async (req, res, next) => {
             name: name.trim(),
             price,
             category,
-            cost: 0, // Cost will be calculated from recipe
+            cost: cost || 0,
             note: note ? String(note).trim() : "",
             image: image ? String(image).trim() : "",
             hasSizeVariants: Boolean(hasSizeVariants),
             sizeVariants: hasSizeVariants ? sizeVariants.map(variant => ({
-                ...variant,
-                cost: 0 // Cost will be calculated from recipe
+                ...variant
             })) : [],
-            isAvailable: isAvailable !== undefined ? Boolean(isAvailable) : true,
-            ingredients: ingredients || {}
+            isAvailable: isAvailable !== undefined ? Boolean(isAvailable) : true
         });
 
         await newDish.save();
-        
-        // Check if recipe exists and update costs
-        const recipe = await DishRecipe.findOne({ dishId: newDish._id });
-        if (recipe) {
-            await recipe.calculateCost();
-            if (newDish.hasSizeVariants && newDish.sizeVariants.length > 0) {
-                for (let variant of newDish.sizeVariants) {
-                    const recipeVariant = recipe.sizeVariantRecipes.find(rv => rv.size === variant.size);
-                    if (recipeVariant) {
-                        variant.cost = recipeVariant.totalIngredientCost;
-                    }
-                }
-            } else {
-                newDish.cost = recipe.totalIngredientCost || recipe.costPerServing || 0;
-            }
-            await newDish.save();
-        }
         
         const populated = await newDish.populate({ path: 'category', select: 'name' });
         res.status(201).json({ success: true, message: "Dish created successfully!", data: populated });
@@ -179,8 +153,7 @@ const updateDish = async (req, res, next) => {
             image, 
             hasSizeVariants, 
             sizeVariants, 
-            isAvailable, 
-            ingredients 
+            isAvailable
         } = req.body;
 
         // Update basic fields
@@ -207,14 +180,13 @@ const updateDish = async (req, res, next) => {
             updates.category = category;
         }
         
-        // Cost is now managed by recipes - ignore manual cost updates
-        // if (cost !== undefined) {
-        //     if (typeof cost !== 'number' || cost < 0) {
-        //         const error = createHttpError(400, "Cost must be a non-negative number!");
-        //         return next(error);
-        //     }
-        //     updates.cost = cost;
-        // }
+        if (cost !== undefined) {
+            if (typeof cost !== 'number' || cost < 0) {
+                const error = createHttpError(400, "Cost must be a non-negative number!");
+                return next(error);
+            }
+            updates.cost = cost;
+        }
         
         if (note !== undefined) updates.note = String(note).trim();
         
@@ -227,8 +199,6 @@ const updateDish = async (req, res, next) => {
         }
         
         if (isAvailable !== undefined) updates.isAvailable = Boolean(isAvailable);
-        
-        if (ingredients !== undefined) updates.ingredients = ingredients;
 
         // Handle size variants
         if (hasSizeVariants !== undefined) {
@@ -247,11 +217,6 @@ const updateDish = async (req, res, next) => {
                         return next(error);
                     }
                     
-                    // Cost is now managed by recipes - ignore manual cost updates
-                    // if (variant.cost !== undefined && (typeof variant.cost !== 'number' || variant.cost < 0)) {
-                    //     const error = createHttpError(400, "Size variant cost must be a non-negative number!");
-                    //     return next(error);
-                    // }
                 }
 
                 // Validate that sizes are unique
@@ -273,10 +238,8 @@ const updateDish = async (req, res, next) => {
                     });
                 }
 
-                // Set cost to 0 for all variants (will be calculated from recipe)
                 updates.sizeVariants = sizeVariants.map(variant => ({
-                    ...variant,
-                    cost: 0
+                    ...variant
                 }));
             } else {
                 updates.sizeVariants = [];
@@ -289,23 +252,6 @@ const updateDish = async (req, res, next) => {
         if (!updated) {
             const error = createHttpError(404, "Dish not found!");
             return next(error);
-        }
-
-        // Check if recipe exists and update costs
-        const recipe = await DishRecipe.findOne({ dishId: id });
-        if (recipe) {
-            await recipe.calculateCost();
-            if (updated.hasSizeVariants && updated.sizeVariants.length > 0) {
-                for (let variant of updated.sizeVariants) {
-                    const recipeVariant = recipe.sizeVariantRecipes.find(rv => rv.size === variant.size);
-                    if (recipeVariant) {
-                        variant.cost = recipeVariant.totalIngredientCost;
-                    }
-                }
-            } else {
-                updated.cost = recipe.totalIngredientCost || recipe.costPerServing || 0;
-            }
-            await updated.save();
         }
 
         res.status(200).json({ success: true, message: "Dish updated successfully!", data: updated });

@@ -76,12 +76,6 @@ const dishSchema = new mongoose.Schema({
         default: false
     },
 
-    // Arbitrary object for ingredients breakdown, e.g., { tomato: 2, cheese: "50g" }
-    ingredients: {
-        type: mongoose.Schema.Types.Mixed,
-        default: {}
-    },
-
     // Whether the dish is available
     isAvailable: {
         type: Boolean,
