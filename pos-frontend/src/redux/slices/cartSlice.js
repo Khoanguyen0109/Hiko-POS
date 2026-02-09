@@ -114,18 +114,7 @@ const cartSlice = createSlice({
 
             state.pricing.subtotal = subtotal;
             
-            console.log('💰 Pricing calculation:', {
-                items: state.items.map(item => ({
-                    name: item.name,
-                    originalPrice: item.originalPrice,
-                    currentPrice: item.price,
-                    originalPricePerQuantity: item.originalPricePerQuantity,
-                    currentPricePerQuantity: item.pricePerQuantity,
-                    quantity: item.quantity
-                })),
-                calculatedSubtotal: subtotal,
-                appliedCoupon: state.appliedCoupon?.name
-            });
+            // Pricing calculation (debug logs removed for production)
 
             // Calculate discount
             let discount = 0;
@@ -149,7 +138,6 @@ const cartSlice = createSlice({
         applyHappyHourPricing: (state, coupon) => {
             if (!coupon || coupon.type !== 'happy_hour') return 0;
 
-            console.log('🎯 CartSlice: Applying Happy Hour pricing to items');
             let totalDiscount = 0;
 
             state.items.forEach(item => {
@@ -178,21 +166,14 @@ const cartSlice = createSlice({
                     item.price = newPrice;
                     item.pricePerQuantity = newPrice / item.quantity;
                     totalDiscount += itemDiscount;
-
-                    console.log(`Applied Happy Hour to ${item.name}: ${originalPrice} -> ${newPrice} (discount: ${itemDiscount})`);
                 }
             });
 
-            console.log(`Total Happy Hour discount applied: ${totalDiscount}`);
             return totalDiscount;
         },
 
         calculateHappyHourDiscount: (state, coupon) => {
             if (!coupon || coupon.type !== 'happy_hour') return 0;
-
-            console.log('🧮 CartSlice: Calculating Happy Hour discount');
-            console.log('Coupon:', coupon);
-            console.log('Cart items:', state.items);
 
             let totalDiscount = 0;
 
@@ -202,23 +183,17 @@ const cartSlice = createSlice({
 
                 // Check if item is eligible for happy hour promotion
                 const isEligible = cartSlice.caseReducers.isItemEligibleForHappyHour(state, item, coupon);
-                console.log(`Item ${item.name} (category: ${item.category}) eligible: ${isEligible}`);
                 
                 if (isEligible) {
-                    console.log(`Processing eligible item: ${item.name}, price: ${itemPrice}, discountType: ${coupon.discountType}`);
-                    
                     // Handle different Happy Hour discount types
                     if (coupon.discountType === 'percentage' && coupon.discount?.percentage) {
                         itemDiscount = itemPrice * (coupon.discount.percentage / 100);
-                        console.log(`Percentage discount: ${coupon.discount.percentage}% = ${itemDiscount}`);
                     } else if (coupon.discountType === 'fixed_amount' && coupon.discount?.fixedAmount) {
                         itemDiscount = Math.min(coupon.discount.fixedAmount * item.quantity, itemPrice);
-                        console.log(`Fixed amount discount: ${coupon.discount.fixedAmount} * ${item.quantity} = ${itemDiscount}`);
                     } else if (coupon.discountType === 'uniform_price' && coupon.discount?.uniformPrice) {
                         // For uniform pricing, calculate discount as difference between current price and uniform price
                         const uniformTotalPrice = coupon.discount.uniformPrice * item.quantity;
                         itemDiscount = Math.max(0, itemPrice - uniformTotalPrice);
-                        console.log(`Uniform price discount: ${itemPrice} - (${coupon.discount.uniformPrice} * ${item.quantity}) = ${itemDiscount}`);
                     } else {
                         // Legacy support for old Happy Hour promotions without discountType
                         if (coupon.discount?.percentage) {
@@ -226,14 +201,12 @@ const cartSlice = createSlice({
                         } else if (coupon.discount?.fixedAmount) {
                             itemDiscount = Math.min(coupon.discount.fixedAmount * item.quantity, itemPrice);
                         }
-                        console.log(`Legacy discount: ${itemDiscount}`);
                     }
                 }
 
                 totalDiscount += itemDiscount;
             });
 
-            console.log(`Total Happy Hour discount calculated: ${totalDiscount}`);
             return totalDiscount;
         },
 

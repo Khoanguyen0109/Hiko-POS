@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { motion } from "framer-motion";
+import PropTypes from "prop-types";
 import { IoMdAdd } from "react-icons/io";
-import { MdInventory, MdInput, MdOutput, MdSettings, MdBusiness } from "react-icons/md";
+import { MdInput, MdOutput, MdSettings, MdBusiness } from "react-icons/md";
 import {
   fetchStorageImports,
   cancelStorageImportAction,
@@ -11,7 +12,6 @@ import {
   fetchStorageExports,
   cancelStorageExportAction,
 } from "../redux/slices/storageExportSlice";
-import { fetchStorageItems } from "../redux/slices/storageItemSlice";
 import { enqueueSnackbar } from "notistack";
 import ImportModal from "../components/storage/ImportModal";
 import ExportModal from "../components/storage/ExportModal";
@@ -19,8 +19,9 @@ import FullScreenLoader from "../components/shared/FullScreenLoader";
 import BackButton from "../components/shared/BackButton";
 import { useNavigate } from "react-router-dom";
 import { getStoredUser } from "../utils/auth";
+import { logger } from "../utils/logger";
 
-const ImportList = ({ imports, loading, onCancel }) => {
+const ImportList = memo(({ imports, loading, onCancel }) => {
   if (loading) {
     return (
       <div className="text-center py-12">
@@ -128,9 +129,16 @@ const ImportList = ({ imports, loading, onCancel }) => {
       ))}
     </div>
   );
+});
+
+ImportList.displayName = 'ImportList';
+ImportList.propTypes = {
+  imports: PropTypes.arrayOf(PropTypes.object).isRequired,
+  loading: PropTypes.bool.isRequired,
+  onCancel: PropTypes.func.isRequired,
 };
 
-const ExportList = ({ exports, loading, onCancel }) => {
+const ExportList = memo(({ exports, loading, onCancel }) => {
   if (loading) {
     return (
       <div className="text-center py-12">
@@ -236,6 +244,13 @@ const ExportList = ({ exports, loading, onCancel }) => {
       ))}
     </div>
   );
+});
+
+ExportList.displayName = 'ExportList';
+ExportList.propTypes = {
+  exports: PropTypes.arrayOf(PropTypes.object).isRequired,
+  loading: PropTypes.bool.isRequired,
+  onCancel: PropTypes.func.isRequired,
 };
 
 const Storage = () => {
@@ -267,17 +282,17 @@ const Storage = () => {
     dispatch(fetchStorageExports({}));
   }, [dispatch]);
 
-  const handleCreateImport = () => {
+  const handleCreateImport = useCallback(() => {
     setEditingImport(null);
     setIsImportModalOpen(true);
-  };
+  }, []);
 
-  const handleCreateExport = () => {
+  const handleCreateExport = useCallback(() => {
     setEditingExport(null);
     setIsExportModalOpen(true);
-  };
+  }, []);
 
-  const handleCancelImport = async (id) => {
+  const handleCancelImport = useCallback(async (id) => {
     if (window.confirm("Are you sure you want to cancel this import?")) {
       try {
         const result = await dispatch(cancelStorageImportAction(id));
@@ -287,13 +302,14 @@ const Storage = () => {
         } else {
           enqueueSnackbar(result.payload || "Failed to cancel import", { variant: "error" });
         }
-      } catch (error) {
+      } catch (err) {
+        logger.error("Error cancelling import:", err);
         enqueueSnackbar("An unexpected error occurred", { variant: "error" });
       }
     }
-  };
+  }, [dispatch]);
 
-  const handleCancelExport = async (id) => {
+  const handleCancelExport = useCallback(async (id) => {
     if (window.confirm("Are you sure you want to cancel this export?")) {
       try {
         const result = await dispatch(cancelStorageExportAction(id));
@@ -303,19 +319,20 @@ const Storage = () => {
         } else {
           enqueueSnackbar(result.payload || "Failed to cancel export", { variant: "error" });
         }
-      } catch (error) {
+      } catch (err) {
+        logger.error("Error cancelling export:", err);
         enqueueSnackbar("An unexpected error occurred", { variant: "error" });
       }
     }
-  };
+  }, [dispatch]);
 
-  const handleModalSuccess = () => {
+  const handleModalSuccess = useCallback(() => {
     if (activeTab === "imports") {
       dispatch(fetchStorageImports({}));
     } else {
       dispatch(fetchStorageExports({}));
     }
-  };
+  }, [dispatch, activeTab]);
 
   if (importsLoading && imports.length === 0 && activeTab === "imports") {
     return <FullScreenLoader />;

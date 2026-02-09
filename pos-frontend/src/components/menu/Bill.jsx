@@ -17,6 +17,7 @@ import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "re
 import { useReactToPrint } from "react-to-print";
 import ThermalReceiptTemplate from "../print/ThermalReceiptTemplate";
 import { formatVND } from "../../utils";
+import { logger } from "../../utils/logger";
 
 const Bill = forwardRef((props, ref) => {
   const dispatch = useDispatch();
@@ -32,11 +33,11 @@ const Bill = forwardRef((props, ref) => {
   const { items: promotions, loading: promotionsLoading } = useSelector(
     (state) => state.promotions
   );
-  console.log("promotions", promotions);
-
-  // Debug: Log cart data to verify topping prices are included
-  console.log("Bill - Cart items:", cartData.items);
-  console.log("Bill - Pricing info:", {
+  
+  // Debug logs (development only)
+  logger.debug("Bill - Promotions:", promotions);
+  logger.debug("Bill - Cart items:", cartData.items);
+  logger.debug("Bill - Pricing info:", {
     subtotal,
     discount,
     total,
@@ -181,7 +182,7 @@ const Bill = forwardRef((props, ref) => {
     dispatch(createOrder(orderData))
       .unwrap()
       .then((data) => {
-        console.log(data);
+        logger.debug("Order created:", data);
         setOrderInfo(data);
 
         enqueueSnackbar("Order Placed Successfully!", {
@@ -196,7 +197,7 @@ const Bill = forwardRef((props, ref) => {
         }, 1500);
       })
       .catch((error) => {
-        console.log(error);
+        logger.error("Order creation failed:", error);
         const errorMessage = error || "Failed to place order";
         enqueueSnackbar(errorMessage, {
           variant: "error",
@@ -216,7 +217,7 @@ const Bill = forwardRef((props, ref) => {
     thirdPartyVendor: cartData.thirdPartyVendor,
   };
 
-  console.log("appliedCoupon", appliedCoupon);
+  logger.debug("Applied coupon:", appliedCoupon);
   return (
     <>
       {/* Hidden thermal receipt template */}

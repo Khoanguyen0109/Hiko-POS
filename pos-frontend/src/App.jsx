@@ -37,6 +37,7 @@ import { useEffect, useState } from "react";
 import { getAuthData } from "./utils/auth";
 import { setUser } from "./redux/slices/userSlice";
 import { getUserData } from "./https";
+import { logger } from "./utils/logger";
 import {
   ROUTES,
   PUBLIC_ROUTES,
@@ -92,7 +93,7 @@ function Layout() {
           dispatch(setUser(data));
         } catch (error) {
           // Token is invalid or expired, clear auth data
-          console.log("Token validation failed:", error);
+          logger.error("Token validation failed:", error);
           localStorage.removeItem("accessToken");
           localStorage.removeItem("user");
         }
@@ -161,7 +162,6 @@ function Layout() {
 
 function ProtectedRoutes({ children }) {
   const { isAuth } = useSelector((state) => state.user);
-  console.log("isAuth", isAuth);
   if (!isAuth) {
     return <Navigate to={ROUTES.AUTH} />;
   }

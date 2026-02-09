@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import PropTypes from "prop-types";
 import { MdCategory, MdDateRange, MdToday, MdCalendarMonth, MdLocalOffer, MdAccountBalanceWallet, MdAnalytics, MdPayment, MdReceipt, MdStorage, MdBusiness } from "react-icons/md";
 import { BiSolidDish } from "react-icons/bi";
@@ -218,7 +218,8 @@ const Dashboard = () => {
   // Redux state for spending analytics
   const { dashboardData, dashboardLoading, dashboardError } = useSelector((state) => state.spending);
 
-  const buttons = [
+  // Memoize buttons array to prevent recreation on every render
+  const buttons = useMemo(() => [
     { label: "Add Category", icon: <MdCategory />, action: "category" },
     { label: "Add Dishes", icon: <BiSolidDish />, action: "dishes" },
     { label: "Add Topping", icon: <MdAddCircle />, action: "topping" },
@@ -228,16 +229,21 @@ const Dashboard = () => {
       { label: "Spending", icon: <MdAccountBalanceWallet />, action: "spending" },
       { label: "Suppliers", icon: <MdBusiness />, action: "suppliers" }
     ] : []),
-  ];
+  ], [isAdmin]);
 
-  const tabs = ["Metrics", "Promotions", ...(isAdmin ? ["Spending", "Salary", "Storage Analytics"] : [])];
+  // Memoize tabs array
+  const tabs = useMemo(() => 
+    ["Metrics", "Promotions", ...(isAdmin ? ["Spending", "Salary", "Storage Analytics"] : [])],
+    [isAdmin]
+  );
 
-  const dateFilterOptions = [
+  // Memoize date filter options (static, no dependencies needed)
+  const dateFilterOptions = useMemo(() => [
     { value: "today", label: "Today", icon: <MdToday /> },
     { value: "week", label: "This Week", icon: <MdDateRange /> },
     { value: "month", label: "This Month", icon: <MdCalendarMonth /> },
     { value: "custom", label: "Custom Range", icon: <MdDateRange /> },
-  ];
+  ], []);
   
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isDishesModalOpen, setIsDishesModalOpen] = useState(false);
@@ -269,7 +275,8 @@ const Dashboard = () => {
     }
   }, [dispatch, isAdmin, activeTab, dateFilter, customDateRange]);
 
-  const handleOpenModal = (action) => {
+  // Memoize callback functions to prevent unnecessary re-renders
+  const handleOpenModal = useCallback((action) => {
     if (action === "category") setIsCategoryModalOpen(true);
     if (action === "dishes") setIsDishesModalOpen(true);
     if (action === "topping") navigate(ROUTES.TOPPINGS);
@@ -277,21 +284,21 @@ const Dashboard = () => {
     if (action === "spending") navigate(ROUTES.SPENDING);
     if (action === "storage") navigate(ROUTES.STORAGE);
     if (action === "suppliers") navigate(ROUTES.SUPPLIERS);
-  };
+  }, [navigate]);
 
-  const handleDateFilterChange = (filterValue) => {
+  const handleDateFilterChange = useCallback((filterValue) => {
     setDateFilter(filterValue);
     if (filterValue !== "custom") {
       setCustomDateRange({ startDate: "", endDate: "" });
     }
-  };
+  }, []);
 
-  const handleCustomDateChange = (field, value) => {
+  const handleCustomDateChange = useCallback((field, value) => {
     setCustomDateRange(prev => ({
       ...prev,
       [field]: value
     }));
-  };
+  }, []);
 
   return (
     <div className="bg-[#1f1f1f] pb-20 min-h-screen">
