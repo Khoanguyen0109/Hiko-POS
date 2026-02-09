@@ -452,7 +452,10 @@ export const ROUTES = {
   PROMOTIONS: "/promotions",
   SPENDING: "/spending",
   SCHEDULES: "/schedules",
-  SHIFT_TEMPLATES: "/shift-templates"
+  SHIFT_TEMPLATES: "/shift-templates",
+  STORAGE: "/storage",
+  STORAGE_ITEMS: "/storage/items",
+  SUPPLIERS: "/storage/suppliers"
 };
 
 // Route configurations for optimized rendering
@@ -539,6 +542,20 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.SHIFT_TEMPLATES,
     componentName: "ShiftTemplates",
+    adminOnly: true
+  },
+  {
+    path: ROUTES.STORAGE,
+    componentName: "Storage"
+  },
+  {
+    path: ROUTES.STORAGE_ITEMS,
+    componentName: "StorageItems",
+    adminOnly: true
+  },
+  {
+    path: ROUTES.SUPPLIERS,
+    componentName: "Suppliers",
     adminOnly: true
   }
 ];

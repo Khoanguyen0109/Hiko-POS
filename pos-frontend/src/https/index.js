@@ -200,3 +200,72 @@ export {
   getMonthlySalary,
   getAllMembersSalarySummary
 } from "./salaryApi";
+
+// Storage Supplier Endpoints
+export const getSuppliers = (params = {}) => {
+  const queryParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== '' && value !== null && value !== undefined) {
+      queryParams.append(key, value);
+    }
+  });
+  const queryString = queryParams.toString();
+  return axiosWrapper.get(`/api/storage/supplier${queryString ? `?${queryString}` : ''}`);
+};
+export const getActiveSuppliers = () => axiosWrapper.get("/api/storage/supplier/active");
+export const getSupplierById = (id) => axiosWrapper.get(`/api/storage/supplier/${id}`);
+export const createSupplier = (data) => axiosWrapper.post("/api/storage/supplier", data);
+export const updateSupplier = ({ id, ...data }) => axiosWrapper.put(`/api/storage/supplier/${id}`, data);
+export const deleteSupplier = (id) => axiosWrapper.delete(`/api/storage/supplier/${id}`);
+
+// Storage Item Endpoints
+export const getStorageItems = (params = {}) => {
+  const queryParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== '' && value !== null && value !== undefined) {
+      queryParams.append(key, value);
+    }
+  });
+  const queryString = queryParams.toString();
+  return axiosWrapper.get(`/api/storage/item${queryString ? `?${queryString}` : ''}`);
+};
+export const getStorageItemById = (id) => axiosWrapper.get(`/api/storage/item/${id}`);
+export const createStorageItem = (data) => axiosWrapper.post("/api/storage/item", data);
+export const updateStorageItem = ({ id, ...data }) => axiosWrapper.put(`/api/storage/item/${id}`, data);
+export const deleteStorageItem = (id) => axiosWrapper.delete(`/api/storage/item/${id}`);
+export const getLowStockItems = () => axiosWrapper.get("/api/storage/item/low-stock");
+
+// Storage Import Endpoints
+export const getStorageImports = (params = {}) => {
+  const queryParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== '' && value !== null && value !== undefined) {
+      queryParams.append(key, value);
+    }
+  });
+  const queryString = queryParams.toString();
+  return axiosWrapper.get(`/api/storage/import${queryString ? `?${queryString}` : ''}`);
+};
+export const getStorageImportById = (id) => axiosWrapper.get(`/api/storage/import/${id}`);
+export const createStorageImport = (data) => axiosWrapper.post("/api/storage/import", data);
+export const updateStorageImport = ({ id, ...data }) => axiosWrapper.put(`/api/storage/import/${id}`, data);
+export const cancelStorageImport = (id) => axiosWrapper.patch(`/api/storage/import/${id}/cancel`);
+
+// Storage Export Endpoints
+export const getStorageExports = (params = {}) => {
+  const queryParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== '' && value !== null && value !== undefined) {
+      queryParams.append(key, value);
+    }
+  });
+  const queryString = queryParams.toString();
+  return axiosWrapper.get(`/api/storage/export${queryString ? `?${queryString}` : ''}`);
+};
+export const getStorageExportById = (id) => axiosWrapper.get(`/api/storage/export/${id}`);
+export const createStorageExport = (data) => axiosWrapper.post("/api/storage/export", data);
+export const updateStorageExport = ({ id, ...data }) => axiosWrapper.put(`/api/storage/export/${id}`, data);
+export const cancelStorageExport = (id) => axiosWrapper.patch(`/api/storage/export/${id}/cancel`);
+
+// Storage Analytics
+export const getStorageAnalytics = (params) => axiosWrapper.get("/api/storage/analytics", { params });

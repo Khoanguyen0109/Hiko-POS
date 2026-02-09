@@ -25,6 +25,9 @@ import {
   SpendingManager,
   WeeklySchedule,
   ShiftTemplates,
+  Storage,
+  StorageItems,
+  Suppliers,
 } from "./pages";
 import Header from "./components/shared/Header";
 import { useSelector, useDispatch } from "react-redux";
@@ -63,6 +66,9 @@ const COMPONENT_MAP = {
   SpendingManager,
   WeeklySchedule,
   ShiftTemplates,
+  Storage,
+  StorageItems,
+  Suppliers,
 };
 
 function Layout() {

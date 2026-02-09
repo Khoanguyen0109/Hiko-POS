@@ -15,6 +15,11 @@ import shiftTemplateReducer from "./slices/shiftTemplateSlice";
 import scheduleReducer from "./slices/scheduleSlice";
 import extraWorkReducer from "./slices/extraWorkSlice";
 import salaryReducer from "./slices/salarySlice";
+import supplierReducer from "./slices/supplierSlice";
+import storageItemReducer from "./slices/storageItemSlice";
+import storageImportReducer from "./slices/storageImportSlice";
+import storageExportReducer from "./slices/storageExportSlice";
+import storageAnalyticsReducer from "./slices/storageAnalyticsSlice";
 
 const store = configureStore({
     reducer: {
@@ -33,7 +38,12 @@ const store = configureStore({
         shiftTemplates: shiftTemplateReducer,
         schedules: scheduleReducer,
         extraWork: extraWorkReducer,
-        salary: salaryReducer
+        salary: salaryReducer,
+        suppliers: supplierReducer,
+        storageItems: storageItemReducer,
+        storageImports: storageImportReducer,
+        storageExports: storageExportReducer,
+        storageAnalytics: storageAnalyticsReducer
     },
 
     devTools: import.meta.env.NODE_ENV !== "production",

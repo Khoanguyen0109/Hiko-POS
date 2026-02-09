@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { MdCategory, MdDateRange, MdToday, MdCalendarMonth, MdLocalOffer, MdAccountBalanceWallet, MdAnalytics, MdPayment, MdReceipt, MdInventory } from "react-icons/md";
+import { MdCategory, MdDateRange, MdToday, MdCalendarMonth, MdLocalOffer, MdAccountBalanceWallet, MdAnalytics, MdPayment, MdReceipt, MdStorage, MdBusiness } from "react-icons/md";
 import { BiSolidDish } from "react-icons/bi";
 import { MdAddCircle } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +9,7 @@ import { ROUTES } from "../constants";
 import Metrics from "../components/dashboard/Metrics";
 import PromotionMetrics from "../components/dashboard/PromotionMetrics";
 import SalaryMetrics from "../components/dashboard/SalaryMetrics";
+import StorageAnalytics from "../components/dashboard/StorageAnalytics";
 import CategoryModal from "../components/dashboard/CategoryModal";
 import DishModal from "../components/dashboard/DishModal";
 import { getStoredUser } from "../utils/auth";
@@ -222,12 +223,14 @@ const Dashboard = () => {
     { label: "Add Dishes", icon: <BiSolidDish />, action: "dishes" },
     { label: "Add Topping", icon: <MdAddCircle />, action: "topping" },
     { label: "Add Promotion", icon: <MdLocalOffer />, action: "promotion" },
+    { label: "Storage", icon: <MdStorage />, action: "storage" },
     ...(isAdmin ? [
-      { label: "Spending", icon: <MdAccountBalanceWallet />, action: "spending" }
+      { label: "Spending", icon: <MdAccountBalanceWallet />, action: "spending" },
+      { label: "Suppliers", icon: <MdBusiness />, action: "suppliers" }
     ] : []),
   ];
 
-  const tabs = ["Metrics", "Promotions", ...(isAdmin ? ["Spending", "Salary"] : [])];
+  const tabs = ["Metrics", "Promotions", ...(isAdmin ? ["Spending", "Salary", "Storage Analytics"] : [])];
 
   const dateFilterOptions = [
     { value: "today", label: "Today", icon: <MdToday /> },
@@ -272,6 +275,8 @@ const Dashboard = () => {
     if (action === "topping") navigate(ROUTES.TOPPINGS);
     if (action === "promotion") navigate(ROUTES.PROMOTIONS);
     if (action === "spending") navigate(ROUTES.SPENDING);
+    if (action === "storage") navigate(ROUTES.STORAGE);
+    if (action === "suppliers") navigate(ROUTES.SUPPLIERS);
   };
 
   const handleDateFilterChange = (filterValue) => {
@@ -429,6 +434,13 @@ const Dashboard = () => {
             customDateRange={customDateRange}
           />
         </div>
+      )}
+
+      {activeTab === "Storage Analytics" && isAdmin && (
+        <StorageAnalytics 
+          dateFilter={dateFilter}
+          customDateRange={customDateRange}
+        />
       )}
 
       {isCategoryModalOpen && <CategoryModal setIsCategoryModalOpen={setIsCategoryModalOpen} />}
