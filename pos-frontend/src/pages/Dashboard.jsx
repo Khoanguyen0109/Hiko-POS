@@ -223,8 +223,7 @@ const Dashboard = () => {
     { label: "Add Topping", icon: <MdAddCircle />, action: "topping" },
     { label: "Add Promotion", icon: <MdLocalOffer />, action: "promotion" },
     ...(isAdmin ? [
-      { label: "Spending", icon: <MdAccountBalanceWallet />, action: "spending" },
-      { label: "Ingredients", icon: <MdInventory />, action: "ingredients" }
+      { label: "Spending", icon: <MdAccountBalanceWallet />, action: "spending" }
     ] : []),
   ];
 
@@ -273,7 +272,6 @@ const Dashboard = () => {
     if (action === "topping") navigate(ROUTES.TOPPINGS);
     if (action === "promotion") navigate(ROUTES.PROMOTIONS);
     if (action === "spending") navigate(ROUTES.SPENDING);
-    if (action === "ingredients") navigate(ROUTES.INGREDIENTS);
   };
 
   const handleDateFilterChange = (filterValue) => {

@@ -11,9 +11,6 @@ import tablesReducer from "./slices/tableSlice";
 import toppingReducer from "./slices/toppingSlice";
 import promotionReducer from "./slices/promotionSlice";
 import spendingReducer from "./slices/spendingSlice";
-import ingredientReducer from "./slices/ingredientSlice";
-import recipeReducer from "./slices/recipeSlice";
-import toppingRecipeReducer from "./slices/toppingRecipeSlice";
 import shiftTemplateReducer from "./slices/shiftTemplateSlice";
 import scheduleReducer from "./slices/scheduleSlice";
 import extraWorkReducer from "./slices/extraWorkSlice";
@@ -33,9 +30,6 @@ const store = configureStore({
         toppings: toppingReducer,
         promotions: promotionReducer,
         spending: spendingReducer,
-        ingredients: ingredientReducer,
-        recipes: recipeReducer,
-        toppingRecipes: toppingRecipeReducer,
         shiftTemplates: shiftTemplateReducer,
         schedules: scheduleReducer,
         extraWork: extraWorkReducer,

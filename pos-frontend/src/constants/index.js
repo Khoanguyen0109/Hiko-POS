@@ -451,7 +451,6 @@ export const ROUTES = {
   TOPPINGS: "/toppings",
   PROMOTIONS: "/promotions",
   SPENDING: "/spending",
-  INGREDIENTS: "/ingredients",
   SCHEDULES: "/schedules",
   SHIFT_TEMPLATES: "/shift-templates"
 };
@@ -532,11 +531,6 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.SPENDING,
     componentName: "SpendingManager"
-  },
-  {
-    path: ROUTES.INGREDIENTS,
-    componentName: "Ingredients",
-    adminOnly: true
   },
   {
     path: ROUTES.SCHEDULES,

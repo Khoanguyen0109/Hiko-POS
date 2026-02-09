@@ -388,9 +388,6 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
                       />
                     </div>
                   </div>
-                  <p className="text-[#ababab] text-xs mt-2">
-                    💡 Cost will be calculated from recipe ingredients
-                  </p>
                 </div>
               ))}
             </div>
@@ -414,9 +411,6 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
                     required
                   />
                 </div>
-                <p className="text-[#ababab] text-xs mt-2">
-                  💡 Cost will be automatically calculated from recipe ingredients
-                </p>
               </div>
             </>
           )}

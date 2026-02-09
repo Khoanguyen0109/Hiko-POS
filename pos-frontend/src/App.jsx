@@ -23,7 +23,6 @@ import {
   Toppings,
   PromotionManager,
   SpendingManager,
-  Ingredients,
   WeeklySchedule,
   ShiftTemplates,
 } from "./pages";
@@ -62,7 +61,6 @@ const COMPONENT_MAP = {
   Toppings,
   PromotionManager,
   SpendingManager,
-  Ingredients,
   WeeklySchedule,
   ShiftTemplates,
 };
