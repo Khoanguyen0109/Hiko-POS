@@ -108,7 +108,10 @@ const extraWorkSlice = createSlice({
             })
             .addCase(createExtraWork.fulfilled, (state, action) => {
                 state.createLoading = false;
-                state.extraWorkEntries.unshift(action.payload.data);
+                const entry = action.payload.data;
+                state.extraWorkEntries.unshift(entry);
+                state.totalHours += entry.durationHours || 0;
+                state.totalPayment += entry.paymentAmount || 0;
                 state.error = null;
             })
             .addCase(createExtraWork.rejected, (state, action) => {
@@ -119,6 +122,13 @@ const extraWorkSlice = createSlice({
         // Delete extra work
         builder
             .addCase(deleteExtraWork.fulfilled, (state, action) => {
+                const removed = state.extraWorkEntries.find(
+                    entry => entry._id === action.payload
+                );
+                if (removed) {
+                    state.totalHours -= removed.durationHours || 0;
+                    state.totalPayment -= removed.paymentAmount || 0;
+                }
                 state.extraWorkEntries = state.extraWorkEntries.filter(
                     entry => entry._id !== action.payload
                 );

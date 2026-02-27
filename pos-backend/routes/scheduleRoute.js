@@ -11,6 +11,7 @@ const {
     updateSchedule,
     deleteSchedule,
     assignMemberToShift,
+    batchAssignMembers,
     unassignMemberFromShift,
     updateMemberStatus,
     getMySchedules
@@ -51,6 +52,9 @@ router.route("/:id")
 
 router.route("/:id/assign")
     .patch(isVerifiedUser, isAdmin, assignMemberToShift);
+
+router.route("/:id/batch-assign")
+    .patch(isVerifiedUser, isAdmin, batchAssignMembers);
 
 router.route("/:id/unassign")
     .patch(isVerifiedUser, isAdmin, unassignMemberFromShift);

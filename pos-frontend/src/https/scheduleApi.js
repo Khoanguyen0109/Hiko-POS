@@ -56,6 +56,9 @@ export const deleteSchedule = (id) =>
 export const assignMemberToShift = (scheduleId, memberId) => 
     axiosWrapper.patch(`/api/schedule/${scheduleId}/assign`, { memberId });
 
+export const batchAssignMembers = (scheduleId, memberIds) => 
+    axiosWrapper.patch(`/api/schedule/${scheduleId}/batch-assign`, { memberIds });
+
 export const unassignMemberFromShift = (scheduleId, memberId) => 
     axiosWrapper.patch(`/api/schedule/${scheduleId}/unassign`, { memberId });
 

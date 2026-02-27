@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { enqueueSnackbar } from "notistack";
 import { MdClose, MdPerson, MdCheck, MdAccessTime } from "react-icons/md";
 import { fetchMembers } from "../../redux/slices/memberSlice";
-import { assignMember, unassignMember } from "../../redux/slices/scheduleSlice";
+import { batchAssignMembers } from "../../redux/slices/scheduleSlice";
 import FullScreenLoader from "../shared/FullScreenLoader";
-import ExtraWorkModal from "../extrawork/ExtraWorkModal";
 
 const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLogExtraWork }) => {
   const dispatch = useDispatch();
@@ -14,65 +13,67 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLog
   
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const initialMembersRef = useRef([]);
+
+  const getAssignedMemberIds = useCallback((assignedMembers) => {
+    if (!assignedMembers) return [];
+    return assignedMembers.map(am => {
+      if (typeof am === 'object' && am.member) {
+        return typeof am.member === 'string' ? am.member : am.member._id;
+      }
+      return typeof am === 'string' ? am : am._id;
+    });
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
-      // Fetch members if not already loaded
       if (!members || members.length === 0) {
         dispatch(fetchMembers());
       }
       
-      // Pre-select members already assigned to this schedule
-      if (schedule?.assignedMembers) {
-        const memberIds = schedule.assignedMembers.map(am => {
-          // assignedMembers has structure: { member, status }
-          if (typeof am === 'object' && am.member) {
-            return typeof am.member === 'string' ? am.member : am.member._id;
-          }
-          return typeof am === 'string' ? am : am._id;
-        });
-        setSelectedMembers(memberIds);
-      } else {
-        setSelectedMembers([]);
-      }
+      const ids = getAssignedMemberIds(schedule?.assignedMembers);
+      initialMembersRef.current = ids;
+      setSelectedMembers(ids);
     }
-  }, [isOpen, schedule, members, dispatch]);
+  }, [isOpen, schedule, dispatch, getAssignedMemberIds, members]);
 
-  // Filter active members and by search query
   const activeMembers = members?.filter(
     member => member.isActive && 
     (member.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
      member.email?.toLowerCase().includes(searchQuery.toLowerCase()))
   ) || [];
 
-  const handleToggleMember = async (memberId) => {
-    const isCurrentlySelected = selectedMembers.includes(memberId);
+  const handleToggleMember = (memberId) => {
+    setSelectedMembers(prev =>
+      prev.includes(memberId)
+        ? prev.filter(id => id !== memberId)
+        : [...prev, memberId]
+    );
+  };
+
+  const hasChanges = () => {
+    const initial = [...initialMembersRef.current].sort();
+    const current = [...selectedMembers].sort();
+    if (initial.length !== current.length) return true;
+    return initial.some((id, i) => id !== current[i]);
+  };
+
+  const handleSave = async () => {
+    if (!hasChanges()) {
+      onClose();
+      return;
+    }
 
     try {
-      if (isCurrentlySelected) {
-        // Unassign member
-        const result = await dispatch(unassignMember({
-          scheduleId: schedule._id,
-          memberId
-        })).unwrap();
-        
-        setSelectedMembers(prev => prev.filter(id => id !== memberId));
-        enqueueSnackbar("Member unassigned successfully", { variant: "success" });
-      } else {
-        // Assign member
-        const result = await dispatch(assignMember({
-          scheduleId: schedule._id,
-          memberId
-        })).unwrap();
-        
-        setSelectedMembers(prev => [...prev, memberId]);
-        enqueueSnackbar("Member assigned successfully", { variant: "success" });
-      }
+      await dispatch(batchAssignMembers({
+        scheduleId: schedule._id,
+        memberIds: selectedMembers
+      })).unwrap();
+      enqueueSnackbar("Member assignments updated", { variant: "success" });
+      setSearchQuery("");
+      onClose();
     } catch (error) {
-      enqueueSnackbar(
-        error || "Failed to update member assignment",
-        { variant: "error" }
-      );
+      enqueueSnackbar(error || "Failed to update assignments", { variant: "error" });
     }
   };
 
@@ -152,12 +153,11 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLog
                     <button
                       key={member._id}
                       onClick={() => handleToggleMember(member._id)}
-                      disabled={assignLoading}
-                      className={`w-full flex items-center justify-between p-4 rounded-lg transition-all ${
+                      className={`w-full flex items-center justify-between p-4 rounded-lg transition-all cursor-pointer ${
                         isSelected
                           ? "bg-[#4ECDC4] bg-opacity-20 border-2 border-[#4ECDC4]"
                           : "bg-[#1e1e1e] border-2 border-[#3a3a3a] hover:border-[#4a4a4a]"
-                      } ${assignLoading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                      }`}
                     >
                       <div className="flex items-center space-x-3">
                         <div
@@ -197,7 +197,10 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLog
           {/* Footer */}
           <div className="flex items-center justify-between p-6 border-t border-[#3a3a3a]">
             <div className="text-sm text-[#ababab]">
-              {selectedMembers.length} member(s) assigned
+              {selectedMembers.length} member(s) selected
+              {hasChanges() && (
+                <span className="ml-2 text-[#f6b100]">• unsaved changes</span>
+              )}
             </div>
             <div className="flex items-center gap-3">
               {onLogExtraWork && schedule && selectedMembers.length > 0 && (
@@ -216,7 +219,14 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLog
                 onClick={handleClose}
                 className="px-6 py-2 bg-[#3a3a3a] hover:bg-[#4a4a4a] text-[#f5f5f5] rounded-lg transition-colors"
               >
-                Done
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={assignLoading}
+                className="px-6 py-2 bg-[#4ECDC4] hover:bg-[#4ECDC4]/90 text-[#1e1e1e] font-medium rounded-lg transition-colors disabled:opacity-50"
+              >
+                {assignLoading ? "Saving..." : "Save"}
               </button>
             </div>
           </div>

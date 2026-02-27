@@ -573,6 +573,63 @@ const assignMemberToShift = async (req, res, next) => {
     }
 };
 
+// Batch assign members to shift (replaces all current assignments)
+const batchAssignMembers = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { memberIds } = req.body;
+        
+        if (!id) {
+            return next(createHttpError(400, "Schedule ID is required"));
+        }
+        
+        if (!Array.isArray(memberIds)) {
+            return next(createHttpError(400, "memberIds must be an array"));
+        }
+        
+        const schedule = await Schedule.findById(id);
+        if (!schedule) {
+            return next(createHttpError(404, "Schedule not found"));
+        }
+        
+        const assignedMembers = [];
+        for (const memberId of memberIds) {
+            const member = await User.findById(memberId);
+            if (!member) {
+                return next(createHttpError(404, `Member ${memberId} not found`));
+            }
+            if (!member.isActive) {
+                return next(createHttpError(400, `Member ${member.name} is inactive`));
+            }
+            
+            const existing = schedule.assignedMembers.find(
+                am => am.member.toString() === memberId
+            );
+            assignedMembers.push({
+                member: memberId,
+                status: existing ? existing.status : "scheduled"
+            });
+        }
+        
+        schedule.assignedMembers = assignedMembers;
+        schedule.lastModifiedBy = req.user._id;
+        await schedule.save();
+        
+        await schedule.populate([
+            { path: 'shiftTemplate' },
+            { path: 'assignedMembers.member', select: '-password' }
+        ]);
+        
+        res.status(200).json({
+            success: true,
+            message: "Members assigned successfully",
+            data: schedule
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // Unassign member from shift
 const unassignMemberFromShift = async (req, res, next) => {
     try {
@@ -700,6 +757,7 @@ module.exports = {
     updateSchedule,
     deleteSchedule,
     assignMemberToShift,
+    batchAssignMembers,
     unassignMemberFromShift,
     updateMemberStatus,
     getMySchedules

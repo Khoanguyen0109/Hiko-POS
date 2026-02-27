@@ -86,6 +86,18 @@ export const assignMember = createAsyncThunk(
     }
 );
 
+export const batchAssignMembers = createAsyncThunk(
+    "schedule/batchAssignMembers",
+    async ({ scheduleId, memberIds }, { rejectWithValue }) => {
+        try {
+            const response = await scheduleApi.batchAssignMembers(scheduleId, memberIds);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || "Failed to update member assignments");
+        }
+    }
+);
+
 export const unassignMember = createAsyncThunk(
     "schedule/unassignMember",
     async ({ scheduleId, memberId }, { rejectWithValue }) => {
@@ -275,6 +287,26 @@ const scheduleSlice = createSlice({
                 state.error = null;
             })
             .addCase(unassignMember.rejected, (state, action) => {
+                state.assignLoading = false;
+                state.error = action.payload;
+            });
+
+        // Batch assign members
+        builder
+            .addCase(batchAssignMembers.pending, (state) => {
+                state.assignLoading = true;
+                state.error = null;
+            })
+            .addCase(batchAssignMembers.fulfilled, (state, action) => {
+                state.assignLoading = false;
+                const updated = action.payload.data;
+                const index = state.schedules.findIndex(s => s._id === updated._id);
+                if (index !== -1) {
+                    state.schedules[index] = updated;
+                }
+                state.error = null;
+            })
+            .addCase(batchAssignMembers.rejected, (state, action) => {
                 state.assignLoading = false;
                 state.error = action.payload;
             });

@@ -20,7 +20,7 @@ import {
   clearError as clearTemplateError
 } from "../redux/slices/shiftTemplateSlice";
 import { fetchMembers } from "../redux/slices/memberSlice";
-import { fetchExtraWork, clearError as clearExtraWorkError } from "../redux/slices/extraWorkSlice";
+import { fetchExtraWork } from "../redux/slices/extraWorkSlice";
 import { ROUTES } from "../constants";
 
 const WeeklySchedule = () => {
@@ -154,8 +154,6 @@ const WeeklySchedule = () => {
     setShowAssignmentModal(false);
     setSelectedSchedule(null);
     setSelectedShiftTemplate(null);
-    // Refresh schedules after assignment
-    dispatch(fetchSchedulesByWeek(currentWeek));
   };
 
   const handleOpenExtraWorkModal = (date = null, memberId = null) => {
@@ -172,12 +170,6 @@ const WeeklySchedule = () => {
     setShowExtraWorkModal(false);
     setSelectedDate(null);
     setSelectedMemberForExtraWork(null);
-    // Refresh extra work list after creating entry
-    const filters = {};
-    if (extraWorkFilters.memberId) filters.memberId = extraWorkFilters.memberId;
-    if (extraWorkFilters.startDate) filters.startDate = extraWorkFilters.startDate;
-    if (extraWorkFilters.endDate) filters.endDate = extraWorkFilters.endDate;
-    dispatch(fetchExtraWork(filters));
   };
 
   const handleFilterChange = (name, value) => {
