@@ -1,6 +1,5 @@
 import { useState, useEffect, memo, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { motion } from "framer-motion";
 import PropTypes from "prop-types";
 import { IoMdAdd } from "react-icons/io";
 import { MdInput, MdOutput, MdSettings, MdBusiness } from "react-icons/md";
@@ -21,6 +20,31 @@ import { useNavigate } from "react-router-dom";
 import { getStoredUser } from "../utils/auth";
 import { logger } from "../utils/logger";
 
+const STATUS_STYLES = {
+  completed: "bg-green-900/30 text-green-400 border border-green-800",
+  pending: "bg-yellow-900/30 text-yellow-400 border border-yellow-800",
+  cancelled: "bg-red-900/30 text-red-400 border border-red-800",
+};
+
+const REASON_LABELS = {
+  production: "Production",
+  waste: "Waste",
+  damage: "Damage",
+  theft: "Theft",
+  transfer: "Transfer",
+  other: "Other",
+};
+
+const StatusBadge = ({ status }) => (
+  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[status] || STATUS_STYLES.cancelled}`}>
+    {status}
+  </span>
+);
+StatusBadge.propTypes = { status: PropTypes.string.isRequired };
+
+const thClass = "px-4 py-3 text-left text-xs font-medium text-[#ababab] uppercase tracking-wider";
+const tdClass = "px-4 py-3 text-sm text-[#f5f5f5] whitespace-nowrap";
+
 const ImportList = memo(({ imports, loading, onCancel }) => {
   if (loading) {
     return (
@@ -34,104 +58,61 @@ const ImportList = memo(({ imports, loading, onCancel }) => {
   if (imports.length === 0) {
     return (
       <div className="text-center py-12">
-        <MdInput size={64} className="text-[#343434] mx-auto mb-4" />
-        <p className="text-[#ababab] text-lg">No imports found</p>
+        <MdInput size={48} className="text-[#343434] mx-auto mb-3" />
+        <p className="text-[#ababab]">No imports found</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {imports.map((importRecord) => (
-        <motion.div
-          key={importRecord._id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434] hover:border-[#f6b100]/50 transition-colors"
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h3 className="text-[#f5f5f5] font-semibold text-lg">
-                  {importRecord.importNumber}
-                </h3>
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    importRecord.status === "completed"
-                      ? "bg-green-900/30 text-green-400 border border-green-800"
-                      : importRecord.status === "pending"
-                      ? "bg-yellow-900/30 text-yellow-400 border border-yellow-800"
-                      : "bg-red-900/30 text-red-400 border border-red-800"
-                  }`}
-                >
-                  {importRecord.status}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div>
-                  <p className="text-[#ababab] text-sm mb-1">Item</p>
-                  <p className="text-[#f5f5f5] font-medium">
-                    {importRecord.storageItemId?.name || "N/A"} ({importRecord.storageItemId?.code || "N/A"})
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[#ababab] text-sm mb-1">Quantity</p>
-                  <p className="text-[#f5f5f5] font-medium">
-                    {importRecord.quantity} {importRecord.unit}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[#ababab] text-sm mb-1">Unit Cost</p>
-                  <p className="text-[#f5f5f5] font-medium">
-                    {importRecord.unitCost?.toLocaleString("vi-VN")} VND
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[#ababab] text-sm mb-1">Total Cost</p>
-                  <p className="text-[#f6b100] font-bold text-lg">
-                    {importRecord.totalCost?.toLocaleString("vi-VN")} VND
-                  </p>
-                </div>
-                {importRecord.supplierName && (
-                  <div>
-                    <p className="text-[#ababab] text-sm mb-1">Supplier</p>
-                    <p className="text-[#f5f5f5] font-medium">
-                      {importRecord.supplierName}
-                    </p>
-                  </div>
+    <div className="overflow-x-auto rounded-lg border border-[#343434]">
+      <table className="w-full min-w-[800px]">
+        <thead className="bg-[#262626]">
+          <tr>
+            <th className={thClass}>Import #</th>
+            <th className={thClass}>Item</th>
+            <th className={thClass}>Qty</th>
+            <th className={thClass}>Unit Cost</th>
+            <th className={thClass}>Total</th>
+            <th className={thClass}>Supplier</th>
+            <th className={thClass}>Date</th>
+            <th className={thClass}>Status</th>
+            <th className={`${thClass} text-right`}>Action</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[#343434]">
+          {imports.map((r) => (
+            <tr key={r._id} className="bg-[#1f1f1f] hover:bg-[#262626] transition-colors">
+              <td className={`${tdClass} font-medium`}>{r.importNumber}</td>
+              <td className={tdClass}>
+                {r.storageItemId?.name || "N/A"}
+                <span className="text-[#ababab] ml-1 text-xs">({r.storageItemId?.code || "N/A"})</span>
+              </td>
+              <td className={tdClass}>{r.quantity} {r.unit}</td>
+              <td className={tdClass}>{r.unitCost?.toLocaleString("vi-VN")}</td>
+              <td className={`${tdClass} text-[#f6b100] font-semibold`}>{r.totalCost?.toLocaleString("vi-VN")}</td>
+              <td className={tdClass}>{r.supplierName || "—"}</td>
+              <td className={tdClass}>{new Date(r.importDate).toLocaleDateString("vi-VN")}</td>
+              <td className={tdClass}><StatusBadge status={r.status} /></td>
+              <td className={`${tdClass} text-right`}>
+                {r.status !== "cancelled" && (
+                  <button
+                    onClick={() => onCancel(r._id)}
+                    className="px-3 py-1 text-xs bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-800 rounded transition-colors"
+                  >
+                    Cancel
+                  </button>
                 )}
-                <div>
-                  <p className="text-[#ababab] text-sm mb-1">Date</p>
-                  <p className="text-[#f5f5f5] font-medium">
-                    {new Date(importRecord.importDate).toLocaleDateString("vi-VN")}
-                  </p>
-                </div>
-              </div>
-
-              {importRecord.notes && (
-                <div className="mt-4 pt-4 border-t border-[#343434]">
-                  <p className="text-[#ababab] text-sm">{importRecord.notes}</p>
-                </div>
-              )}
-            </div>
-
-            {importRecord.status !== "cancelled" && (
-              <button
-                onClick={() => onCancel(importRecord._id)}
-                className="ml-4 px-4 py-2 bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-800 rounded-lg transition-colors text-sm"
-              >
-                Cancel
-              </button>
-            )}
-          </div>
-        </motion.div>
-      ))}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 });
 
-ImportList.displayName = 'ImportList';
+ImportList.displayName = "ImportList";
 ImportList.propTypes = {
   imports: PropTypes.arrayOf(PropTypes.object).isRequired,
   loading: PropTypes.bool.isRequired,
@@ -151,102 +132,63 @@ const ExportList = memo(({ exports, loading, onCancel }) => {
   if (exports.length === 0) {
     return (
       <div className="text-center py-12">
-        <MdOutput size={64} className="text-[#343434] mx-auto mb-4" />
-        <p className="text-[#ababab] text-lg">No exports found</p>
+        <MdOutput size={48} className="text-[#343434] mx-auto mb-3" />
+        <p className="text-[#ababab]">No exports found</p>
       </div>
     );
   }
 
-  const reasonLabels = {
-    production: "Production",
-    waste: "Waste",
-    damage: "Damage",
-    theft: "Theft",
-    transfer: "Transfer",
-    other: "Other"
-  };
-
   return (
-    <div className="space-y-4">
-      {exports.map((exportRecord) => (
-        <motion.div
-          key={exportRecord._id}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434] hover:border-[#f6b100]/50 transition-colors"
-        >
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h3 className="text-[#f5f5f5] font-semibold text-lg">
-                  {exportRecord.exportNumber}
-                </h3>
-                <span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    exportRecord.status === "completed"
-                      ? "bg-green-900/30 text-green-400 border border-green-800"
-                      : exportRecord.status === "pending"
-                      ? "bg-yellow-900/30 text-yellow-400 border border-yellow-800"
-                      : "bg-red-900/30 text-red-400 border border-red-800"
-                  }`}
-                >
-                  {exportRecord.status}
+    <div className="overflow-x-auto rounded-lg border border-[#343434]">
+      <table className="w-full min-w-[800px]">
+        <thead className="bg-[#262626]">
+          <tr>
+            <th className={thClass}>Export #</th>
+            <th className={thClass}>Item</th>
+            <th className={thClass}>Qty</th>
+            <th className={thClass}>Reason</th>
+            <th className={thClass}>Exported By</th>
+            <th className={thClass}>Date</th>
+            <th className={thClass}>Status</th>
+            <th className={`${thClass} text-right`}>Action</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[#343434]">
+          {exports.map((r) => (
+            <tr key={r._id} className="bg-[#1f1f1f] hover:bg-[#262626] transition-colors">
+              <td className={`${tdClass} font-medium`}>{r.exportNumber}</td>
+              <td className={tdClass}>
+                {r.storageItemId?.name || "N/A"}
+                <span className="text-[#ababab] ml-1 text-xs">({r.storageItemId?.code || "N/A"})</span>
+              </td>
+              <td className={tdClass}>{r.quantity} {r.unit}</td>
+              <td className={tdClass}>
+                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-900/30 text-blue-400 border border-blue-800">
+                  {REASON_LABELS[r.reason] || r.reason}
                 </span>
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-900/30 text-blue-400 border border-blue-800">
-                  {reasonLabels[exportRecord.reason] || exportRecord.reason}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div>
-                  <p className="text-[#ababab] text-sm mb-1">Item</p>
-                  <p className="text-[#f5f5f5] font-medium">
-                    {exportRecord.storageItemId?.name || "N/A"} ({exportRecord.storageItemId?.code || "N/A"})
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[#ababab] text-sm mb-1">Quantity</p>
-                  <p className="text-[#f5f5f5] font-medium">
-                    {exportRecord.quantity} {exportRecord.unit}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[#ababab] text-sm mb-1">Date</p>
-                  <p className="text-[#f5f5f5] font-medium">
-                    {new Date(exportRecord.exportDate).toLocaleDateString("vi-VN")}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-[#ababab] text-sm mb-1">Exported By</p>
-                  <p className="text-[#f5f5f5] font-medium">
-                    {exportRecord.exportedBy?.userName || "N/A"}
-                  </p>
-                </div>
-              </div>
-
-              {exportRecord.notes && (
-                <div className="mt-4 pt-4 border-t border-[#343434]">
-                  <p className="text-[#ababab] text-sm">{exportRecord.notes}</p>
-                </div>
-              )}
-            </div>
-
-            {exportRecord.status !== "cancelled" && (
-              <button
-                onClick={() => onCancel(exportRecord._id)}
-                className="ml-4 px-4 py-2 bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-800 rounded-lg transition-colors text-sm"
-              >
-                Cancel
-              </button>
-            )}
-          </div>
-        </motion.div>
-      ))}
+              </td>
+              <td className={tdClass}>{r.exportedBy?.userName || "N/A"}</td>
+              <td className={tdClass}>{new Date(r.exportDate).toLocaleDateString("vi-VN")}</td>
+              <td className={tdClass}><StatusBadge status={r.status} /></td>
+              <td className={`${tdClass} text-right`}>
+                {r.status !== "cancelled" && (
+                  <button
+                    onClick={() => onCancel(r._id)}
+                    className="px-3 py-1 text-xs bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-800 rounded transition-colors"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 });
 
-ExportList.displayName = 'ExportList';
+ExportList.displayName = "ExportList";
 ExportList.propTypes = {
   exports: PropTypes.arrayOf(PropTypes.object).isRequired,
   loading: PropTypes.bool.isRequired,
@@ -348,37 +290,39 @@ const Storage = () => {
         {/* Header */}
         <div className="mb-6">
           <BackButton />
-          <div className="flex items-center justify-between mt-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-4">
             <div>
-              <h1 className="text-3xl font-bold text-[#f5f5f5] mb-2">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#f5f5f5] mb-1">
                 Storage Management
               </h1>
-              <p className="text-[#ababab]">
+              <p className="text-[#ababab] text-sm sm:text-base">
                 Manage imports and exports
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               {isAdmin && (
                 <>
                   <button
                     onClick={() => navigate("/storage/items")}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#1f1f1f] text-[#f5f5f5] rounded-lg hover:bg-[#262626] border border-[#343434] transition-colors"
+                    className="flex items-center justify-center gap-2 p-2 sm:px-4 sm:py-2 bg-[#1f1f1f] text-[#f5f5f5] rounded-lg hover:bg-[#262626] border border-[#343434] transition-colors"
+                    title="Manage Items"
                   >
                     <MdSettings size={18} />
-                    Manage Items
+                    <span className="hidden sm:inline text-sm">Manage Items</span>
                   </button>
                   <button
                     onClick={() => navigate("/storage/suppliers")}
-                    className="flex items-center gap-2 px-4 py-2 bg-[#1f1f1f] text-[#f5f5f5] rounded-lg hover:bg-[#262626] border border-[#343434] transition-colors"
+                    className="flex items-center justify-center gap-2 p-2 sm:px-4 sm:py-2 bg-[#1f1f1f] text-[#f5f5f5] rounded-lg hover:bg-[#262626] border border-[#343434] transition-colors"
+                    title="Suppliers"
                   >
                     <MdBusiness size={18} />
-                    Suppliers
+                    <span className="hidden sm:inline text-sm">Suppliers</span>
                   </button>
                 </>
               )}
               <button
                 onClick={activeTab === "imports" ? handleCreateImport : handleCreateExport}
-                className="flex items-center gap-2 px-6 py-3 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-semibold hover:bg-[#e5a000] transition-colors"
+                className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-semibold hover:bg-[#e5a000] transition-colors text-sm sm:text-base"
               >
                 <IoMdAdd size={20} />
                 New {activeTab === "imports" ? "Import" : "Export"}

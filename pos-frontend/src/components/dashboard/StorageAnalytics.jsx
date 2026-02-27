@@ -136,63 +136,59 @@ const StorageAnalytics = ({ dateFilter, customDateRange }) => {
                             <thead>
                                 <tr className="border-b border-[#343434]">
                                     <th className="text-left py-3 px-2 sm:px-4 text-[#ababab] text-xs sm:text-sm font-medium">Item</th>
-                                    <th className="text-left py-3 px-2 sm:px-4 text-[#ababab] text-xs sm:text-sm font-medium">Category</th>
-                                    <th className="text-right py-3 px-2 sm:px-4 text-[#ababab] text-xs sm:text-sm font-medium">Current Stock</th>
-                                    <th className="text-right py-3 px-2 sm:px-4 text-[#ababab] text-xs sm:text-sm font-medium">Min Stock</th>
+                                    <th className="text-right py-3 px-2 sm:px-4 text-[#ababab] text-xs sm:text-sm font-medium">Stock</th>
                                     <th className="text-right py-3 px-2 sm:px-4 text-[#ababab] text-xs sm:text-sm font-medium">Import Cost</th>
                                     <th className="text-right py-3 px-2 sm:px-4 text-[#ababab] text-xs sm:text-sm font-medium">Export Cost</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {items.map((item) => (
-                                    <tr
-                                        key={item._id}
-                                        className={`border-b border-[#343434] hover:bg-[#1f1f1f] transition-colors ${
-                                            item.isLowStock ? "bg-red-500/10" : ""
-                                        }`}
-                                    >
-                                        <td className="py-3 px-2 sm:px-4">
-                                            <div className="flex flex-col">
-                                                <span className="text-[#f5f5f5] font-medium text-sm sm:text-base">
-                                                    {item.name}
+                                {items.map((item) => {
+                                    const isOut = item.currentStock === 0;
+                                    const isLow = item.isLowStock;
+                                    const rowBg = isOut
+                                        ? "bg-red-500/15 hover:bg-red-500/25 border-l-4 border-l-red-500"
+                                        : isLow
+                                        ? "bg-yellow-500/15 hover:bg-yellow-500/25 border-l-4 border-l-yellow-400"
+                                        : "hover:bg-[#1f1f1f]";
+                                    return (
+                                        <tr
+                                            key={item._id}
+                                            className={`border-b border-[#343434] transition-colors ${rowBg}`}
+                                        >
+                                            <td className="py-3 px-2 sm:px-4">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[#f5f5f5] font-medium text-sm sm:text-base">
+                                                        {item.name}
+                                                    </span>
+                                                    <span className="text-[#ababab] text-xs">{item.code}</span>
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-2 sm:px-4 text-right">
+                                                <div className="flex items-center justify-end gap-1.5">
+                                                    {(isOut || isLow) && (
+                                                        <MdWarning className={`flex-shrink-0 ${isOut ? "text-red-400" : "text-yellow-400"}`} size={14} />
+                                                    )}
+                                                    <span className={`font-semibold text-sm sm:text-base ${
+                                                        isOut ? "text-red-400" : isLow ? "text-yellow-300" : "text-[#f5f5f5]"
+                                                    }`}>
+                                                        {item.currentStock}
+                                                    </span>
+                                                    <span className="text-[#ababab] text-xs">/ {item.minStock} {item.unit}</span>
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-2 sm:px-4 text-right">
+                                                <span className="text-green-400 font-medium text-xs sm:text-sm">
+                                                    {formatVND(item.totalImportCost)}
                                                 </span>
-                                                <span className="text-[#ababab] text-xs">{item.code}</span>
-                                            </div>
-                                        </td>
-                                        <td className="py-3 px-2 sm:px-4">
-                                            <span className="text-[#ababab] text-xs sm:text-sm">{item.category}</span>
-                                        </td>
-                                        <td className="py-3 px-2 sm:px-4 text-right">
-                                            <span
-                                                className={`font-semibold text-sm sm:text-base ${
-                                                    item.isLowStock
-                                                        ? "text-red-500"
-                                                        : "text-[#f5f5f5]"
-                                                }`}
-                                            >
-                                                {item.currentStock} {item.unit}
-                                            </span>
-                                            {item.isLowStock && (
-                                                <MdWarning className="inline ml-1 text-red-500" size={16} />
-                                            )}
-                                        </td>
-                                        <td className="py-3 px-2 sm:px-4 text-right">
-                                            <span className="text-[#ababab] text-xs sm:text-sm">
-                                                {item.minStock} {item.unit}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-2 sm:px-4 text-right">
-                                            <span className="text-green-400 font-medium text-xs sm:text-sm">
-                                                {formatVND(item.totalImportCost)}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-2 sm:px-4 text-right">
-                                            <span className="text-orange-400 font-medium text-xs sm:text-sm">
-                                                {formatVND(item.totalExportCost)}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
+                                            </td>
+                                            <td className="py-3 px-2 sm:px-4 text-right">
+                                                <span className="text-orange-400 font-medium text-xs sm:text-sm">
+                                                    {formatVND(item.totalExportCost)}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>

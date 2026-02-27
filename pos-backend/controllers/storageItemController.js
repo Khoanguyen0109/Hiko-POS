@@ -315,7 +315,7 @@ const updateStorageItem = async (req, res, next) => {
     }
 };
 
-// Delete storage item (soft delete)
+// Delete storage item (hard delete)
 const deleteStorageItem = async (req, res, next) => {
     try {
         const { id } = req.params;
@@ -324,15 +324,11 @@ const deleteStorageItem = async (req, res, next) => {
             return next(createHttpError(400, "Invalid storage item ID"));
         }
 
-        const item = await StorageItem.findById(id);
+        const item = await StorageItem.findByIdAndDelete(id);
 
         if (!item) {
             return next(createHttpError(404, "Storage item not found"));
         }
-
-        // Soft delete by setting isActive to false
-        item.isActive = false;
-        await item.save();
 
         res.status(200).json({
             success: true,
