@@ -184,7 +184,7 @@ const StorageItems = () => {
             <table className="w-full min-w-[600px]">
               <thead className="bg-[#262626]">
                 <tr>
-                  <th className={thClass}>Item</th>
+                  <th className={`${thClass} sticky left-0 bg-[#262626] z-[1]`}>Item</th>
                   <th className={thClass}>Stock</th>
                   <th className={thClass}>Status</th>
                   <th className={`${thClass} text-right`}>Actions</th>
@@ -195,13 +195,14 @@ const StorageItems = () => {
                   const isLow = item.currentStock <= item.minStock;
                   const isOut = item.currentStock === 0;
                   const rowBg = isOut
-                    ? "bg-red-500/15 hover:bg-red-500/25 border-l-4 border-l-red-500"
+                    ? "bg-[#3b2222] hover:bg-[#4a2a2a] border-l-4 border-l-red-500"
                     : isLow
-                    ? "bg-yellow-500/15 hover:bg-yellow-500/25 border-l-4 border-l-yellow-400"
+                    ? "bg-[#3b3520] hover:bg-[#4a4228] border-l-4 border-l-yellow-400"
                     : "bg-[#1f1f1f] hover:bg-[#262626]";
+                  const stickyBg = isOut ? "bg-[#3b2222]" : isLow ? "bg-[#3b3520]" : "bg-[#1f1f1f]";
                   return (
                     <tr key={item._id} className={`${rowBg} transition-colors`}>
-                      <td className={tdClass}>
+                      <td className={`${tdClass} sticky left-0 ${stickyBg} z-[1] shadow-[2px_0_4px_-1px_rgba(0,0,0,0.3)]`}>
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-[#f6b100]/20 flex items-center justify-center flex-shrink-0">
                             <MdInventory size={16} className="text-[#f6b100]" />

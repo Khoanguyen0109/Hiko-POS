@@ -66,11 +66,10 @@ const ImportList = memo(({ imports, loading, onCancel }) => {
 
   return (
     <div className="overflow-x-auto rounded-lg border border-[#343434]">
-      <table className="w-full min-w-[800px]">
+      <table className="w-full min-w-[700px]">
         <thead className="bg-[#262626]">
           <tr>
-            <th className={thClass}>Import #</th>
-            <th className={thClass}>Item</th>
+            <th className={`${thClass} sticky left-0 bg-[#262626] z-[1]`}>Item</th>
             <th className={thClass}>Qty</th>
             <th className={thClass}>Unit Cost</th>
             <th className={thClass}>Total</th>
@@ -83,9 +82,8 @@ const ImportList = memo(({ imports, loading, onCancel }) => {
         <tbody className="divide-y divide-[#343434]">
           {imports.map((r) => (
             <tr key={r._id} className="bg-[#1f1f1f] hover:bg-[#262626] transition-colors">
-              <td className={`${tdClass} font-medium`}>{r.importNumber}</td>
-              <td className={tdClass}>
-                {r.storageItemId?.name || "N/A"}
+              <td className={`${tdClass} sticky left-0 bg-[#1f1f1f] z-[1] shadow-[2px_0_4px_-1px_rgba(0,0,0,0.3)]`}>
+                <span className="font-medium">{r.storageItemId?.name || "N/A"}</span>
                 <span className="text-[#ababab] ml-1 text-xs">({r.storageItemId?.code || "N/A"})</span>
               </td>
               <td className={tdClass}>{r.quantity} {r.unit}</td>
@@ -140,11 +138,10 @@ const ExportList = memo(({ exports, loading, onCancel }) => {
 
   return (
     <div className="overflow-x-auto rounded-lg border border-[#343434]">
-      <table className="w-full min-w-[800px]">
+      <table className="w-full min-w-[700px]">
         <thead className="bg-[#262626]">
           <tr>
-            <th className={thClass}>Export #</th>
-            <th className={thClass}>Item</th>
+            <th className={`${thClass} sticky left-0 bg-[#262626] z-[1]`}>Item</th>
             <th className={thClass}>Qty</th>
             <th className={thClass}>Reason</th>
             <th className={thClass}>Exported By</th>
@@ -156,9 +153,8 @@ const ExportList = memo(({ exports, loading, onCancel }) => {
         <tbody className="divide-y divide-[#343434]">
           {exports.map((r) => (
             <tr key={r._id} className="bg-[#1f1f1f] hover:bg-[#262626] transition-colors">
-              <td className={`${tdClass} font-medium`}>{r.exportNumber}</td>
-              <td className={tdClass}>
-                {r.storageItemId?.name || "N/A"}
+              <td className={`${tdClass} sticky left-0 bg-[#1f1f1f] z-[1] shadow-[2px_0_4px_-1px_rgba(0,0,0,0.3)]`}>
+                <span className="font-medium">{r.storageItemId?.name || "N/A"}</span>
                 <span className="text-[#ababab] ml-1 text-xs">({r.storageItemId?.code || "N/A"})</span>
               </td>
               <td className={tdClass}>{r.quantity} {r.unit}</td>
