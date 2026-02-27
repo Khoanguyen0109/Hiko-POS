@@ -16,9 +16,7 @@ import {
   clearError
 } from "../redux/slices/scheduleSlice";
 import {
-  fetchActiveShiftTemplates,
-  clearError as clearTemplateError
-} from "../redux/slices/shiftTemplateSlice";
+  fetchActiveShiftTemplates} from "../redux/slices/shiftTemplateSlice";
 import { fetchMembers } from "../redux/slices/memberSlice";
 import { fetchExtraWork } from "../redux/slices/extraWorkSlice";
 import { ROUTES } from "../constants";
@@ -480,7 +478,7 @@ const WeeklySchedule = () => {
                     <div className="text-center py-12">
                       <MdAccessTime size={48} className="mx-auto text-[#6a6a6a] mb-4" />
                       <p className="text-[#ababab]">
-                        No extra work entries found. Click "Log New Entry" to add one.
+                        No extra work entries found. Click &quot;Log New Entry&quot; to add one.
                       </p>
                     </div>
                   ) : (

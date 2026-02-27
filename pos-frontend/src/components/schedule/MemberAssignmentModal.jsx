@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { enqueueSnackbar } from "notistack";
+import PropTypes from "prop-types";
 import { MdClose, MdPerson, MdCheck, MdAccessTime } from "react-icons/md";
 import { fetchMembers } from "../../redux/slices/memberSlice";
 import { batchAssignMembers } from "../../redux/slices/scheduleSlice";
@@ -234,6 +235,22 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLog
       </div>
     </>
   );
+};
+
+MemberAssignmentModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  schedule: PropTypes.shape({
+    _id: PropTypes.string,
+    date: PropTypes.string,
+    assignedMembers: PropTypes.array,
+  }),
+  shiftTemplate: PropTypes.shape({
+    name: PropTypes.string,
+    startTime: PropTypes.string,
+    endTime: PropTypes.string,
+  }),
+  onLogExtraWork: PropTypes.func,
 };
 
 export default MemberAssignmentModal;
