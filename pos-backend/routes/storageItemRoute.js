@@ -8,7 +8,7 @@ const {
     getLowStockItems
 } = require("../controllers/storageItemController");
 
-const { isVerifiedUser } = require("../middlewares/tokenVerification");
+const { isVerifiedUser, isAdmin } = require("../middlewares/tokenVerification");
 const router = express.Router();
 
 // Get low stock items (must come before /:id)
@@ -21,12 +21,12 @@ router.get("/", isVerifiedUser, getStorageItems);
 router.get("/:id", isVerifiedUser, getStorageItemById);
 
 // Create storage item (Admin only)
-router.post("/", isVerifiedUser, addStorageItem);
+router.post("/", isVerifiedUser, isAdmin, addStorageItem);
 
 // Update storage item (Admin only)
-router.put("/:id", isVerifiedUser, updateStorageItem);
+router.put("/:id", isVerifiedUser, isAdmin, updateStorageItem);
 
 // Delete storage item (Admin only)
-router.delete("/:id", isVerifiedUser, deleteStorageItem);
+router.delete("/:id", isVerifiedUser, isAdmin, deleteStorageItem);
 
 module.exports = router;
