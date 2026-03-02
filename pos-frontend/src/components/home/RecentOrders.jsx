@@ -1,36 +1,15 @@
 import { FaSearch, FaClock } from "react-icons/fa";
 import OrderList from "./OrderList";
-import { useEffect, useMemo } from "react";
-import { enqueueSnackbar } from "notistack";
-import { useSelector, useDispatch } from "react-redux";
-import { fetchOrders } from "../../redux/slices/orderSlice";
-import { getTodayDate } from "../../utils";
+import { useMemo } from "react";
+import { useSelector } from "react-redux";
 import { ROUTES } from "../../constants";
 
 const RecentOrders = () => {
-  const dispatch = useDispatch();
-  const { items, loading, error } = useSelector((state) => state.orders);
+  const { items, loading } = useSelector((state) => state.orders);
 
-  // Fetch all orders for today
-  useEffect(() => {
-    const today = getTodayDate();
-    dispatch(fetchOrders({ 
-      startDate: today, 
-      endDate: today
-      // Remove status filter - fetch all orders
-    }));
-  }, [dispatch]);
-
-  // Filter orders for "progress" status on frontend
   const ordersInProgress = useMemo(() => {
     return items?.filter(order => order.orderStatus === 'progress') || [];
   }, [items]);
-
-  useEffect(() => {
-    if (error) {
-      enqueueSnackbar(error, { variant: "error" });
-    }
-  }, [error]);
 
   return (
     <div className="px-8 mt-6">

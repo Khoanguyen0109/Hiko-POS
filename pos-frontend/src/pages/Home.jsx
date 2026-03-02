@@ -2,23 +2,32 @@ import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { BsCashCoin } from "react-icons/bs";
 import { GrInProgress } from "react-icons/gr";
-import { MdRestaurantMenu, MdAccountBalance, MdMoney, MdStore, MdStorefront, MdAccessTime } from "react-icons/md";
+import { MdRestaurantMenu, MdAccountBalance, MdMoney, MdStore, MdStorefront, MdAccessTime, MdWarning } from "react-icons/md";
 import MiniCard from "../components/home/MiniCard";
 import RecentOrders from "../components/home/RecentOrders";
 import { fetchOrders } from "../redux/slices/orderSlice";
+import { fetchLowStockItems } from "../redux/slices/storageItemSlice";
 import { getTodayDate, formatVND } from "../utils";
 
 const Home = () => {
   const dispatch = useDispatch();
   const { items: orders, loading } = useSelector((state) => state.orders);
+  const { lowStockItems } = useSelector((state) => state.storageItems);
 
   useEffect(() => {
     document.title = "POS | Home";
 
-    // Fetch today's orders for the dashboard stats
     const today = getTodayDate();
     dispatch(fetchOrders({ startDate: today, endDate: today }));
+    dispatch(fetchLowStockItems());
   }, [dispatch]);
+
+  const topLowStock = useMemo(() => {
+    if (!lowStockItems || lowStockItems.length === 0) return [];
+    return [...lowStockItems]
+      .sort((a, b) => (a.currentStock / (a.minStock || 1)) - (b.currentStock / (b.minStock || 1)))
+      .slice(0, 5);
+  }, [lowStockItems]);
 
   // Calculate today's statistics
   const todayStats = useMemo(() => {
@@ -290,6 +299,82 @@ const Home = () => {
             </div>
           </div>
         </div>
+
+        {/* Low Stock Alert */}
+        {topLowStock.length > 0 && (
+          <div className="px-4 sm:px-8 mt-6">
+            <div className="bg-[#262626] rounded-lg p-6 border border-red-900/40">
+              <div className="flex items-center gap-2 mb-4">
+                <MdWarning className="text-red-400" size={20} />
+                <h2 className="text-[#f5f5f5] text-lg font-semibold">
+                  Low Stock Alert
+                </h2>
+                <span className="text-xs text-red-300 bg-red-900/30 px-2 py-0.5 rounded-full ml-auto">
+                  {lowStockItems.length} item{lowStockItems.length > 1 ? "s" : ""} below minimum
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {topLowStock.map((item) => {
+                  const ratio = item.minStock > 0 ? item.currentStock / item.minStock : 0;
+                  const isOutOfStock = item.currentStock === 0;
+                  const pctWidth = Math.min(ratio * 100, 100);
+
+                  return (
+                    <div
+                      key={item._id}
+                      className={`flex items-center gap-4 p-3 rounded-lg border ${
+                        isOutOfStock
+                          ? "bg-red-950/30 border-red-800/50"
+                          : "bg-yellow-950/20 border-yellow-800/30"
+                      }`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#f5f5f5] font-medium text-sm truncate">
+                            {item.name}
+                          </span>
+                          {isOutOfStock && (
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-red-400 bg-red-900/40 px-1.5 py-0.5 rounded">
+                              Out
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <div className="flex-1 h-1.5 bg-[#1f1f1f] rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                isOutOfStock
+                                  ? "bg-red-500"
+                                  : ratio <= 0.5
+                                  ? "bg-red-400"
+                                  : "bg-yellow-400"
+                              }`}
+                              style={{ width: `${pctWidth}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <span
+                          className={`text-sm font-bold ${
+                            isOutOfStock ? "text-red-400" : "text-yellow-400"
+                          }`}
+                        >
+                          {item.currentStock}
+                        </span>
+                        <span className="text-xs text-[#ababab]">
+                          {" "}/ {item.minStock} {item.unit}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
 
         <RecentOrders />
       </div>
