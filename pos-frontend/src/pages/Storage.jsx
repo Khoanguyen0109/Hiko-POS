@@ -1,8 +1,8 @@
-import { useState, useEffect, memo, useCallback } from "react";
+import { useState, useEffect, useMemo, memo, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import PropTypes from "prop-types";
 import { IoMdAdd } from "react-icons/io";
-import { MdInput, MdOutput, MdSettings, MdBusiness, MdInventory, MdWarning } from "react-icons/md";
+import { MdInput, MdOutput, MdSettings, MdBusiness, MdInventory, MdToday, MdDateRange, MdCalendarMonth } from "react-icons/md";
 import {
   fetchStorageImports,
   cancelStorageImportAction,
@@ -20,6 +20,7 @@ import BackButton from "../components/shared/BackButton";
 import { useNavigate } from "react-router-dom";
 import { getStoredUser } from "../utils/auth";
 import { logger } from "../utils/logger";
+import { getTodayDate } from "../utils";
 
 const STATUS_STYLES = {
   completed: "bg-green-900/30 text-green-400 border border-green-800",
@@ -295,12 +296,57 @@ const Storage = () => {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [editingImport, setEditingImport] = useState(null);
   const [editingExport, setEditingExport] = useState(null);
+  const [dateFilter, setDateFilter] = useState("today");
+  const [customDateRange, setCustomDateRange] = useState({
+    startDate: "",
+    endDate: "",
+  });
+
+  const dateFilterOptions = useMemo(() => [
+    { value: "today", label: "Today", icon: <MdToday /> },
+    { value: "week", label: "This Week", icon: <MdDateRange /> },
+    { value: "month", label: "This Month", icon: <MdCalendarMonth /> },
+    { value: "custom", label: "Custom Range", icon: <MdDateRange /> },
+  ], []);
+
+  const getDateRange = useCallback((filter) => {
+    const today = getTodayDate();
+    if (filter === "today") {
+      return { startDate: today, endDate: today };
+    }
+    if (filter === "week") {
+      const d = new Date(today + "T00:00:00+07:00");
+      const day = d.getDay();
+      const diff = day === 0 ? 6 : day - 1;
+      d.setDate(d.getDate() - diff);
+      const startDate = d.toISOString().slice(0, 10);
+      return { startDate, endDate: today };
+    }
+    if (filter === "month") {
+      const startDate = today.slice(0, 7) + "-01";
+      return { startDate, endDate: today };
+    }
+    return {};
+  }, []);
+
+  const dateParams = useMemo(() => {
+    if (dateFilter === "custom") {
+      const params = {};
+      if (customDateRange.startDate) params.startDate = customDateRange.startDate;
+      if (customDateRange.endDate) params.endDate = customDateRange.endDate;
+      return params;
+    }
+    return getDateRange(dateFilter);
+  }, [dateFilter, customDateRange, getDateRange]);
 
   useEffect(() => {
     dispatch(fetchStorageItems({}));
-    dispatch(fetchStorageImports({}));
-    dispatch(fetchStorageExports({}));
   }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(fetchStorageImports(dateParams));
+    dispatch(fetchStorageExports(dateParams));
+  }, [dispatch, dateParams]);
 
   const handleCreateImport = useCallback(() => {
     setEditingImport(null);
@@ -312,13 +358,24 @@ const Storage = () => {
     setIsExportModalOpen(true);
   }, []);
 
+  const handleDateFilterChange = useCallback((filterValue) => {
+    setDateFilter(filterValue);
+    if (filterValue !== "custom") {
+      setCustomDateRange({ startDate: "", endDate: "" });
+    }
+  }, []);
+
+  const handleCustomDateChange = useCallback((field, value) => {
+    setCustomDateRange((prev) => ({ ...prev, [field]: value }));
+  }, []);
+
   const handleCancelImport = useCallback(async (id) => {
     if (window.confirm("Are you sure you want to cancel this import?")) {
       try {
         const result = await dispatch(cancelStorageImportAction(id));
         if (cancelStorageImportAction.fulfilled.match(result)) {
           enqueueSnackbar("Import cancelled successfully!", { variant: "success" });
-          dispatch(fetchStorageImports({}));
+          dispatch(fetchStorageImports(dateParams));
         } else {
           enqueueSnackbar(result.payload || "Failed to cancel import", { variant: "error" });
         }
@@ -327,7 +384,7 @@ const Storage = () => {
         enqueueSnackbar("An unexpected error occurred", { variant: "error" });
       }
     }
-  }, [dispatch]);
+  }, [dispatch, dateParams]);
 
   const handleCancelExport = useCallback(async (id) => {
     if (window.confirm("Are you sure you want to cancel this export?")) {
@@ -335,7 +392,7 @@ const Storage = () => {
         const result = await dispatch(cancelStorageExportAction(id));
         if (cancelStorageExportAction.fulfilled.match(result)) {
           enqueueSnackbar("Export cancelled successfully!", { variant: "success" });
-          dispatch(fetchStorageExports({}));
+          dispatch(fetchStorageExports(dateParams));
         } else {
           enqueueSnackbar(result.payload || "Failed to cancel export", { variant: "error" });
         }
@@ -344,15 +401,15 @@ const Storage = () => {
         enqueueSnackbar("An unexpected error occurred", { variant: "error" });
       }
     }
-  }, [dispatch]);
+  }, [dispatch, dateParams]);
 
   const handleModalSuccess = useCallback(() => {
     if (activeTab === "imports") {
-      dispatch(fetchStorageImports({}));
+      dispatch(fetchStorageImports(dateParams));
     } else {
-      dispatch(fetchStorageExports({}));
+      dispatch(fetchStorageExports(dateParams));
     }
-  }, [dispatch, activeTab]);
+  }, [dispatch, activeTab, dateParams]);
 
   if (storageItemsLoading && storageItems.length === 0 && activeTab === "stock") {
     return <FullScreenLoader />;
@@ -456,6 +513,65 @@ const Storage = () => {
             </button>
           </div>
         </div>
+
+        {/* Date Filter - shown for imports & exports tabs */}
+        {activeTab !== "stock" && (
+          <div className="mb-6">
+            <div className="bg-[#1a1a1a] rounded-lg p-3 sm:p-4 border border-[#343434]">
+              <div className="flex flex-col gap-3 sm:gap-4">
+                <div>
+                  <h3 className="text-[#f5f5f5] font-semibold text-base sm:text-lg mb-0.5 sm:mb-1">Date Filter</h3>
+                  <p className="text-[#ababab] text-xs sm:text-sm">Filter data by time period</p>
+                </div>
+
+                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
+                  {dateFilterOptions.map(({ value, label, icon }) => (
+                    <button
+                      key={value}
+                      onClick={() => handleDateFilterChange(value)}
+                      className={`
+                        flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors
+                        ${dateFilter === value
+                          ? "bg-[#f6b100] text-[#1f1f1f]"
+                          : "bg-[#262626] text-[#f5f5f5] hover:bg-[#343434]"
+                        }
+                      `}
+                    >
+                      <span className="text-base sm:text-lg">{icon}</span>
+                      <span className="hidden xs:inline sm:inline">{label}</span>
+                      <span className="xs:hidden">{label.split(" ").pop()}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {dateFilter === "custom" && (
+                  <div className="flex flex-col gap-2 pt-2 border-t border-[#343434]">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                      <div className="flex flex-col">
+                        <label className="text-[#ababab] text-xs mb-1.5">From Date</label>
+                        <input
+                          type="date"
+                          value={customDateRange.startDate}
+                          onChange={(e) => handleCustomDateChange("startDate", e.target.value)}
+                          className="bg-[#262626] text-[#f5f5f5] border border-[#343434] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#f6b100] w-full"
+                        />
+                      </div>
+                      <div className="flex flex-col">
+                        <label className="text-[#ababab] text-xs mb-1.5">To Date</label>
+                        <input
+                          type="date"
+                          value={customDateRange.endDate}
+                          onChange={(e) => handleCustomDateChange("endDate", e.target.value)}
+                          className="bg-[#262626] text-[#f5f5f5] border border-[#343434] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#f6b100] w-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Error Messages */}
         {storageItemsError && activeTab === "stock" && (
