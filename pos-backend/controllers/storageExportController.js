@@ -119,7 +119,9 @@ const getStorageExports = async (req, res, next) => {
                 query.exportDate.$gte = new Date(startDate);
             }
             if (endDate) {
-                query.exportDate.$lte = new Date(endDate);
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                query.exportDate.$lte = end;
             }
         }
 

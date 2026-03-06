@@ -189,7 +189,9 @@ const getStorageImports = async (req, res, next) => {
                 query.importDate.$gte = new Date(startDate);
             }
             if (endDate) {
-                query.importDate.$lte = new Date(endDate);
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999);
+                query.importDate.$lte = end;
             }
         }
 
