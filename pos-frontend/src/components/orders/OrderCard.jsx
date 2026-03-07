@@ -165,9 +165,16 @@ const OrderCard = ({ order }) => {
         </div>
       </div>
       <div className="flex justify-between items-start mt-4 text-[#ababab] text-xs sm:text-sm">
-        <p className="truncate flex-1 mr-2">
-          {formatDateAndTime(order.createdAt || order.orderDate)}
-        </p>
+        <div className="flex flex-col gap-0.5 flex-1 mr-2">
+          <p className="truncate">
+            {formatDateAndTime(order.createdAt || order.orderDate)}
+          </p>
+          {order.updatedAt && order.updatedAt !== order.createdAt && (
+            <p className="truncate text-[10px] sm:text-xs text-[#888]">
+              Updated: {formatDateAndTime(order.updatedAt)}
+            </p>
+          )}
+        </div>
         <div className="flex-shrink-0 max-w-[60%]">
           <p className="text-right mb-1 font-medium">
             {order.items?.reduce(
@@ -216,6 +223,10 @@ OrderCard.propTypes = {
       PropTypes.instanceOf(Date),
     ]),
     createdAt: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.instanceOf(Date),
+    ]),
+    updatedAt: PropTypes.oneOfType([
       PropTypes.string,
       PropTypes.instanceOf(Date),
     ]),
