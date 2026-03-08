@@ -20,7 +20,8 @@ const addSupplier = async (req, res, next) => {
 
         // Check if supplier with same name exists
         const existingSupplier = await Supplier.findOne({
-            name: name.trim()
+            name: name.trim(),
+            store: req.store._id
         });
 
         if (existingSupplier) {
@@ -30,7 +31,8 @@ const addSupplier = async (req, res, next) => {
         // Check if code is provided and unique
         if (code && code.trim()) {
             const existingCode = await Supplier.findOne({
-                code: code.trim().toUpperCase()
+                code: code.trim().toUpperCase(),
+                store: req.store._id
             });
             if (existingCode) {
                 return next(createHttpError(400, "Supplier with this code already exists"));
@@ -40,7 +42,8 @@ const addSupplier = async (req, res, next) => {
         // Check if taxId is provided and unique
         if (taxId && taxId.trim()) {
             const existingTaxId = await Supplier.findOne({
-                taxId: taxId.trim()
+                taxId: taxId.trim(),
+                store: req.store._id
             });
             if (existingTaxId) {
                 return next(createHttpError(400, "Supplier with this tax ID already exists"));
@@ -57,6 +60,7 @@ const addSupplier = async (req, res, next) => {
 
         // Create supplier
         const supplier = new Supplier({
+            store: req.store._id,
             name: name.trim(),
             code: code ? code.trim().toUpperCase() : undefined,
             email: email ? email.trim().toLowerCase() : undefined,
@@ -92,7 +96,7 @@ const getSuppliers = async (req, res, next) => {
         } = req.query;
 
         // Build query
-        let query = {};
+        let query = { store: req.store._id };
 
         if (isActive !== undefined) {
             query.isActive = isActive === 'true';
@@ -143,7 +147,7 @@ const getSuppliers = async (req, res, next) => {
 // Get active suppliers only (for dropdowns)
 const getActiveSuppliers = async (req, res, next) => {
     try {
-        const suppliers = await Supplier.find({ isActive: true })
+        const suppliers = await Supplier.find({ isActive: true, store: req.store._id })
             .select('name code email phone')
             .sort({ name: 1 })
             .lean();
@@ -166,7 +170,7 @@ const getSupplierById = async (req, res, next) => {
             return next(createHttpError(400, "Invalid supplier ID"));
         }
 
-        const supplier = await Supplier.findById(id).lean();
+        const supplier = await Supplier.findOne({ _id: id, store: req.store._id }).lean();
 
         if (!supplier) {
             return next(createHttpError(404, "Supplier not found"));
@@ -191,7 +195,7 @@ const updateSupplier = async (req, res, next) => {
             return next(createHttpError(400, "Invalid supplier ID"));
         }
 
-        const supplier = await Supplier.findById(id);
+        const supplier = await Supplier.findOne({ _id: id, store: req.store._id });
 
         if (!supplier) {
             return next(createHttpError(404, "Supplier not found"));
@@ -201,7 +205,8 @@ const updateSupplier = async (req, res, next) => {
         if (name && name.trim() !== supplier.name) {
             const existingSupplier = await Supplier.findOne({
                 name: name.trim(),
-                _id: { $ne: id }
+                _id: { $ne: id },
+                store: req.store._id
             });
             if (existingSupplier) {
                 return next(createHttpError(400, "Supplier with this name already exists"));
@@ -215,7 +220,8 @@ const updateSupplier = async (req, res, next) => {
             if (codeValue !== supplier.code) {
                 const existingCode = await Supplier.findOne({
                     code: codeValue,
-                    _id: { $ne: id }
+                    _id: { $ne: id },
+                    store: req.store._id
                 });
                 if (existingCode) {
                     return next(createHttpError(400, "Supplier with this code already exists"));
@@ -230,7 +236,8 @@ const updateSupplier = async (req, res, next) => {
             if (taxIdValue !== supplier.taxId) {
                 const existingTaxId = await Supplier.findOne({
                     taxId: taxIdValue,
-                    _id: { $ne: id }
+                    _id: { $ne: id },
+                    store: req.store._id
                 });
                 if (existingTaxId) {
                     return next(createHttpError(400, "Supplier with this tax ID already exists"));
@@ -277,7 +284,7 @@ const deleteSupplier = async (req, res, next) => {
             return next(createHttpError(400, "Invalid supplier ID"));
         }
 
-        const supplier = await Supplier.findById(id);
+        const supplier = await Supplier.findOne({ _id: id, store: req.store._id });
 
         if (!supplier) {
             return next(createHttpError(404, "Supplier not found"));
@@ -286,6 +293,7 @@ const deleteSupplier = async (req, res, next) => {
         // Check if supplier has any imports
         const importCount = await StorageImport.countDocuments({
             supplierId: id,
+            store: req.store._id,
             status: { $ne: 'cancelled' }
         });
 

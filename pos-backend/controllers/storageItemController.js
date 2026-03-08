@@ -35,6 +35,7 @@ const addStorageItem = async (req, res, next) => {
 
         // Check if storage item with same name or code exists
         const existingItem = await StorageItem.findOne({
+            store: req.store._id,
             $or: [
                 { name: name.trim() },
                 { code: code.trim().toUpperCase() }
@@ -75,6 +76,7 @@ const addStorageItem = async (req, res, next) => {
 
         // Create storage item
         const storageItem = new StorageItem({
+            store: req.store._id,
             name: name.trim(),
             code: code.trim().toUpperCase(),
             description: description ? description.trim() : undefined,
@@ -114,7 +116,7 @@ const getStorageItems = async (req, res, next) => {
         } = req.query;
 
         // Build query
-        let query = {};
+        let query = { store: req.store._id };
 
         if (category && category !== 'all') {
             query.category = category;
@@ -189,7 +191,7 @@ const getStorageItemById = async (req, res, next) => {
             return next(createHttpError(400, "Invalid storage item ID"));
         }
 
-        const item = await StorageItem.findById(id).lean();
+        const item = await StorageItem.findOne({ _id: id, store: req.store._id }).lean();
 
         if (!item) {
             return next(createHttpError(404, "Storage item not found"));
@@ -225,7 +227,7 @@ const updateStorageItem = async (req, res, next) => {
             return next(createHttpError(400, "Invalid storage item ID"));
         }
 
-        const item = await StorageItem.findById(id);
+        const item = await StorageItem.findOne({ _id: id, store: req.store._id });
 
         if (!item) {
             return next(createHttpError(404, "Storage item not found"));
@@ -235,7 +237,8 @@ const updateStorageItem = async (req, res, next) => {
         if (name && name.trim() !== item.name) {
             const existingItem = await StorageItem.findOne({
                 name: name.trim(),
-                _id: { $ne: id }
+                _id: { $ne: id },
+                store: req.store._id
             });
             if (existingItem) {
                 return next(createHttpError(400, "Storage item with this name already exists"));
@@ -247,7 +250,8 @@ const updateStorageItem = async (req, res, next) => {
         if (code && code.trim().toUpperCase() !== item.code) {
             const existingItem = await StorageItem.findOne({
                 code: code.trim().toUpperCase(),
-                _id: { $ne: id }
+                _id: { $ne: id },
+                store: req.store._id
             });
             if (existingItem) {
                 return next(createHttpError(400, "Storage item with this code already exists"));
@@ -324,7 +328,7 @@ const deleteStorageItem = async (req, res, next) => {
             return next(createHttpError(400, "Invalid storage item ID"));
         }
 
-        const item = await StorageItem.findByIdAndDelete(id);
+        const item = await StorageItem.findOneAndDelete({ _id: id, store: req.store._id });
 
         if (!item) {
             return next(createHttpError(404, "Storage item not found"));
@@ -343,6 +347,7 @@ const deleteStorageItem = async (req, res, next) => {
 const getLowStockItems = async (req, res, next) => {
     try {
         const items = await StorageItem.find({
+            store: req.store._id,
             isActive: true,
             $expr: { $lte: ['$currentStock', '$minStock'] }
         })
@@ -380,7 +385,7 @@ const getStorageAnalytics = async (req, res, next) => {
         }
 
         // Get all active storage items with their imports and exports
-        const items = await StorageItem.find({ isActive: true })
+        const items = await StorageItem.find({ isActive: true, store: req.store._id })
             .sort({ name: 1 })
             .lean();
 
@@ -402,10 +407,12 @@ const getStorageAnalytics = async (req, res, next) => {
 
         // Get completed imports and exports within date range
         const importFilter = { 
+            store: req.store._id,
             status: 'completed',
             ...dateFilter
         };
         const exportFilter = { 
+            store: req.store._id,
             status: 'completed',
             ...exportDateFilter
         };

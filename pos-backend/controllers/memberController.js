@@ -1,5 +1,7 @@
 const createHttpError = require("http-errors");
 const User = require("../models/userModel");
+const StoreUser = require("../models/storeUserModel");
+const Store = require("../models/storeModel");
 const bcrypt = require("bcrypt");
 const { userRoles } = require("../constants/user");
 
@@ -8,12 +10,39 @@ const getAllMembers = async (req, res, next) => {
     try {
         const members = await User.find({ role: { $ne: userRoles.ADMIN } })
             .select('-password')
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 })
+            .lean();
+
+        // Fetch store assignments for all members in one query
+        const memberIds = members.map(m => m._id);
+        const storeUsers = await StoreUser.find({ user: { $in: memberIds } })
+            .populate({ path: 'store', select: 'name code isActive' })
+            .lean();
+
+        // Group by user ID
+        const storesByUser = {};
+        for (const su of storeUsers) {
+            if (!su.store) continue;
+            const uid = su.user.toString();
+            if (!storesByUser[uid]) storesByUser[uid] = [];
+            storesByUser[uid].push({
+                _id: su.store._id,
+                name: su.store.name,
+                code: su.store.code,
+                storeRole: su.role,
+                isActive: su.isActive && su.store.isActive
+            });
+        }
+
+        const membersWithStores = members.map(m => ({
+            ...m,
+            assignedStores: storesByUser[m._id.toString()] || []
+        }));
 
         res.status(200).json({
             success: true,
-            data: members,
-            count: members.length
+            data: membersWithStores,
+            count: membersWithStores.length
         });
     } catch (error) {
         next(error);
@@ -373,6 +402,129 @@ const changePassword = async (req, res, next) => {
     }
 };
 
+// Admin: Get stores assigned to a member
+const getMemberStores = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+
+        const member = await User.findById(id);
+        if (!member) {
+            return next(createHttpError(404, "Member not found!"));
+        }
+
+        const storeUsers = await StoreUser.find({ user: id })
+            .populate({
+                path: 'store',
+                select: 'name code address isActive'
+            })
+            .lean();
+
+        const stores = storeUsers
+            .filter(su => su.store)
+            .map(su => ({
+                _id: su.store._id,
+                name: su.store.name,
+                code: su.store.code,
+                address: su.store.address,
+                isActive: su.store.isActive,
+                storeRole: su.role,
+                memberActive: su.isActive
+            }));
+
+        res.status(200).json({ success: true, data: stores });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Admin: Update store assignments for a member (bulk assign/unassign)
+const updateMemberStores = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { assignments } = req.body;
+        // assignments: [{ storeId, role, isActive }]
+
+        if (!assignments || !Array.isArray(assignments)) {
+            return next(createHttpError(400, "Assignments array is required."));
+        }
+
+        const member = await User.findById(id);
+        if (!member) {
+            return next(createHttpError(404, "Member not found!"));
+        }
+        if (member.role === userRoles.ADMIN) {
+            return next(createHttpError(403, "Cannot manage store assignments for admin accounts."));
+        }
+
+        const assignedStoreIds = assignments.map(a => a.storeId);
+
+        // Validate all store IDs exist
+        const stores = await Store.find({ _id: { $in: assignedStoreIds } });
+        const validStoreIds = new Set(stores.map(s => s._id.toString()));
+
+        for (const storeId of assignedStoreIds) {
+            if (!validStoreIds.has(storeId)) {
+                return next(createHttpError(400, `Store ${storeId} not found.`));
+            }
+        }
+
+        // Get current assignments
+        const currentAssignments = await StoreUser.find({ user: id });
+        const currentMap = new Map(currentAssignments.map(su => [su.store.toString(), su]));
+
+        // Process each assignment
+        for (const { storeId, role } of assignments) {
+            const existing = currentMap.get(storeId);
+            if (existing) {
+                existing.role = role || existing.role;
+                existing.isActive = true;
+                await existing.save();
+            } else {
+                await StoreUser.create({
+                    user: id,
+                    store: storeId,
+                    role: role || "Staff",
+                    isActive: true
+                });
+            }
+        }
+
+        // Deactivate assignments for stores not in the new list
+        const toDeactivate = currentAssignments.filter(
+            su => !assignedStoreIds.includes(su.store.toString())
+        );
+        for (const su of toDeactivate) {
+            su.isActive = false;
+            await su.save();
+        }
+
+        // Return updated list
+        const updatedStoreUsers = await StoreUser.find({ user: id, isActive: true })
+            .populate({ path: 'store', select: 'name code address isActive' })
+            .lean();
+
+        const result = updatedStoreUsers
+            .filter(su => su.store)
+            .map(su => ({
+                _id: su.store._id,
+                name: su.store.name,
+                code: su.store.code,
+                address: su.store.address,
+                isActive: su.store.isActive,
+                storeRole: su.role,
+                memberActive: su.isActive
+            }));
+
+        res.status(200).json({
+            success: true,
+            message: "Store assignments updated successfully!",
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     // Admin functions
     getAllMembers,
@@ -381,6 +533,8 @@ module.exports = {
     updateMember,
     deleteMember,
     toggleMemberActiveStatus,
+    getMemberStores,
+    updateMemberStores,
     
     // Member functions
     getOwnProfile,

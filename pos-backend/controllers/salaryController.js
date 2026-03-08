@@ -37,6 +37,7 @@ const getMonthlySalary = async (req, res, next) => {
 
         // Find all schedules where this member is assigned
         const schedules = await Schedule.find({
+            store: req.store._id,
             'assignedMembers.member': memberId,
             date: {
                 $gte: startDate,
@@ -83,6 +84,7 @@ const getMonthlySalary = async (req, res, next) => {
 
         // Fetch extra work entries for this member in the selected month
         const extraWorkEntries = await ExtraWork.find({
+            store: req.store._id,
             member: memberId,
             date: {
                 $gte: startDate,
@@ -235,6 +237,7 @@ const getAllMembersSalarySummary = async (req, res, next) => {
 
             // Find all schedules where this member is assigned
             const schedules = await Schedule.find({
+                store: req.store._id,
                 'assignedMembers.member': memberId,
                 date: {
                     $gte: start,
@@ -273,6 +276,7 @@ const getAllMembersSalarySummary = async (req, res, next) => {
 
             // Fetch extra work entries
             const extraWorkEntries = await ExtraWork.find({
+                store: req.store._id,
                 member: memberId,
                 date: {
                     $gte: start,

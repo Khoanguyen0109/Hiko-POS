@@ -122,6 +122,30 @@ export const updateScheduleMemberStatus = createAsyncThunk(
     }
 );
 
+export const fetchAllMembersWeek = createAsyncThunk(
+    "schedule/fetchAllMembersWeek",
+    async ({ year, week }, { rejectWithValue }) => {
+        try {
+            const response = await scheduleApi.getAllMembersWeek(year, week);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || "Failed to fetch cross-store schedules");
+        }
+    }
+);
+
+export const fetchMySchedulesAllStores = createAsyncThunk(
+    "schedule/fetchMyAllStores",
+    async (params, { rejectWithValue }) => {
+        try {
+            const response = await scheduleApi.getMySchedulesAllStores(params);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || "Failed to fetch my schedules");
+        }
+    }
+);
+
 const initialState = {
     schedules: [],
     currentWeek: null,
@@ -131,7 +155,11 @@ const initialState = {
     createLoading: false,
     updateLoading: false,
     deleteLoading: false,
-    assignLoading: false
+    assignLoading: false,
+    allMembersSchedules: [],
+    allMembersLoading: false,
+    myAllStoresSchedules: [],
+    myAllStoresLoading: false
 };
 
 const scheduleSlice = createSlice({
@@ -328,6 +356,34 @@ const scheduleSlice = createSlice({
             })
             .addCase(updateScheduleMemberStatus.rejected, (state, action) => {
                 state.updateLoading = false;
+                state.error = action.payload;
+            });
+
+        // All members week (admin cross-store)
+        builder
+            .addCase(fetchAllMembersWeek.pending, (state) => {
+                state.allMembersLoading = true;
+            })
+            .addCase(fetchAllMembersWeek.fulfilled, (state, action) => {
+                state.allMembersLoading = false;
+                state.allMembersSchedules = action.payload.data;
+            })
+            .addCase(fetchAllMembersWeek.rejected, (state, action) => {
+                state.allMembersLoading = false;
+                state.error = action.payload;
+            });
+
+        // My schedules all stores
+        builder
+            .addCase(fetchMySchedulesAllStores.pending, (state) => {
+                state.myAllStoresLoading = true;
+            })
+            .addCase(fetchMySchedulesAllStores.fulfilled, (state, action) => {
+                state.myAllStoresLoading = false;
+                state.myAllStoresSchedules = action.payload.data;
+            })
+            .addCase(fetchMySchedulesAllStores.rejected, (state, action) => {
+                state.myAllStoresLoading = false;
                 state.error = action.payload;
             });
     }

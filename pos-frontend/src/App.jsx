@@ -28,14 +28,17 @@ import {
   Storage,
   StorageItems,
   Suppliers,
+  SelectStore,
+  Stores,
 } from "./pages";
 import Header from "./components/shared/Header";
 import { useSelector, useDispatch } from "react-redux";
 import FullScreenLoader from "./components/shared/FullScreenLoader";
 import PropTypes from "prop-types";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { getAuthData } from "./utils/auth";
 import { setUser } from "./redux/slices/userSlice";
+import { setStores, setActiveStore } from "./redux/slices/storeSlice";
 import { getUserData } from "./https";
 import { logger } from "./utils/logger";
 import {
@@ -44,9 +47,8 @@ import {
   PROTECTED_ROUTES,
   HEADER_HIDDEN_ROUTES,
 } from "./constants";
-import BottomNav from "./components/shared/BottomNav";
+import Sidebar from "./components/shared/Sidebar";
 
-// Component mapping for dynamic rendering
 const COMPONENT_MAP = {
   Home,
   Auth,
@@ -70,6 +72,8 @@ const COMPONENT_MAP = {
   Storage,
   StorageItems,
   Suppliers,
+  SelectStore,
+  Stores,
 };
 
 function Layout() {
@@ -78,24 +82,46 @@ function Layout() {
   const { isAuth } = useSelector((state) => state.user);
   const [isValidatingToken, setIsValidatingToken] = useState(true);
 
-  // Initialize authentication state from localStorage on app load
   useEffect(() => {
     const initializeAuth = async () => {
       const { isAuthenticated, accessToken } = getAuthData();
 
       if (isAuthenticated && accessToken) {
         try {
-          // Fetch user data to validate token
           const response = await getUserData();
           const { data } = response.data;
 
-          // If successful, set user data in Redux
           dispatch(setUser(data));
+
+          // Set stores from getUserData response
+          if (data.stores && data.stores.length > 0) {
+            dispatch(setStores(data.stores));
+
+            // Restore active store from localStorage or auto-select if only one
+            const storedActiveStore = localStorage.getItem("activeStore");
+            if (storedActiveStore) {
+              try {
+                const parsed = JSON.parse(storedActiveStore);
+                const stillValid = data.stores.find(s => s._id === parsed._id);
+                if (stillValid) {
+                  dispatch(setActiveStore(stillValid));
+                } else if (data.stores.length === 1) {
+                  dispatch(setActiveStore(data.stores[0]));
+                }
+              } catch {
+                if (data.stores.length === 1) {
+                  dispatch(setActiveStore(data.stores[0]));
+                }
+              }
+            } else if (data.stores.length === 1) {
+              dispatch(setActiveStore(data.stores[0]));
+            }
+          }
         } catch (error) {
-          // Token is invalid or expired, clear auth data
           logger.error("Token validation failed:", error);
           localStorage.removeItem("accessToken");
           localStorage.removeItem("user");
+          localStorage.removeItem("activeStore");
         }
       }
 
@@ -105,12 +131,19 @@ function Layout() {
     initializeAuth();
   }, [dispatch]);
 
-  // Show loading while validating token
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+  const openSidebar = useCallback(() => setSidebarOpen(true), []);
+
   if (isValidatingToken) return <FullScreenLoader />;
 
   return (
     <>
-      {!HEADER_HIDDEN_ROUTES.includes(location.pathname) && <Header />}
+      {isAuth && <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} onOpen={openSidebar} />}
+      <div className={isAuth ? "ml-[56px] transition-[margin] duration-300" : ""}>
+      {!HEADER_HIDDEN_ROUTES.includes(location.pathname) && (
+        <Header />
+      )}
       <Routes>
         {/* Public Routes */}
         {PUBLIC_ROUTES.map((route) => (
@@ -127,11 +160,19 @@ function Layout() {
           />
         ))}
 
-        {/* Protected Routes */}
+        {/* Store Selection Route */}
+        <Route
+          path={ROUTES.SELECT_STORE}
+          element={
+            <ProtectedRoutes>
+              <SelectStore />
+            </ProtectedRoutes>
+          }
+        />
+
+        {/* Protected Routes (require auth + active store) */}
         {PROTECTED_ROUTES.map((route) => {
           const Component = COMPONENT_MAP[route.componentName];
-
-          // Check if route requires admin access from route configuration
           const requiresAdmin = route.adminOnly === true;
 
           return (
@@ -141,11 +182,15 @@ function Layout() {
               element={
                 requiresAdmin ? (
                   <AdminProtectedRoutes>
-                    <Component />
+                    <StoreRequiredRoutes>
+                      <Component />
+                    </StoreRequiredRoutes>
                   </AdminProtectedRoutes>
                 ) : (
                   <ProtectedRoutes>
-                    <Component />
+                    <StoreRequiredRoutes>
+                      <Component />
+                    </StoreRequiredRoutes>
                   </ProtectedRoutes>
                 )
               }
@@ -156,6 +201,7 @@ function Layout() {
         {/* Fallback Route */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </div>
     </>
   );
 }
@@ -165,7 +211,6 @@ function ProtectedRoutes({ children }) {
   if (!isAuth) {
     return <Navigate to={ROUTES.AUTH} />;
   }
-
   return children;
 }
 
@@ -174,6 +219,16 @@ function AdminProtectedRoutes({ children }) {
   const isAdmin = useSelector((state) => state.user.role) === "Admin";
   if (!isAuth || !isAdmin) {
     return <Navigate to={ROUTES.AUTH} />;
+  }
+  return children;
+}
+
+function StoreRequiredRoutes({ children }) {
+  const { activeStore, stores } = useSelector((state) => state.store);
+
+  // If user has stores but hasn't selected one, redirect to store selection
+  if (stores.length > 0 && !activeStore) {
+    return <Navigate to={ROUTES.SELECT_STORE} />;
   }
 
   return children;
@@ -187,13 +242,14 @@ AdminProtectedRoutes.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
-function App() {
-  const { isAuth } = useSelector((state) => state.user);
+StoreRequiredRoutes.propTypes = {
+  children: PropTypes.node.isRequired,
+};
 
+function App() {
   return (
     <Router>
       <Layout />
-      {isAuth && <BottomNav />}
     </Router>
   );
 }

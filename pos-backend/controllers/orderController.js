@@ -264,7 +264,8 @@ const addOrder = async (req, res, next) => {
       paymentMethod,
       thirdPartyVendor: thirdPartyVendor || 'None',
       paymentData: paymentData || {},
-      createdBy: (userId && userName) ? { userId, userName } : undefined
+      createdBy: (userId && userName) ? { userId, userName } : undefined,
+      store: req.store._id
     };
 
     const order = new Order(orderPayload);
@@ -309,7 +310,7 @@ const getOrderById = async (req, res, next) => {
       return next(error);
     }
 
-    const order = await Order.findById(id)
+    const order = await Order.findOne({ _id: id, store: req.store._id })
       .populate('items.dishId', 'name category price image')
       .populate('createdBy.userId', 'name email')
       .populate('appliedPromotions.promotionId', 'name code type discount');
@@ -333,7 +334,7 @@ const getOrders = async (req, res, next) => {
     const { startDate, endDate, status, createdBy, paymentMethod, thirdPartyVendor } = req.query;
     
     // Build query object
-    let query = {};
+    let query = { store: req.store._id };
     
     // Date filtering using Vietnam timezone
     if (startDate || endDate) {
@@ -405,7 +406,7 @@ const updateOrder = async (req, res, next) => {
     }
 
     // Get current order to check if order exists
-    const currentOrder = await Order.findById(id);
+    const currentOrder = await Order.findOne({ _id: id, store: req.store._id });
     if (!currentOrder) {
       const error = createHttpError(404, "Order not found!");
       return next(error);
@@ -540,8 +541,8 @@ const updateOrder = async (req, res, next) => {
       return next(error);
     }
 
-    const order = await Order.findByIdAndUpdate(
-      id,
+    const order = await Order.findOneAndUpdate(
+      { _id: id, store: req.store._id },
       updateFields,
       { new: true }
     ).populate('items.dishId', 'name category price image');
@@ -566,7 +567,7 @@ const deleteOrder = async (req, res, next) => {
       return next(error);
     }
 
-    const order = await Order.findById(id);
+    const order = await Order.findOne({ _id: id, store: req.store._id });
     if (!order) {
       const error = createHttpError(404, "Order not found!");
       return next(error);
@@ -578,7 +579,7 @@ const deleteOrder = async (req, res, next) => {
       return next(error);
     }
 
-    await Order.findByIdAndDelete(id);
+    await Order.findOneAndDelete({ _id: id, store: req.store._id });
 
     res.status(200).json({ 
       success: true, 

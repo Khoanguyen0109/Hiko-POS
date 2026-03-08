@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 
 const storageImportSchema = new mongoose.Schema({
+    store: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Store",
+        required: true,
+        index: true
+    },
     importNumber: {
         type: String,
         required: true,
@@ -75,6 +81,7 @@ storageImportSchema.index({ importNumber: 1 }, { unique: true });
 storageImportSchema.index({ storageItemId: 1 });
 storageImportSchema.index({ supplierId: 1 });
 storageImportSchema.index({ importDate: 1 });
+storageImportSchema.index({ store: 1, importDate: 1 });
 storageImportSchema.index({ status: 1 });
 storageImportSchema.index({ spendingId: 1 });
 

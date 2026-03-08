@@ -26,6 +26,7 @@ const {
 } = require("../controllers/spendingController");
 
 const { isVerifiedUser } = require("../middlewares/tokenVerification");
+const { storeContext } = require("../middlewares/storeContext");
 const router = express.Router();
 
 // ==================== SPENDING ROUTES ====================
@@ -62,7 +63,7 @@ const router = express.Router();
  *   notes?: string
  * }
  */
-router.post("/", isVerifiedUser, addSpending);
+router.post("/", isVerifiedUser, storeContext, addSpending);
 
 /**
  * @route   GET /api/spending
@@ -84,7 +85,7 @@ router.post("/", isVerifiedUser, addSpending);
  *   sortOrder?: string
  * }
  */
-router.get("/", isVerifiedUser, getSpending);
+router.get("/", isVerifiedUser, storeContext, getSpending);
 
 // ==================== ANALYTICS ROUTES ====================
 // Note: Analytics routes must come before parameterized routes
@@ -94,7 +95,7 @@ router.get("/", isVerifiedUser, getSpending);
  * @desc    Get spending dashboard data
  * @access  Private
  */
-router.get("/analytics/dashboard", isVerifiedUser, getSpendingDashboard);
+router.get("/analytics/dashboard", isVerifiedUser, storeContext, getSpendingDashboard);
 
 /**
  * @route   GET /api/spending/analytics/reports
@@ -106,7 +107,7 @@ router.get("/analytics/dashboard", isVerifiedUser, getSpendingDashboard);
  *   period?: string
  * }
  */
-router.get("/analytics/reports", isVerifiedUser, getSpendingAnalytics);
+router.get("/analytics/reports", isVerifiedUser, storeContext, getSpendingAnalytics);
 
 // ==================== CATEGORY ROUTES ====================
 // Note: Category routes must come before parameterized routes
@@ -166,7 +167,7 @@ router.delete("/categories/:id", isVerifiedUser, deleteSpendingCategory);
  *   notes?: string
  * }
  */
-router.post("/vendors", isVerifiedUser, addVendor);
+router.post("/vendors", isVerifiedUser, storeContext, addVendor);
 
 /**
  * @route   GET /api/spending/vendors
@@ -177,48 +178,48 @@ router.post("/vendors", isVerifiedUser, addVendor);
  *   search?: string
  * }
  */
-router.get("/vendors", isVerifiedUser, getVendors);
+router.get("/vendors", isVerifiedUser, storeContext, getVendors);
 
 /**
  * @route   GET /api/spending/vendors/:id
  * @desc    Get vendor by ID
  * @access  Private
  */
-router.get("/vendors/:id", isVerifiedUser, getVendorById);
+router.get("/vendors/:id", isVerifiedUser, storeContext, getVendorById);
 
 /**
  * @route   PUT /api/spending/vendors/:id
  * @desc    Update vendor
  * @access  Private
  */
-router.put("/vendors/:id", isVerifiedUser, updateVendor);
+router.put("/vendors/:id", isVerifiedUser, storeContext, updateVendor);
 
 /**
  * @route   DELETE /api/spending/vendors/:id
  * @desc    Delete vendor
  * @access  Private
  */
-router.delete("/vendors/:id", isVerifiedUser, deleteVendor);
+router.delete("/vendors/:id", isVerifiedUser, storeContext, deleteVendor);
 
 /**
  * @route   GET /api/spending/:id
  * @desc    Get spending record by ID
  * @access  Private
  */
-router.get("/:id", isVerifiedUser, getSpendingById);
+router.get("/:id", isVerifiedUser, storeContext, getSpendingById);
 
 /**
  * @route   PUT /api/spending/:id
  * @desc    Update spending record
  * @access  Private
  */
-router.put("/:id", isVerifiedUser, updateSpending);
+router.put("/:id", isVerifiedUser, storeContext, updateSpending);
 
 /**
  * @route   DELETE /api/spending/:id
  * @desc    Delete spending record
  * @access  Private
  */
-router.delete("/:id", isVerifiedUser, deleteSpending);
+router.delete("/:id", isVerifiedUser, storeContext, deleteSpending);
 
 module.exports = router;

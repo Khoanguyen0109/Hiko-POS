@@ -1,5 +1,5 @@
 const express = require("express");
-const { 
+const {
     getAllSchedules,
     getSchedulesByWeek,
     getSchedulesByDate,
@@ -14,53 +14,69 @@ const {
     batchAssignMembers,
     unassignMemberFromShift,
     updateMemberStatus,
-    getMySchedules
+    getMySchedules,
+    getMySchedulesAllStores,
+    getAllMembersWeek,
+    checkConflicts
 } = require("../controllers/scheduleController");
 const { isVerifiedUser, isAdmin } = require("../middlewares/tokenVerification");
+const { storeContext } = require("../middlewares/storeContext");
 
 const router = express.Router();
 
-// Member routes - view own schedules (MUST come before admin routes with params)
-router.route("/my-schedule")
-    .get(isVerifiedUser, getMySchedules);
+// ── Cross-store routes (no store context needed) ─────────────────────────
 
-// View routes - All authenticated users can view schedules
+// Member: own schedule across ALL stores
+router.route("/my-schedule-all")
+    .get(isVerifiedUser, getMySchedulesAllStores);
+
+// Admin: all members across all stores for a given week
+router.route("/all-members-week/:year/:week")
+    .get(isVerifiedUser, isAdmin, getAllMembersWeek);
+
+// Admin: check conflicts before assigning
+router.route("/check-conflicts")
+    .post(isVerifiedUser, isAdmin, checkConflicts);
+
+// ── Store-scoped routes ──────────────────────────────────────────────────
+
+router.route("/my-schedule")
+    .get(isVerifiedUser, storeContext, getMySchedules);
+
 router.route("/week/:year/:week")
-    .get(isVerifiedUser, getSchedulesByWeek);
+    .get(isVerifiedUser, storeContext, getSchedulesByWeek);
 
 router.route("/date/:date")
-    .get(isVerifiedUser, getSchedulesByDate);
+    .get(isVerifiedUser, storeContext, getSchedulesByDate);
 
 router.route("/range")
-    .get(isVerifiedUser, getSchedulesByDateRange);
+    .get(isVerifiedUser, storeContext, getSchedulesByDateRange);
 
 router.route("/member/:memberId")
-    .get(isVerifiedUser, getSchedulesByMember);
+    .get(isVerifiedUser, storeContext, getSchedulesByMember);
 
-// Admin routes - Only admins can create/modify schedules
 router.route("/")
-    .get(isVerifiedUser, getAllSchedules)
-    .post(isVerifiedUser, isAdmin, createSchedule);
+    .get(isVerifiedUser, storeContext, getAllSchedules)
+    .post(isVerifiedUser, storeContext, isAdmin, createSchedule);
 
 router.route("/bulk")
-    .post(isVerifiedUser, isAdmin, bulkCreateSchedules);
+    .post(isVerifiedUser, storeContext, isAdmin, bulkCreateSchedules);
 
 router.route("/:id")
-    .get(isVerifiedUser, getScheduleById)
-    .put(isVerifiedUser, isAdmin, updateSchedule)
-    .delete(isVerifiedUser, isAdmin, deleteSchedule);
+    .get(isVerifiedUser, storeContext, getScheduleById)
+    .put(isVerifiedUser, storeContext, isAdmin, updateSchedule)
+    .delete(isVerifiedUser, storeContext, isAdmin, deleteSchedule);
 
 router.route("/:id/assign")
-    .patch(isVerifiedUser, isAdmin, assignMemberToShift);
+    .patch(isVerifiedUser, storeContext, isAdmin, assignMemberToShift);
 
 router.route("/:id/batch-assign")
-    .patch(isVerifiedUser, isAdmin, batchAssignMembers);
+    .patch(isVerifiedUser, storeContext, isAdmin, batchAssignMembers);
 
 router.route("/:id/unassign")
-    .patch(isVerifiedUser, isAdmin, unassignMemberFromShift);
+    .patch(isVerifiedUser, storeContext, isAdmin, unassignMemberFromShift);
 
 router.route("/:id/status")
-    .patch(isVerifiedUser, isAdmin, updateMemberStatus);
+    .patch(isVerifiedUser, storeContext, isAdmin, updateMemberStatus);
 
 module.exports = router;
-

@@ -1,18 +1,22 @@
 const mongoose = require("mongoose");
 
 const storageItemSchema = new mongoose.Schema({
+    store: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Store",
+        required: true,
+        index: true
+    },
     name: {
         type: String,
         required: true,
-        trim: true,
-        unique: true
+        trim: true
     },
     code: {
         type: String,
         required: true,
         trim: true,
-        uppercase: true,
-        unique: true
+        uppercase: true
     },
     description: {
         type: String,
@@ -68,8 +72,8 @@ const storageItemSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Indexes
-storageItemSchema.index({ name: 1 }, { unique: true });
-storageItemSchema.index({ code: 1 }, { unique: true });
+storageItemSchema.index({ store: 1, name: 1 });
+storageItemSchema.index({ store: 1, code: 1 });
 storageItemSchema.index({ category: 1 });
 storageItemSchema.index({ isActive: 1 });
 

@@ -38,10 +38,8 @@ const Orders = () => {
 
   useEffect(() => {
     document.title = "POS | Orders";
-    // Reset the scroll restoration flag when component mounts
     hasRestoredScroll.current = false;
     
-    // Fetch members for createdBy filter (Admin only)
     if (isAdmin) {
       dispatch(fetchMembers());
     }

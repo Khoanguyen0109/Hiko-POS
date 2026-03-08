@@ -92,7 +92,8 @@ const createPromotion = async (req, res, next) => {
     if (promotionData.code) {
       const existingPromotion = await Promotion.findOne({ 
         code: promotionData.code.toUpperCase(),
-        _id: { $ne: promotionData._id }
+        _id: { $ne: promotionData._id },
+        store: req.store._id
       });
       
       if (existingPromotion) {
@@ -104,6 +105,7 @@ const createPromotion = async (req, res, next) => {
     // Create promotion
     const promotionPayload = {
       ...promotionData,
+      store: req.store._id,
       createdBy: (userId && userName) ? { userId, userName } : undefined
     };
 
@@ -140,7 +142,7 @@ const getPromotions = async (req, res, next) => {
     } = req.query;
 
     // Build filter query
-    const filter = {};
+    const filter = { store: req.store._id };
     
     if (isActive !== undefined) {
       filter.isActive = isActive === 'true';
@@ -203,7 +205,7 @@ const getPromotionById = async (req, res, next) => {
       return next(error);
     }
 
-    const promotion = await Promotion.findById(id)
+    const promotion = await Promotion.findOne({ _id: id, store: req.store._id })
       .populate('specificDishes', 'name price category')
       .populate('categories', 'name');
 
@@ -234,7 +236,7 @@ const updatePromotion = async (req, res, next) => {
 
     // Validate date range if dates are being updated
     if (updateData.startDate || updateData.endDate) {
-      const existingPromotion = await Promotion.findById(id);
+      const existingPromotion = await Promotion.findOne({ _id: id, store: req.store._id });
       const startDate = new Date(updateData.startDate || existingPromotion.startDate);
       const endDate = new Date(updateData.endDate || existingPromotion.endDate);
       
@@ -248,7 +250,8 @@ const updatePromotion = async (req, res, next) => {
     if (updateData.code) {
       const existingPromotion = await Promotion.findOne({ 
         code: updateData.code.toUpperCase(),
-        _id: { $ne: id }
+        _id: { $ne: id },
+        store: req.store._id
       });
       
       if (existingPromotion) {
@@ -257,8 +260,8 @@ const updatePromotion = async (req, res, next) => {
       }
     }
 
-    const promotion = await Promotion.findByIdAndUpdate(
-      id,
+    const promotion = await Promotion.findOneAndUpdate(
+      { _id: id, store: req.store._id },
       updateData,
       { new: true, runValidators: true }
     ).populate([
@@ -291,7 +294,7 @@ const deletePromotion = async (req, res, next) => {
       return next(error);
     }
 
-    const promotion = await Promotion.findByIdAndDelete(id);
+    const promotion = await Promotion.findOneAndDelete({ _id: id, store: req.store._id });
 
     if (!promotion) {
       const error = createHttpError(404, "Promotion not found");
@@ -318,7 +321,7 @@ const togglePromotionStatus = async (req, res, next) => {
       return next(error);
     }
 
-    const promotion = await Promotion.findById(id);
+    const promotion = await Promotion.findOne({ _id: id, store: req.store._id });
 
     if (!promotion) {
       const error = createHttpError(404, "Promotion not found");
@@ -348,7 +351,7 @@ const getPromotionAnalytics = async (req, res, next) => {
     if (startDate) promotionDateFilter.$gte = new Date(startDate);
     if (endDate) promotionDateFilter.$lte = new Date(endDate);
     
-    const promotionMatchStage = {};
+    const promotionMatchStage = { store: req.store._id };
     if (Object.keys(promotionDateFilter).length > 0) {
       promotionMatchStage.createdAt = promotionDateFilter;
     }
@@ -359,7 +362,8 @@ const getPromotionAnalytics = async (req, res, next) => {
     if (endDate) orderDateFilter.$lte = new Date(endDate);
     
     const orderMatchStage = {
-      'appliedPromotions.0': { $exists: true } // Only orders with promotions
+      'appliedPromotions.0': { $exists: true },
+      store: req.store._id
     };
     if (Object.keys(orderDateFilter).length > 0) {
       orderMatchStage.createdAt = orderDateFilter;
@@ -486,12 +490,16 @@ const validateCouponCode = async (req, res, next) => {
     }
 
     const currentTime = getCurrentVietnamTime();
-    const promotion = await Promotion.findOne({
+    const couponFilter = {
       code: code.toUpperCase(),
       isActive: true,
       startDate: { $lte: currentTime },
       endDate: { $gte: currentTime }
-    });
+    };
+    const couponStoreId = req.query.store || (req.store && req.store._id);
+    if (couponStoreId) couponFilter.store = couponStoreId;
+
+    const promotion = await Promotion.findOne(couponFilter);
 
     let valid = false;
     let message = "Invalid or expired coupon code";

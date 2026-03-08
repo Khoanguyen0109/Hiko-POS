@@ -25,6 +25,13 @@ const sizeVariantSchema = new mongoose.Schema({
 }, { _id: true });
 
 const dishSchema = new mongoose.Schema({
+    store: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Store",
+        required: false,
+        index: true,
+        default: null
+    },
     name: {
         type: String,
         required: true,
@@ -94,6 +101,8 @@ const dishSchema = new mongoose.Schema({
         default: false
     }
 }, { timestamps: true });
+
+dishSchema.index({ category: 1 });
 
 // Middleware to ensure at least one default size variant if hasSizeVariants is true
 dishSchema.pre('save', function(next) {

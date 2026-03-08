@@ -436,6 +436,7 @@ export const orders = [
 export const ROUTES = {
   ROOT: "/",
   AUTH: "/auth",
+  SELECT_STORE: "/select-store",
   ORDERS: "/orders",
   ORDER_DETAIL: "/orders/:orderId",
   TABLES: "/tables",
@@ -455,7 +456,8 @@ export const ROUTES = {
   SHIFT_TEMPLATES: "/shift-templates",
   STORAGE: "/storage",
   STORAGE_ITEMS: "/storage/items",
-  SUPPLIERS: "/storage/suppliers"
+  SUPPLIERS: "/storage/suppliers",
+  STORES: "/stores"
 };
 
 // Route configurations for optimized rendering
@@ -557,11 +559,16 @@ export const PROTECTED_ROUTES = [
     path: ROUTES.SUPPLIERS,
     componentName: "Suppliers",
     adminOnly: true
+  },
+  {
+    path: ROUTES.STORES,
+    componentName: "Stores",
+    adminOnly: true
   }
 ];
 
 // Routes where header should be hidden
-export const HEADER_HIDDEN_ROUTES = [ROUTES.AUTH];
+export const HEADER_HIDDEN_ROUTES = [ROUTES.AUTH, ROUTES.SELECT_STORE];
 
 export const userRoles = {
   ADMIN: "Admin",

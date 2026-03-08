@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 
 const storageExportSchema = new mongoose.Schema({
+    store: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Store",
+        required: true,
+        index: true
+    },
     exportNumber: {
         type: String,
         required: true,
@@ -54,6 +60,7 @@ const storageExportSchema = new mongoose.Schema({
 storageExportSchema.index({ exportNumber: 1 }, { unique: true });
 storageExportSchema.index({ storageItemId: 1 });
 storageExportSchema.index({ exportDate: 1 });
+storageExportSchema.index({ store: 1, exportDate: 1 });
 storageExportSchema.index({ status: 1 });
 storageExportSchema.index({ reason: 1 });
 

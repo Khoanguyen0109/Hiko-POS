@@ -1,11 +1,16 @@
 const mongoose = require("mongoose");
 
 const supplierSchema = new mongoose.Schema({
+    store: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Store",
+        required: true,
+        index: true
+    },
     name: {
         type: String,
         required: true,
-        trim: true,
-        unique: true
+        trim: true
     },
     code: {
         type: String,
@@ -55,7 +60,7 @@ const supplierSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Indexes
-supplierSchema.index({ name: 1 }, { unique: true });
+supplierSchema.index({ store: 1, name: 1 });
 supplierSchema.index({ code: 1 }, { unique: true, sparse: true });
 supplierSchema.index({ isActive: 1 });
 supplierSchema.index({ taxId: 1 }, { unique: true, sparse: true });

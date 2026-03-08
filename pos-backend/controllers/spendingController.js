@@ -52,7 +52,6 @@ const addSpending = async (req, res, next) => {
             return next(createHttpError(400, "Invalid vendor ID"));
         }
 
-        // Validate category exists
         const categoryExists = await SpendingCategory.findById(category);
         if (!categoryExists) {
             return next(createHttpError(400, "Category not found"));
@@ -61,7 +60,7 @@ const addSpending = async (req, res, next) => {
         // Validate vendor exists if provided
         let vendorInfo = null;
         if (vendor) {
-            vendorInfo = await Vendor.findById(vendor);
+            vendorInfo = await Vendor.findOne({ _id: vendor, store: req.store._id });
             if (!vendorInfo) {
                 return next(createHttpError(400, "Vendor not found"));
             }
@@ -69,6 +68,7 @@ const addSpending = async (req, res, next) => {
 
         // Create spending object
         const spendingData = {
+            store: req.store._id,
             title: title.trim(),
             description: description?.trim(),
             amount: parseFloat(amount),
@@ -122,7 +122,7 @@ const getSpendingById = async (req, res, next) => {
             return next(createHttpError(404, "Invalid spending ID"));
         }
 
-        const spending = await Spending.findById(id)
+        const spending = await Spending.findOne({ _id: id, store: req.store._id })
             .populate('category', 'name description color')
             .populate('vendor', 'name contactPerson phone email address')
             .populate('createdBy.userId', 'name email')
@@ -161,7 +161,7 @@ const getSpending = async (req, res, next) => {
         } = req.query;
 
         // Build query object
-        let query = {};
+        let query = { store: req.store._id };
 
         // Date filtering using Vietnam timezone
         if (startDate || endDate) {
@@ -292,7 +292,7 @@ const updateSpending = async (req, res, next) => {
         }
 
         // Get current spending record
-        const currentSpending = await Spending.findById(id);
+        const currentSpending = await Spending.findOne({ _id: id, store: req.store._id });
         if (!currentSpending) {
             return next(createHttpError(404, "Spending record not found"));
         }
@@ -315,7 +315,7 @@ const updateSpending = async (req, res, next) => {
         }
 
         if (updateData.vendor) {
-            const vendorExists = await Vendor.findById(updateData.vendor);
+            const vendorExists = await Vendor.findOne({ _id: updateData.vendor, store: req.store._id });
             if (!vendorExists) {
                 return next(createHttpError(400, "Vendor not found"));
             }
@@ -325,8 +325,8 @@ const updateSpending = async (req, res, next) => {
         updateData.lastModifiedBy = userId && userName ? { userId, userName } : undefined;
 
         // Update spending record
-        const spending = await Spending.findByIdAndUpdate(
-            id,
+        const spending = await Spending.findOneAndUpdate(
+            { _id: id, store: req.store._id },
             updateData,
             { new: true, runValidators: true }
         ).populate([
@@ -352,7 +352,7 @@ const deleteSpending = async (req, res, next) => {
             return next(createHttpError(404, "Invalid spending ID"));
         }
 
-        const spending = await Spending.findByIdAndDelete(id);
+        const spending = await Spending.findOneAndDelete({ _id: id, store: req.store._id });
         if (!spending) {
             return next(createHttpError(404, "Spending record not found"));
         }
@@ -458,7 +458,6 @@ const deleteSpendingCategory = async (req, res, next) => {
             return next(createHttpError(404, "Invalid category ID"));
         }
 
-        // Check if category is being used
         const spendingCount = await Spending.countDocuments({ category: id });
         if (spendingCount > 0) {
             return next(createHttpError(400, `Cannot delete category. It is being used by ${spendingCount} spending records.`));
@@ -499,6 +498,7 @@ const addVendor = async (req, res, next) => {
         }
 
         const vendorData = {
+            store: req.store._id,
             name: name.trim(),
             contactPerson: contactPerson?.trim(),
             phone: phone?.trim(),
@@ -527,7 +527,7 @@ const getVendors = async (req, res, next) => {
     try {
         const { isActive, search } = req.query;
         
-        let query = {};
+        let query = { store: req.store._id };
         if (isActive !== undefined) {
             query.isActive = isActive === 'true';
         }
@@ -559,7 +559,7 @@ const getVendorById = async (req, res, next) => {
             return next(createHttpError(404, "Invalid vendor ID"));
         }
 
-        const vendor = await Vendor.findById(id);
+        const vendor = await Vendor.findOne({ _id: id, store: req.store._id });
         if (!vendor) {
             return next(createHttpError(404, "Vendor not found"));
         }
@@ -582,8 +582,8 @@ const updateVendor = async (req, res, next) => {
             return next(createHttpError(404, "Invalid vendor ID"));
         }
 
-        const vendor = await Vendor.findByIdAndUpdate(
-            id,
+        const vendor = await Vendor.findOneAndUpdate(
+            { _id: id, store: req.store._id },
             updateData,
             { new: true, runValidators: true }
         );
@@ -611,12 +611,12 @@ const deleteVendor = async (req, res, next) => {
         }
 
         // Check if vendor is being used
-        const spendingCount = await Spending.countDocuments({ vendor: id });
+        const spendingCount = await Spending.countDocuments({ vendor: id, store: req.store._id });
         if (spendingCount > 0) {
             return next(createHttpError(400, `Cannot delete vendor. It is being used by ${spendingCount} spending records.`));
         }
 
-        const vendor = await Vendor.findByIdAndDelete(id);
+        const vendor = await Vendor.findOneAndDelete({ _id: id, store: req.store._id });
         if (!vendor) {
             return next(createHttpError(404, "Vendor not found"));
         }
@@ -686,7 +686,7 @@ const getSpendingAnalytics = async (req, res, next) => {
         ] = await Promise.all([
             // Total spending summary
             Spending.aggregate([
-                { $match: { status: 'active', createdAt: dateFilter } },
+                { $match: { store: req.store._id, status: 'active', createdAt: dateFilter } },
                 {
                     $group: {
                         _id: null,
@@ -710,7 +710,7 @@ const getSpendingAnalytics = async (req, res, next) => {
 
             // Payment status breakdown
             Spending.aggregate([
-                { $match: { status: 'active', createdAt: dateFilter } },
+                { $match: { store: req.store._id, status: 'active', createdAt: dateFilter } },
                 {
                     $group: {
                         _id: '$paymentStatus',
@@ -722,6 +722,7 @@ const getSpendingAnalytics = async (req, res, next) => {
 
             // Overdue spending
             Spending.find({
+                store: req.store._id,
                 status: 'active',
                 paymentStatus: { $in: ['pending', 'overdue'] },
                 dueDate: { $lt: getCurrentVietnamTime() }
@@ -777,6 +778,7 @@ const getSpendingDashboard = async (req, res, next) => {
             Spending.aggregate([
                 {
                     $match: {
+                        store: req.store._id,
                         status: 'active',
                         createdAt: { $gte: startOfMonth }
                     }
@@ -805,6 +807,7 @@ const getSpendingDashboard = async (req, res, next) => {
             Spending.aggregate([
                 {
                     $match: {
+                        store: req.store._id,
                         status: 'active',
                         createdAt: { $gte: startOfYear }
                     }
@@ -820,7 +823,7 @@ const getSpendingDashboard = async (req, res, next) => {
             ]),
 
             // Recent spending (last 10)
-            Spending.find({ status: 'active' })
+            Spending.find({ store: req.store._id, status: 'active' })
                 .populate('category', 'name color')
                 .populate('vendor', 'name')
                 .sort({ createdAt: -1 })
@@ -828,6 +831,7 @@ const getSpendingDashboard = async (req, res, next) => {
 
             // Upcoming payments (next 30 days)
             Spending.find({
+                store: req.store._id,
                 status: 'active',
                 paymentStatus: { $in: ['pending', 'overdue'] },
                 dueDate: {
@@ -844,6 +848,7 @@ const getSpendingDashboard = async (req, res, next) => {
             Spending.aggregate([
                 {
                     $match: {
+                        store: req.store._id,
                         status: 'active',
                         createdAt: { $gte: startOfMonth }
                     }
@@ -873,6 +878,7 @@ const getSpendingDashboard = async (req, res, next) => {
             Spending.aggregate([
                 {
                     $match: {
+                        store: req.store._id,
                         status: 'active',
                         vendor: { $exists: true },
                         createdAt: { $gte: startOfMonth }

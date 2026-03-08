@@ -2,6 +2,18 @@ import { axiosWrapper } from "./axiosWrapper";
 
 // API Endpoints
 
+// Store Endpoints
+export const getMyStores = () => axiosWrapper.get("/api/store/my-stores");
+export const getAllStores = () => axiosWrapper.get("/api/store");
+export const createStore = (data) => axiosWrapper.post("/api/store", data);
+export const getStoreById = (id) => axiosWrapper.get(`/api/store/${id}`);
+export const updateStore = ({ id, ...data }) => axiosWrapper.put(`/api/store/${id}`, data);
+export const deleteStore = (id) => axiosWrapper.delete(`/api/store/${id}`);
+export const getStoreMembers = (storeId) => axiosWrapper.get(`/api/store/${storeId}/members`);
+export const addStoreMember = (storeId, data) => axiosWrapper.post(`/api/store/${storeId}/members`, data);
+export const updateStoreMemberRole = (storeId, userId, data) => axiosWrapper.put(`/api/store/${storeId}/members/${userId}`, data);
+export const removeStoreMember = (storeId, userId) => axiosWrapper.delete(`/api/store/${storeId}/members/${userId}`);
+
 // Auth Endpoints
 export const login = (data) => axiosWrapper.post("/api/user/login", data);
 export const register = (data) => axiosWrapper.post("/api/user/register", data);
@@ -82,6 +94,10 @@ export const createMember = (data) => axiosWrapper.post("/api/member/", data);
 export const updateMember = (id, data) => axiosWrapper.put(`/api/member/${id}`, data);
 export const deleteMember = (id) => axiosWrapper.delete(`/api/member/${id}`);
 export const toggleMemberActiveStatus = (id) => axiosWrapper.patch(`/api/member/${id}/toggle-active`);
+
+// Member Store Assignment Endpoints
+export const getMemberStores = (id) => axiosWrapper.get(`/api/member/${id}/stores`);
+export const updateMemberStores = (id, assignments) => axiosWrapper.put(`/api/member/${id}/stores`, { assignments });
 
 // Member Profile Endpoints
 export const getOwnProfile = () => axiosWrapper.get("/api/member/profile");
@@ -178,6 +194,9 @@ export {
   deleteSchedule,
   assignMemberToShift,
   unassignMemberFromShift,
+  getMySchedulesAllStores,
+  getAllMembersWeek,
+  checkScheduleConflicts,
   updateMemberStatus,
   getMySchedules
 } from "./scheduleApi";

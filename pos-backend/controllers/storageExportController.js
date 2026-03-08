@@ -53,6 +53,7 @@ const createStorageExport = async (req, res, next) => {
 
         // Create export record
         const storageExport = new StorageExport({
+            store: req.store._id,
             exportNumber,
             storageItemId,
             quantity,
@@ -99,7 +100,7 @@ const getStorageExports = async (req, res, next) => {
         } = req.query;
 
         // Build query
-        let query = {};
+        let query = { store: req.store._id };
 
         if (storageItemId && mongoose.Types.ObjectId.isValid(storageItemId)) {
             query.storageItemId = storageItemId;
@@ -166,7 +167,7 @@ const getStorageExportById = async (req, res, next) => {
             return next(createHttpError(400, "Invalid export ID"));
         }
 
-        const exportRecord = await StorageExport.findById(id)
+        const exportRecord = await StorageExport.findOne({ _id: id, store: req.store._id })
             .populate('storageItemId')
             .populate('exportedBy.userId', 'name')
             .lean();
@@ -199,7 +200,7 @@ const updateStorageExport = async (req, res, next) => {
             return next(createHttpError(400, "Invalid export ID"));
         }
 
-        const exportRecord = await StorageExport.findById(id);
+        const exportRecord = await StorageExport.findOne({ _id: id, store: req.store._id });
         if (!exportRecord) {
             return next(createHttpError(404, "Export record not found"));
         }
@@ -316,7 +317,7 @@ const cancelStorageExport = async (req, res, next) => {
             return next(createHttpError(400, "Invalid export ID"));
         }
 
-        const exportRecord = await StorageExport.findById(id);
+        const exportRecord = await StorageExport.findOne({ _id: id, store: req.store._id });
         if (!exportRecord) {
             return next(createHttpError(404, "Export record not found"));
         }

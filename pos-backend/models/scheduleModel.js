@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 
 const scheduleSchema = new mongoose.Schema({
+    store: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Store",
+        required: true,
+        index: true
+    },
     date: {
         type: Date,
         required: [true, "Date is required"],
@@ -68,6 +74,7 @@ const scheduleSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Compound index for efficient queries
+scheduleSchema.index({ store: 1, date: 1 });
 scheduleSchema.index({ date: 1, shiftTemplate: 1 });
 scheduleSchema.index({ year: 1, weekNumber: 1 });
 scheduleSchema.index({ "assignedMembers.member": 1, date: 1 });

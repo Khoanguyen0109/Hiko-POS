@@ -107,6 +107,12 @@ const orderItemSchema = new mongoose.Schema({
 }, { _id: true });
 
 const orderSchema = new mongoose.Schema({
+    store: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Store",
+        required: true,
+        index: true
+    },
     customerDetails: {
         name: { type: String, trim: true },
         phone: { type: String, trim: true },
@@ -173,6 +179,7 @@ const orderSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Index for better query performance
+orderSchema.index({ store: 1, createdAt: -1 });
 orderSchema.index({ createdAt: -1 });
 orderSchema.index({ orderStatus: 1 });
 orderSchema.index({ 'customerDetails.phone': 1 });

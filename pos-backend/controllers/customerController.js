@@ -11,7 +11,7 @@ const addCustomer = async (req, res, next) => {
             return next(error);
         }
 
-        const exists = await Customer.findOne({ phone: String(phone).trim() });
+        const exists = await Customer.findOne({ phone: String(phone).trim(), store: req.store._id });
         if (exists) {
             const error = createHttpError(400, "Customer with this phone already exist!");
             return next(error);
@@ -21,7 +21,8 @@ const addCustomer = async (req, res, next) => {
             name: String(name).trim(),
             phone: String(phone).trim(),
             point: typeof point === 'number' ? point : undefined,
-            class: customerClass ? String(customerClass).trim() : undefined
+            class: customerClass ? String(customerClass).trim() : undefined,
+            store: req.store._id
         });
 
         await newCustomer.save();
@@ -33,7 +34,7 @@ const addCustomer = async (req, res, next) => {
 
 const getCustomers = async (req, res, next) => {
     try {
-        const customers = await Customer.find().sort({ createdAt: -1 });
+        const customers = await Customer.find({ store: req.store._id }).sort({ createdAt: -1 });
         res.status(200).json({ success: true, data: customers });
     } catch (error) {
         next(error);
@@ -48,7 +49,7 @@ const getCustomerById = async (req, res, next) => {
             return next(error);
         }
 
-        const customer = await Customer.findById(id);
+        const customer = await Customer.findOne({ _id: id, store: req.store._id });
         if (!customer) {
             const error = createHttpError(404, "Customer not found!");
             return next(error);
@@ -82,14 +83,14 @@ const updateCustomer = async (req, res, next) => {
         if (customerClass !== undefined) updates.class = String(customerClass).trim();
 
         if (updates.phone) {
-            const conflict = await Customer.findOne({ _id: { $ne: id }, phone: updates.phone });
+            const conflict = await Customer.findOne({ _id: { $ne: id }, phone: updates.phone, store: req.store._id });
             if (conflict) {
                 const error = createHttpError(400, "Another customer with this phone already exist!");
                 return next(error);
             }
         }
 
-        const updated = await Customer.findByIdAndUpdate(id, updates, { new: true });
+        const updated = await Customer.findOneAndUpdate({ _id: id, store: req.store._id }, updates, { new: true });
         if (!updated) {
             const error = createHttpError(404, "Customer not found!");
             return next(error);
@@ -109,7 +110,7 @@ const deleteCustomer = async (req, res, next) => {
             return next(error);
         }
 
-        const deleted = await Customer.findByIdAndDelete(id);
+        const deleted = await Customer.findOneAndDelete({ _id: id, store: req.store._id });
         if (!deleted) {
             const error = createHttpError(404, "Customer not found!");
             return next(error);

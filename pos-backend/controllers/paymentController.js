@@ -21,7 +21,8 @@ const processCashPayment = async (req, res, next) => {
       method: "cash",
       email: customerDetails?.email || null,
       contact: customerDetails?.phone || null,
-      createdAt: getCurrentVietnamTime()
+      createdAt: getCurrentVietnamTime(),
+      store: req.store._id
     });
 
     await newPayment.save();
@@ -42,7 +43,7 @@ const getPaymentByOrderId = async (req, res, next) => {
   try {
     const { orderId } = req.params;
     
-    const payment = await Payment.findOne({ orderId });
+    const payment = await Payment.findOne({ orderId, store: req.store._id });
     
     if (!payment) {
       return next(createHttpError(404, "Payment not found"));
@@ -60,7 +61,7 @@ const getAllPayments = async (req, res, next) => {
   try {
     const { page = 1, limit = 10, status, method } = req.query;
     
-    const filter = {};
+    const filter = { store: req.store._id };
     if (status) filter.status = status;
     if (method) filter.method = method;
     

@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 
 const toppingSchema = new mongoose.Schema({
+    store: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Store",
+        required: true,
+        index: true
+    },
     name: {
         type: String,
         required: true,
@@ -32,8 +38,8 @@ const toppingSchema = new mongoose.Schema({
 });
 
 // Indexes for better query performance
+toppingSchema.index({ store: 1, category: 1 });
 toppingSchema.index({ name: 1 });
-toppingSchema.index({ category: 1 });
 toppingSchema.index({ isAvailable: 1 });
 toppingSchema.index({ price: 1 });
 

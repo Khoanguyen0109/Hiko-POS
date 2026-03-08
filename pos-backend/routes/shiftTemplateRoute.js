@@ -1,5 +1,5 @@
 const express = require("express");
-const { 
+const {
     getAllShiftTemplates,
     getActiveShiftTemplates,
     getShiftTemplateById,
@@ -12,12 +12,10 @@ const { isVerifiedUser, isAdmin } = require("../middlewares/tokenVerification");
 
 const router = express.Router();
 
-// IMPORTANT: Specific routes must come before parameterized routes
-// Get active shift templates (must be before /:id route)
+// Global templates — no store context needed
 router.route("/active")
     .get(isVerifiedUser, getActiveShiftTemplates);
 
-// Admin routes - require admin privileges
 router.route("/")
     .get(isVerifiedUser, isAdmin, getAllShiftTemplates)
     .post(isVerifiedUser, isAdmin, createShiftTemplate);
@@ -31,4 +29,3 @@ router.route("/:id")
     .delete(isVerifiedUser, isAdmin, deleteShiftTemplate);
 
 module.exports = router;
-

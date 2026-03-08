@@ -165,6 +165,13 @@ const memberSlice = createSlice({
             state.deleteLoading = false;
             state.toggleLoading = false;
         },
+        updateMemberInList: (state, action) => {
+            const { _id, ...fields } = action.payload;
+            const idx = state.members.findIndex(m => m._id === _id);
+            if (idx !== -1) {
+                state.members[idx] = { ...state.members[idx], ...fields };
+            }
+        },
     },
     extraReducers: (builder) => {
         // Fetch members
@@ -333,7 +340,8 @@ export const {
     clearError, 
     clearSelectedMember, 
     clearProfile, 
-    resetMemberState 
+    resetMemberState,
+    updateMemberInList
 } = memberSlice.actions;
 
 export default memberSlice.reducer; 

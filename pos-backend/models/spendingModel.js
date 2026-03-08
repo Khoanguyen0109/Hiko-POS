@@ -1,8 +1,15 @@
 const mongoose = require("mongoose");
 const { getCurrentVietnamTime } = require("../utils/dateUtils");
 
-// Spending Category Schema for better organization
+// Spending Category Schema — global, not store-scoped
 const spendingCategorySchema = new mongoose.Schema({
+    store: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Store",
+        required: false,
+        index: true,
+        default: null
+    },
     name: {
         type: String,
         required: true,
@@ -26,6 +33,12 @@ const spendingCategorySchema = new mongoose.Schema({
 
 // Vendor Schema for tracking suppliers and service providers
 const vendorSchema = new mongoose.Schema({
+    store: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Store",
+        required: true,
+        index: true
+    },
     name: {
         type: String,
         required: true,
@@ -43,6 +56,12 @@ const vendorSchema = new mongoose.Schema({
 
 // Main Spending Schema
 const spendingSchema = new mongoose.Schema({
+    store: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Store",
+        required: true,
+        index: true
+    },
     // Basic Information
     title: {
         type: String,
@@ -188,6 +207,7 @@ const spendingSchema = new mongoose.Schema({
 });
 
 // Indexes for better query performance
+spendingSchema.index({ store: 1, createdAt: -1 });
 spendingSchema.index({ createdAt: -1 });
 spendingSchema.index({ category: 1 });
 spendingSchema.index({ vendor: 1 });

@@ -1,5 +1,7 @@
 const createHttpError = require("http-errors");
 const User = require("../models/userModel");
+const StoreUser = require("../models/storeUserModel");
+const Store = require("../models/storeModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const config = require("../config/config");
@@ -68,6 +70,37 @@ const login = async (req, res, next) => {
             expiresIn : '1d'
         });
 
+        // Fetch user's stores
+        let stores = [];
+        if (isUserPresent.role === 'Admin') {
+            const allStores = await Store.find({ isActive: true }).lean();
+            stores = allStores.map(s => ({
+                _id: s._id,
+                name: s.name,
+                code: s.code,
+                address: s.address,
+                role: "Owner"
+            }));
+        } else {
+            const storeUsers = await StoreUser.find({
+                user: isUserPresent._id,
+                isActive: true
+            }).populate({
+                path: 'store',
+                match: { isActive: true }
+            }).lean();
+
+            stores = storeUsers
+                .filter(su => su.store)
+                .map(su => ({
+                    _id: su.store._id,
+                    name: su.store.name,
+                    code: su.store.code,
+                    address: su.store.address,
+                    role: su.role
+                }));
+        }
+
         res.status(200).json({
             success: true, 
             message: "User login successfully!", 
@@ -79,8 +112,9 @@ const login = async (req, res, next) => {
                     phone: isUserPresent.phone,
                     email: isUserPresent.email,
                     role: isUserPresent.role,
-                    isActive: isUserPresent.isActive !== false // Default to true if undefined
-                }
+                    isActive: isUserPresent.isActive !== false
+                },
+                stores
             }
         });
 
@@ -95,13 +129,53 @@ const getUserData = async (req, res, next) => {
         
         const user = await User.findById(req.user._id);
         
-        // Check if user account is inactive
         if(user && user.isActive === false){
             const error = createHttpError(403, "Your account has been deactivated. Please contact administrator.");
             return next(error);
         }
+
+        let stores = [];
+        if (user.role === 'Admin') {
+            const allStores = await Store.find({ isActive: true }).lean();
+            stores = allStores.map(s => ({
+                _id: s._id,
+                name: s.name,
+                code: s.code,
+                address: s.address,
+                role: "Owner"
+            }));
+        } else {
+            const storeUsers = await StoreUser.find({
+                user: user._id,
+                isActive: true
+            }).populate({
+                path: 'store',
+                match: { isActive: true }
+            }).lean();
+
+            stores = storeUsers
+                .filter(su => su.store)
+                .map(su => ({
+                    _id: su.store._id,
+                    name: su.store.name,
+                    code: su.store.code,
+                    address: su.store.address,
+                    role: su.role
+                }));
+        }
         
-        res.status(200).json({success: true, data: user});
+        res.status(200).json({
+            success: true,
+            data: {
+                _id: user._id,
+                name: user.name,
+                phone: user.phone,
+                email: user.email,
+                role: user.role,
+                isActive: user.isActive,
+                stores
+            }
+        });
 
     } catch (error) {
         next(error);

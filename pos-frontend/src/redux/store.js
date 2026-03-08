@@ -20,6 +20,7 @@ import storageItemReducer from "./slices/storageItemSlice";
 import storageImportReducer from "./slices/storageImportSlice";
 import storageExportReducer from "./slices/storageExportSlice";
 import storageAnalyticsReducer from "./slices/storageAnalyticsSlice";
+import storeReducer from "./slices/storeSlice";
 
 const store = configureStore({
     reducer: {
@@ -43,7 +44,8 @@ const store = configureStore({
         storageItems: storageItemReducer,
         storageImports: storageImportReducer,
         storageExports: storageExportReducer,
-        storageAnalytics: storageAnalyticsReducer
+        storageAnalytics: storageAnalyticsReducer,
+        store: storeReducer
     },
 
     devTools: import.meta.env.NODE_ENV !== "production",

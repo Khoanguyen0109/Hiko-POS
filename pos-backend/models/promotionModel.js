@@ -2,6 +2,12 @@ const mongoose = require("mongoose");
 const { getCurrentVietnamTime } = require("../utils/dateUtils");
 
 const promotionSchema = new mongoose.Schema({
+  store: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Store",
+      required: true,
+      index: true
+  },
   // Basic Information
   name: { 
     type: String, 
@@ -16,7 +22,6 @@ const promotionSchema = new mongoose.Schema({
   },
   code: { 
     type: String, 
-    unique: true, 
     sparse: true, 
     trim: true,
     uppercase: true,
@@ -173,6 +178,7 @@ promotionSchema.virtual('remainingUsage').get(function() {
 });
 
 // Indexes for better query performance
+promotionSchema.index({ store: 1, code: 1 });
 promotionSchema.index({ isActive: 1, startDate: 1, endDate: 1 });
 promotionSchema.index({ type: 1 });
 promotionSchema.index({ createdAt: -1 });

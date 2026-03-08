@@ -12,7 +12,6 @@ const {
 const { isVerifiedUser } = require("../middlewares/tokenVerification");
 const router = express.Router();
 
-// Dish CRUD routes
 router.route("/").post(isVerifiedUser, addDish);
 router.route("/").get(isVerifiedUser, getDishes);
 router.route("/available").get(isVerifiedUser, getAvailableDishes);
@@ -22,4 +21,4 @@ router.route("/:id").put(isVerifiedUser, updateDish);
 router.route("/:id").delete(isVerifiedUser, deleteDish);
 router.route("/:id/toggle-availability").patch(isVerifiedUser, toggleDishAvailability);
 
-module.exports = router; 
+module.exports = router;

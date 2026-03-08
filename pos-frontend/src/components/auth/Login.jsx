@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { enqueueSnackbar } from "notistack";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser, clearError } from "../../redux/slices/userSlice";
+import { setStores, setActiveStore } from "../../redux/slices/storeSlice";
 import { useNavigate } from "react-router-dom";
 import { setAuthData } from "../../utils/auth";
  
@@ -24,11 +25,23 @@ const Login = () => {
       dispatch(loginUser(formData))
         .unwrap()
         .then((userData) => {
-          const { accessToken, user } = userData;
-          // Store token and user data in localStorage
+          const { accessToken, user, stores } = userData;
           setAuthData(accessToken, user);
-          enqueueSnackbar("Login successful!", { variant: "success" });
-          navigate("/");
+
+          if (stores && stores.length > 0) {
+            dispatch(setStores(stores));
+            if (stores.length === 1) {
+              dispatch(setActiveStore(stores[0]));
+              enqueueSnackbar("Login successful!", { variant: "success" });
+              navigate("/");
+            } else {
+              enqueueSnackbar("Login successful! Please select a store.", { variant: "success" });
+              navigate("/select-store");
+            }
+          } else {
+            enqueueSnackbar("Login successful!", { variant: "success" });
+            navigate("/");
+          }
         })
         .catch((error) => {
           enqueueSnackbar(error, { variant: "error" });

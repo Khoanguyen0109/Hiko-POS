@@ -6,6 +6,8 @@ const {
     updateMember, 
     deleteMember,
     toggleMemberActiveStatus,
+    getMemberStores,
+    updateMemberStores,
     getOwnProfile,
     updateOwnProfile,
     changePassword
@@ -25,6 +27,11 @@ router.route("/profile")
 
 router.route("/change-password")
     .put(isVerifiedUser, changePassword);
+
+// Member store assignments (admin only)
+router.route("/:id/stores")
+    .get(isVerifiedUser, isAdmin, getMemberStores)
+    .put(isVerifiedUser, isAdmin, updateMemberStores);
 
 // Admin routes with ID parameter - require admin privileges
 router.route("/:id")

@@ -12,13 +12,23 @@ const axiosInstance = axios.create({
   headers: { ...defaultHeader },
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and store context
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    try {
+      const activeStore = JSON.parse(localStorage.getItem('activeStore'));
+      if (activeStore?._id) {
+        config.headers['X-Store-Id'] = activeStore._id;
+      }
+    } catch {
+      // ignore parse errors
+    }
+
     return config;
   },
   (error) => {

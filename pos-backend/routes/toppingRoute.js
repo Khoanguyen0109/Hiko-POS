@@ -9,6 +9,7 @@ const {
   toggleToppingAvailability
 } = require("../controllers/toppingController");
 const { isVerifiedUser } = require("../middlewares/tokenVerification");
+const { storeContext } = require("../middlewares/storeContext");
 
 const router = express.Router();
 
@@ -19,6 +20,7 @@ router.get("/:toppingId", getToppingById);
 
 // Protected routes (require authentication)
 router.use(isVerifiedUser);
+router.use(storeContext);
 
 // Admin routes (for topping management)
 router.post("/", createTopping);

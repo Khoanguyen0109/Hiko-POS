@@ -26,9 +26,10 @@ const CouponSelector = () => {
   });
 
   useEffect(() => {
-    // Fetch promotions when component mounts
-    dispatch(fetchPromotions({ isActive: true, limit: 50 }));
-  }, [dispatch]);
+    if (promotions.length === 0 && !loading) {
+      dispatch(fetchPromotions({ isActive: true, limit: 50 }));
+    }
+  }, []);
 
   const handleSelectCoupon = (coupon) => {
     dispatch(applyCoupon(coupon));

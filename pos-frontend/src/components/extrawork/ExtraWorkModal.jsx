@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { enqueueSnackbar } from "notistack";
-import { MdClose, MdAccessTime, MdAttachMoney } from "react-icons/md";
+import { MdClose, MdAccessTime, MdAttachMoney, MdStore } from "react-icons/md";
 import { createExtraWork, clearError } from "../../redux/slices/extraWorkSlice";
 import { fetchMembers } from "../../redux/slices/memberSlice";
+import { fetchAllStores } from "../../redux/slices/storeSlice";
 import FullScreenLoader from "../shared/FullScreenLoader";
 import { getLocalDateString } from "../../utils/dateUtils";
 
@@ -11,9 +12,12 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
   const dispatch = useDispatch();
   const { members } = useSelector((state) => state.members);
   const { createLoading, error } = useSelector((state) => state.extraWork);
+  const { allStores } = useSelector((state) => state.store);
+  const activeStoreId = useSelector((state) => state.store.activeStore?._id || "");
   
   const [formData, setFormData] = useState({
     memberId: memberId || "",
+    storeId: activeStoreId,
     date: date ? getLocalDateString(new Date(date)) : getLocalDateString(new Date()),
     durationHours: "",
     workType: "overtime",
@@ -27,10 +31,13 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
       if (!members || members.length === 0) {
         dispatch(fetchMembers());
       }
+      if (!allStores || allStores.length === 0) {
+        dispatch(fetchAllStores());
+      }
       
-      // Reset form data when modal opens
       setFormData({
         memberId: memberId || "",
+        storeId: activeStoreId,
         date: date ? getLocalDateString(new Date(date)) : getLocalDateString(new Date()),
         durationHours: "",
         workType: "overtime",
@@ -39,9 +46,9 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
         notes: ""
       });
     } else {
-      // Clear form data when modal closes
       setFormData({
         memberId: "",
+        storeId: activeStoreId,
         date: getLocalDateString(new Date()),
         durationHours: "",
         workType: "overtime",
@@ -50,7 +57,7 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
         notes: ""
       });
     }
-  }, [isOpen, memberId, date, members, dispatch]);
+  }, [isOpen, memberId, date, members, allStores, dispatch, activeStoreId]);
 
   useEffect(() => {
     // Set default hourly rate from member's salary if member is selected
@@ -91,7 +98,7 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.memberId || !formData.date || !formData.durationHours) {
+    if (!formData.memberId || !formData.storeId || !formData.date || !formData.durationHours) {
       enqueueSnackbar("Please fill in all required fields", { variant: "error" });
       return;
     }
@@ -105,6 +112,7 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
     try {
       const submitData = {
         memberId: formData.memberId,
+        storeId: formData.storeId,
         date: formData.date,
         durationHours: duration,
         workType: formData.workType,
@@ -122,9 +130,9 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
   };
 
   const handleClose = () => {
-    // Clear form data
     setFormData({
       memberId: "",
+      storeId: activeStoreId,
       date: getLocalDateString(new Date()),
       durationHours: "",
       workType: "overtime",
@@ -138,6 +146,7 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
   if (!isOpen) return null;
 
   const activeMembers = members?.filter(m => m.isActive && m.role !== "Admin") || [];
+  const activeStores = allStores?.filter(s => s.isActive) || [];
   const workTypes = [
     { value: "overtime", label: "Overtime" },
     { value: "extra_shift", label: "Extra Shift" },
@@ -195,6 +204,28 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
                   {activeMembers.map(member => (
                     <option key={member._id} value={member._id}>
                       {member.name} {member.salary ? `($${member.salary}/hr)` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Store Selection */}
+              <div>
+                <label className="block text-sm font-medium text-[#f5f5f5] mb-2">
+                  <MdStore className="inline mr-1 -mt-0.5" size={16} />
+                  Store <span className="text-red-400">*</span>
+                </label>
+                <select
+                  name="storeId"
+                  value={formData.storeId}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-2 bg-[#1e1e1e] border border-[#3a3a3a] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-[#4ECDC4]"
+                >
+                  <option value="">Select a store</option>
+                  {activeStores.map(store => (
+                    <option key={store._id} value={store._id}>
+                      {store.name} {store.code ? `(${store.code})` : ""}
                     </option>
                   ))}
                 </select>

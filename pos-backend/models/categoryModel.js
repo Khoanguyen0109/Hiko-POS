@@ -1,11 +1,17 @@
 const mongoose = require("mongoose");
 
 const categorySchema = new mongoose.Schema({
+    store: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Store",
+        required: false,
+        index: true,
+        default: null
+    },
     name: {
         type: String,
         required: true,
         trim: true,
-        unique: true,
         maxlength: 50
     },
     
@@ -35,8 +41,7 @@ const categorySchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-// Index for better query performance
-categorySchema.index({ isActive: 1 });
 categorySchema.index({ name: 1 });
+categorySchema.index({ isActive: 1 });
 
 module.exports = mongoose.model("Category", categorySchema); 

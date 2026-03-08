@@ -6,11 +6,11 @@ const Supplier = require("../models/supplierModel");
 const { Spending, SpendingCategory } = require("../models/spendingModel");
 
 // Helper function to get or create "Ingredient" category
-const getIngredientCategory = async () => {
-    let category = await SpendingCategory.findOne({ name: "Ingredient" });
+const getIngredientCategory = async (storeId) => {
+    let category = await SpendingCategory.findOne({ name: "Ingredient", store: storeId });
     if (!category) {
-        // Create Ingredient category if it doesn't exist
         category = new SpendingCategory({
+            store: storeId,
             name: "Ingredient",
             description: "Storage imports and ingredient purchases",
             color: "#10B981",
@@ -80,10 +80,11 @@ const createStorageImport = async (req, res, next) => {
         const totalCost = quantity * unitCost;
 
         // Get Ingredient category
-        const ingredientCategory = await getIngredientCategory();
+        const ingredientCategory = await getIngredientCategory(req.store._id);
 
         // Create spending record
         const spending = new Spending({
+            store: req.store._id,
             title: `Import: ${storageItem.name}`,
             amount: totalCost,
             currency: 'VND',
@@ -102,6 +103,7 @@ const createStorageImport = async (req, res, next) => {
 
         // Create import record
         const storageImport = new StorageImport({
+            store: req.store._id,
             importNumber,
             storageItemId,
             quantity,
@@ -169,7 +171,7 @@ const getStorageImports = async (req, res, next) => {
         } = req.query;
 
         // Build query
-        let query = {};
+        let query = { store: req.store._id };
 
         if (storageItemId && mongoose.Types.ObjectId.isValid(storageItemId)) {
             query.storageItemId = storageItemId;
@@ -237,7 +239,7 @@ const getStorageImportById = async (req, res, next) => {
             return next(createHttpError(400, "Invalid import ID"));
         }
 
-        const importRecord = await StorageImport.findById(id)
+        const importRecord = await StorageImport.findOne({ _id: id, store: req.store._id })
             .populate('storageItemId')
             .populate('supplierId')
             .populate('importedBy.userId', 'name')
@@ -274,7 +276,7 @@ const updateStorageImport = async (req, res, next) => {
             return next(createHttpError(400, "Invalid import ID"));
         }
 
-        const importRecord = await StorageImport.findById(id);
+        const importRecord = await StorageImport.findOne({ _id: id, store: req.store._id });
         if (!importRecord) {
             return next(createHttpError(404, "Import record not found"));
         }
@@ -418,7 +420,7 @@ const cancelStorageImport = async (req, res, next) => {
             return next(createHttpError(400, "Invalid import ID"));
         }
 
-        const importRecord = await StorageImport.findById(id);
+        const importRecord = await StorageImport.findOne({ _id: id, store: req.store._id });
         if (!importRecord) {
             return next(createHttpError(404, "Import record not found"));
         }

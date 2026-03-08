@@ -5,6 +5,10 @@
   "scripts": {
     "dev": "nodemon app.js",
     "start": "node app.js",
+    "start:migrate": "node scripts/start-with-migrate.js",
+    "migrate": "node seeds/migrateToMultiStore.js",
+    "migrate:dry": "node seeds/migrateToMultiStore.js --dry-run",
+    "migrate:rollback": "node seeds/rollbackMultiStore.js",
     "build": "echo 'No build step required for Node.js backend'",
     "test": "jest",
     "test:watch": "jest --watch",

@@ -11,12 +11,14 @@ const {
   validateCouponCode
 } = require('../controllers/promotionController');
 const { isVerifiedUser } = require('../middlewares/tokenVerification');
+const { storeContext } = require('../middlewares/storeContext');
 
 // Public routes (for coupon validation)
 router.post('/validate-coupon', validateCouponCode);
 
 // Protected routes (require authentication)
 router.use(isVerifiedUser);
+router.use(storeContext);
 
 // CRUD operations
 router.post('/', createPromotion);

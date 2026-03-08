@@ -9,6 +9,8 @@ const getAllToppings = async (req, res, next) => {
     
     // Build filter object
     const filter = {};
+    const storeId = req.query.store || (req.store && req.store._id);
+    if (storeId) filter.store = storeId;
     if (category) filter.category = category;
     if (available !== undefined) filter.isAvailable = available === 'true';
     
@@ -49,7 +51,7 @@ const getToppingById = async (req, res, next) => {
       return next(error);
     }
     
-    const topping = await Topping.findById(toppingId);
+    const topping = await Topping.findOne({ _id: toppingId, store: req.store._id });
     
     if (!topping) {
       const error = createHttpError(404, "Topping not found");
@@ -69,7 +71,10 @@ const getToppingById = async (req, res, next) => {
 // Get available toppings grouped by category
 const getToppingsByCategory = async (req, res, next) => {
   try {
-    const toppings = await Topping.find({ isAvailable: true }).sort({ category: 1, name: 1 });
+    const categoryFilter = { isAvailable: true };
+    const categoryStoreId = req.query.store || (req.store && req.store._id);
+    if (categoryStoreId) categoryFilter.store = categoryStoreId;
+    const toppings = await Topping.find(categoryFilter).sort({ category: 1, name: 1 });
     
     // Group toppings by category
     const groupedToppings = toppings.reduce((acc, topping) => {
@@ -113,7 +118,8 @@ const createTopping = async (req, res, next) => {
     
     // Check if topping with same name already exists
     const existingTopping = await Topping.findOne({ 
-      name: { $regex: new RegExp(`^${name.trim()}$`, 'i') } 
+      name: { $regex: new RegExp(`^${name.trim()}$`, 'i') },
+      store: req.store._id
     });
     
     if (existingTopping) {
@@ -125,7 +131,8 @@ const createTopping = async (req, res, next) => {
       name: name.trim(),
       description: description?.trim() || '',
       price,
-      category
+      category,
+      store: req.store._id
     };
     
     const topping = new Topping(toppingData);
@@ -158,7 +165,7 @@ const updateTopping = async (req, res, next) => {
     }
     
     // Check if topping exists
-    const existingTopping = await Topping.findById(toppingId);
+    const existingTopping = await Topping.findOne({ _id: toppingId, store: req.store._id });
     if (!existingTopping) {
       const error = createHttpError(404, "Topping not found");
       return next(error);
@@ -168,7 +175,8 @@ const updateTopping = async (req, res, next) => {
     if (updateData.name && updateData.name.trim() !== existingTopping.name) {
       const duplicateTopping = await Topping.findOne({
         name: { $regex: new RegExp(`^${updateData.name.trim()}$`, 'i') },
-        _id: { $ne: toppingId }
+        _id: { $ne: toppingId },
+        store: req.store._id
       });
       
       if (duplicateTopping) {
@@ -186,8 +194,8 @@ const updateTopping = async (req, res, next) => {
     if (updateData.category) cleanUpdateData.category = updateData.category;
     if (updateData.isAvailable !== undefined) cleanUpdateData.isAvailable = updateData.isAvailable;
     
-    const updatedTopping = await Topping.findByIdAndUpdate(
-      toppingId,
+    const updatedTopping = await Topping.findOneAndUpdate(
+      { _id: toppingId, store: req.store._id },
       cleanUpdateData,
       { new: true, runValidators: true }
     );
@@ -217,13 +225,13 @@ const deleteTopping = async (req, res, next) => {
       return next(error);
     }
     
-    const topping = await Topping.findById(toppingId);
+    const topping = await Topping.findOne({ _id: toppingId, store: req.store._id });
     if (!topping) {
       const error = createHttpError(404, "Topping not found");
       return next(error);
     }
     
-    await Topping.findByIdAndDelete(toppingId);
+    await Topping.findOneAndDelete({ _id: toppingId, store: req.store._id });
     
     res.status(200).json({
       success: true,
@@ -245,7 +253,7 @@ const toggleToppingAvailability = async (req, res, next) => {
       return next(error);
     }
     
-    const topping = await Topping.findById(toppingId);
+    const topping = await Topping.findOne({ _id: toppingId, store: req.store._id });
     if (!topping) {
       const error = createHttpError(404, "Topping not found");
       return next(error);

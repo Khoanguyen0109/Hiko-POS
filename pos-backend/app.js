@@ -14,7 +14,7 @@ connectDB();
 app.use(cors({
     origin: ['http://localhost:5173', 'https://hiko-pos.vercel.app'],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Store-Id'],
     credentials: true
 }))
 app.use(express.json()); // parse incoming request in json format
@@ -27,6 +27,7 @@ app.get("/", (req,res) => {
 
 
 // Other Endpoints
+app.use("/api/store", require("./routes/storeRoute"));
 app.use("/api/user", require("./routes/userRoute"));
 app.use("/api/member", require("./routes/memberRoute"));
 app.use("/api/order", require("./routes/orderRoute"));

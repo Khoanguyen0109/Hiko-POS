@@ -9,14 +9,14 @@ const addTable = async (req, res, next) => {
       const error = createHttpError(400, "Please provide table No!");
       return next(error);
     }
-    const isTablePresent = await Table.findOne({ tableNo });
+    const isTablePresent = await Table.findOne({ tableNo, store: req.store._id });
 
     if (isTablePresent) {
       const error = createHttpError(400, "Table already exist!");
       return next(error);
     }
 
-    const newTable = new Table({ tableNo, seats });
+    const newTable = new Table({ tableNo, seats, store: req.store._id });
     await newTable.save();
     res
       .status(201)
@@ -28,7 +28,7 @@ const addTable = async (req, res, next) => {
 
 const getTables = async (req, res, next) => {
   try {
-    const tables = await Table.find().populate({
+    const tables = await Table.find({ store: req.store._id }).populate({
       path: "currentOrder",
       select: "customerDetails"
     });
@@ -49,8 +49,8 @@ const updateTable = async (req, res, next) => {
         return next(error);
     }
 
-    const table = await Table.findByIdAndUpdate(
-        id,
+    const table = await Table.findOneAndUpdate(
+        { _id: id, store: req.store._id },
       { status, currentOrder: orderId },
       { new: true }
     );

@@ -21,7 +21,6 @@ const addCategory = async (req, res, next) => {
             return next(error);
         }
 
-        // Check for existing category with same name
         const isPresent = await Category.findOne({ name: name.trim() });
         if (isPresent) {
             const error = createHttpError(400, "Category already exists!");
@@ -126,7 +125,6 @@ const updateCategory = async (req, res, next) => {
                 return next(error);
             }
 
-            // Check for name conflicts
             const conflict = await Category.findOne({ _id: { $ne: id }, name: name.trim() });
             if (conflict) {
                 const error = createHttpError(400, "Category with this name already exists!");

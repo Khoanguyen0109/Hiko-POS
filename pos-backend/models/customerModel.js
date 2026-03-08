@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 
 const customerSchema = new mongoose.Schema({
+    store: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Store",
+        required: true,
+        index: true
+    },
     name: {
         type: String,
         required: true,
@@ -11,7 +17,6 @@ const customerSchema = new mongoose.Schema({
         type: String,
         required: true,
         trim: true,
-        unique: true,
         validate: {
             validator: function (v) {
                 return /^\d{10}$/.test(v);
@@ -32,5 +37,7 @@ const customerSchema = new mongoose.Schema({
         default: "Standard"
     }
 }, { timestamps: true });
+
+customerSchema.index({ store: 1, phone: 1 });
 
 module.exports = mongoose.model("Customer", customerSchema); 

@@ -1,16 +1,15 @@
-import { FaSearch } from "react-icons/fa";
 import { FaUserCircle } from "react-icons/fa";
-import { FaBell } from "react-icons/fa";
-import logo from "../../assets/images/logo.png";
 import { useDispatch, useSelector } from "react-redux";
 import { IoLogOut } from "react-icons/io5";
 import { logoutUser, removeUser } from "../../redux/slices/userSlice";
 import { useNavigate } from "react-router-dom";
 import { clearAuthData } from "../../utils/auth";
 import { MdDashboard, MdPerson, MdSettings, MdKeyboardArrowDown } from "react-icons/md";
-import { MdLocalOffer as TagIcon } from "react-icons/md";
 import { useState, useRef, useEffect } from "react";
+
 import { ROUTES } from "../../constants";
+import StoreSwitcher from "./StoreSwitcher";
+import { clearStore } from "../../redux/slices/storeSlice";
 
 const Header = () => {
   const userData = useSelector((state) => state.user);
@@ -23,15 +22,15 @@ const Header = () => {
     dispatch(logoutUser())
       .unwrap()
       .then(() => {
-        // Clear localStorage
         clearAuthData();
+        dispatch(clearStore());
         navigate(ROUTES.AUTH);
       })
       .catch((error) => {
         console.log(error);
-        // Even if logout fails on server, clear local data
         clearAuthData();
         dispatch(removeUser());
+        dispatch(clearStore());
         navigate(ROUTES.AUTH);
       });
   };
@@ -60,24 +59,8 @@ const Header = () => {
   }, []);
 
   return (
-    <header className="flex justify-between items-center py-4 px-4 md:px-8 bg-[#1a1a1a]">
-      {/* LOGO */}
-      <div onClick={() => userData.role === "Admin" ? navigate("/") : navigate("/orders")} className="flex items-center gap-2 cursor-pointer">
-        <img src={logo} className="h-8 w-8" alt="hiko logo" />
-        <h1 className="text-lg font-semibold text-[#f5f5f5] tracking-wide hidden sm:block">
-          Hiko
-        </h1>
-      </div>
-
-      {/* SEARCH - Hidden on mobile, responsive width on larger screens */}
-      <div className="hidden md:flex items-center gap-4 bg-[#1f1f1f] rounded-[15px] px-5 py-2 flex-1 max-w-md mx-4">
-        <FaSearch className="text-[#f5f5f5]" />
-        <input
-          type="text"
-          placeholder="Search"
-          className="bg-[#1f1f1f] outline-none text-[#f5f5f5] w-full"
-        />
-      </div>
+    <header className="sticky top-0 z-40 flex justify-between items-center py-4 px-4 md:px-8 bg-[#1a1a1a]/95 backdrop-blur-sm border-b border-[#1a1a1a]">
+      <StoreSwitcher />
 
       {/* LOGGED USER DETAILS */}
       <div className="flex items-center gap-2 md:gap-4">
@@ -86,9 +69,6 @@ const Header = () => {
             <MdDashboard className="text-[#f5f5f5] text-xl md:text-2xl" />
           </div>
         )}
-        <div className="bg-[#1f1f1f] rounded-[15px] p-2 md:p-3 cursor-pointer">
-          <FaBell className="text-[#f5f5f5] text-xl md:text-2xl" />
-        </div>
         
         {/* User Profile Section with Dropdown */}
         <div className="relative" ref={userMenuRef}>
@@ -124,16 +104,6 @@ const Header = () => {
 
               {/* Menu Items */}
               <div className="py-2">
-                {userData.role === "Admin" && (
-                  <button
-                    onClick={() => handleMenuClick(ROUTES.PROMOTIONS)}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-[#f5f5f5] hover:bg-[#262626] transition-colors text-left"
-                  >
-                    <TagIcon size={18} className="text-[#ababab]" />
-                    <span className="text-sm">Promotions</span>
-                  </button>
-                )}
-                
                 <button
                   onClick={() => handleMenuClick(ROUTES.ACCOUNT_SETTINGS)}
                   className="w-full flex items-center gap-3 px-4 py-3 text-[#f5f5f5] hover:bg-[#262626] transition-colors text-left"

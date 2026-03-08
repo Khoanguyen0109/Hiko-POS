@@ -28,4 +28,5 @@ export const getStoredUser = () => {
 export const clearAuthData = () => {
   localStorage.removeItem("accessToken");
   localStorage.removeItem("user");
+  localStorage.removeItem("activeStore");
 };

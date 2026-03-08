@@ -68,3 +68,12 @@ export const updateMemberStatus = (scheduleId, memberId, status) =>
 export const getMySchedules = (params) => 
     axiosWrapper.get("/api/schedule/my-schedule", { params });
 
+export const getMySchedulesAllStores = (params) =>
+    axiosWrapper.get("/api/schedule/my-schedule-all", { params });
+
+export const getAllMembersWeek = (year, week) =>
+    axiosWrapper.get(`/api/schedule/all-members-week/${year}/${week}`);
+
+export const checkScheduleConflicts = (data) =>
+    axiosWrapper.post("/api/schedule/check-conflicts", data);
+

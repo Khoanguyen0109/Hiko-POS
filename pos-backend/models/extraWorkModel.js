@@ -2,6 +2,12 @@ const mongoose = require("mongoose");
 const { getCurrentVietnamTime } = require("../utils/dateUtils");
 
 const extraWorkSchema = new mongoose.Schema({
+    store: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Store",
+        required: true,
+        index: true
+    },
     member: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
@@ -101,6 +107,7 @@ extraWorkSchema.pre('save', function(next) {
 });
 
 // Compound indexes for efficient queries
+extraWorkSchema.index({ store: 1, date: 1 });
 extraWorkSchema.index({ member: 1, date: 1 });
 extraWorkSchema.index({ date: 1, isApproved: 1 });
 extraWorkSchema.index({ member: 1, isPaid: 1 });

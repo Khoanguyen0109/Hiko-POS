@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { MdAdd, MdEdit, MdDelete, MdSearch, MdRefresh, MdToggleOn, MdToggleOff, MdAttachMoney } from "react-icons/md";
+import { MdAdd, MdEdit, MdDelete, MdSearch, MdRefresh, MdToggleOn, MdToggleOff, MdAttachMoney, MdStore } from "react-icons/md";
 import { FaUser, FaEnvelope, FaPhone } from "react-icons/fa";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
-import { fetchMembers, removeMember, toggleActiveStatus, clearError } from "../redux/slices/memberSlice";
+import { fetchMembers, removeMember, toggleActiveStatus, clearError, updateMemberInList } from "../redux/slices/memberSlice";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import BackButton from "../components/shared/BackButton";
 import MemberModal from "../components/members/MemberModal";
 import DeleteConfirmationModal from "../components/shared/DeleteConfirmationModal";
+import StoreAssignmentModal from "../components/members/StoreAssignmentModal";
 
 const Members = () => {
   const dispatch = useDispatch();
@@ -20,6 +21,7 @@ const Members = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showStoreModal, setShowStoreModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [filteredMembers, setFilteredMembers] = useState([]);
 
@@ -99,9 +101,22 @@ const Members = () => {
     }
   };
 
+  const handleManageStores = (member) => {
+    setSelectedMember(member);
+    setShowStoreModal(true);
+  };
+
+  const handleStoreAssignmentUpdated = (memberId, updatedStores) => {
+    dispatch(updateMemberInList({
+      _id: memberId,
+      assignedStores: updatedStores
+    }));
+  };
+
   const handleModalClose = () => {
     setShowCreateModal(false);
     setShowEditModal(false);
+    setShowStoreModal(false);
     setSelectedMember(null);
   };
 
@@ -190,6 +205,7 @@ const Members = () => {
                 onEdit={handleEditMember}
                 onDelete={handleDeleteMember}
                 onToggleActive={handleToggleActiveStatus}
+                onManageStores={handleManageStores}
                 toggleLoading={toggleLoading}
               />
             ))}
@@ -246,14 +262,24 @@ const Members = () => {
           loading={deleteLoading}
         />
       )}
+
+      {showStoreModal && selectedMember && (
+        <StoreAssignmentModal
+          isOpen={showStoreModal}
+          onClose={handleModalClose}
+          member={selectedMember}
+          onUpdated={handleStoreAssignmentUpdated}
+        />
+      )}
     </div>
   );
 };
 
 // Member Card Component
-const MemberCard = ({ member, onEdit, onDelete, onToggleActive, toggleLoading }) => {
-  const isActive = member.isActive !== false; // Default to true if undefined
-  
+const MemberCard = ({ member, onEdit, onDelete, onToggleActive, onManageStores, toggleLoading }) => {
+  const isActive = member.isActive !== false;
+  const assignedStores = (member.assignedStores || []).filter(s => s.isActive);
+
   const getRoleColor = (role) => {
     switch (role?.toLowerCase()) {
       case 'admin':
@@ -284,6 +310,14 @@ const MemberCard = ({ member, onEdit, onDelete, onToggleActive, toggleLoading })
     }
   };
 
+  const getStoreRoleColor = (role) => {
+    switch (role) {
+      case 'Owner': return 'text-yellow-400';
+      case 'Manager': return 'text-blue-400';
+      default: return 'text-gray-400';
+    }
+  };
+
   return (
     <div className={`bg-[#1f1f1f] rounded-lg p-6 border transition-all duration-200 ${
       isActive 
@@ -300,6 +334,13 @@ const MemberCard = ({ member, onEdit, onDelete, onToggleActive, toggleLoading })
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => onManageStores(member)}
+            className="p-2 bg-[#262626] text-purple-400 rounded-lg hover:bg-[#343434] transition-colors"
+            title="Manage Store Access"
+          >
+            <MdStore size={16} />
+          </button>
           <button
             onClick={() => onToggleActive(member)}
             disabled={toggleLoading}
@@ -365,8 +406,36 @@ const MemberCard = ({ member, onEdit, onDelete, onToggleActive, toggleLoading })
           </div>
         </div>
 
-        {/* Created Date */}
+        {/* Assigned Stores */}
         <div className="pt-3 border-t border-[#343434]">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[#ababab] text-xs font-medium uppercase tracking-wider">
+              Stores ({assignedStores.length})
+            </p>
+          </div>
+          {assignedStores.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {assignedStores.map((store) => (
+                <span
+                  key={store._id}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#262626] border border-[#3a3a3a] text-xs"
+                  title={`${store.name} (${store.storeRole})`}
+                >
+                  <MdStore size={10} className="text-purple-400" />
+                  <span className="text-[#ccc] truncate max-w-[80px]">{store.name}</span>
+                  <span className={`text-[10px] ${getStoreRoleColor(store.storeRole)}`}>
+                    {store.storeRole}
+                  </span>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[#666] text-xs italic">No stores assigned</p>
+          )}
+        </div>
+
+        {/* Created Date */}
+        <div className="pt-2">
           <p className="text-[#ababab] text-xs">
             Created: {new Date(member.createdAt).toLocaleDateString('en-US', {
               year: 'numeric',
@@ -380,7 +449,6 @@ const MemberCard = ({ member, onEdit, onDelete, onToggleActive, toggleLoading })
   );
 };
 
-// PropTypes for MemberCard component
 MemberCard.propTypes = {
   member: PropTypes.shape({
     _id: PropTypes.string.isRequired,
@@ -390,11 +458,13 @@ MemberCard.propTypes = {
     role: PropTypes.string.isRequired,
     salary: PropTypes.number,
     isActive: PropTypes.bool,
-    createdAt: PropTypes.string.isRequired
+    createdAt: PropTypes.string.isRequired,
+    assignedStores: PropTypes.array,
   }).isRequired,
   onEdit: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   onToggleActive: PropTypes.func.isRequired,
+  onManageStores: PropTypes.func.isRequired,
   toggleLoading: PropTypes.bool.isRequired
 };
 

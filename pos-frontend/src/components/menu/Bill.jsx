@@ -50,13 +50,9 @@ const Bill = forwardRef((props, ref) => {
 
   // Note: findActiveHappyHourPromotion removed - happy hour is now manually selectable
 
-  // Happy Hour detection and auto-application
   useEffect(() => {
-    // Fetch active promotions when component mounts
-    if (promotions.length === 0 && !promotionsLoading) {
-      dispatch(fetchPromotions({ isActive: true, limit: 50 }));
-    }
-  }, [dispatch, promotions.length, promotionsLoading]);
+    dispatch(fetchPromotions({ isActive: true, limit: 50 }));
+  }, [dispatch]);
 
   // Note: Happy Hour promotions are now manually selectable via coupon selector
   // Auto-application has been removed to give users control over promotion usage

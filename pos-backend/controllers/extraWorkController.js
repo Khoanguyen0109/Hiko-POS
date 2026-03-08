@@ -14,7 +14,7 @@ const getAllExtraWork = async (req, res, next) => {
             workType 
         } = req.query;
         
-        const query = {};
+        const query = { store: req.store._id };
         
         if (memberId) query.member = memberId;
         if (workType) query.workType = workType;
@@ -53,7 +53,7 @@ const getExtraWorkById = async (req, res, next) => {
     try {
         const { id } = req.params;
         
-        const extraWork = await ExtraWork.findById(id)
+        const extraWork = await ExtraWork.findOne({ _id: id, store: req.store._id })
             .populate('member', 'name email phone role salary')
             .populate('createdBy', 'name email')
             .populate('approvedBy', 'name email');
@@ -77,7 +77,7 @@ const getExtraWorkByMember = async (req, res, next) => {
         const { memberId } = req.params;
         const { startDate, endDate } = req.query;
         
-        const query = { member: memberId };
+        const query = { store: req.store._id, member: memberId };
         
         if (startDate || endDate) {
             query.date = {};
@@ -114,7 +114,8 @@ const createExtraWork = async (req, res, next) => {
             workType,
             description,
             hourlyRate,
-            notes 
+            notes,
+            storeId
         } = req.body;
         
         if (!memberId || !date || durationHours === undefined || durationHours === null) {
@@ -129,11 +130,15 @@ const createExtraWork = async (req, res, next) => {
         if (!member) {
             return next(createHttpError(404, "Member not found"));
         }
+
+        // Allow admin to specify a different store via body
+        const targetStoreId = storeId || req.store._id;
         
         // Use member's salary as default hourly rate if not provided
         const rate = hourlyRate !== undefined && hourlyRate !== null ? hourlyRate : (member.salary || 0);
         
         const extraWork = new ExtraWork({
+            store: targetStoreId,
             member: memberId,
             date: new Date(date),
             durationHours: parseFloat(durationHours),
@@ -174,7 +179,7 @@ const updateExtraWork = async (req, res, next) => {
             notes 
         } = req.body;
         
-        const extraWork = await ExtraWork.findById(id);
+        const extraWork = await ExtraWork.findOne({ _id: id, store: req.store._id });
         if (!extraWork) {
             return next(createHttpError(404, "Extra work entry not found"));
         }
@@ -219,7 +224,7 @@ const deleteExtraWork = async (req, res, next) => {
     try {
         const { id } = req.params;
         
-        const extraWork = await ExtraWork.findById(id);
+        const extraWork = await ExtraWork.findOne({ _id: id, store: req.store._id });
         if (!extraWork) {
             return next(createHttpError(404, "Extra work entry not found"));
         }
@@ -228,7 +233,7 @@ const deleteExtraWork = async (req, res, next) => {
             return next(createHttpError(400, "Cannot delete paid entries"));
         }
         
-        await ExtraWork.findByIdAndDelete(id);
+        await extraWork.deleteOne();
         
         res.status(200).json({
             success: true,
@@ -244,7 +249,7 @@ const approveExtraWork = async (req, res, next) => {
     try {
         const { id } = req.params;
         
-        const extraWork = await ExtraWork.findById(id);
+        const extraWork = await ExtraWork.findOne({ _id: id, store: req.store._id });
         if (!extraWork) {
             return next(createHttpError(404, "Extra work entry not found"));
         }
@@ -276,7 +281,7 @@ const markAsPaid = async (req, res, next) => {
     try {
         const { id } = req.params;
         
-        const extraWork = await ExtraWork.findById(id);
+        const extraWork = await ExtraWork.findOne({ _id: id, store: req.store._id });
         if (!extraWork) {
             return next(createHttpError(404, "Extra work entry not found"));
         }
@@ -312,7 +317,7 @@ const getMyExtraWork = async (req, res, next) => {
         const memberId = req.user._id;
         const { startDate, endDate } = req.query;
         
-        const query = { member: memberId };
+        const query = { store: req.store._id, member: memberId };
         
         if (startDate || endDate) {
             query.date = {};
