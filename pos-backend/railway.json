@@ -5,7 +5,7 @@
     "buildCommand": "npm ci"
   },
   "deploy": {
-    "startCommand": "npm run start:migrate",
+    "startCommand": "npm start",
     "healthcheckPath": "/",
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE",
