@@ -4,7 +4,7 @@
   "main": "app.js",
   "scripts": {
     "dev": "nodemon app.js",
-    "start": "node scripts/start-with-migrate.js",
+    "start": "node app.js",
     "start:migrate": "node scripts/start-with-migrate.js",
     "migrate": "node seeds/migrateToMultiStore.js",
     "migrate:dry": "node seeds/migrateToMultiStore.js --dry-run",
