@@ -22,11 +22,10 @@ const Home = () => {
     dispatch(fetchLowStockItems());
   }, [dispatch]);
 
-  const topLowStock = useMemo(() => {
+  const sortedLowStock = useMemo(() => {
     if (!lowStockItems || lowStockItems.length === 0) return [];
     return [...lowStockItems]
-      .sort((a, b) => (a.currentStock / (a.minStock || 1)) - (b.currentStock / (b.minStock || 1)))
-      .slice(0, 5);
+      .sort((a, b) => (a.currentStock / (a.minStock || 1)) - (b.currentStock / (b.minStock || 1)));
   }, [lowStockItems]);
 
   // Calculate today's statistics
@@ -301,7 +300,7 @@ const Home = () => {
         </div>
 
         {/* Low Stock Alert */}
-        {topLowStock.length > 0 && (
+        {sortedLowStock.length > 0 && (
           <div className="px-4 sm:px-8 mt-6">
             <div className="bg-[#262626] rounded-lg p-6 border border-red-900/40">
               <div className="flex items-center gap-2 mb-4">
@@ -314,8 +313,8 @@ const Home = () => {
                 </span>
               </div>
 
-              <div className="space-y-3">
-                {topLowStock.map((item) => {
+              <div className="space-y-3 max-h-[400px] overflow-y-auto scrollbar-hide">
+                {sortedLowStock.map((item) => {
                   const ratio = item.minStock > 0 ? item.currentStock / item.minStock : 0;
                   const isOutOfStock = item.currentStock === 0;
                   const pctWidth = Math.min(ratio * 100, 100);
