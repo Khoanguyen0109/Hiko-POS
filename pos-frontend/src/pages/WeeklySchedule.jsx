@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import { MdSettings, MdCalendarToday, MdAccessTime, MdFilterList, MdAttachMoney, MdCheckCircle, MdCancel, MdPeople, MdPerson, MdStore } from "react-icons/md";
+import { MdSettings, MdCalendarToday, MdAccessTime, MdFilterList, MdAttachMoney, MdCheckCircle, MdCancel, MdPeople, MdPerson, MdStore, MdDelete } from "react-icons/md";
 import { enqueueSnackbar } from "notistack";
 import BackButton from "../components/shared/BackButton";
 import WeekNavigator from "../components/schedule/WeekNavigator";
@@ -17,6 +17,7 @@ import {
   createNewSchedule,
   clearError
 } from "../redux/slices/scheduleSlice";
+import { deleteExtraWork } from "../redux/slices/extraWorkSlice";
 import {
   fetchActiveShiftTemplates} from "../redux/slices/shiftTemplateSlice";
 import { fetchMembers } from "../redux/slices/memberSlice";
@@ -37,7 +38,7 @@ const WeeklySchedule = () => {
   );
   const { members } = useSelector((state) => state.members);
   const { extraWorkEntries, totalHours, totalPayment, loading: extraWorkLoading } = useSelector((state) => state.extraWork);
-  const { role, _id: currentUserId } = useSelector((state) => state.user);
+  const { role } = useSelector((state) => state.user);
   const isAdmin = role === "Admin";
 
   const [activeTab, setActiveTab] = useState(TABS.BY_STORE);
@@ -159,6 +160,16 @@ const WeeklySchedule = () => {
 
   const clearFilters = () => {
     setExtraWorkFilters({ memberId: "", startDate: "", endDate: "" });
+  };
+
+  const handleDeleteExtraWork = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this extra work entry?")) return;
+    try {
+      await dispatch(deleteExtraWork(id)).unwrap();
+      enqueueSnackbar("Extra work entry deleted", { variant: "success" });
+    } catch (err) {
+      enqueueSnackbar(err || "Failed to delete extra work entry", { variant: "error" });
+    }
   };
 
   const getWorkTypeColor = (workType) => {
@@ -479,6 +490,7 @@ const WeeklySchedule = () => {
                               <th className="px-4 py-3 text-left text-[#ababab] text-xs font-medium">Payment</th>
                               <th className="px-4 py-3 text-left text-[#ababab] text-xs font-medium">Status</th>
                               <th className="px-4 py-3 text-left text-[#ababab] text-xs font-medium">Description</th>
+                              <th className="px-4 py-3 text-center text-[#ababab] text-xs font-medium">Actions</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -514,6 +526,15 @@ const WeeklySchedule = () => {
                                   </div>
                                 </td>
                                 <td className="px-4 py-3 text-[#ababab] text-sm max-w-xs truncate">{entry.description || "-"}</td>
+                                <td className="px-4 py-3 text-center">
+                                  <button
+                                    onClick={() => handleDeleteExtraWork(entry._id)}
+                                    className="p-2 rounded-lg text-red-400 hover:bg-red-900/20 transition-colors"
+                                    title="Delete entry"
+                                  >
+                                    <MdDelete size={18} />
+                                  </button>
+                                </td>
                               </tr>
                             ))}
                           </tbody>
