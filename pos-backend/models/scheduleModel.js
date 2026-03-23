@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { getISOWeek } = require("../utils/dateUtils");
 
 const scheduleSchema = new mongoose.Schema({
     store: {
@@ -79,33 +80,12 @@ scheduleSchema.index({ date: 1, shiftTemplate: 1 });
 scheduleSchema.index({ year: 1, weekNumber: 1 });
 scheduleSchema.index({ "assignedMembers.member": 1, date: 1 });
 
-// Helper function to calculate ISO 8601 week number
-function getISOWeekNumber(date) {
-    const d = new Date(date);
-    d.setHours(0, 0, 0, 0);
-    // Thursday in current week decides the year
-    d.setDate(d.getDate() + 4 - (d.getDay() || 7));
-    const yearStart = new Date(d.getFullYear(), 0, 1);
-    const weekNumber = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-    return weekNumber;
-}
-
-// Helper method to calculate week number
-scheduleSchema.pre('save', function(next) {
-    if (this.date) {
-        const date = new Date(this.date);
-        
-        // Only set year if not already set
-        if (!this.year) {
-            this.year = date.getFullYear();
-        }
-        
-        // Only calculate week number if not provided by the client
-        // Trust the frontend's calculation since it uses local timezone
-        if (!this.weekNumber) {
-            // Calculate ISO 8601 week number
-            this.weekNumber = getISOWeekNumber(date);
-        }
+// Set year and weekNumber from ISO 8601 when not provided (single source of truth)
+scheduleSchema.pre("save", function (next) {
+    if (this.date && (!this.year || !this.weekNumber)) {
+        const { year, weekNumber } = getISOWeek(this.date);
+        if (!this.year) this.year = year;
+        if (!this.weekNumber) this.weekNumber = weekNumber;
     }
     next();
 });

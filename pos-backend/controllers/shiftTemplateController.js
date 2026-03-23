@@ -1,5 +1,7 @@
 const createHttpError = require("http-errors");
+const mongoose = require("mongoose");
 const ShiftTemplate = require("../models/shiftTemplateModel");
+const Schedule = require("../models/scheduleModel");
 
 // Get all shift templates (global — shared across all stores)
 const getAllShiftTemplates = async (req, res, next) => {
@@ -143,8 +145,18 @@ const deleteShiftTemplate = async (req, res, next) => {
     try {
         const { id } = req.params;
 
-        if (!id) {
+        if (!id || !mongoose.Types.ObjectId.isValid(id)) {
             return next(createHttpError(400, "Shift template ID is required"));
+        }
+
+        const refCount = await Schedule.countDocuments({ shiftTemplate: id });
+        if (refCount > 0) {
+            return next(
+                createHttpError(
+                    400,
+                    `Cannot delete: ${refCount} schedule(s) reference this template. Deactivate it instead.`
+                )
+            );
         }
 
         const template = await ShiftTemplate.findByIdAndDelete(id);

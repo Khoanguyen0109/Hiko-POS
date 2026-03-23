@@ -261,16 +261,13 @@ spendingSchema.pre('save', function(next) {
     next();
 });
 
-// Static methods for analytics
-spendingSchema.statics.getSpendingByCategory = function(startDate, endDate) {
-    const matchStage = {
-        status: 'active',
-        createdAt: {}
-    };
-    
+// Static methods for analytics (storeId required for tenant isolation)
+spendingSchema.statics.getSpendingByCategory = function(storeId, startDate, endDate) {
+    const matchStage = { status: 'active', createdAt: {} };
+    if (storeId) matchStage.store = storeId;
     if (startDate) matchStage.createdAt.$gte = new Date(startDate);
     if (endDate) matchStage.createdAt.$lte = new Date(endDate);
-    
+
     return this.aggregate([
         { $match: matchStage },
         {
@@ -296,16 +293,16 @@ spendingSchema.statics.getSpendingByCategory = function(startDate, endDate) {
     ]);
 };
 
-spendingSchema.statics.getSpendingByVendor = function(startDate, endDate) {
+spendingSchema.statics.getSpendingByVendor = function(storeId, startDate, endDate) {
     const matchStage = {
         status: 'active',
         vendor: { $exists: true },
         createdAt: {}
     };
-    
+    if (storeId) matchStage.store = storeId;
     if (startDate) matchStage.createdAt.$gte = new Date(startDate);
     if (endDate) matchStage.createdAt.$lte = new Date(endDate);
-    
+
     return this.aggregate([
         { $match: matchStage },
         {
@@ -331,17 +328,15 @@ spendingSchema.statics.getSpendingByVendor = function(startDate, endDate) {
     ]);
 };
 
-spendingSchema.statics.getMonthlySpendingTrend = function(months = 12) {
+spendingSchema.statics.getMonthlySpendingTrend = function(storeId, months = 12) {
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - months);
-    
+
+    const matchStage = { status: 'active', createdAt: { $gte: startDate } };
+    if (storeId) matchStage.store = storeId;
+
     return this.aggregate([
-        {
-            $match: {
-                status: 'active',
-                createdAt: { $gte: startDate }
-            }
-        },
+        { $match: matchStage },
         {
             $group: {
                 _id: {

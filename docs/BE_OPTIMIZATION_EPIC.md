@@ -39,7 +39,7 @@ Epic to implement backend optimizations from [BE_OPTIMIZATION_SUGGESTIONS.md](./
 
 | Field | Value |
 |-------|-------|
-| **Status** | ⬜ To Do |
+| **Status** | ✅ Done |
 | **Effort** | Low |
 | **Dependencies** | None |
 | **Files** | `orderController.js` |
@@ -58,10 +58,10 @@ Epic to implement backend optimizations from [BE_OPTIMIZATION_SUGGESTIONS.md](./
 
 | Field | Value |
 |-------|-------|
-| **Status** | ⬜ To Do |
+| **Status** | ✅ Done |
 | **Effort** | Low |
 | **Dependencies** | None |
-| **Files** | `orderController.js` |
+| **Files** | `orderController.js`, `promotionService.js` |
 
 **Description:** When items include happy hour promotions, call `PromotionService.validateHappyHourPricing()` before saving. Reject with 400 if validation fails.
 
@@ -96,7 +96,7 @@ Epic to implement backend optimizations from [BE_OPTIMIZATION_SUGGESTIONS.md](./
 
 | Field | Value |
 |-------|-------|
-| **Status** | ⬜ To Do |
+| **Status** | ✅ Done |
 | **Effort** | Low |
 | **Dependencies** | None |
 | **Files** | `orderController.js` |
@@ -200,16 +200,19 @@ Epic to implement backend optimizations from [BE_OPTIMIZATION_SUGGESTIONS.md](./
 | Date | Task | Notes |
 |------|------|-------|
 | 2025-03-23 | Task 1 | Extracted `calculateOrderBills` and `formatOrderLevelPromotions` to `orderBillsUtils.js`. Refactored addOrder, updateOrder, updateOrderItems. All 13 order tests pass. |
+| 2025-03-23 | Task 2 | Batched Dish lookups in processOrderItems. Single `Dish.find().populate('category')` instead of N+1 per-item queries. |
+| 2025-03-23 | Task 3 | Added Happy Hour validation to updateOrderItems. Fixed PromotionService.validateHappyHourPricing to handle undefined appliedToItems. |
+| 2025-03-23 | Task 5 | Added promotionSummary to updateOrderItems response for consistency with addOrder. |
 
 ---
 
 ## Completion Checklist
 
 - [x] Task 1
-- [ ] Task 2
-- [ ] Task 3
+- [x] Task 2
+- [x] Task 3
 - [ ] Task 4
-- [ ] Task 5
+- [x] Task 5
 - [ ] Task 6
 - [ ] Task 7
 - [ ] Task 8

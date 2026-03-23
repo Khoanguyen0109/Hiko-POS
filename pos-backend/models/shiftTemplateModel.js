@@ -73,15 +73,17 @@ const shiftTemplateSchema = new mongoose.Schema({
 shiftTemplateSchema.index({ store: 1, name: 1 });
 shiftTemplateSchema.index({ name: 1 });
 
-// Calculate duration before saving
+// Calculate duration before saving (handles overnight shifts spanning midnight)
 shiftTemplateSchema.pre('save', function(next) {
     if (this.startTime && this.endTime) {
         const [startHour, startMin] = this.startTime.split(':').map(Number);
         const [endHour, endMin] = this.endTime.split(':').map(Number);
-        
+
         const startMinutes = startHour * 60 + startMin;
-        const endMinutes = endHour * 60 + endMin;
-        
+        let endMinutes = endHour * 60 + endMin;
+        if (endMinutes <= startMinutes) {
+            endMinutes += 24 * 60;
+        }
         this.durationHours = (endMinutes - startMinutes) / 60;
     }
     next();

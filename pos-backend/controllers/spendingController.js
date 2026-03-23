@@ -700,13 +700,13 @@ const getSpendingAnalytics = async (req, res, next) => {
             ]),
 
             // Spending by category
-            Spending.getSpendingByCategory(start, end),
+            Spending.getSpendingByCategory(req.store._id, start, end),
 
             // Spending by vendor
-            Spending.getSpendingByVendor(start, end),
+            Spending.getSpendingByVendor(req.store._id, start, end),
 
             // Monthly trend
-            Spending.getMonthlySpendingTrend(12),
+            Spending.getMonthlySpendingTrend(req.store._id, 12),
 
             // Payment status breakdown
             Spending.aggregate([

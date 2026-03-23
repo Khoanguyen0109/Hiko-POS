@@ -34,37 +34,61 @@ const buildOrderHistoryEntry = (user, changeType, description, details = {}) => 
 
 /**
  * Shared helper to validate and process order items (used by addOrder and updateOrderItems).
+ * Uses batched Dish lookup to avoid N+1 queries when resolving category names.
  * @param {Array} items - Raw items from request body
  * @returns {Promise<Array>} Processed items ready for order
  */
 const processOrderItems = async (items) => {
-  return Promise.all(items.map(async (item, index) => {
+  const dishIdsNeedingCategory = [
+    ...new Set(
+      items
+        .filter((item) => {
+          if (!item.dishId || !mongoose.Types.ObjectId.isValid(item.dishId)) return false;
+          const cat = item.category;
+          if (!cat || typeof cat !== "string") return true;
+          const trimmed = cat.trim();
+          return trimmed === "" || trimmed === "Unknown";
+        })
+        .map((item) => item.dishId.toString())
+    ),
+  ];
+
+  let dishCategoryMap = new Map();
+  if (dishIdsNeedingCategory.length > 0) {
+    try {
+      const dishes = await Dish.find({ _id: { $in: dishIdsNeedingCategory } })
+        .populate("category", "name")
+        .lean();
+      dishCategoryMap = new Map(
+        dishes
+          .filter((d) => d.category && d.category.name)
+          .map((d) => [d._id.toString(), d.category.name])
+      );
+    } catch (error) {
+      console.warn("Failed to batch fetch dish categories:", error.message);
+    }
+  }
+
+  return items.map((item, index) => {
     if (!item.dishId || !mongoose.Types.ObjectId.isValid(item.dishId)) {
       throw createHttpError(400, `Invalid dishId for item at index ${index}`);
     }
-    if (!item.name || typeof item.name !== 'string') {
+    if (!item.name || typeof item.name !== "string") {
       throw createHttpError(400, `Item name is required for item at index ${index}`);
     }
-    if (typeof item.pricePerQuantity !== 'number' || item.pricePerQuantity < 0) {
+    if (typeof item.pricePerQuantity !== "number" || item.pricePerQuantity < 0) {
       throw createHttpError(400, `Valid price per quantity is required for item at index ${index}`);
     }
-    if (typeof item.quantity !== 'number' || item.quantity < 1) {
+    if (typeof item.quantity !== "number" || item.quantity < 1) {
       throw createHttpError(400, `Valid quantity (minimum 1) is required for item at index ${index}`);
     }
-    if (typeof item.price !== 'number' || item.price < 0) {
+    if (typeof item.price !== "number" || item.price < 0) {
       throw createHttpError(400, `Valid total price is required for item at index ${index}`);
     }
 
     let categoryName = item.category ? item.category.trim() : undefined;
-    if (!categoryName || categoryName === 'Unknown') {
-      try {
-        const dish = await Dish.findById(item.dishId).populate('category', 'name');
-        if (dish && dish.category) {
-          categoryName = dish.category.name;
-        }
-      } catch (error) {
-        console.warn(`Failed to fetch dish category for dishId ${item.dishId}:`, error.message);
-      }
+    if (!categoryName || categoryName === "Unknown") {
+      categoryName = dishCategoryMap.get(item.dishId.toString());
     }
 
     const processedItem = {
@@ -116,7 +140,7 @@ const processOrderItems = async (items) => {
     }
 
     return processedItem;
-  }));
+  });
 };
 
 const addOrder = async (req, res, next) => {
@@ -490,71 +514,17 @@ const updateOrder = async (req, res, next) => {
       return next(error);
     }
 
-    // Build order history entries for each change
-    const historyEntries = [];
-    if (orderStatus && orderStatus !== currentOrder.orderStatus) {
-      historyEntries.push(
-        buildOrderHistoryEntry(
-          req.user,
-          "status_changed",
-          `Status changed from ${STATUS_LABELS[currentOrder.orderStatus] || currentOrder.orderStatus} to ${STATUS_LABELS[orderStatus] || orderStatus}`,
-          { previousValue: currentOrder.orderStatus, newValue: orderStatus }
-        )
-      );
-    }
-    if (paymentMethod && paymentMethod !== currentOrder.paymentMethod) {
-      historyEntries.push(
-        buildOrderHistoryEntry(
-          req.user,
-          "payment_updated",
-          `Payment method changed to ${paymentMethod}`,
-          { previousValue: currentOrder.paymentMethod, newValue: paymentMethod }
-        )
-      );
-    }
-    if (thirdPartyVendor !== undefined && thirdPartyVendor !== currentOrder.thirdPartyVendor) {
-      historyEntries.push(
-        buildOrderHistoryEntry(
-          req.user,
-          "vendor_updated",
-          `Vendor changed to ${thirdPartyVendor === "None" ? "Direct" : thirdPartyVendor}`,
-          { previousValue: currentOrder.thirdPartyVendor, newValue: thirdPartyVendor }
-        )
-      );
-    }
-    if (updatedFields.includes("promotions removed") || updatedFields.includes("promotions")) {
-      const prevCount = (currentOrder.appliedPromotions || []).length;
-      const newCount = (updateFields.appliedPromotions || []).length;
-      historyEntries.push(
-        buildOrderHistoryEntry(
-          req.user,
-          "promotions_updated",
-          newCount === 0 ? "All promotions removed" : `Promotions updated (${newCount} applied)`,
-          { previousValue: prevCount, newValue: newCount }
-        )
-      );
-    }
-
-    const updateDoc = { $set: updateFields };
-    if (historyEntries.length > 0) {
-      updateDoc.$push = {
-        orderHistory: { $each: historyEntries, $position: 0 },
-      };
-    }
-
     const order = await Order.findOneAndUpdate(
       { _id: id, store: req.store._id },
-      updateDoc,
+      updateFields,
       { new: true }
-    )
-      .populate("items.dishId", "name category price image")
-      .populate("appliedPromotions.promotionId", "name code type discount")
-      .populate("orderHistory.changedBy.userId", "name");
+    ).populate('items.dishId', 'name category price image');
 
-    res.status(200).json({
-      success: true,
-      message: updateMessage,
-      data: order,
+
+    res.status(200).json({ 
+      success: true, 
+      message: updateMessage, 
+      data: order 
     });
   } catch (error) {
     next(error);
@@ -589,6 +559,36 @@ const updateOrderItems = async (req, res, next) => {
 
     const processedItems = await processOrderItems(items);
 
+    const hasHappyHourItems = processedItems.some(
+      (i) =>
+        i.isHappyHourItem ||
+        (i.promotionsApplied?.some((p) => p.promotionType === "happy_hour"))
+    );
+    if (hasHappyHourItems) {
+      try {
+        const validationResults = await PromotionService.validateHappyHourPricing(
+          processedItems,
+          currentOrder.appliedPromotions || []
+        );
+        const invalid = validationResults.filter((r) => !r.valid);
+        if (invalid.length > 0) {
+          const error = createHttpError(
+            400,
+            `Promotion pricing validation failed: ${invalid.map((i) => i.message).join("; ")}`
+          );
+          return next(error);
+        }
+      } catch (error) {
+        console.warn("Promotion validation failed in updateOrderItems:", error.message);
+        return next(
+          createHttpError(
+            400,
+            `Happy Hour validation failed: ${error.message}`
+          )
+        );
+      }
+    }
+
     let appliedPromotions = currentOrder.appliedPromotions || [];
     const subtotal = processedItems.reduce(
       (sum, item) => sum + (item.originalPrice || item.price),
@@ -618,92 +618,40 @@ const updateOrderItems = async (req, res, next) => {
       currentOrder.bills?.tax || 0
     );
 
-    const oldTotal = currentOrder.bills?.totalWithTax ?? currentOrder.bills?.total ?? 0;
-    const newTotal = bills.totalWithTax ?? bills.total ?? 0;
-
-    // Build item key: dishId + name + variant size (for grouping)
-    const itemKey = (item) => {
-      const did = (item.dishId && item.dishId._id) || item.dishId || "";
-      const size = item.variant?.size || "";
-      return `${did}|${item.name || ""}|${size}`;
+    const updatePayload = {
+      items: processedItems,
+      bills,
     };
-
-    const aggregateByKey = (items) => {
-      const map = new Map();
-      for (const item of items) {
-        const key = itemKey(item);
-        const existing = map.get(key);
-        const qty = item.quantity || 1;
-        if (existing) {
-          existing.quantity += qty;
-        } else {
-          map.set(key, { name: item.name || "Unknown", quantity: qty });
-        }
-      }
-      return map;
-    };
-
-    const oldMap = aggregateByKey(currentOrder.items);
-    const newMap = aggregateByKey(processedItems);
-    const added = [];
-    const removed = [];
-    const updated = [];
-
-    for (const [key, newVal] of newMap) {
-      const oldVal = oldMap.get(key);
-      if (!oldVal) {
-        added.push({ name: newVal.name, quantity: newVal.quantity });
-      } else if (oldVal.quantity !== newVal.quantity) {
-        updated.push({ name: newVal.name, from: oldVal.quantity, to: newVal.quantity });
-      }
+    if (hasOrderLevelPromotions) {
+      updatePayload.appliedPromotions = appliedPromotions;
     }
-    for (const [key, oldVal] of oldMap) {
-      if (!newMap.has(key)) {
-        removed.push({ name: oldVal.name, quantity: oldVal.quantity });
-      }
-    }
-
-    const description =
-      added.length || updated.length || removed.length
-        ? "Items updated"
-        : `Items updated: ${processedItems.length} items, total ${newTotal}`;
-
-    const historyEntry = buildOrderHistoryEntry(
-      req.user,
-      "items_updated",
-      description,
-      {
-        added,
-        updated,
-        removed,
-        totalChange: { from: oldTotal, to: newTotal },
-      }
-    );
-
-    const updateDoc = {
-      $set: {
-        items: processedItems,
-        bills,
-        ...(hasOrderLevelPromotions && { appliedPromotions: appliedPromotions }),
-      },
-      $push: {
-        orderHistory: { $each: [historyEntry], $position: 0 },
-      },
-    };
 
     const order = await Order.findOneAndUpdate(
       { _id: id, store: req.store._id },
-      updateDoc,
+      updatePayload,
       { new: true }
     )
-      .populate("items.dishId", "name category price image")
-      .populate("appliedPromotions.promotionId", "name code type discount")
-      .populate("orderHistory.changedBy.userId", "name");
+      .populate('items.dishId', 'name category price image')
+      .populate('appliedPromotions.promotionId', 'name code type discount');
+
+    const responseData = {
+      ...order.toObject(),
+      promotionSummary: {
+        totalOriginalAmount: bills.subtotal,
+        totalDiscountAmount: bills.promotionDiscount,
+        totalFinalAmount: bills.total,
+        itemLevelDiscounts: processedItems.reduce(
+          (sum, item) => sum + (item.happyHourDiscount || 0),
+          0
+        ),
+        orderLevelDiscounts: 0,
+      },
+    };
 
     res.status(200).json({
       success: true,
       message: "Order items updated successfully",
-      data: order,
+      data: responseData
     });
   } catch (error) {
     next(error);

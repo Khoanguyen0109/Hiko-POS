@@ -81,8 +81,24 @@ const isToday = (date) => {
 const getDateRangeVietnam = (startDateString, endDateString) => {
   const start = startDateString ? getStartOfDayVietnam(startDateString) : null;
   const end = endDateString ? getEndOfDayVietnam(endDateString) : null;
-  
+
   return { start, end };
+};
+
+/**
+ * Get ISO 8601 week number and year for a date.
+ * Week starts on Monday; the week containing Thursday determines the year.
+ * @param {Date|string} date - Date to evaluate
+ * @returns {{ year: number, weekNumber: number }}
+ */
+const getISOWeek = (date) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + 4 - (d.getDay() || 7)); // Thursday of week
+  const year = d.getFullYear();
+  const yearStart = new Date(year, 0, 1);
+  const weekNumber = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return { year, weekNumber };
 };
 
 module.exports = {
@@ -94,5 +110,6 @@ module.exports = {
   getEndOfDayVietnam,
   parseVietnamTime,
   isToday,
-  getDateRangeVietnam
+  getDateRangeVietnam,
+  getISOWeek,
 };

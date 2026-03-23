@@ -272,9 +272,10 @@ class PromotionService {
         
         for (const item of orderItems) {
             if (item.isHappyHourItem) {
+                const itemId = item._id ? item._id.toString() : (item.dishId && item.dishId.toString());
                 const happyHourPromo = appliedPromotions.find(p => 
                     p.type === 'happy_hour' && 
-                    p.appliedToItems.includes(item._id || item.dishId.toString())
+                    (p.appliedToItems || []).some(id => id && id.toString() === itemId)
                 );
                 
                 if (happyHourPromo) {

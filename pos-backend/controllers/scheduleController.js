@@ -3,6 +3,7 @@ const Schedule = require("../models/scheduleModel");
 const ShiftTemplate = require("../models/shiftTemplateModel");
 const StoreUser = require("../models/storeUserModel");
 const User = require("../models/userModel");
+const { getISOWeek } = require("../utils/dateUtils");
 
 // ── helpers ──────────────────────────────────────────────────────────────
 
@@ -25,6 +26,14 @@ const timeRangesOverlap = (s1, e1, s2, e2) => {
 const findConflictsForDate = async (memberIds, date, shiftTemplate, excludeScheduleId = null) => {
     if (!memberIds || memberIds.length === 0) return [];
 
+    const memberIdsSet = new Set(
+        memberIds
+            .filter((m) => m != null)
+            .map((m) => (typeof m === "string" ? m : m.toString()).trim())
+    );
+    const memberIdsArr = [...memberIdsSet];
+    if (memberIdsArr.length === 0) return [];
+
     const startOfDay = new Date(date);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(date);
@@ -32,7 +41,7 @@ const findConflictsForDate = async (memberIds, date, shiftTemplate, excludeSched
 
     const query = {
         date: { $gte: startOfDay, $lte: endOfDay },
-        "assignedMembers.member": { $in: memberIds }
+        "assignedMembers.member": { $in: memberIdsArr }
     };
     if (excludeScheduleId) {
         query._id = { $ne: excludeScheduleId };
@@ -55,7 +64,7 @@ const findConflictsForDate = async (memberIds, date, shiftTemplate, excludeSched
 
         for (const am of sched.assignedMembers) {
             const mid = am.member?._id?.toString() || am.member?.toString();
-            if (memberIds.includes(mid)) {
+            if (mid && memberIdsSet.has(mid)) {
                 conflicts.push({
                     memberId: mid,
                     memberName: am.member?.name || 'Unknown',
@@ -290,10 +299,9 @@ const createSchedule = async (req, res, next) => {
         let scheduleYear = year;
         let scheduleWeekNumber = weekNumber;
         if (!scheduleYear || !scheduleWeekNumber) {
-            scheduleYear = scheduleDate.getFullYear();
-            const firstDay = new Date(scheduleDate.getFullYear(), 0, 1);
-            const past = (scheduleDate - firstDay) / 86400000;
-            scheduleWeekNumber = Math.ceil((past + firstDay.getDay() + 1) / 7);
+            const iso = getISOWeek(scheduleDate);
+            scheduleYear = iso.year;
+            scheduleWeekNumber = iso.weekNumber;
         }
 
         const schedule = new Schedule({
@@ -344,7 +352,11 @@ const bulkCreateSchedules = async (req, res, next) => {
                     continue;
                 }
 
-                const scheduleDate = new Date(date);
+                const scheduleDate = parseDate(date);
+                if (isNaN(scheduleDate.getTime())) {
+                    errors.push({ date, shiftTemplateId, error: "Invalid date format. Use YYYY-MM-DD" });
+                    continue;
+                }
                 scheduleDate.setHours(0, 0, 0, 0);
 
                 const existing = await Schedule.findOne({
@@ -355,6 +367,14 @@ const bulkCreateSchedules = async (req, res, next) => {
                 if (existing) {
                     errors.push({ date, shiftTemplateId, error: "Schedule already exists" });
                     continue;
+                }
+
+                if (memberIds && Array.isArray(memberIds) && memberIds.length > 0) {
+                    const conflicts = await findConflictsForDate(memberIds, scheduleDate, shiftTemplate);
+                    if (conflicts.length > 0) {
+                        errors.push({ date, shiftTemplateId, error: "Schedule conflict detected", conflicts });
+                        continue;
+                    }
                 }
 
                 const assignedMembers = [];

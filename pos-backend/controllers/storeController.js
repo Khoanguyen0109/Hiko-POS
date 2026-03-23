@@ -97,6 +97,21 @@ const getStoreById = async (req, res, next) => {
         if (!store) {
             return next(createHttpError(404, "Store not found."));
         }
+        if (!store.isActive) {
+            return next(createHttpError(404, "Store not found."));
+        }
+
+        const isAdmin = req.user?.role === "Admin";
+        if (!isAdmin) {
+            const membership = await StoreUser.findOne({
+                user: req.user._id,
+                store: id,
+                isActive: true
+            });
+            if (!membership) {
+                return next(createHttpError(403, "You do not have access to this store."));
+            }
+        }
 
         res.status(200).json({ success: true, data: store });
     } catch (error) {
