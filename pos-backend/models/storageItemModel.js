@@ -74,6 +74,7 @@ const storageItemSchema = new mongoose.Schema({
 // Indexes
 storageItemSchema.index({ store: 1, name: 1 });
 storageItemSchema.index({ store: 1, code: 1 });
+storageItemSchema.index({ store: 1, isActive: 1 });
 storageItemSchema.index({ category: 1 });
 storageItemSchema.index({ isActive: 1 });
 

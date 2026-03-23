@@ -2,6 +2,13 @@ const createHttpError = require("http-errors");
 const mongoose = require("mongoose");
 const Dish = require("../models/dishModel");
 const Category = require("../models/categoryModel");
+const cache = require("../services/cacheService");
+
+const CACHE_ALL       = "dishes:all";
+const CACHE_AVAILABLE = "dishes:available";
+const CACHE_TTL       = 120; // seconds
+
+const invalidateDishCache = () => cache.del(CACHE_ALL, CACHE_AVAILABLE);
 
 const addDish = async (req, res, next) => {
     try {
@@ -96,7 +103,7 @@ const addDish = async (req, res, next) => {
         });
 
         await newDish.save();
-        
+        await invalidateDishCache();
         const populated = await newDish.populate({ path: 'category', select: 'name' });
         res.status(201).json({ success: true, message: "Dish created successfully!", data: populated });
     } catch (error) {
@@ -106,9 +113,11 @@ const addDish = async (req, res, next) => {
 
 const getDishes = async (req, res, next) => {
     try {
-        const dishes = await Dish.find()
-            .populate({ path: 'category', select: 'name' })
-            .sort({ createdAt: -1 });
+        const dishes = await cache.getOrSet(
+            CACHE_ALL,
+            () => Dish.find().populate({ path: 'category', select: 'name' }).sort({ createdAt: -1 }).lean(),
+            CACHE_TTL
+        );
         res.status(200).json({ success: true, data: dishes });
     } catch (error) {
         next(error);
@@ -254,6 +263,7 @@ const updateDish = async (req, res, next) => {
             return next(error);
         }
 
+        await invalidateDishCache();
         res.status(200).json({ success: true, message: "Dish updated successfully!", data: updated });
     } catch (error) {
         next(error);
@@ -274,6 +284,7 @@ const deleteDish = async (req, res, next) => {
             return next(error);
         }
 
+        await invalidateDishCache();
         res.status(200).json({ success: true, message: "Dish deleted successfully!" });
     } catch (error) {
         next(error);
@@ -304,13 +315,13 @@ const getDishesByCategory = async (req, res, next) => {
     }
 }
 
-// New function to get available dishes only
 const getAvailableDishes = async (req, res, next) => {
     try {
-        const dishes = await Dish.find({ isAvailable: true })
-            .populate({ path: 'category', select: 'name' })
-            .sort({ createdAt: -1 });
-        
+        const dishes = await cache.getOrSet(
+            CACHE_AVAILABLE,
+            () => Dish.find({ isAvailable: true }).populate({ path: 'category', select: 'name' }).sort({ createdAt: -1 }).lean(),
+            CACHE_TTL
+        );
         res.status(200).json({ success: true, data: dishes });
     } catch (error) {
         next(error);
@@ -337,6 +348,7 @@ const toggleDishAvailability = async (req, res, next) => {
 
         const populated = await dish.populate({ path: 'category', select: 'name' });
         
+        await invalidateDishCache();
         res.status(200).json({ 
             success: true, 
             message: `Dish ${dish.isAvailable ? 'enabled' : 'disabled'} successfully!`, 

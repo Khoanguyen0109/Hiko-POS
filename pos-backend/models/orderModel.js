@@ -194,8 +194,10 @@ const orderSchema = new mongoose.Schema({
     }]
 }, { timestamps: true });
 
-// Index for better query performance
+// Indexes for query performance
 orderSchema.index({ store: 1, createdAt: -1 });
+orderSchema.index({ store: 1, orderStatus: 1 });
+orderSchema.index({ store: 1, orderStatus: 1, createdAt: -1 });
 orderSchema.index({ createdAt: -1 });
 orderSchema.index({ orderStatus: 1 });
 orderSchema.index({ 'customerDetails.phone': 1 });

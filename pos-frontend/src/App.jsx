@@ -36,7 +36,7 @@ import { useSelector, useDispatch } from "react-redux";
 import FullScreenLoader from "./components/shared/FullScreenLoader";
 import PropTypes from "prop-types";
 import { useEffect, useState, useCallback } from "react";
-import { getAuthData } from "./utils/auth";
+import { getStoredUser, clearAuthData } from "./utils/auth";
 import { setUser } from "./redux/slices/userSlice";
 import { setStores, setActiveStore } from "./redux/slices/storeSlice";
 import { getUserData } from "./https";
@@ -84,45 +84,45 @@ function Layout() {
 
   useEffect(() => {
     const initializeAuth = async () => {
-      const { isAuthenticated, accessToken } = getAuthData();
+      // Only attempt validation if we have a cached user profile.
+      // The actual auth is via the httpOnly cookie sent automatically.
+      const cachedUser = getStoredUser();
+      if (!cachedUser) {
+        setIsValidatingToken(false);
+        return;
+      }
 
-      if (isAuthenticated && accessToken) {
-        try {
-          const response = await getUserData();
-          const { data } = response.data;
+      try {
+        const response = await getUserData();
+        const { data } = response.data;
 
-          dispatch(setUser(data));
+        dispatch(setUser(data));
 
-          // Set stores from getUserData response
-          if (data.stores && data.stores.length > 0) {
-            dispatch(setStores(data.stores));
+        if (data.stores && data.stores.length > 0) {
+          dispatch(setStores(data.stores));
 
-            // Restore active store from localStorage or auto-select if only one
-            const storedActiveStore = localStorage.getItem("activeStore");
-            if (storedActiveStore) {
-              try {
-                const parsed = JSON.parse(storedActiveStore);
-                const stillValid = data.stores.find(s => s._id === parsed._id);
-                if (stillValid) {
-                  dispatch(setActiveStore(stillValid));
-                } else if (data.stores.length === 1) {
-                  dispatch(setActiveStore(data.stores[0]));
-                }
-              } catch {
-                if (data.stores.length === 1) {
-                  dispatch(setActiveStore(data.stores[0]));
-                }
+          const storedActiveStore = localStorage.getItem("activeStore");
+          if (storedActiveStore) {
+            try {
+              const parsed = JSON.parse(storedActiveStore);
+              const stillValid = data.stores.find(s => s._id === parsed._id);
+              if (stillValid) {
+                dispatch(setActiveStore(stillValid));
+              } else if (data.stores.length === 1) {
+                dispatch(setActiveStore(data.stores[0]));
               }
-            } else if (data.stores.length === 1) {
-              dispatch(setActiveStore(data.stores[0]));
+            } catch {
+              if (data.stores.length === 1) {
+                dispatch(setActiveStore(data.stores[0]));
+              }
             }
+          } else if (data.stores.length === 1) {
+            dispatch(setActiveStore(data.stores[0]));
           }
-        } catch (error) {
-          logger.error("Token validation failed:", error);
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("user");
-          localStorage.removeItem("activeStore");
         }
+      } catch (error) {
+        logger.error("Session validation failed:", error);
+        clearAuthData();
       }
 
       setIsValidatingToken(false);

@@ -2,7 +2,7 @@ const config = require("../config/config");
 
 const globalErrorHandler = (err, req, res, next) => {
     const statusCode = err.statusCode || 500;
-    console.log('err', err)
+    if (config.nodeEnv === "development") console.error(err);
     return res.status(statusCode).json({
         status: statusCode,
         message: err.message,

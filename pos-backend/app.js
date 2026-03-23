@@ -1,32 +1,76 @@
 const express = require("express");
+const helmet = require("helmet");
+const compression = require("compression");
+const mongoSanitize = require("express-mongo-sanitize");
+const rateLimit = require("express-rate-limit");
+const cookieParser = require("cookie-parser");
+const cors = require("cors");
 const connectDB = require("./config/database");
 const config = require("./config/config");
 const globalErrorHandler = require("./middlewares/globalErrorHandler");
-const cors = require("cors");
+const mongoose = require("mongoose");
+
 const app = express();
 
-
-const PORT = config.port;
 connectDB();
 
+// ─── Security headers ──────────────────────────────────────────────────────
+app.use(helmet());
 
-// Middlewares
+// ─── CORS ──────────────────────────────────────────────────────────────────
 app.use(cors({
     origin: ['http://localhost:5173', 'https://hiko-pos.vercel.app'],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Store-Id'],
     credentials: true
-}))
-app.use(express.json()); // parse incoming request in json format
+}));
 
+// ─── Body parsing & cookies ────────────────────────────────────────────────
+app.use(express.json({ limit: '10mb' }));
+app.use(cookieParser());
 
-// Root Endpoint
-app.get("/", (req,res) => {
-    res.json({message : "Hello from POS Server!"});
-})
+// ─── MongoDB injection sanitization ───────────────────────────────────────
+app.use(mongoSanitize());
 
+// ─── Gzip compression ─────────────────────────────────────────────────────
+app.use(compression());
 
-// Other Endpoints
+// ─── Rate limiters ─────────────────────────────────────────────────────────
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: "Too many attempts. Please try again in 15 minutes." }
+});
+
+const couponLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: "Too many coupon validation requests. Slow down." }
+});
+
+app.use("/api/user/login", authLimiter);
+app.use("/api/user/register", authLimiter);
+app.use("/api/promotion/validate-coupon", couponLimiter);
+
+// ─── Health check ──────────────────────────────────────────────────────────
+app.get("/", (req, res) => {
+    const dbState = mongoose.connection.readyState;
+    const dbStatus = ["disconnected", "connected", "connecting", "disconnecting"][dbState] || "unknown";
+    const healthy = dbState === 1;
+
+    res.status(healthy ? 200 : 503).json({
+        status: healthy ? "ok" : "degraded",
+        db: dbStatus,
+        uptime: Math.floor(process.uptime()),
+        timestamp: new Date().toISOString()
+    });
+});
+
+// ─── API Routes ────────────────────────────────────────────────────────────
 app.use("/api/store", require("./routes/storeRoute"));
 app.use("/api/user", require("./routes/userRoute"));
 app.use("/api/member", require("./routes/memberRoute"));
@@ -50,11 +94,33 @@ app.use("/api/salary", require("./routes/salaryRoute"));
 app.use("/api/extra-work", require("./routes/extraWorkRoute"));
 app.use("/api/test", require("./routes/testRoute"));
 
-// Global Error Handler
+// ─── Global error handler ──────────────────────────────────────────────────
 app.use(globalErrorHandler);
 
+// ─── Server start ──────────────────────────────────────────────────────────
+const server = app.listen(config.port, () => {
+    console.log(`☑️  POS Server is listening on port ${config.port}`);
+});
 
-// Server
-app.listen(PORT, () => {
-    console.log(`☑️  POS Server is listening on port ${PORT}`);
-})
+// ─── Graceful shutdown ─────────────────────────────────────────────────────
+const shutdown = (signal) => {
+    console.log(`\n${signal} received. Shutting down gracefully...`);
+    server.close(async () => {
+        try {
+            await mongoose.connection.close();
+            console.log("MongoDB connection closed.");
+        } catch {
+            // ignore close errors
+        }
+        process.exit(0);
+    });
+
+    // Force exit if shutdown takes too long
+    setTimeout(() => {
+        console.error("Forced shutdown after timeout.");
+        process.exit(1);
+    }, 10_000);
+};
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));

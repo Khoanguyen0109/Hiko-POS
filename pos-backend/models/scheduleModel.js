@@ -74,8 +74,9 @@ const scheduleSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-// Compound index for efficient queries
+// Compound indexes for efficient queries
 scheduleSchema.index({ store: 1, date: 1 });
+scheduleSchema.index({ store: 1, year: 1, weekNumber: 1 });
 scheduleSchema.index({ date: 1, shiftTemplate: 1 });
 scheduleSchema.index({ year: 1, weekNumber: 1 });
 scheduleSchema.index({ "assignedMembers.member": 1, date: 1 });

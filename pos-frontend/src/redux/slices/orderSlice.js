@@ -5,7 +5,7 @@ import { getOrders, getOrderById, addOrder, updateOrderStatus, updateOrderItems 
 export const fetchOrders = createAsyncThunk("orders/fetchAll", async (params = {}, thunkAPI) => {
     try {
         const { data } = await getOrders(params);
-        return data.data;
+        return { orders: data.data, pagination: data.pagination || null };
     } catch (error) {
         return thunkAPI.rejectWithValue(error.response?.data?.message || "Failed to fetch orders");
     }
@@ -62,6 +62,14 @@ const initialState = {
     recentOrders: [],
     loading: false,
     error: null,
+    pagination: {
+        total: 0,
+        page: 1,
+        limit: 50,
+        totalPages: 0,
+        hasNext: false,
+        hasPrev: false,
+    },
     filters: {
         startDate: null,
         endDate: null,
@@ -95,9 +103,13 @@ const orderSlice = createSlice({
             })
             .addCase(fetchOrders.fulfilled, (state, action) => {
                 state.loading = false;
-                state.items = action.payload || [];
-                // Update recent orders (last 5)
-                state.recentOrders = (action.payload || []).slice(0, 5);
+                const { orders = [], pagination } = action.payload;
+                state.items = orders;
+                if (pagination) state.pagination = pagination;
+                // Recent orders sourced from first page only (page 1)
+                if (!pagination || pagination.page === 1) {
+                    state.recentOrders = orders.slice(0, 5);
+                }
             })
             .addCase(fetchOrders.rejected, (state, action) => {
                 state.loading = false;

@@ -25,8 +25,8 @@ const Login = () => {
       dispatch(loginUser(formData))
         .unwrap()
         .then((userData) => {
-          const { accessToken, user, stores } = userData;
-          setAuthData(accessToken, user);
+          const { user, stores } = userData;
+          setAuthData(user);
 
           if (stores && stores.length > 0) {
             dispatch(setStores(stores));

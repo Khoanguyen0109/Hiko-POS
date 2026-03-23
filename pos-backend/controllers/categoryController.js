@@ -1,6 +1,11 @@
 const createHttpError = require("http-errors");
 const mongoose = require("mongoose");
 const Category = require("../models/categoryModel");
+const cache = require("../services/cacheService");
+
+const CACHE_ALL    = "categories:all";
+const CACHE_ACTIVE = "categories:active";
+const CACHE_TTL    = 120; // seconds
 
 const addCategory = async (req, res, next) => {
     try {
@@ -47,6 +52,7 @@ const addCategory = async (req, res, next) => {
         });
 
         await newCategory.save();
+        await cache.del(CACHE_ALL, CACHE_ACTIVE);
         res.status(201).json({ 
             success: true, 
             message: "Category created successfully!", 
@@ -59,7 +65,11 @@ const addCategory = async (req, res, next) => {
 
 const getCategories = async (req, res, next) => {
     try {
-        const categories = await Category.find().sort({ createdAt: -1 });
+        const categories = await cache.getOrSet(
+            CACHE_ALL,
+            () => Category.find().sort({ createdAt: -1 }).lean(),
+            CACHE_TTL
+        );
         res.status(200).json({ success: true, data: categories });
     } catch (error) {
         next(error);
@@ -68,7 +78,11 @@ const getCategories = async (req, res, next) => {
 
 const getActiveCategories = async (req, res, next) => {
     try {
-        const categories = await Category.find({ isActive: true }).sort({ createdAt: -1 });
+        const categories = await cache.getOrSet(
+            CACHE_ACTIVE,
+            () => Category.find({ isActive: true }).sort({ createdAt: -1 }).lean(),
+            CACHE_TTL
+        );
         res.status(200).json({ success: true, data: categories });
     } catch (error) {
         next(error);
@@ -163,6 +177,7 @@ const updateCategory = async (req, res, next) => {
             return next(error);
         }
 
+        await cache.del(CACHE_ALL, CACHE_ACTIVE);
         res.status(200).json({ 
             success: true, 
             message: "Category updated successfully!", 
@@ -188,6 +203,7 @@ const deleteCategory = async (req, res, next) => {
             return next(error);
         }
 
+        await cache.del(CACHE_ALL, CACHE_ACTIVE);
         res.status(200).json({ 
             success: true, 
             message: "Category deleted successfully!" 
@@ -215,6 +231,7 @@ const toggleCategoryStatus = async (req, res, next) => {
         category.isActive = !category.isActive;
         await category.save();
 
+        await cache.del(CACHE_ALL, CACHE_ACTIVE);
         res.status(200).json({ 
             success: true, 
             message: `Category ${category.isActive ? 'activated' : 'deactivated'} successfully!`, 

@@ -51,9 +51,7 @@ const login = async (req, res, next) => {
             return next(error);
         }
 
-        console.log('isUserPresent', isUserPresent)
         const isMatch = await bcrypt.compare(password, isUserPresent.password);
-        console.log('isMatch', isMatch)
 
         if(!isMatch){
             const error = createHttpError(401, "Invalid Credentials");
@@ -68,6 +66,14 @@ const login = async (req, res, next) => {
 
         const accessToken = jwt.sign({_id: isUserPresent._id}, config.accessTokenSecret, {
             expiresIn : '1d'
+        });
+
+        // Set JWT as httpOnly cookie (not readable by JS)
+        res.cookie('accessToken', accessToken, {
+            httpOnly: true,
+            secure: config.nodeEnv === 'production',
+            sameSite: config.nodeEnv === 'production' ? 'none' : 'lax',
+            maxAge: 24 * 60 * 60 * 1000 // 1 day in ms
         });
 
         // Fetch user's stores
@@ -105,7 +111,6 @@ const login = async (req, res, next) => {
             success: true, 
             message: "User login successfully!", 
             data: {
-                accessToken,
                 user: {
                     _id: isUserPresent._id,
                     name: isUserPresent.name,
@@ -184,6 +189,11 @@ const getUserData = async (req, res, next) => {
 
 const logout = async (req, res, next) => {
     try {
+        res.clearCookie('accessToken', {
+            httpOnly: true,
+            secure: config.nodeEnv === 'production',
+            sameSite: config.nodeEnv === 'production' ? 'none' : 'lax'
+        });
         res.status(200).json({success: true, message: "User logout successfully!"});
     } catch (error) {
         next(error);

@@ -1,32 +1,21 @@
-// Authentication utility functions
+// Authentication utility functions.
+// The JWT lives in an httpOnly cookie managed by the server.
+// We only persist the user profile in localStorage as a UI cache hint.
 
-export const setAuthData = (accessToken, user) => {
-  localStorage.setItem("accessToken", accessToken);
+export const setAuthData = (user) => {
   localStorage.setItem("user", JSON.stringify(user));
 };
 
-export const getAuthData = () => {
-  const token = localStorage.getItem("accessToken");
-  const user = localStorage.getItem("user");
-
-  return {
-    accessToken: token,
-    user: user ? JSON.parse(user) : null,
-    isAuthenticated: !!token,
-  };
-};
-
-export const isAuthenticated = () => {
-  return !!localStorage.getItem("accessToken");
-};
-
 export const getStoredUser = () => {
-  const user = localStorage.getItem("user");
-  return user ? JSON.parse(user) : null;
+  try {
+    const user = localStorage.getItem("user");
+    return user ? JSON.parse(user) : null;
+  } catch {
+    return null;
+  }
 };
 
 export const clearAuthData = () => {
-  localStorage.removeItem("accessToken");
   localStorage.removeItem("user");
   localStorage.removeItem("activeStore");
 };

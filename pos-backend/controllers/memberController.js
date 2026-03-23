@@ -5,21 +5,36 @@ const Store = require("../models/storeModel");
 const bcrypt = require("bcrypt");
 const { userRoles } = require("../constants/user");
 
-// Admin: Get all members
+// Admin: Get all members (paginated)
 const getAllMembers = async (req, res, next) => {
     try {
-        const members = await User.find({ role: { $ne: userRoles.ADMIN } })
-            .select('-password')
-            .sort({ createdAt: -1 })
-            .lean();
+        const { page, limit, search } = req.query;
+        const pageNum  = Math.max(1, parseInt(page, 10)  || 1);
+        const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
+        const skip     = (pageNum - 1) * limitNum;
 
-        // Fetch store assignments for all members in one query
+        const filter = { role: { $ne: userRoles.ADMIN } };
+        if (search) {
+            const re = new RegExp(search.trim(), 'i');
+            filter.$or = [{ name: re }, { phone: re }, { email: re }];
+        }
+
+        const [members, total] = await Promise.all([
+            User.find(filter)
+                .select('-password')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limitNum)
+                .lean(),
+            User.countDocuments(filter),
+        ]);
+
+        // Fetch all store assignments for this page in one query
         const memberIds = members.map(m => m._id);
         const storeUsers = await StoreUser.find({ user: { $in: memberIds } })
             .populate({ path: 'store', select: 'name code isActive' })
             .lean();
 
-        // Group by user ID
         const storesByUser = {};
         for (const su of storeUsers) {
             if (!su.store) continue;
@@ -42,7 +57,14 @@ const getAllMembers = async (req, res, next) => {
         res.status(200).json({
             success: true,
             data: membersWithStores,
-            count: membersWithStores.length
+            pagination: {
+                total,
+                page: pageNum,
+                limit: limitNum,
+                totalPages: Math.ceil(total / limitNum),
+                hasNext: pageNum * limitNum < total,
+                hasPrev: pageNum > 1,
+            },
         });
     } catch (error) {
         next(error);

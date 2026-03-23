@@ -38,14 +38,20 @@ export const getAllPayments = (params) =>
 export const addOrder = (data) => axiosWrapper.post("/api/order/", data);
 export const getOrders = (params = {}) => {
   const queryParams = new URLSearchParams();
-  
+
   if (params.startDate) queryParams.append('startDate', params.startDate);
-  if (params.endDate) queryParams.append('endDate', params.endDate);
-  if (params.status && params.status !== 'all') queryParams.append('status', params.status);
-  if (params.createdBy && params.createdBy !== 'all') queryParams.append('createdBy', params.createdBy);
-  if (params.paymentMethod && params.paymentMethod !== 'all') queryParams.append('paymentMethod', params.paymentMethod);
-  if (params.thirdPartyVendor && params.thirdPartyVendor !== 'all') queryParams.append('thirdPartyVendor', params.thirdPartyVendor);
-  
+  if (params.endDate)   queryParams.append('endDate',   params.endDate);
+  if (params.status && params.status !== 'all')
+    queryParams.append('status', params.status);
+  if (params.createdBy && params.createdBy !== 'all')
+    queryParams.append('createdBy', params.createdBy);
+  if (params.paymentMethod && params.paymentMethod !== 'all')
+    queryParams.append('paymentMethod', params.paymentMethod);
+  if (params.thirdPartyVendor && params.thirdPartyVendor !== 'all')
+    queryParams.append('thirdPartyVendor', params.thirdPartyVendor);
+  if (params.page)  queryParams.append('page',  params.page);
+  if (params.limit) queryParams.append('limit', params.limit);
+
   const queryString = queryParams.toString();
   return axiosWrapper.get(`/api/order${queryString ? `?${queryString}` : ''}`);
 };

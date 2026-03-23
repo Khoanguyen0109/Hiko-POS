@@ -1,115 +1,103 @@
-const moment = require('moment-timezone');
+const { startOfDay, endOfDay, isSameDay, parse } = require("date-fns");
+const { toZonedTime, fromZonedTime, format } = require("date-fns-tz");
 
-// Set default timezone to Ho Chi Minh City, Vietnam
-const VIETNAM_TIMEZONE = 'Asia/Ho_Chi_Minh';
+const VIETNAM_TIMEZONE = "Asia/Ho_Chi_Minh";
 
 /**
- * Get current date and time in Vietnam timezone
- * @returns {Date} Current date in Vietnam timezone
+ * Get the current UTC timestamp (MongoDB stores dates in UTC).
+ * Use formatVietnamTime / toVietnamTime for display.
  */
-const getCurrentVietnamTime = () => {
-  return moment().tz(VIETNAM_TIMEZONE).toDate();
-};
+const getCurrentVietnamTime = () => new Date();
 
 /**
- * Convert any date to Vietnam timezone
- * @param {Date|string} date - Date to convert
- * @returns {Date} Date in Vietnam timezone
+ * Return a zoned Date whose numeric fields (getHours, getMinutes, etc.)
+ * reflect the local time in Vietnam. Useful for display / day-boundary math.
  */
-const toVietnamTime = (date) => {
-  return moment(date).tz(VIETNAM_TIMEZONE).toDate();
-};
+const toVietnamTime = (date) => toZonedTime(new Date(date), VIETNAM_TIMEZONE);
 
 /**
- * Format date to Vietnam timezone string
- * @param {Date|string} date - Date to format
- * @param {string} format - Moment.js format string (default: 'YYYY-MM-DD HH:mm:ss')
- * @returns {string} Formatted date string in Vietnam timezone
+ * Format a date as a string in the Vietnam timezone.
+ * Uses date-fns format tokens (yyyy-MM-dd HH:mm:ss).
  */
-const formatVietnamTime = (date, format = 'YYYY-MM-DD HH:mm:ss') => {
-  return moment(date).tz(VIETNAM_TIMEZONE).format(format);
-};
+const formatVietnamTime = (date, fmt = "yyyy-MM-dd HH:mm:ss") =>
+    format(new Date(date), fmt, { timeZone: VIETNAM_TIMEZONE });
 
 /**
- * Get start of day in Vietnam timezone
- * @param {Date|string} date - Date to get start of day for
- * @returns {Date} Start of day in Vietnam timezone
+ * UTC timestamp representing midnight (00:00:00) of the given date
+ * as observed in the Vietnam timezone.
  */
 const getStartOfDayVietnam = (date) => {
-  return moment(date).tz(VIETNAM_TIMEZONE).startOf('day').toDate();
+    const zoned = toZonedTime(new Date(date), VIETNAM_TIMEZONE);
+    return fromZonedTime(startOfDay(zoned), VIETNAM_TIMEZONE);
 };
 
 /**
- * Get end of day in Vietnam timezone
- * @param {Date|string} date - Date to get end of day for
- * @returns {Date} End of day in Vietnam timezone
+ * UTC timestamp representing 23:59:59.999 of the given date
+ * as observed in the Vietnam timezone.
  */
 const getEndOfDayVietnam = (date) => {
-  return moment(date).tz(VIETNAM_TIMEZONE).endOf('day').toDate();
+    const zoned = toZonedTime(new Date(date), VIETNAM_TIMEZONE);
+    return fromZonedTime(endOfDay(zoned), VIETNAM_TIMEZONE);
 };
 
 /**
- * Parse date string in Vietnam timezone
- * @param {string} dateString - Date string to parse
- * @param {string} format - Input format (optional)
- * @returns {Date} Parsed date in Vietnam timezone
+ * Parse a date string in the Vietnam timezone.
+ * @param {string} dateString
+ * @param {string} [fmt] - date-fns format token string (e.g. 'yyyy-MM-dd').
+ *   Moment-style tokens (YYYY, DD) are auto-converted.
  */
-const parseVietnamTime = (dateString, format) => {
-  if (format) {
-    return moment.tz(dateString, format, VIETNAM_TIMEZONE).toDate();
-  }
-  return moment.tz(dateString, VIETNAM_TIMEZONE).toDate();
+const parseVietnamTime = (dateString, fmt) => {
+    if (fmt) {
+        // Accept both moment-style (YYYY/DD) and date-fns tokens (yyyy/dd)
+        const dfFmt = fmt.replace(/YYYY/g, "yyyy").replace(/DD/g, "dd");
+        const parsed = parse(dateString, dfFmt, new Date());
+        return fromZonedTime(parsed, VIETNAM_TIMEZONE);
+    }
+    return fromZonedTime(new Date(dateString), VIETNAM_TIMEZONE);
 };
 
 /**
- * Check if a date is today in Vietnam timezone
- * @param {Date|string} date - Date to check
- * @returns {boolean} True if date is today in Vietnam timezone
+ * Check whether a date falls on today in the Vietnam timezone.
  */
 const isToday = (date) => {
-  const today = moment().tz(VIETNAM_TIMEZONE);
-  const checkDate = moment(date).tz(VIETNAM_TIMEZONE);
-  return today.isSame(checkDate, 'day');
+    const nowZoned = toZonedTime(new Date(), VIETNAM_TIMEZONE);
+    const checkZoned = toZonedTime(new Date(date), VIETNAM_TIMEZONE);
+    return isSameDay(nowZoned, checkZoned);
 };
 
 /**
- * Get date range for filtering in Vietnam timezone
- * @param {string} startDateString - Start date string (YYYY-MM-DD)
- * @param {string} endDateString - End date string (YYYY-MM-DD)
- * @returns {Object} Object with start and end dates in Vietnam timezone
+ * Build a { start, end } range for Mongoose date queries from YYYY-MM-DD strings.
+ * Boundaries are in UTC but aligned to Vietnam timezone day edges.
  */
-const getDateRangeVietnam = (startDateString, endDateString) => {
-  const start = startDateString ? getStartOfDayVietnam(startDateString) : null;
-  const end = endDateString ? getEndOfDayVietnam(endDateString) : null;
-
-  return { start, end };
-};
+const getDateRangeVietnam = (startDateString, endDateString) => ({
+    start: startDateString ? getStartOfDayVietnam(startDateString) : null,
+    end: endDateString ? getEndOfDayVietnam(endDateString) : null,
+});
 
 /**
- * Get ISO 8601 week number and year for a date.
- * Week starts on Monday; the week containing Thursday determines the year.
- * @param {Date|string} date - Date to evaluate
- * @returns {{ year: number, weekNumber: number }}
+ * ISO 8601 week number and year for a date.
+ * Week starts Monday; the week containing Thursday determines the year.
+ * Pure JS — no library needed.
  */
 const getISOWeek = (date) => {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + 4 - (d.getDay() || 7)); // Thursday of week
-  const year = d.getFullYear();
-  const yearStart = new Date(year, 0, 1);
-  const weekNumber = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-  return { year, weekNumber };
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+    const year = d.getFullYear();
+    const yearStart = new Date(year, 0, 1);
+    const weekNumber = Math.ceil((((d - yearStart) / 86_400_000) + 1) / 7);
+    return { year, weekNumber };
 };
 
 module.exports = {
-  VIETNAM_TIMEZONE,
-  getCurrentVietnamTime,
-  toVietnamTime,
-  formatVietnamTime,
-  getStartOfDayVietnam,
-  getEndOfDayVietnam,
-  parseVietnamTime,
-  isToday,
-  getDateRangeVietnam,
-  getISOWeek,
+    VIETNAM_TIMEZONE,
+    getCurrentVietnamTime,
+    toVietnamTime,
+    formatVietnamTime,
+    getStartOfDayVietnam,
+    getEndOfDayVietnam,
+    parseVietnamTime,
+    isToday,
+    getDateRangeVietnam,
+    getISOWeek,
 };

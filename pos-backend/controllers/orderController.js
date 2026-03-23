@@ -348,64 +348,60 @@ const getOrderById = async (req, res, next) => {
 
 const getOrders = async (req, res, next) => {
   try {
-    const { startDate, endDate, status, createdBy, paymentMethod, thirdPartyVendor } = req.query;
-    
-    // Build query object
-    let query = { store: req.store._id };
-    
-    // Date filtering using Vietnam timezone
+    const {
+      startDate, endDate,
+      status, createdBy, paymentMethod, thirdPartyVendor,
+      page, limit,
+    } = req.query;
+
+    const pageNum  = Math.max(1, parseInt(page, 10)  || 1);
+    const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
+    const skip     = (pageNum - 1) * limitNum;
+
+    const query = { store: req.store._id };
+
     if (startDate || endDate) {
-      query.createdAt = {};
-      
       const { start, end } = getDateRangeVietnam(startDate, endDate);
-      
-      if (start) {
-        query.createdAt.$gte = start;
-      }
-      
-      if (end) {
-        query.createdAt.$lte = end;
-      }
+      query.createdAt = {};
+      if (start) query.createdAt.$gte = start;
+      if (end)   query.createdAt.$lte = end;
     }
-    
-    // Status filtering
-    if (status && status !== 'all') {
-      query.orderStatus = status;
-    }
-    
-    // CreatedBy filtering
-    if (createdBy && createdBy !== 'all') {
-      query['createdBy.userId'] = createdBy;
-    }
-    
-    // Payment method filtering
-    if (paymentMethod && paymentMethod !== 'all') {
-      query.paymentMethod = paymentMethod;
-    }
-    
-    // Third party vendor filtering
-    if (thirdPartyVendor && thirdPartyVendor !== 'all') {
-      query.thirdPartyVendor = thirdPartyVendor;
-    }
-    
-    const orders = await Order.find(query)
-      .populate('items.dishId', 'name category price image')
-      .populate('createdBy.userId', 'name email')
-      .populate('appliedPromotions.promotionId', 'name code type discount')
-      .sort({ createdAt: -1 }); // Sort by newest first
-      
-    res.status(200).json({ 
+
+    if (status && status !== 'all')               query.orderStatus           = status;
+    if (createdBy && createdBy !== 'all')          query['createdBy.userId']   = createdBy;
+    if (paymentMethod && paymentMethod !== 'all')  query.paymentMethod         = paymentMethod;
+    if (thirdPartyVendor && thirdPartyVendor !== 'all') query.thirdPartyVendor = thirdPartyVendor;
+
+    const [orders, total] = await Promise.all([
+      Order.find(query)
+        .populate('items.dishId', 'name category price image')
+        .populate('createdBy.userId', 'name email')
+        .populate('appliedPromotions.promotionId', 'name code type discount')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum),
+      Order.countDocuments(query),
+    ]);
+
+    res.status(200).json({
       success: true,
       data: orders,
-      count: orders.length,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+        hasNext: pageNum * limitNum < total,
+        hasPrev: pageNum > 1,
+      },
       filters: {
         startDate: startDate || null,
-        endDate: endDate || null,
-        status: status || 'all',
+        endDate:   endDate   || null,
+        status:    status    || 'all',
         createdBy: createdBy || 'all',
-        paymentMethod: paymentMethod || 'all',
-        thirdPartyVendor: thirdPartyVendor || 'all'
-      }
+        paymentMethod:    paymentMethod    || 'all',
+        thirdPartyVendor: thirdPartyVendor || 'all',
+      },
     });
   } catch (error) {
     next(error);

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { MdFilterList, MdPerson, MdPayment, MdStore } from "react-icons/md";
+import { MdFilterList, MdPerson, MdPayment, MdStore, MdChevronLeft, MdChevronRight } from "react-icons/md";
 import OrderCard from "../components/orders/OrderCard";
 import BackButton from "../components/shared/BackButton";
 import DateFilter from "../components/shared/DateFilter";
@@ -17,6 +17,7 @@ const Orders = () => {
     items: orders,
     loading,
     error,
+    pagination,
   } = useSelector((state) => state.orders);
   const { members } = useSelector((state) => state.members);
   const isAdmin = role === "Admin";
@@ -35,6 +36,8 @@ const Orders = () => {
   const [showPaymentFilter, setShowPaymentFilter] = useState(false);
   const [thirdPartyVendor, setThirdPartyVendor] = useState("all");
   const [showVendorFilter, setShowVendorFilter] = useState(false);
+  const [page, setPage] = useState(1);
+  const LIMIT = 50;
 
   useEffect(() => {
     document.title = "POS | Orders";
@@ -74,9 +77,14 @@ const Orders = () => {
     };
   }, []);
 
-  // Fetch orders when component mounts or filters change
+  // Reset to page 1 whenever filters change
   useEffect(() => {
-    const params = { status };
+    setPage(1);
+  }, [status, startDate, endDate, createdBy, paymentMethod, thirdPartyVendor]);
+
+  // Fetch orders when filters or page changes
+  useEffect(() => {
+    const params = { status, page, limit: LIMIT };
     if (isAdmin) {
       params.startDate = startDate;
       params.endDate = endDate;
@@ -84,7 +92,6 @@ const Orders = () => {
       params.paymentMethod = paymentMethod;
       params.thirdPartyVendor = thirdPartyVendor;
     } else {
-      // Non-admin users only see today's orders
       const today = getTodayDate();
       params.startDate = today;
       params.endDate = today;
@@ -92,7 +99,7 @@ const Orders = () => {
 
     dispatch(setFilters(params));
     dispatch(fetchOrders(params));
-  }, [dispatch, status, startDate, endDate, createdBy, paymentMethod, thirdPartyVendor, isAdmin]);
+  }, [dispatch, status, startDate, endDate, createdBy, paymentMethod, thirdPartyVendor, isAdmin, page]);
 
   // Show error message if there's an error
   useEffect(() => {
@@ -200,7 +207,7 @@ const Orders = () => {
             <div className="flex items-center gap-2 text-xs sm:text-sm text-[#ababab] mt-1 sm:mt-0">
               <span>•</span>
               <span>
-                {orders.length} orders found
+                {pagination?.total ?? orders.length} orders found
                 {isAdmin && createdBy !== "all" && (
                   <span className="ml-1 hidden sm:inline">
                     by {members.find(m => m._id === createdBy)?.name || "Unknown"}
@@ -471,7 +478,7 @@ const Orders = () => {
       {/* Orders Grid */}
       <div 
         ref={scrollContainerRef}
-        className="px-4 sm:px-10 py-4 overflow-y-scroll scrollbar-hide h-[calc(100vh-320px)] sm:h-[calc(100%-280px)]"
+        className="px-4 sm:px-10 py-4 overflow-y-scroll scrollbar-hide h-[calc(100vh-370px)] sm:h-[calc(100%-330px)]"
       >
         {filteredOrders.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -514,6 +521,58 @@ const Orders = () => {
           </div>
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {pagination && pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between px-4 sm:px-10 py-3 border-t border-[#343434] bg-[#1a1a1a]">
+          <span className="text-xs text-[#ababab]">
+            Page {pagination.page} of {pagination.totalPages} &nbsp;·&nbsp; {pagination.total} total
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={!pagination.hasPrev || loading}
+              className="p-1.5 rounded-lg bg-[#262626] border border-[#343434] text-[#ababab] hover:text-[#f5f5f5] hover:bg-[#343434] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <MdChevronLeft size={18} />
+            </button>
+
+            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+              .filter((p) => p === 1 || p === pagination.totalPages || Math.abs(p - pagination.page) <= 1)
+              .reduce((acc, p, idx, arr) => {
+                if (idx > 0 && p - arr[idx - 1] > 1) acc.push('…');
+                acc.push(p);
+                return acc;
+              }, [])
+              .map((item, idx) =>
+                item === '…' ? (
+                  <span key={`ellipsis-${idx}`} className="text-[#ababab] text-sm px-1">…</span>
+                ) : (
+                  <button
+                    key={item}
+                    onClick={() => setPage(item)}
+                    disabled={loading}
+                    className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
+                      item === pagination.page
+                        ? 'bg-[#f6b100] text-[#1f1f1f]'
+                        : 'bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434]'
+                    }`}
+                  >
+                    {item}
+                  </button>
+                )
+              )}
+
+            <button
+              onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+              disabled={!pagination.hasNext || loading}
+              className="p-1.5 rounded-lg bg-[#262626] border border-[#343434] text-[#ababab] hover:text-[#f5f5f5] hover:bg-[#343434] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <MdChevronRight size={18} />
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 };
