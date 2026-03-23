@@ -15,8 +15,7 @@ const supplierSchema = new mongoose.Schema({
     code: {
         type: String,
         trim: true,
-        uppercase: true,
-        sparse: true // Allows multiple null values but enforces uniqueness for non-null values
+        uppercase: true
     },
     email: {
         type: String,
@@ -39,8 +38,7 @@ const supplierSchema = new mongoose.Schema({
     },
     taxId: {
         type: String,
-        trim: true,
-        sparse: true // Allows multiple null values but enforces uniqueness for non-null values
+        trim: true
     },
     notes: {
         type: String,

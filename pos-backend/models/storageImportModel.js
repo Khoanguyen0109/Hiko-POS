@@ -10,7 +10,6 @@ const storageImportSchema = new mongoose.Schema({
     importNumber: {
         type: String,
         required: true,
-        unique: true,
         trim: true
     },
     storageItemId: {

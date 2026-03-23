@@ -10,7 +10,6 @@ const storageExportSchema = new mongoose.Schema({
     exportNumber: {
         type: String,
         required: true,
-        unique: true,
         trim: true
     },
     storageItemId: {

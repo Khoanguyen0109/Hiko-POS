@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { login, register, logout, getUserData } from "../../https";
+import { setAuthToken, clearAuthData } from "../../utils/auth";
 
 // Auth async thunks
 export const loginUser = createAsyncThunk("user/login", async (credentials, thunkAPI) => {
@@ -87,7 +88,8 @@ const userSlice = createSlice({
             })
             .addCase(loginUser.fulfilled, (state, action) => {
                 state.loading = false;
-                const { _id, name, phone, email, role } = action.payload.user;
+                const { accessToken, user } = action.payload;
+                const { _id, name, phone, email, role } = user;
                 state._id = _id;
                 state.name = name;
                 state.phone = phone;
@@ -95,6 +97,7 @@ const userSlice = createSlice({
                 state.role = role;
                 state.isAuth = true;
                 state.error = null;
+                if (accessToken) setAuthToken(accessToken);
             })
             .addCase(loginUser.rejected, (state, action) => {
                 state.loading = false;
@@ -131,6 +134,7 @@ const userSlice = createSlice({
                 state.role = "";
                 state.isAuth = false;
                 state.error = null;
+                clearAuthData();
             })
             .addCase(logoutUser.rejected, (state, action) => {
                 state.loading = false;

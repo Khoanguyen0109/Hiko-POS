@@ -1,5 +1,5 @@
 import axios from "axios";
-import { clearAuthData } from "../utils/auth";
+import { clearAuthData, getAuthToken } from "../utils/auth";
 
 const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL || "http://localhost:3000/api",
@@ -7,12 +7,17 @@ const axiosInstance = axios.create({
     "Content-Type": "application/json",
     Accept: "application/json",
   },
-  withCredentials: true, // send httpOnly auth cookie on every request
+  withCredentials: true, // keep sending the httpOnly cookie as fallback for same-site dev
 });
 
-// Attach active store context header on every request
+// Attach auth token + active store context header on every request
 axiosInstance.interceptors.request.use(
   (config) => {
+    const token = getAuthToken();
+    if (token) {
+      config.headers["Authorization"] = `Bearer ${token}`;
+    }
+
     try {
       const activeStore = JSON.parse(localStorage.getItem("activeStore"));
       if (activeStore?._id) {
