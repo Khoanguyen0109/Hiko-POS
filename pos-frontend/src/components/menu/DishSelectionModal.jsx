@@ -11,7 +11,7 @@ import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
 import defaultDishImage from "../../assets/images/hyderabadibiryani.jpg";
 
-const DishSelectionModal = ({ dish, selectedCategory, onClose }) => {
+const DishSelectionModal = ({ dish, selectedCategory, onClose, onAddToOrder }) => {
   const dispatch = useDispatch();
   const { toppingsByCategory, loading: toppingsLoading } = useSelector((state) => state.toppings);
   
@@ -103,38 +103,65 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose }) => {
 
     // Convert selected toppings to array format
     const toppings = Object.entries(selectedToppings)
-      .filter(([, quantity]) => quantity > 0)
-      .map(([toppingId, quantity]) => {
+      .filter(([, qty]) => qty > 0)
+      .map(([toppingId, qty]) => {
         const topping = findToppingById(toppingId);
         return {
           toppingId,
           name: topping.name,
           price: topping.price,
-          quantity,
-          totalPrice: topping.price * quantity
+          quantity: qty,
+          totalPrice: topping.price * qty
         };
       });
 
-    const cartItem = {
-      id: `${dish._id}-${selectedVariant?.size || 'default'}-${Date.now()}`,
-      dishId: dish._id,
-      name: dishName,
-      pricePerQuantity: currentPrice + toppingsPrice,
-      quantity: quantity,
-      price: totalItemPrice,
-      category: dish.category?.name || selectedCategory?.name || 'Unknown',
-      image: dish.image || defaultDishImage,
-      variant: selectedVariant ? {
-        size: selectedVariant.size,
-        price: selectedVariant.price,
-        cost: selectedVariant.cost
-      } : null,
-      toppings: toppings.length > 0 ? toppings : null,
-      note: note.trim() || null
-    };
-
-    dispatch(addItems(cartItem));
-    enqueueSnackbar(`${dishName} added to cart!`, { variant: "success" });
+    if (onAddToOrder) {
+      const orderItem = {
+        dishId: dish._id,
+        name: dishName,
+        originalPricePerQuantity: currentPrice + toppingsPrice,
+        pricePerQuantity: currentPrice + toppingsPrice,
+        quantity,
+        originalPrice: totalItemPrice,
+        price: totalItemPrice,
+        category: dish.category?.name || selectedCategory?.name || 'Unknown',
+        image: dish.image || defaultDishImage,
+        note: note.trim() || undefined,
+        variant: selectedVariant ? {
+          size: selectedVariant.size,
+          price: selectedVariant.price,
+          cost: selectedVariant.cost
+        } : undefined,
+        toppings: toppings.length > 0 ? toppings.map(t => ({
+          toppingId: t.toppingId,
+          name: t.name,
+          price: t.price,
+          quantity: t.quantity
+        })) : []
+      };
+      onAddToOrder(orderItem);
+      enqueueSnackbar(`${dishName} added to order!`, { variant: "success" });
+    } else {
+      const cartItem = {
+        id: `${dish._id}-${selectedVariant?.size || 'default'}-${Date.now()}`,
+        dishId: dish._id,
+        name: dishName,
+        pricePerQuantity: currentPrice + toppingsPrice,
+        quantity: quantity,
+        price: totalItemPrice,
+        category: dish.category?.name || selectedCategory?.name || 'Unknown',
+        image: dish.image || defaultDishImage,
+        variant: selectedVariant ? {
+          size: selectedVariant.size,
+          price: selectedVariant.price,
+          cost: selectedVariant.cost
+        } : null,
+        toppings: toppings.length > 0 ? toppings : null,
+        note: note.trim() || null
+      };
+      dispatch(addItems(cartItem));
+      enqueueSnackbar(`${dishName} added to cart!`, { variant: "success" });
+    }
     onClose();
   };
 
@@ -424,6 +451,7 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose }) => {
 };
 
 DishSelectionModal.propTypes = {
+  onAddToOrder: PropTypes.func,
   dish: PropTypes.shape({
     _id: PropTypes.string.isRequired,
     name: PropTypes.string.isRequired,

@@ -14,6 +14,10 @@ import {
   MdCheck,
   MdClose,
   MdAccessTime,
+  MdEdit,
+  MdAdd,
+  MdSave,
+  MdHistory,
 } from "react-icons/md";
 import {
   FaBan,
@@ -22,6 +26,7 @@ import {
 import {
   fetchOrderById,
   updateOrder,
+  updateOrderItems,
   clearCurrentOrder,
   removeOrder,
 } from "../redux/slices/orderSlice";
@@ -31,6 +36,8 @@ import { formatVND } from "../utils";
 import { getStoredUser } from "../utils/auth";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import BackButton from "../components/shared/BackButton";
+import OrderItemEditor from "../components/orders/OrderItemEditor";
+import OrderAddItemsModal from "../components/orders/OrderAddItemsModal";
 import PropTypes from "prop-types";
 
 const OrderDetail = () => {
@@ -42,6 +49,9 @@ const OrderDetail = () => {
   const [selectedVendor, setSelectedVendor] = useState("");
   const [isCouponAccordionOpen, setIsCouponAccordionOpen] = useState(false);
   const [selectedPromotion, setSelectedPromotion] = useState(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editableItems, setEditableItems] = useState([]);
+  const [showAddItemsModal, setShowAddItemsModal] = useState(false);
 
   // Get user role for admin checking
   const user = getStoredUser();
@@ -64,15 +74,95 @@ const OrderDetail = () => {
   useEffect(() => {
     if (currentOrder) {
       setSelectedVendor(currentOrder.thirdPartyVendor || "None");
-      
-      // Set selected promotion from order's applied promotions
       if (currentOrder.appliedPromotions && currentOrder.appliedPromotions.length > 0) {
         setSelectedPromotion(currentOrder.appliedPromotions[0]);
       } else {
         setSelectedPromotion(null);
       }
+      if (!isEditMode) {
+        setEditableItems(currentOrder.items ? JSON.parse(JSON.stringify(currentOrder.items)) : []);
+      }
     }
-  }, [currentOrder]);
+  }, [currentOrder, isEditMode]);
+
+  const canEditOrder = currentOrder?.orderStatus === "progress";
+
+  const handleEnterEditMode = () => {
+    setEditableItems(currentOrder?.items ? JSON.parse(JSON.stringify(currentOrder.items)) : []);
+    setIsEditMode(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditMode(false);
+    setShowAddItemsModal(false);
+  };
+
+  const handleQuantityChange = (index, newQuantity) => {
+    if (newQuantity < 1) return;
+    setEditableItems((prev) => {
+      const item = prev[index];
+      const pricePerQty = item.pricePerQuantity ?? item.price / (item.quantity || 1);
+      const origPerQty = item.originalPricePerQuantity ?? pricePerQty;
+      const next = [...prev];
+      next[index] = {
+        ...item,
+        quantity: newQuantity,
+        price: pricePerQty * newQuantity,
+        originalPrice: origPerQty * newQuantity,
+      };
+      return next;
+    });
+  };
+
+  const handleRemoveItem = (index) => {
+    setEditableItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddItem = (orderItem) => {
+    setEditableItems((prev) => [...prev, orderItem]);
+  };
+
+  const toApiItem = (item) => {
+    const dishId = item.dishId?._id || item.dishId;
+    return {
+      dishId,
+      name: item.name,
+      pricePerQuantity: item.pricePerQuantity ?? item.price / (item.quantity || 1),
+      quantity: item.quantity,
+      price: item.price,
+      originalPricePerQuantity: item.originalPricePerQuantity ?? item.pricePerQuantity ?? item.price / (item.quantity || 1),
+      originalPrice: item.originalPrice ?? item.price,
+      category: item.category,
+      image: item.image,
+      note: item.note,
+      variant: item.variant,
+      toppings: (item.toppings || []).map((t) => ({
+        toppingId: t.toppingId?._id || t.toppingId,
+        name: t.name,
+        price: t.price,
+        quantity: t.quantity,
+      })),
+    };
+  };
+
+  const handleSaveOrderItems = () => {
+    if (editableItems.length === 0) {
+      enqueueSnackbar("Order must have at least one item", { variant: "warning" });
+      return;
+    }
+    const apiItems = editableItems.map(toApiItem);
+    dispatch(updateOrderItems({ orderId, items: apiItems }))
+      .unwrap()
+      .then(() => {
+        enqueueSnackbar("Order updated successfully!", { variant: "success" });
+        setIsEditMode(false);
+        setShowAddItemsModal(false);
+        dispatch(fetchOrderById(orderId)); // Refetch to ensure orderHistory is loaded
+      })
+      .catch((err) => {
+        enqueueSnackbar(err || "Failed to update order", { variant: "error" });
+      });
+  };
 
   useEffect(() => {
     if (error) {
@@ -125,9 +215,8 @@ const OrderDetail = () => {
           message = `Order ${changes.join(", ")} updated successfully!`;
         }
 
-        enqueueSnackbar(message, {
-          variant: "success",
-        });
+        enqueueSnackbar(message, { variant: "success" });
+        dispatch(fetchOrderById(orderId)); // Refetch to ensure orderHistory is loaded
       })
       .catch((error) => {
         enqueueSnackbar(error, { variant: "error" });
@@ -170,6 +259,7 @@ const OrderDetail = () => {
       .unwrap()
       .then(() => {
         enqueueSnackbar("Coupon applied successfully!", { variant: "success" });
+        dispatch(fetchOrderById(orderId));
       })
       .catch((error) => {
         enqueueSnackbar(error, { variant: "error" });
@@ -189,6 +279,7 @@ const OrderDetail = () => {
       .unwrap()
       .then(() => {
         enqueueSnackbar("Coupon removed successfully!", { variant: "success" });
+        dispatch(fetchOrderById(orderId));
       })
       .catch((error) => {
         enqueueSnackbar(error, { variant: "error" });
@@ -556,14 +647,71 @@ const OrderDetail = () => {
         <div className="lg:col-span-2 space-y-6">
           {/* Order Items */}
           <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
-            <h2 className="text-[#f5f5f5] text-lg font-semibold mb-4">
-              Order Items ({order.items?.length || 0})
-            </h2>
-            <div className="space-y-4">
-              {order.items?.map((item, index) => (
-                <OrderItem key={index} item={item} />
-              ))}
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <h2 className="text-[#f5f5f5] text-lg font-semibold">
+                Order Items ({(isEditMode ? editableItems : order.items)?.length || 0})
+              </h2>
+              {canEditOrder && (
+                <div className="flex items-center gap-2">
+                  {!isEditMode ? (
+                    <button
+                      onClick={handleEnterEditMode}
+                      disabled={loading}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#f6b100] text-[#1f1f1f] font-medium text-sm hover:bg-[#e09900] disabled:opacity-50 transition-colors"
+                    >
+                      <MdEdit size={18} />
+                      Edit Order
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => setShowAddItemsModal(true)}
+                        disabled={loading}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#262626] text-[#f5f5f5] border border-[#343434] font-medium text-sm hover:bg-[#343434] disabled:opacity-50 transition-colors"
+                      >
+                        <MdAdd size={18} />
+                        Add Items
+                      </button>
+                      <button
+                        onClick={handleSaveOrderItems}
+                        disabled={loading || editableItems.length === 0}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-600 text-white font-medium text-sm hover:bg-green-700 disabled:opacity-50 transition-colors"
+                      >
+                        <MdSave size={18} />
+                        Save
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        disabled={loading}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#262626] text-[#ababab] border border-[#343434] font-medium text-sm hover:bg-[#343434] hover:text-[#f5f5f5] disabled:opacity-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
+            <div className="space-y-4">
+              {(isEditMode ? editableItems : order.items)?.map((item, index) =>
+                isEditMode ? (
+                  <OrderItemEditor
+                    key={`${item.dishId?._id || item.dishId}-${index}`}
+                    item={item}
+                    index={index}
+                    onQuantityChange={handleQuantityChange}
+                    onRemove={handleRemoveItem}
+                  />
+                ) : (
+                  <OrderItem key={index} item={item} />
+                )
+              )}
+            </div>
+            {canEditOrder && isEditMode && editableItems.length === 0 && (
+              <p className="text-[#ababab] text-sm py-4 text-center">
+                No items. Click &quot;Add Items&quot; to add dishes.
+              </p>
+            )}
           </div>
         </div>
 
@@ -700,8 +848,122 @@ const OrderDetail = () => {
               </div>
             </div>
           )}
+
+          {/* Order Change History */}
+          {order.orderHistory && order.orderHistory.length > 0 && (
+            <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
+              <h2 className="text-[#f5f5f5] text-lg font-semibold mb-4 flex items-center gap-2">
+                <MdHistory size={20} className="text-[#f6b100]" />
+                Change History
+              </h2>
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {order.orderHistory.map((entry, index) => (
+                  <div
+                    key={index}
+                    className="flex flex-col gap-2 p-3 rounded-lg bg-[#262626] border border-[#343434]"
+                  >
+                    {entry.changeType === "items_updated" && entry.details && (entry.details.totalChange || entry.details.previousValue) ? (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[#f5f5f5] text-sm font-medium">{entry.description}</span>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-blue-900/30 text-blue-300">
+                            items updated
+                          </span>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                          {entry.details.added?.length > 0 && (
+                            <div>
+                              <span className="text-green-400 font-medium">Added:</span>
+                              <ul className="mt-0.5 space-y-0.5 text-[#f5f5f5]">
+                                {entry.details.added.map((item, i) => (
+                                  <li key={i}>• {item.name} ×{item.quantity}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {entry.details.updated?.length > 0 && (
+                            <div>
+                              <span className="text-blue-400 font-medium">Updated:</span>
+                              <ul className="mt-0.5 space-y-0.5 text-[#f5f5f5]">
+                                {entry.details.updated.map((item, i) => (
+                                  <li key={i}>• {item.name}: {item.from} → {item.to}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {entry.details.removed?.length > 0 && (
+                            <div>
+                              <span className="text-red-400 font-medium">Removed:</span>
+                              <ul className="mt-0.5 space-y-0.5 text-[#f5f5f5]">
+                                {entry.details.removed.map((item, i) => (
+                                  <li key={i}>• {item.name} ×{item.quantity}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {(entry.details.totalChange || (entry.details.previousValue?.total != null && entry.details.newValue?.total != null)) && (
+                            <div className="pt-2 mt-2 border-t border-[#343434]">
+                              <span className="text-[#f6b100] font-medium">Total:</span>
+                              <span className="text-[#f5f5f5] ml-1">
+                                {entry.details.totalChange
+                                  ? `${formatVND(entry.details.totalChange.from)} → ${formatVND(entry.details.totalChange.to)}`
+                                  : `${formatVND(entry.details.previousValue.total)} → ${formatVND(entry.details.newValue.total)}`}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-[#f5f5f5] text-sm">{entry.description}</p>
+                        {entry.changeType && (
+                          <span
+                            className={`inline-flex w-fit text-xs px-2 py-0.5 rounded-full ${
+                              entry.changeType === "items_updated"
+                                ? "bg-blue-900/30 text-blue-300"
+                                : entry.changeType === "status_changed"
+                                ? "bg-purple-900/30 text-purple-300"
+                                : entry.changeType === "payment_updated"
+                                ? "bg-green-900/30 text-green-300"
+                                : entry.changeType === "vendor_updated"
+                                ? "bg-amber-900/30 text-amber-300"
+                                : "bg-[#343434] text-[#ababab]"
+                            }`}
+                          >
+                            {entry.changeType.replace("_", " ")}
+                          </span>
+                        )}
+                      </>
+                    )}
+                    <div className="flex items-center justify-between text-xs text-[#ababab] pt-1">
+                      <span>
+                        {entry.changedBy?.userName
+                          ? `by ${entry.changedBy.userName}`
+                          : "System"}
+                      </span>
+                      <span>
+                        {entry.timestamp
+                          ? new Date(entry.timestamp).toLocaleString(undefined, {
+                              dateStyle: "short",
+                              timeStyle: "short",
+                            })
+                          : ""}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {showAddItemsModal && (
+        <OrderAddItemsModal
+          onClose={() => setShowAddItemsModal(false)}
+          onAddItem={handleAddItem}
+        />
+      )}
     </div>
   );
 };
@@ -785,7 +1047,7 @@ const OrderItem = ({ item }) => {
                         </span>
                       </div>
                       <span className="text-[#f6b100] text-xs font-medium">
-                        {formatVND(topping.totalPrice)}
+                        {formatVND(topping.totalPrice ?? (topping.price || 0) * (topping.quantity || 1))}
                       </span>
                     </div>
                   ))}
@@ -799,7 +1061,7 @@ const OrderItem = ({ item }) => {
                       <span className="text-[#f6b100] text-xs font-bold">
                         {formatVND(
                           item.toppings.reduce(
-                            (sum, t) => sum + t.totalPrice,
+                            (sum, t) => sum + (t.totalPrice ?? (t.price || 0) * (t.quantity || 1)),
                             0
                           )
                         )}
@@ -839,11 +1101,11 @@ OrderItem.propTypes = {
     }),
     toppings: PropTypes.arrayOf(
       PropTypes.shape({
-        toppingId: PropTypes.string,
+        toppingId: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
         name: PropTypes.string.isRequired,
         price: PropTypes.number.isRequired,
         quantity: PropTypes.number.isRequired,
-        totalPrice: PropTypes.number.isRequired,
+        totalPrice: PropTypes.number,
       })
     ),
     note: PropTypes.string,

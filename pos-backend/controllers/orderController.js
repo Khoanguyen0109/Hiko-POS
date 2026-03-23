@@ -4,6 +4,120 @@ const Dish = require("../models/dishModel");
 const PromotionService = require("../services/promotionService");
 const { default: mongoose } = require("mongoose");
 const { getDateRangeVietnam } = require("../utils/dateUtils");
+const {
+  calculateOrderBills,
+  formatOrderLevelPromotions,
+} = require("../utils/orderBillsUtils");
+
+const STATUS_LABELS = {
+  pending: "Pending",
+  progress: "In Progress",
+  ready: "Ready",
+  completed: "Completed",
+  cancelled: "Cancelled",
+};
+
+/**
+ * Build an order history entry.
+ * @param {Object} user - req.user with _id and name
+ * @param {string} changeType - items_updated, status_changed, payment_updated, vendor_updated, promotions_updated
+ * @param {string} description - Human-readable change summary
+ * @param {Object} details - Optional { previousValue, newValue }
+ */
+const buildOrderHistoryEntry = (user, changeType, description, details = {}) => ({
+  timestamp: new Date(),
+  changedBy: user?.name ? { userId: user._id, userName: user.name } : undefined,
+  changeType,
+  description,
+  details: Object.keys(details).length > 0 ? details : undefined,
+});
+
+/**
+ * Shared helper to validate and process order items (used by addOrder and updateOrderItems).
+ * @param {Array} items - Raw items from request body
+ * @returns {Promise<Array>} Processed items ready for order
+ */
+const processOrderItems = async (items) => {
+  return Promise.all(items.map(async (item, index) => {
+    if (!item.dishId || !mongoose.Types.ObjectId.isValid(item.dishId)) {
+      throw createHttpError(400, `Invalid dishId for item at index ${index}`);
+    }
+    if (!item.name || typeof item.name !== 'string') {
+      throw createHttpError(400, `Item name is required for item at index ${index}`);
+    }
+    if (typeof item.pricePerQuantity !== 'number' || item.pricePerQuantity < 0) {
+      throw createHttpError(400, `Valid price per quantity is required for item at index ${index}`);
+    }
+    if (typeof item.quantity !== 'number' || item.quantity < 1) {
+      throw createHttpError(400, `Valid quantity (minimum 1) is required for item at index ${index}`);
+    }
+    if (typeof item.price !== 'number' || item.price < 0) {
+      throw createHttpError(400, `Valid total price is required for item at index ${index}`);
+    }
+
+    let categoryName = item.category ? item.category.trim() : undefined;
+    if (!categoryName || categoryName === 'Unknown') {
+      try {
+        const dish = await Dish.findById(item.dishId).populate('category', 'name');
+        if (dish && dish.category) {
+          categoryName = dish.category.name;
+        }
+      } catch (error) {
+        console.warn(`Failed to fetch dish category for dishId ${item.dishId}:`, error.message);
+      }
+    }
+
+    const processedItem = {
+      dishId: item.dishId,
+      name: item.name.trim(),
+      originalPricePerQuantity: item.originalPricePerQuantity || item.pricePerQuantity,
+      pricePerQuantity: item.pricePerQuantity,
+      quantity: item.quantity,
+      originalPrice: item.originalPrice || (item.originalPricePerQuantity || item.pricePerQuantity) * item.quantity,
+      price: item.price,
+      promotionsApplied: item.promotionsApplied || [],
+      isHappyHourItem: item.isHappyHourItem || false,
+      happyHourDiscount: item.happyHourDiscount || 0,
+      category: categoryName,
+      image: item.image ? item.image.trim() : undefined,
+      note: item.note ? item.note.trim() : undefined,
+      toppings: []
+    };
+
+    if (item.toppings && Array.isArray(item.toppings)) {
+      processedItem.toppings = item.toppings.map((topping, toppingIndex) => {
+        if (!topping.toppingId || !mongoose.Types.ObjectId.isValid(topping.toppingId)) {
+          throw createHttpError(400, `Invalid topping ID for item ${index}, topping ${toppingIndex}`);
+        }
+        if (!topping.name || typeof topping.name !== 'string') {
+          throw createHttpError(400, `Topping name is required for item ${index}, topping ${toppingIndex}`);
+        }
+        if (typeof topping.price !== 'number' || topping.price < 0) {
+          throw createHttpError(400, `Valid topping price is required for item ${index}, topping ${toppingIndex}`);
+        }
+        if (typeof topping.quantity !== 'number' || topping.quantity < 1) {
+          throw createHttpError(400, `Valid topping quantity is required for item ${index}, topping ${toppingIndex}`);
+        }
+        return {
+          toppingId: topping.toppingId,
+          name: topping.name.trim(),
+          price: topping.price,
+          quantity: topping.quantity
+        };
+      });
+    }
+
+    if (item.variant) {
+      processedItem.variant = {
+        size: item.variant.size ? item.variant.size.trim() : undefined,
+        price: typeof item.variant.price === 'number' ? item.variant.price : undefined,
+        cost: typeof item.variant.cost === 'number' ? item.variant.cost : 0
+      };
+    }
+
+    return processedItem;
+  }));
+};
 
 const addOrder = async (req, res, next) => {
   try {
@@ -34,102 +148,7 @@ const addOrder = async (req, res, next) => {
     }
 
     // Validate and process items
-    const processedItems = await Promise.all(items.map(async (item, index) => {
-      // Validate required item fields
-      if (!item.dishId || !mongoose.Types.ObjectId.isValid(item.dishId)) {
-        throw createHttpError(400, `Invalid dishId for item at index ${index}`);
-      }
-      
-      if (!item.name || typeof item.name !== 'string') {
-        throw createHttpError(400, `Item name is required for item at index ${index}`);
-      }
-      
-      if (typeof item.pricePerQuantity !== 'number' || item.pricePerQuantity < 0) {
-        throw createHttpError(400, `Valid price per quantity is required for item at index ${index}`);
-      }
-      
-      if (typeof item.quantity !== 'number' || item.quantity < 1) {
-        throw createHttpError(400, `Valid quantity (minimum 1) is required for item at index ${index}`);
-      }
-      
-      if (typeof item.price !== 'number' || item.price < 0) {
-        throw createHttpError(400, `Valid total price is required for item at index ${index}`);
-      }
-
-      // Get category from dish if not provided or is 'Unknown'
-      let categoryName = item.category ? item.category.trim() : undefined;
-      if (!categoryName || categoryName === 'Unknown') {
-        try {
-          const dish = await Dish.findById(item.dishId).populate('category', 'name');
-          if (dish && dish.category) {
-            categoryName = dish.category.name;
-          }
-        } catch (error) {
-          console.warn(`Failed to fetch dish category for dishId ${item.dishId}:`, error.message);
-        }
-      }
-
-      // Process the item with enhanced pricing structure
-      const processedItem = {
-        dishId: item.dishId,
-        name: item.name.trim(),
-        // Enhanced pricing for promotion support
-        originalPricePerQuantity: item.originalPricePerQuantity || item.pricePerQuantity,
-        pricePerQuantity: item.pricePerQuantity,
-        quantity: item.quantity,
-        originalPrice: item.originalPrice || (item.originalPricePerQuantity || item.pricePerQuantity) * item.quantity,
-        price: item.price,
-        // Promotion tracking
-        promotionsApplied: item.promotionsApplied || [],
-        isHappyHourItem: item.isHappyHourItem || false,
-        happyHourDiscount: item.happyHourDiscount || 0,
-        // Standard fields
-        category: categoryName,
-        image: item.image ? item.image.trim() : undefined,
-        note: item.note ? item.note.trim() : undefined,
-        toppings: []
-      };
-
-      // Process toppings if present
-      if (item.toppings && Array.isArray(item.toppings)) {
-        processedItem.toppings = item.toppings.map((topping, toppingIndex) => {
-          // Validate topping fields
-          if (!topping.toppingId || !mongoose.Types.ObjectId.isValid(topping.toppingId)) {
-            throw createHttpError(400, `Invalid topping ID for item ${index}, topping ${toppingIndex}`);
-          }
-          
-          if (!topping.name || typeof topping.name !== 'string') {
-            throw createHttpError(400, `Topping name is required for item ${index}, topping ${toppingIndex}`);
-          }
-          
-          if (typeof topping.price !== 'number' || topping.price < 0) {
-            throw createHttpError(400, `Valid topping price is required for item ${index}, topping ${toppingIndex}`);
-          }
-          
-          if (typeof topping.quantity !== 'number' || topping.quantity < 1) {
-            throw createHttpError(400, `Valid topping quantity is required for item ${index}, topping ${toppingIndex}`);
-          }
-
-          return {
-            toppingId: topping.toppingId,
-            name: topping.name.trim(),
-            price: topping.price,
-            quantity: topping.quantity
-          };
-        });
-      }
-
-      // Add variant information if present
-      if (item.variant) {
-        processedItem.variant = {
-          size: item.variant.size ? item.variant.size.trim() : undefined,
-          price: typeof item.variant.price === 'number' ? item.variant.price : undefined,
-          cost: typeof item.variant.cost === 'number' ? item.variant.cost : 0
-        };
-      }
-
-      return processedItem;
-    }));
+    const processedItems = await processOrderItems(items);
 
     // No automatic promotion application - frontend handles all promotion logic
     let finalProcessedItems = processedItems;
@@ -158,89 +177,57 @@ const addOrder = async (req, res, next) => {
       console.log('📝 No promotions provided by frontend - using original pricing');
     }
 
-    // Calculate totals based on promotion type
-    const calculatedSubtotal = finalProcessedItems.reduce((sum, item) => {
-      // Use original price for subtotal calculation
-      return sum + (item.originalPrice || item.price);
-    }, 0);
-    
-    // Calculate total based on promotion type
-    let calculatedTotal;
-    const hasOrderLevelPromotions = finalAppliedPromotions?.some(promo => 
-      promo.type === 'order_percentage' || promo.type === 'order_fixed'
+    const calculatedBills = calculateOrderBills(
+      finalProcessedItems,
+      finalAppliedPromotions,
+      bills.tax || 0
     );
-    const hasItemLevelPromotions = finalAppliedPromotions?.some(promo => 
-      promo.type === 'happy_hour' || promo.type === 'item_percentage' || promo.type === 'item_fixed'
-    );
-    
-    if (hasOrderLevelPromotions && !hasItemLevelPromotions) {
-      // For order-level promotions: start with subtotal, then subtract order-level discounts
-      const orderLevelDiscount = finalAppliedPromotions
-        .filter(promo => promo.type === 'order_percentage' || promo.type === 'order_fixed')
-        .reduce((sum, promo) => sum + (promo.discountAmount || 0), 0);
-      calculatedTotal = calculatedSubtotal - orderLevelDiscount;
-    } else if (hasItemLevelPromotions && !hasOrderLevelPromotions) {
-      // For item-level promotions: sum up final item prices (already discounted)
-      calculatedTotal = finalProcessedItems.reduce((sum, item) => sum + item.price, 0);
-    } else if (hasOrderLevelPromotions && hasItemLevelPromotions) {
-      // Mixed promotions: start with item-level discounted prices, then apply order-level discounts
-      const itemLevelTotal = finalProcessedItems.reduce((sum, item) => sum + item.price, 0);
-      const orderLevelDiscount = finalAppliedPromotions
-        .filter(promo => promo.type === 'order_percentage' || promo.type === 'order_fixed')
-        .reduce((sum, promo) => sum + (promo.discountAmount || 0), 0);
-      calculatedTotal = itemLevelTotal - orderLevelDiscount;
-    } else {
-      // No promotions: use original item prices
-      calculatedTotal = calculatedSubtotal;
-    }
-    
-    console.log('Backend calculation debug:', {
-      hasOrderLevelPromotions,
-      hasItemLevelPromotions,
-      promotions: finalAppliedPromotions?.map(p => ({ name: p.name, type: p.type, discountAmount: p.discountAmount })),
-      calculatedSubtotal,
-      calculatedTotal,
-      billsSubtotal: bills.subtotal,
-      billsTotal: bills.total,
-      itemPrices: finalProcessedItems.map(item => ({
-        name: item.name,
-        originalPrice: item.originalPrice || item.price,
-        finalPrice: item.price
-      }))
-    });
 
-    // Validate promotion discount if applied
-    let promotionDiscount = 0;
-    if (finalAppliedPromotions && Array.isArray(finalAppliedPromotions) && finalAppliedPromotions.length > 0) {
-      promotionDiscount = finalAppliedPromotions.reduce((sum, promo) => sum + (promo.discountAmount || 0), 0);
+    if (process.env.NODE_ENV === "development") {
+      console.log("Backend calculation debug:", {
+        promotions: finalAppliedPromotions?.map((p) => ({
+          name: p.name,
+          type: p.type,
+          discountAmount: p.discountAmount,
+        })),
+        calculatedBills,
+        billsFromFrontend: bills,
+      });
     }
 
     // Simplified validation - frontend controls all promotion logic
     if (bills.subtotal !== undefined) {
-      // Validate subtotal matches calculated subtotal
-      if (Math.abs(calculatedSubtotal - bills.subtotal) > 0.01) {
-        const error = createHttpError(400, `Bill subtotal (${bills.subtotal}) does not match calculated subtotal (${calculatedSubtotal})`);
+      if (Math.abs(calculatedBills.subtotal - bills.subtotal) > 0.01) {
+        const error = createHttpError(
+          400,
+          `Bill subtotal (${bills.subtotal}) does not match calculated subtotal (${calculatedBills.subtotal})`
+        );
         return next(error);
       }
-      
-      // Validate total matches calculated total (frontend already applied any promotions)
-      if (Math.abs(calculatedTotal - bills.total) > 0.01) {
-        const error = createHttpError(400, `Bill total (${bills.total}) does not match calculated total (${calculatedTotal})`);
+      if (Math.abs(calculatedBills.total - bills.total) > 0.01) {
+        const error = createHttpError(
+          400,
+          `Bill total (${bills.total}) does not match calculated total (${calculatedBills.total})`
+        );
         return next(error);
       }
-      
-      // Validate promotion discount if provided
-      if (finalAppliedPromotions && finalAppliedPromotions.length > 0) {
-        const expectedDiscount = calculatedSubtotal - calculatedTotal;
-        if (Math.abs(expectedDiscount - (bills.promotionDiscount || 0)) > 0.01) {
-          const error = createHttpError(400, `Bill promotion discount (${bills.promotionDiscount || 0}) does not match calculated discount (${expectedDiscount})`);
-          return next(error);
-        }
+      if (
+        finalAppliedPromotions &&
+        finalAppliedPromotions.length > 0 &&
+        Math.abs(calculatedBills.promotionDiscount - (bills.promotionDiscount || 0)) > 0.01
+      ) {
+        const error = createHttpError(
+          400,
+          `Bill promotion discount (${bills.promotionDiscount || 0}) does not match calculated discount (${calculatedBills.promotionDiscount})`
+        );
+        return next(error);
       }
     } else {
-      // Legacy structure - validate total matches calculated total
-      if (Math.abs(calculatedTotal - bills.total) > 0.01) {
-        const error = createHttpError(400, `Bill total (${bills.total}) does not match calculated total (${calculatedTotal})`);
+      if (Math.abs(calculatedBills.total - bills.total) > 0.01) {
+        const error = createHttpError(
+          400,
+          `Bill total (${bills.total}) does not match calculated total (${calculatedBills.total})`
+        );
         return next(error);
       }
     }
@@ -249,15 +236,19 @@ const addOrder = async (req, res, next) => {
       customerDetails: {
         name: customerDetails?.name ? customerDetails.name.trim() : undefined,
         phone: customerDetails?.phone ? customerDetails.phone.trim() : undefined,
-        guests: customerDetails?.guests && typeof customerDetails.guests === 'number' ? customerDetails.guests : undefined
+        guests:
+          customerDetails?.guests && typeof customerDetails.guests === "number"
+            ? customerDetails.guests
+            : undefined,
       },
-      orderStatus: orderStatus || 'pending',
+      orderStatus: orderStatus || "pending",
       bills: {
-        subtotal: bills.subtotal || calculatedSubtotal,
-        promotionDiscount: bills.promotionDiscount || promotionDiscount || (calculatedSubtotal - calculatedTotal),
-        total: bills.total || calculatedTotal,
-        tax: bills.tax || 0,
-        totalWithTax: bills.totalWithTax || bills.total || calculatedTotal
+        subtotal: bills.subtotal ?? calculatedBills.subtotal,
+        promotionDiscount:
+          bills.promotionDiscount ?? calculatedBills.promotionDiscount,
+        total: bills.total ?? calculatedBills.total,
+        tax: bills.tax ?? calculatedBills.tax,
+        totalWithTax: bills.totalWithTax ?? bills.total ?? calculatedBills.totalWithTax,
       },
       appliedPromotions: finalAppliedPromotions,
       items: finalProcessedItems,
@@ -282,13 +273,15 @@ const addOrder = async (req, res, next) => {
     const responseData = {
       ...order.toObject(),
       promotionSummary: {
-        totalOriginalAmount: calculatedSubtotal,
-        totalDiscountAmount: calculatedSubtotal - calculatedTotal,
-        totalFinalAmount: calculatedTotal,
-        itemLevelDiscounts: finalProcessedItems.reduce((sum, item) => 
-          sum + (item.happyHourDiscount || 0), 0),
-        orderLevelDiscounts: 0 // For future order-level promotions
-      }
+        totalOriginalAmount: calculatedBills.subtotal,
+        totalDiscountAmount: calculatedBills.promotionDiscount,
+        totalFinalAmount: calculatedBills.total,
+        itemLevelDiscounts: finalProcessedItems.reduce(
+          (sum, item) => sum + (item.happyHourDiscount || 0),
+          0
+        ),
+        orderLevelDiscounts: 0, // For future order-level promotions
+      },
     };
 
     res.status(201).json({ 
@@ -449,77 +442,33 @@ const updateOrder = async (req, res, next) => {
 
     // Handle promotion updates
     if (appliedPromotions !== undefined) {
-      // If appliedPromotions is null or empty array, remove promotions
       if (!appliedPromotions || appliedPromotions.length === 0) {
         updateFields.appliedPromotions = [];
-        
-        // Recalculate bills without promotions
-        const subtotal = currentOrder.items.reduce((sum, item) => {
-          return sum + (item.originalPrice || item.price);
-        }, 0);
-        
-        const total = subtotal;
-        const tax = currentOrder.bills.tax || 0;
-        const totalWithTax = total + tax;
-        
-        updateFields.bills = {
-          subtotal,
-          promotionDiscount: 0,
-          total,
-          tax,
-          totalWithTax
-        };
-        
+        updateFields.bills = calculateOrderBills(
+          currentOrder.items,
+          [],
+          currentOrder.bills.tax || 0
+        );
         updatedFields.push("promotions removed");
       } else {
-        // Validate and apply new promotions
         if (!Array.isArray(appliedPromotions)) {
           const error = createHttpError(400, "appliedPromotions must be an array");
           return next(error);
         }
-
-        // Calculate subtotal from original prices
-        const subtotal = currentOrder.items.reduce((sum, item) => {
-          return sum + (item.originalPrice || item.price);
-        }, 0);
-
-        // Calculate total discount from all promotions
-        let totalDiscount = 0;
-        const formattedPromotions = appliedPromotions.map(promo => {
-          let discountAmount = 0;
-          
-          // Calculate discount based on promotion type
-          if (promo.type === 'order_percentage') {
-            discountAmount = subtotal * (promo.discount?.percentage || 0) / 100;
-          } else if (promo.type === 'order_fixed') {
-            discountAmount = promo.discount?.fixedAmount || 0;
-          }
-          
-          totalDiscount += discountAmount;
-          
-          return {
-            promotionId: promo.promotionId || promo._id,
-            name: promo.name,
-            type: promo.type,
-            discountAmount,
-            code: promo.code,
-            appliedToItems: promo.appliedToItems || []
-          };
-        });
-
-        const total = Math.max(0, subtotal - totalDiscount);
-        const tax = currentOrder.bills.tax || 0;
-        const totalWithTax = total + tax;
-
-        updateFields.appliedPromotions = formattedPromotions;
-        updateFields.bills = {
+        const subtotal = currentOrder.items.reduce(
+          (sum, item) => sum + (item.originalPrice || item.price),
+          0
+        );
+        const formattedPromotions = formatOrderLevelPromotions(
           subtotal,
-          promotionDiscount: totalDiscount,
-          total,
-          tax,
-          totalWithTax
-        };
-        
+          appliedPromotions
+        );
+        updateFields.appliedPromotions = formattedPromotions;
+        updateFields.bills = calculateOrderBills(
+          currentOrder.items,
+          formattedPromotions,
+          currentOrder.bills.tax || 0
+        );
         updatedFields.push("promotions");
       }
     }
@@ -541,17 +490,220 @@ const updateOrder = async (req, res, next) => {
       return next(error);
     }
 
+    // Build order history entries for each change
+    const historyEntries = [];
+    if (orderStatus && orderStatus !== currentOrder.orderStatus) {
+      historyEntries.push(
+        buildOrderHistoryEntry(
+          req.user,
+          "status_changed",
+          `Status changed from ${STATUS_LABELS[currentOrder.orderStatus] || currentOrder.orderStatus} to ${STATUS_LABELS[orderStatus] || orderStatus}`,
+          { previousValue: currentOrder.orderStatus, newValue: orderStatus }
+        )
+      );
+    }
+    if (paymentMethod && paymentMethod !== currentOrder.paymentMethod) {
+      historyEntries.push(
+        buildOrderHistoryEntry(
+          req.user,
+          "payment_updated",
+          `Payment method changed to ${paymentMethod}`,
+          { previousValue: currentOrder.paymentMethod, newValue: paymentMethod }
+        )
+      );
+    }
+    if (thirdPartyVendor !== undefined && thirdPartyVendor !== currentOrder.thirdPartyVendor) {
+      historyEntries.push(
+        buildOrderHistoryEntry(
+          req.user,
+          "vendor_updated",
+          `Vendor changed to ${thirdPartyVendor === "None" ? "Direct" : thirdPartyVendor}`,
+          { previousValue: currentOrder.thirdPartyVendor, newValue: thirdPartyVendor }
+        )
+      );
+    }
+    if (updatedFields.includes("promotions removed") || updatedFields.includes("promotions")) {
+      const prevCount = (currentOrder.appliedPromotions || []).length;
+      const newCount = (updateFields.appliedPromotions || []).length;
+      historyEntries.push(
+        buildOrderHistoryEntry(
+          req.user,
+          "promotions_updated",
+          newCount === 0 ? "All promotions removed" : `Promotions updated (${newCount} applied)`,
+          { previousValue: prevCount, newValue: newCount }
+        )
+      );
+    }
+
+    const updateDoc = { $set: updateFields };
+    if (historyEntries.length > 0) {
+      updateDoc.$push = {
+        orderHistory: { $each: historyEntries, $position: 0 },
+      };
+    }
+
     const order = await Order.findOneAndUpdate(
       { _id: id, store: req.store._id },
-      updateFields,
+      updateDoc,
       { new: true }
-    ).populate('items.dishId', 'name category price image');
+    )
+      .populate("items.dishId", "name category price image")
+      .populate("appliedPromotions.promotionId", "name code type discount")
+      .populate("orderHistory.changedBy.userId", "name");
 
+    res.status(200).json({
+      success: true,
+      message: updateMessage,
+      data: order,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
-    res.status(200).json({ 
-      success: true, 
-      message: updateMessage, 
-      data: order 
+const updateOrderItems = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { items } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      const error = createHttpError(404, "Invalid order ID!");
+      return next(error);
+    }
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      const error = createHttpError(400, "Order must contain at least one item");
+      return next(error);
+    }
+
+    const currentOrder = await Order.findOne({ _id: id, store: req.store._id });
+    if (!currentOrder) {
+      const error = createHttpError(404, "Order not found!");
+      return next(error);
+    }
+
+    if (currentOrder.orderStatus !== 'progress') {
+      const error = createHttpError(400, "Order can only be updated when status is 'progress' (In Progress)");
+      return next(error);
+    }
+
+    const processedItems = await processOrderItems(items);
+
+    let appliedPromotions = currentOrder.appliedPromotions || [];
+    const subtotal = processedItems.reduce(
+      (sum, item) => sum + (item.originalPrice || item.price),
+      0
+    );
+    const hasOrderLevelPromotions = appliedPromotions.some(
+      (p) => p.type === "order_percentage" || p.type === "order_fixed"
+    );
+    const oldSubtotal = currentOrder.items.reduce(
+      (sum, item) => sum + (item.originalPrice || item.price),
+      0
+    );
+    if (hasOrderLevelPromotions && oldSubtotal > 0) {
+      appliedPromotions = appliedPromotions.map((promo) => {
+        const raw = promo.toObject ? promo.toObject() : { ...promo };
+        if (promo.type === "order_percentage") {
+          raw.discountAmount =
+            (promo.discountAmount || 0) * (subtotal / oldSubtotal);
+        }
+        return raw;
+      });
+    }
+
+    const bills = calculateOrderBills(
+      processedItems,
+      appliedPromotions,
+      currentOrder.bills?.tax || 0
+    );
+
+    const oldTotal = currentOrder.bills?.totalWithTax ?? currentOrder.bills?.total ?? 0;
+    const newTotal = bills.totalWithTax ?? bills.total ?? 0;
+
+    // Build item key: dishId + name + variant size (for grouping)
+    const itemKey = (item) => {
+      const did = (item.dishId && item.dishId._id) || item.dishId || "";
+      const size = item.variant?.size || "";
+      return `${did}|${item.name || ""}|${size}`;
+    };
+
+    const aggregateByKey = (items) => {
+      const map = new Map();
+      for (const item of items) {
+        const key = itemKey(item);
+        const existing = map.get(key);
+        const qty = item.quantity || 1;
+        if (existing) {
+          existing.quantity += qty;
+        } else {
+          map.set(key, { name: item.name || "Unknown", quantity: qty });
+        }
+      }
+      return map;
+    };
+
+    const oldMap = aggregateByKey(currentOrder.items);
+    const newMap = aggregateByKey(processedItems);
+    const added = [];
+    const removed = [];
+    const updated = [];
+
+    for (const [key, newVal] of newMap) {
+      const oldVal = oldMap.get(key);
+      if (!oldVal) {
+        added.push({ name: newVal.name, quantity: newVal.quantity });
+      } else if (oldVal.quantity !== newVal.quantity) {
+        updated.push({ name: newVal.name, from: oldVal.quantity, to: newVal.quantity });
+      }
+    }
+    for (const [key, oldVal] of oldMap) {
+      if (!newMap.has(key)) {
+        removed.push({ name: oldVal.name, quantity: oldVal.quantity });
+      }
+    }
+
+    const description =
+      added.length || updated.length || removed.length
+        ? "Items updated"
+        : `Items updated: ${processedItems.length} items, total ${newTotal}`;
+
+    const historyEntry = buildOrderHistoryEntry(
+      req.user,
+      "items_updated",
+      description,
+      {
+        added,
+        updated,
+        removed,
+        totalChange: { from: oldTotal, to: newTotal },
+      }
+    );
+
+    const updateDoc = {
+      $set: {
+        items: processedItems,
+        bills,
+        ...(hasOrderLevelPromotions && { appliedPromotions: appliedPromotions }),
+      },
+      $push: {
+        orderHistory: { $each: [historyEntry], $position: 0 },
+      },
+    };
+
+    const order = await Order.findOneAndUpdate(
+      { _id: id, store: req.store._id },
+      updateDoc,
+      { new: true }
+    )
+      .populate("items.dishId", "name category price image")
+      .populate("appliedPromotions.promotionId", "name code type discount")
+      .populate("orderHistory.changedBy.userId", "name");
+
+    res.status(200).json({
+      success: true,
+      message: "Order items updated successfully",
+      data: order,
     });
   } catch (error) {
     next(error);
@@ -590,4 +742,4 @@ const deleteOrder = async (req, res, next) => {
   }
 };
 
-module.exports = { addOrder, getOrderById, getOrders, updateOrder, deleteOrder };
+module.exports = { addOrder, getOrderById, getOrders, updateOrder, updateOrderItems, deleteOrder };

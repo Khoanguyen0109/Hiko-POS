@@ -58,6 +58,8 @@ export const updateOrderStatus = ({ orderId, orderStatus, paymentMethod, thirdPa
   if (appliedPromotions !== undefined) updateData.appliedPromotions = appliedPromotions;
   return axiosWrapper.put(`/api/order/${orderId}`, updateData);
 };
+export const updateOrderItems = (orderId, items) =>
+  axiosWrapper.patch(`/api/order/${orderId}/items`, { items });
 export const deleteOrder = (orderId) => axiosWrapper.delete(`/api/order/${orderId}`);
 
 // Category Endpoints

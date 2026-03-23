@@ -175,7 +175,23 @@ const orderSchema = new mongoose.Schema({
     createdBy: {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
         userName: { type: String, trim: true }
-    }
+    },
+    // Order change history (audit trail)
+    orderHistory: [{
+        timestamp: { type: Date, default: () => new Date() },
+        changedBy: {
+            userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+            userName: { type: String, trim: true }
+        },
+        changeType: {
+            type: String,
+            enum: ['items_updated', 'status_changed', 'payment_updated', 'vendor_updated', 'promotions_updated'],
+            required: true
+        },
+        description: { type: String, required: true, trim: true },
+        // Mixed allows varied structures: items_updated uses {added,updated,removed,totalChange}; others use {previousValue,newValue}
+        details: { type: mongoose.Schema.Types.Mixed }
+    }]
 }, { timestamps: true });
 
 // Index for better query performance

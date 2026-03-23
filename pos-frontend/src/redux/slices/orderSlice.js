@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getOrders, getOrderById, addOrder, updateOrderStatus, deleteOrder as deleteOrderAPI } from "../../https";
+import { getOrders, getOrderById, addOrder, updateOrderStatus, updateOrderItems as updateOrderItemsAPI, deleteOrder as deleteOrderAPI } from "../../https";
 
 // Order async thunks
 export const fetchOrders = createAsyncThunk("orders/fetchAll", async (params = {}, thunkAPI) => {
@@ -35,6 +35,15 @@ export const updateOrder = createAsyncThunk("orders/updateStatus", async ({ orde
         return data.data;
     } catch (error) {
         return thunkAPI.rejectWithValue(error.response?.data?.message || "Failed to update order");
+    }
+});
+
+export const updateOrderItems = createAsyncThunk("orders/updateItems", async ({ orderId, items }, thunkAPI) => {
+    try {
+        const { data } = await updateOrderItemsAPI(orderId, items);
+        return data.data;
+    } catch (error) {
+        return thunkAPI.rejectWithValue(error.response?.data?.message || "Failed to update order items");
     }
 });
 
@@ -158,6 +167,31 @@ const orderSlice = createSlice({
             .addCase(updateOrder.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload || "Failed to update order status";
+            })
+
+            // Update order items
+            .addCase(updateOrderItems.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(updateOrderItems.fulfilled, (state, action) => {
+                state.loading = false;
+                const updated = action.payload;
+                const itemIndex = state.items.findIndex(order => order._id === updated._id);
+                if (itemIndex !== -1) {
+                    state.items[itemIndex] = updated;
+                }
+                if (state.currentOrder && state.currentOrder._id === updated._id) {
+                    state.currentOrder = updated;
+                }
+                const recentIndex = state.recentOrders.findIndex(order => order._id === updated._id);
+                if (recentIndex !== -1) {
+                    state.recentOrders[recentIndex] = updated;
+                }
+            })
+            .addCase(updateOrderItems.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || "Failed to update order items";
             })
 
             // Delete order

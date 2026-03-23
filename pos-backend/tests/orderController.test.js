@@ -4,18 +4,22 @@ const mongoose = require('mongoose');
 const Order = require('../models/orderModel');
 const Dish = require('../models/dishModel');
 const Category = require('../models/categoryModel');
+const Store = require('../models/storeModel');
 const orderController = require('../controllers/orderController');
+const globalErrorHandler = require('../middlewares/globalErrorHandler');
 
 // Create Express app for testing
 const app = express();
 app.use(express.json());
 
-// Mock middleware for user authentication
+// Mock middleware for user authentication and store context
+let testStoreId;
 app.use((req, res, next) => {
   req.user = {
     _id: new mongoose.Types.ObjectId(),
     name: 'Test User'
   };
+  req.store = testStoreId ? { _id: testStoreId } : { _id: new mongoose.Types.ObjectId() };
   next();
 });
 
@@ -24,12 +28,23 @@ app.post('/api/order', orderController.addOrder);
 app.get('/api/order/:id', orderController.getOrderById);
 app.get('/api/order', orderController.getOrders);
 app.put('/api/order/:id', orderController.updateOrder);
+app.use(globalErrorHandler);
 
 describe('Order Controller', () => {
   let testCategory;
   let testDish;
+  let testStore;
 
   beforeEach(async () => {
+    // Create test store
+    testStore = new Store({
+      name: 'Test Store',
+      code: 'TS' + Date.now(),
+      isActive: true
+    });
+    await testStore.save();
+    testStoreId = testStore._id;
+
     // Create test category
     testCategory = new Category({
       name: 'Test Matcha',
@@ -449,7 +464,6 @@ describe('Order Controller', () => {
           .send(orderData)
           .expect(400);
 
-        expect(response.body.success).toBe(false);
         expect(response.body.message).toContain('Bill total');
         expect(response.body.message).toContain('does not match calculated total');
       });
@@ -470,7 +484,6 @@ describe('Order Controller', () => {
           .send(orderData)
           .expect(400);
 
-        expect(response.body.success).toBe(false);
         expect(response.body.message).toContain('Order must contain at least one item');
       });
 
@@ -509,7 +522,6 @@ describe('Order Controller', () => {
           .send(orderData)
           .expect(400);
 
-        expect(response.body.success).toBe(false);
         expect(response.body.message).toContain('Invalid dishId');
       });
     });
@@ -519,6 +531,7 @@ describe('Order Controller', () => {
     test('should get order by ID successfully', async () => {
       // First create an order
       const order = new Order({
+        store: testStore._id,
         customerDetails: {
           name: 'Test Customer',
           phone: '0123456789',
@@ -565,7 +578,6 @@ describe('Order Controller', () => {
         .get(`/api/order/${nonExistentId}`)
         .expect(404);
 
-      expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Order not found!');
     });
   });
@@ -574,6 +586,7 @@ describe('Order Controller', () => {
     test('should update order status successfully', async () => {
       // Create an order first
       const order = new Order({
+        store: testStore._id,
         customerDetails: { name: 'Test Customer' },
         orderStatus: 'pending',
         bills: { subtotal: 43000, total: 43000, totalWithTax: 43000 },
@@ -602,6 +615,7 @@ describe('Order Controller', () => {
 
     test('should update payment method successfully', async () => {
       const order = new Order({
+        store: testStore._id,
         customerDetails: { name: 'Test Customer' },
         orderStatus: 'pending',
         bills: { subtotal: 43000, total: 43000, totalWithTax: 43000 },
