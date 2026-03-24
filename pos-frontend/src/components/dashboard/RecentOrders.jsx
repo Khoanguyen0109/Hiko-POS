@@ -32,13 +32,13 @@ const RecentOrders = ({ dateFilter = "today", customDateRange = { startDate: "",
         break;
       }
       case "week": {
-        const { start } = getDateRangeByPeriodVietnam('last7days');
+        const { start } = getDateRangeByPeriodVietnam('thisWeek');
         startDate = start;
         endDate = today;
         break;
       }
       case "month": {
-        const { start } = getDateRangeByPeriodVietnam('last30days');
+        const { start } = getDateRangeByPeriodVietnam('thisMonth');
         startDate = start;
         endDate = today;
         break;

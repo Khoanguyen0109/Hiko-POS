@@ -8,55 +8,44 @@ import {
   MdAttachMoney as MoneyIcon,
   MdBarChart as ChartBarIcon
 } from 'react-icons/md';
-import { toVietnamTime } from '../../utils/dateUtils';
+import { getTodayDateVietnam, getDateRangeByPeriodVietnam } from '../../utils/dateUtils';
 
 const PromotionMetrics = ({ dateFilter, customDateRange }) => {
   const dispatch = useDispatch();
   const { analytics, loading } = useSelector(state => state.promotions);
 
-  // Convert dashboard date filter to API parameters (Vietnam timezone)
-  const getDateRange = () => {
-    const today = toVietnamTime(new Date());
+  useEffect(() => {
+    const today = getTodayDateVietnam();
     let startDate, endDate;
 
     switch (dateFilter) {
       case 'today':
-        startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
-        endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+        startDate = endDate = today;
         break;
-      case 'week':
-        const weekStart = new Date(today);
-        weekStart.setDate(today.getDate() - today.getDay());
-        weekStart.setHours(0, 0, 0, 0);
-        startDate = weekStart;
-        endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+      case 'week': {
+        const { start } = getDateRangeByPeriodVietnam('thisWeek');
+        startDate = start;
+        endDate = today;
         break;
-      case 'month':
-        startDate = new Date(today.getFullYear(), today.getMonth(), 1, 0, 0, 0, 0);
-        endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+      }
+      case 'month': {
+        const { start } = getDateRangeByPeriodVietnam('thisMonth');
+        startDate = start;
+        endDate = today;
         break;
+      }
       case 'custom':
         if (customDateRange.startDate && customDateRange.endDate) {
-          startDate = new Date(customDateRange.startDate + 'T00:00:00');
-          endDate = new Date(customDateRange.endDate + 'T23:59:59');
+          startDate = customDateRange.startDate;
+          endDate = customDateRange.endDate;
         }
         break;
       default:
-        // Default to today
-        startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0);
-        endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+        startDate = endDate = today;
     }
 
-    return {
-      startDate: startDate?.toISOString(),
-      endDate: endDate?.toISOString()
-    };
-  };
-
-  useEffect(() => {
-    const dateRange = getDateRange();
-    if (dateRange.startDate && dateRange.endDate) {
-      dispatch(fetchAnalytics(dateRange));
+    if (startDate && endDate) {
+      dispatch(fetchAnalytics({ startDate, endDate }));
     }
   }, [dispatch, dateFilter, customDateRange]);
 

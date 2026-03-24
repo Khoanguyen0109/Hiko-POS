@@ -39,7 +39,7 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
   const [dishSortBy, setDishSortBy] = useState("quantity");
 
   useEffect(() => {
-    // Fetch data based on selected date range
+    // Compute a single date range used by both orders and spending
     const today = getTodayDate();
     let startDate, endDate;
     
@@ -49,13 +49,15 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
         break;
       }
       case "week": {
-        const { start } = getDateRangeByPeriodVietnam('last7days');
+        // Current calendar week (Monday → today), matching button label "This Week"
+        const { start } = getDateRangeByPeriodVietnam('thisWeek');
         startDate = start;
         endDate = today;
         break;
       }
       case "month": {
-        const { start } = getDateRangeByPeriodVietnam('last30days');
+        // Current calendar month (1st → today), matching button label "This Month"
+        const { start } = getDateRangeByPeriodVietnam('thisMonth');
         startDate = start;
         endDate = today;
         break;
@@ -65,7 +67,6 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
           startDate = customDateRange.startDate;
           endDate = customDateRange.endDate;
         } else {
-          // Fallback to today if custom range is incomplete
           startDate = endDate = today;
         }
         break;
@@ -78,16 +79,8 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
     dispatch(fetchOrders({ startDate, endDate }));
     dispatch(fetchDishes());
     dispatch(fetchCategories());
-    
-    // Fetch spending analytics with the same date range
-    const spendingParams = {};
-    if (dateFilter === "custom" && customDateRange.startDate && customDateRange.endDate) {
-      spendingParams.startDate = customDateRange.startDate;
-      spendingParams.endDate = customDateRange.endDate;
-    } else if (dateFilter !== "custom") {
-      spendingParams.period = dateFilter;
-    }
-    dispatch(fetchSpendingAnalytics(spendingParams));
+    // Use the same startDate/endDate for spending so both datasets cover the identical range
+    dispatch(fetchSpendingAnalytics({ startDate, endDate }));
   }, [dispatch, dateFilter, customDateRange]);
 
   // Helper function to calculate number of days in the selected period

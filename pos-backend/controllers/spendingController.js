@@ -1,7 +1,9 @@
 const createHttpError = require("http-errors");
 const { Spending, SpendingCategory, Vendor } = require("../models/spendingModel");
 const { default: mongoose } = require("mongoose");
-const { getDateRangeVietnam, getCurrentVietnamTime } = require("../utils/dateUtils");
+const { getDateRangeVietnam, getCurrentVietnamTime, getStartOfDayVietnam, getEndOfDayVietnam, VIETNAM_TIMEZONE } = require("../utils/dateUtils");
+const { toZonedTime } = require("date-fns-tz");
+const { startOfWeek, endOfWeek, startOfMonth, endOfMonth } = require("date-fns");
 
 // ==================== SPENDING CRUD OPERATIONS ====================
 
@@ -645,29 +647,29 @@ const getSpendingAnalytics = async (req, res, next) => {
             start = dateRange.start;
             end = dateRange.end;
         } else if (period) {
-            // Use period-based filtering
-            const today = getCurrentVietnamTime();
-            
+            // Use period-based filtering with proper Vietnam timezone boundaries
+            const nowVN = toZonedTime(new Date(), VIETNAM_TIMEZONE);
+
             switch (period) {
                 case 'today':
-                    start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                    end = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+                    start = getStartOfDayVietnam(new Date());
+                    end = getEndOfDayVietnam(new Date());
                     break;
-                case 'week':
-                    // Get start of current week (Monday)
-                    const dayOfWeek = today.getDay();
-                    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday = 0, Monday = 1
-                    start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysToMonday);
-                    end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + (6 - daysToMonday), 23, 59, 59, 999);
+                case 'week': {
+                    // Current week: Monday 00:00 VN → Sunday 23:59:59 VN (as UTC timestamps)
+                    start = getStartOfDayVietnam(startOfWeek(nowVN, { weekStartsOn: 1 }));
+                    end = getEndOfDayVietnam(endOfWeek(nowVN, { weekStartsOn: 1 }));
                     break;
-                case 'month':
-                    start = new Date(today.getFullYear(), today.getMonth(), 1);
-                    end = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+                }
+                case 'month': {
+                    // Current calendar month: 1st 00:00 VN → last day 23:59:59 VN (as UTC timestamps)
+                    start = getStartOfDayVietnam(startOfMonth(nowVN));
+                    end = getEndOfDayVietnam(endOfMonth(nowVN));
                     break;
+                }
                 default:
-                    // Default to current month
-                    start = new Date(today.getFullYear(), today.getMonth(), 1);
-                    end = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+                    start = getStartOfDayVietnam(startOfMonth(nowVN));
+                    end = getEndOfDayVietnam(endOfMonth(nowVN));
             }
         }
         
@@ -763,8 +765,9 @@ const getSpendingAnalytics = async (req, res, next) => {
 const getSpendingDashboard = async (req, res, next) => {
     try {
         const today = getCurrentVietnamTime();
-        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const startOfYear = new Date(today.getFullYear(), 0, 1);
+        const nowVN = toZonedTime(today, VIETNAM_TIMEZONE);
+        const startOfCurrentMonth = getStartOfDayVietnam(startOfMonth(nowVN));
+        const startOfCurrentYear = getStartOfDayVietnam(new Date(nowVN.getFullYear(), 0, 1));
 
         const [
             monthlyStats,
@@ -780,7 +783,7 @@ const getSpendingDashboard = async (req, res, next) => {
                     $match: {
                         store: req.store._id,
                         status: 'active',
-                        createdAt: { $gte: startOfMonth }
+                        createdAt: { $gte: startOfCurrentMonth }
                     }
                 },
                 {
@@ -809,7 +812,7 @@ const getSpendingDashboard = async (req, res, next) => {
                     $match: {
                         store: req.store._id,
                         status: 'active',
-                        createdAt: { $gte: startOfYear }
+                        createdAt: { $gte: startOfCurrentYear }
                     }
                 },
                 {
@@ -850,7 +853,7 @@ const getSpendingDashboard = async (req, res, next) => {
                     $match: {
                         store: req.store._id,
                         status: 'active',
-                        createdAt: { $gte: startOfMonth }
+                        createdAt: { $gte: startOfCurrentMonth }
                     }
                 },
                 {
@@ -881,7 +884,7 @@ const getSpendingDashboard = async (req, res, next) => {
                         store: req.store._id,
                         status: 'active',
                         vendor: { $exists: true },
-                        createdAt: { $gte: startOfMonth }
+                        createdAt: { $gte: startOfCurrentMonth }
                     }
                 },
                 {

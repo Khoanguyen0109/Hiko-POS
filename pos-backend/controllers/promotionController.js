@@ -3,7 +3,7 @@ const Promotion = require("../models/promotionModel");
 const Dish = require("../models/dishModel");
 const Category = require("../models/categoryModel");
 const { default: mongoose } = require("mongoose");
-const { getCurrentVietnamTime } = require("../utils/dateUtils");
+const { getCurrentVietnamTime, getDateRangeVietnam } = require("../utils/dateUtils");
 
 // Create a new promotion
 const createPromotion = async (req, res, next) => {
@@ -345,28 +345,21 @@ const togglePromotionStatus = async (req, res, next) => {
 const getPromotionAnalytics = async (req, res, next) => {
   try {
     const { startDate, endDate } = req.query;
-    
-    // Build date filter for promotions
-    const promotionDateFilter = {};
-    if (startDate) promotionDateFilter.$gte = new Date(startDate);
-    if (endDate) promotionDateFilter.$lte = new Date(endDate);
-    
-    const promotionMatchStage = { store: req.store._id };
-    if (Object.keys(promotionDateFilter).length > 0) {
-      promotionMatchStage.createdAt = promotionDateFilter;
-    }
 
-    // Build date filter for orders (to get actual discount data)
-    const orderDateFilter = {};
-    if (startDate) orderDateFilter.$gte = new Date(startDate);
-    if (endDate) orderDateFilter.$lte = new Date(endDate);
-    
+    // Build Vietnam-timezone-aware date filter
+    const promotionMatchStage = { store: req.store._id };
     const orderMatchStage = {
       'appliedPromotions.0': { $exists: true },
       store: req.store._id
     };
-    if (Object.keys(orderDateFilter).length > 0) {
-      orderMatchStage.createdAt = orderDateFilter;
+
+    if (startDate || endDate) {
+      const { start, end } = getDateRangeVietnam(startDate, endDate);
+      const dateFilter = {};
+      if (start) dateFilter.$gte = start;
+      if (end)   dateFilter.$lte = end;
+      promotionMatchStage.createdAt = dateFilter;
+      orderMatchStage.createdAt = dateFilter;
     }
 
     // Get promotion statistics

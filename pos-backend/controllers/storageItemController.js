@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const StorageItem = require("../models/storageItemModel");
 const StorageImport = require("../models/storageImportModel");
 const StorageExport = require("../models/storageExportModel");
+const { getDateRangeVietnam } = require("../utils/dateUtils");
 
 // Add storage item
 const addStorageItem = async (req, res, next) => {
@@ -368,20 +369,13 @@ const getStorageAnalytics = async (req, res, next) => {
     try {
         const { startDate, endDate } = req.query;
 
-        // Build date filter for imports/exports
+        // Build date filter for imports/exports using Vietnam timezone
         const dateFilter = {};
         if (startDate || endDate) {
+            const { start, end } = getDateRangeVietnam(startDate, endDate);
             dateFilter.importDate = {};
-            if (startDate) {
-                const start = new Date(startDate);
-                start.setHours(0, 0, 0, 0);
-                dateFilter.importDate.$gte = start;
-            }
-            if (endDate) {
-                const end = new Date(endDate);
-                end.setHours(23, 59, 59, 999);
-                dateFilter.importDate.$lte = end;
-            }
+            if (start) dateFilter.importDate.$gte = start;
+            if (end)   dateFilter.importDate.$lte = end;
         }
 
         // Get all active storage items with their imports and exports
@@ -392,17 +386,10 @@ const getStorageAnalytics = async (req, res, next) => {
         // Build export date filter (same structure as import)
         const exportDateFilter = {};
         if (startDate || endDate) {
+            const { start, end } = getDateRangeVietnam(startDate, endDate);
             exportDateFilter.exportDate = {};
-            if (startDate) {
-                const start = new Date(startDate);
-                start.setHours(0, 0, 0, 0);
-                exportDateFilter.exportDate.$gte = start;
-            }
-            if (endDate) {
-                const end = new Date(endDate);
-                end.setHours(23, 59, 59, 999);
-                exportDateFilter.exportDate.$lte = end;
-            }
+            if (start) exportDateFilter.exportDate.$gte = start;
+            if (end)   exportDateFilter.exportDate.$lte = end;
         }
 
         // Get completed imports and exports within date range

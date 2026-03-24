@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { fetchStorageAnalytics } from "../../redux/slices/storageAnalyticsSlice";
 import { MdStorage, MdWarning, MdTrendingUp, MdTrendingDown } from "react-icons/md";
 import { formatVND } from "../../utils";
+import { getTodayDateVietnam, getDateRangeByPeriodVietnam } from "../../utils/dateUtils";
 
 const StorageAnalytics = ({ dateFilter, customDateRange }) => {
     const dispatch = useDispatch();
@@ -10,38 +11,34 @@ const StorageAnalytics = ({ dateFilter, customDateRange }) => {
 
     useEffect(() => {
         const params = {};
-        
+        const today = getTodayDateVietnam();
+
         if (dateFilter === "custom" && customDateRange.startDate && customDateRange.endDate) {
             params.startDate = customDateRange.startDate;
             params.endDate = customDateRange.endDate;
         } else if (dateFilter && dateFilter !== "custom") {
-            // Convert period to date range
-            const today = new Date();
-            const start = new Date();
-            
             switch (dateFilter) {
                 case "today":
-                    start.setHours(0, 0, 0, 0);
-                    params.startDate = start.toISOString().split('T')[0];
-                    params.endDate = today.toISOString().split('T')[0];
+                    params.startDate = today;
+                    params.endDate = today;
                     break;
-                case "week":
-                    start.setDate(today.getDate() - 7);
-                    params.startDate = start.toISOString().split('T')[0];
-                    params.endDate = today.toISOString().split('T')[0];
+                case "week": {
+                    const { start } = getDateRangeByPeriodVietnam('thisWeek');
+                    params.startDate = start;
+                    params.endDate = today;
                     break;
-                case "month":
-                    start.setMonth(today.getMonth() - 1);
-                    params.startDate = start.toISOString().split('T')[0];
-                    params.endDate = today.toISOString().split('T')[0];
+                }
+                case "month": {
+                    const { start } = getDateRangeByPeriodVietnam('thisMonth');
+                    params.startDate = start;
+                    params.endDate = today;
                     break;
+                }
                 default:
-                    // No date filter - show all data
                     break;
             }
         }
-        // If no date filter is set, params will be empty and backend will return all records
-        
+
         dispatch(fetchStorageAnalytics(params));
     }, [dispatch, dateFilter, customDateRange]);
 

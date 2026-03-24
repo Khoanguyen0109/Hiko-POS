@@ -2,7 +2,9 @@ const Schedule = require('../models/scheduleModel');
 const User = require('../models/userModel');
 const ExtraWork = require('../models/extraWorkModel');
 const createHttpError = require('http-errors');
-const { getDateRangeVietnam, getCurrentVietnamTime } = require('../utils/dateUtils');
+const { getDateRangeVietnam, getCurrentVietnamTime, getStartOfDayVietnam, getEndOfDayVietnam, VIETNAM_TIMEZONE } = require('../utils/dateUtils');
+const { toZonedTime } = require('date-fns-tz');
+const { startOfWeek, endOfWeek, startOfMonth, endOfMonth } = require('date-fns');
 
 /**
  * Get member's monthly salary based on assigned shifts
@@ -170,29 +172,27 @@ const getAllMembersSalarySummary = async (req, res, next) => {
             start = dateRange.start;
             end = dateRange.end;
         } else if (period) {
-            // Use period-based filtering
-            const today = getCurrentVietnamTime();
-            
+            // Use period-based filtering with proper Vietnam timezone boundaries
+            const nowVN = toZonedTime(new Date(), VIETNAM_TIMEZONE);
+
             switch (period) {
                 case 'today':
-                    start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-                    end = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+                    start = getStartOfDayVietnam(new Date());
+                    end = getEndOfDayVietnam(new Date());
                     break;
-                case 'week':
-                    // Get start of current week (Monday)
-                    const dayOfWeek = today.getDay();
-                    const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Sunday = 0, Monday = 1
-                    start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - daysToMonday);
-                    end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + (6 - daysToMonday), 23, 59, 59, 999);
+                case 'week': {
+                    start = getStartOfDayVietnam(startOfWeek(nowVN, { weekStartsOn: 1 }));
+                    end = getEndOfDayVietnam(endOfWeek(nowVN, { weekStartsOn: 1 }));
                     break;
-                case 'month':
-                    start = new Date(today.getFullYear(), today.getMonth(), 1);
-                    end = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+                }
+                case 'month': {
+                    start = getStartOfDayVietnam(startOfMonth(nowVN));
+                    end = getEndOfDayVietnam(endOfMonth(nowVN));
                     break;
+                }
                 default:
-                    // Default to current month
-                    start = new Date(today.getFullYear(), today.getMonth(), 1);
-                    end = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+                    start = getStartOfDayVietnam(startOfMonth(nowVN));
+                    end = getEndOfDayVietnam(endOfMonth(nowVN));
             }
         } else if (year && month) {
             // Legacy support: year and month parameters
