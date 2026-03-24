@@ -284,6 +284,17 @@ const addOrder = async (req, res, next) => {
     };
 
     const order = new Order(orderPayload);
+
+    // Record initial creation in history
+    order.orderHistory = [
+      buildOrderHistoryEntry(
+        req.user,
+        'order_created',
+        `Order created with ${finalProcessedItems.length} item(s), total ${calculatedBills.total}`,
+        { newValue: { itemCount: finalProcessedItems.length, total: calculatedBills.total } }
+      ),
+    ];
+
     await order.save();
 
     // Populate dish references and promotion details for response

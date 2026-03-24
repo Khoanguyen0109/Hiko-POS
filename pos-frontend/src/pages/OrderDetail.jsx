@@ -919,7 +919,9 @@ const OrderDetail = () => {
                         {entry.changeType && (
                           <span
                             className={`inline-flex w-fit text-xs px-2 py-0.5 rounded-full ${
-                              entry.changeType === "items_updated"
+                              entry.changeType === "order_created"
+                                ? "bg-teal-900/30 text-teal-300"
+                                : entry.changeType === "items_updated"
                                 ? "bg-blue-900/30 text-blue-300"
                                 : entry.changeType === "status_changed"
                                 ? "bg-purple-900/30 text-purple-300"
@@ -930,7 +932,7 @@ const OrderDetail = () => {
                                 : "bg-[#343434] text-[#ababab]"
                             }`}
                           >
-                            {entry.changeType.replace("_", " ")}
+                            {entry.changeType.replace(/_/g, " ")}
                           </span>
                         )}
                       </>

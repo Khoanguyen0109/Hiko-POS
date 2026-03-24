@@ -185,7 +185,7 @@ const orderSchema = new mongoose.Schema({
         },
         changeType: {
             type: String,
-            enum: ['items_updated', 'status_changed', 'payment_updated', 'vendor_updated', 'promotions_updated'],
+            enum: ['order_created', 'items_updated', 'status_changed', 'payment_updated', 'vendor_updated', 'promotions_updated'],
             required: true
         },
         description: { type: String, required: true, trim: true },
