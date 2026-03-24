@@ -510,9 +510,25 @@ const updateOrder = async (req, res, next) => {
       return next(error);
     }
 
+    // Determine the primary change type and details for the history entry
+    let changeType, historyDetails = {};
+    if (updateFields.orderStatus) {
+      changeType = 'status_changed';
+      historyDetails = { previousValue: currentOrder.orderStatus, newValue: orderStatus };
+    } else if (updateFields.paymentMethod) {
+      changeType = 'payment_updated';
+      historyDetails = { previousValue: currentOrder.paymentMethod, newValue: paymentMethod };
+    } else if (updateFields.thirdPartyVendor) {
+      changeType = 'vendor_updated';
+      historyDetails = { previousValue: currentOrder.thirdPartyVendor, newValue: thirdPartyVendor };
+    } else {
+      changeType = 'promotions_updated';
+    }
+    const historyEntry = buildOrderHistoryEntry(req.user, changeType, updateMessage, historyDetails);
+
     const order = await Order.findOneAndUpdate(
       { _id: id, store: req.store._id },
-      updateFields,
+      { $set: updateFields, $push: { orderHistory: historyEntry } },
       { new: true }
     ).populate('items.dishId', 'name category price image');
 
@@ -622,9 +638,16 @@ const updateOrderItems = async (req, res, next) => {
       updatePayload.appliedPromotions = appliedPromotions;
     }
 
+    const itemsHistoryEntry = buildOrderHistoryEntry(
+      req.user,
+      'items_updated',
+      `Order items updated: ${processedItems.length} item(s), total ${bills.total}`,
+      { previousValue: currentOrder.items.length, newValue: processedItems.length }
+    );
+
     const order = await Order.findOneAndUpdate(
       { _id: id, store: req.store._id },
-      updatePayload,
+      { $set: updatePayload, $push: { orderHistory: itemsHistoryEntry } },
       { new: true }
     )
       .populate('items.dishId', 'name category price image')

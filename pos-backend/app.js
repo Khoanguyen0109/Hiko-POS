@@ -12,6 +12,9 @@ const mongoose = require("mongoose");
 
 const app = express();
 
+// Trust Railway's reverse proxy so express-rate-limit can read X-Forwarded-For correctly
+app.set('trust proxy', 1);
+
 connectDB();
 
 // ─── Security headers ──────────────────────────────────────────────────────
