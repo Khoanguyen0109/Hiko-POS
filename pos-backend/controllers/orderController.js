@@ -363,11 +363,10 @@ const getOrders = async (req, res, next) => {
       startDate, endDate,
       status, createdBy, paymentMethod, thirdPartyVendor,
       page, limit,
+      paginate = 'false',
     } = req.query;
 
-    const pageNum  = Math.max(1, parseInt(page, 10)  || 1);
-    const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
-    const skip     = (pageNum - 1) * limitNum;
+    const isPaginated = paginate === 'true';
 
     const query = { store: req.store._id };
 
@@ -383,28 +382,47 @@ const getOrders = async (req, res, next) => {
     if (paymentMethod && paymentMethod !== 'all')  query.paymentMethod         = paymentMethod;
     if (thirdPartyVendor && thirdPartyVendor !== 'all') query.thirdPartyVendor = thirdPartyVendor;
 
-    const [orders, total] = await Promise.all([
-      Order.find(query)
-        .populate('items.dishId', 'name category price image')
-        .populate('createdBy.userId', 'name email')
-        .populate('appliedPromotions.promotionId', 'name code type discount')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limitNum),
-      Order.countDocuments(query),
-    ]);
+    let orders, paginationMeta;
 
-    res.status(200).json({
-      success: true,
-      data: orders,
-      pagination: {
+    if (isPaginated) {
+      const pageNum  = Math.max(1, parseInt(page, 10)  || 1);
+      const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
+      const skip     = (pageNum - 1) * limitNum;
+
+      const [results, total] = await Promise.all([
+        Order.find(query)
+          .populate('items.dishId', 'name category price image')
+          .populate('createdBy.userId', 'name email')
+          .populate('appliedPromotions.promotionId', 'name code type discount')
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limitNum),
+        Order.countDocuments(query),
+      ]);
+
+      orders = results;
+      paginationMeta = {
         total,
         page: pageNum,
         limit: limitNum,
         totalPages: Math.ceil(total / limitNum),
         hasNext: pageNum * limitNum < total,
         hasPrev: pageNum > 1,
-      },
+      };
+    } else {
+      orders = await Order.find(query)
+        .populate('items.dishId', 'name category price image')
+        .populate('createdBy.userId', 'name email')
+        .populate('appliedPromotions.promotionId', 'name code type discount')
+        .sort({ createdAt: -1 });
+
+      paginationMeta = null;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: orders,
+      pagination: paginationMeta,
       filters: {
         startDate: startDate || null,
         endDate:   endDate   || null,

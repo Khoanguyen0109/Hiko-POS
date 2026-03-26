@@ -49,8 +49,10 @@ export const getOrders = (params = {}) => {
     queryParams.append('paymentMethod', params.paymentMethod);
   if (params.thirdPartyVendor && params.thirdPartyVendor !== 'all')
     queryParams.append('thirdPartyVendor', params.thirdPartyVendor);
-  if (params.page)  queryParams.append('page',  params.page);
-  if (params.limit) queryParams.append('limit', params.limit);
+  // Pagination is off by default; pass paginate: true to activate it
+  if (params.paginate) queryParams.append('paginate', 'true');
+  if (params.paginate && params.page)  queryParams.append('page',  params.page);
+  if (params.paginate && params.limit) queryParams.append('limit', params.limit);
 
   const queryString = queryParams.toString();
   return axiosWrapper.get(`/api/order${queryString ? `?${queryString}` : ''}`);

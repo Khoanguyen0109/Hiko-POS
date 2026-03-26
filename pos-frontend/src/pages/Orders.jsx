@@ -84,7 +84,7 @@ const Orders = () => {
 
   // Fetch orders when filters or page changes
   useEffect(() => {
-    const params = { status, page, limit: LIMIT };
+    const params = { status, paginate: true, page, limit: LIMIT };
     if (isAdmin) {
       params.startDate = startDate;
       params.endDate = endDate;
