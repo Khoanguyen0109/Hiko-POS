@@ -86,7 +86,6 @@ const ImportList = memo(({ imports, loading, onCancel }) => {
             <tr key={r._id} className="bg-[#1f1f1f] hover:bg-[#262626] transition-colors">
               <td className={`${tdClass} sticky left-0 bg-[#1f1f1f] z-[1] shadow-[2px_0_4px_-1px_rgba(0,0,0,0.3)]`}>
                 <span className="font-medium">{r.storageItemId?.name || "N/A"}</span>
-                <span className="text-[#ababab] ml-1 text-xs">({r.storageItemId?.code || "N/A"})</span>
               </td>
               <td className={tdClass}>{r.quantity} {r.unit}</td>
               <td className={tdClass}>{r.unitCost?.toLocaleString("vi-VN")}</td>
