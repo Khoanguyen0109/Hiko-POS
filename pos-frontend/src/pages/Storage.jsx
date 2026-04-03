@@ -15,6 +15,7 @@ import { fetchStorageItems } from "../redux/slices/storageItemSlice";
 import { enqueueSnackbar } from "notistack";
 import ImportModal from "../components/storage/ImportModal";
 import ExportModal from "../components/storage/ExportModal";
+import DateFilterBar from "../components/storage/DateFilterBar";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import BackButton from "../components/shared/BackButton";
 import { useNavigate } from "react-router-dom";
@@ -37,6 +38,9 @@ const REASON_LABELS = {
   other: "Other",
 };
 
+const thClass = "px-4 py-3 text-left text-xs font-medium text-[#ababab] uppercase tracking-wider";
+const tdClass = "px-4 py-3 text-sm text-[#f5f5f5] whitespace-nowrap";
+
 const StatusBadge = ({ status }) => (
   <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[status] || STATUS_STYLES.cancelled}`}>
     {status}
@@ -44,27 +48,63 @@ const StatusBadge = ({ status }) => (
 );
 StatusBadge.propTypes = { status: PropTypes.string.isRequired };
 
-const thClass = "px-4 py-3 text-left text-xs font-medium text-[#ababab] uppercase tracking-wider";
-const tdClass = "px-4 py-3 text-sm text-[#f5f5f5] whitespace-nowrap";
+const TableLoader = ({ message }) => (
+  <div className="text-center py-12">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f6b100] mx-auto mb-4" />
+    <p className="text-[#ababab]">{message}</p>
+  </div>
+);
+TableLoader.propTypes = { message: PropTypes.string.isRequired };
+
+const TableEmpty = ({ icon: Icon, message }) => (
+  <div className="text-center py-12">
+    <Icon size={48} className="text-[#343434] mx-auto mb-3" />
+    <p className="text-[#ababab]">{message}</p>
+  </div>
+);
+TableEmpty.propTypes = {
+  icon: PropTypes.elementType.isRequired,
+  message: PropTypes.string.isRequired,
+};
+
+const CancelButton = ({ onClick }) => (
+  <button
+    onClick={onClick}
+    className="px-3 py-1 text-xs bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-800 rounded transition-colors"
+  >
+    Cancel
+  </button>
+);
+CancelButton.propTypes = { onClick: PropTypes.func.isRequired };
+
+const ErrorBanner = ({ message }) => (
+  <div className="mb-6 p-4 bg-red-500/20 border border-red-500 text-red-400 rounded-lg">
+    {message}
+  </div>
+);
+ErrorBanner.propTypes = { message: PropTypes.string.isRequired };
+
+const TabButton = ({ active, onClick, icon: Icon, label }) => (
+  <button
+    onClick={onClick}
+    className={`px-4 py-2.5 sm:px-6 sm:py-3 rounded-t-lg text-[#f5f5f5] font-medium text-sm whitespace-nowrap transition-colors flex-shrink-0 flex items-center gap-2 ${
+      active ? "bg-[#262626] border-b-2 border-[#f6b100]" : "bg-[#1a1a1a] hover:bg-[#262626]"
+    }`}
+  >
+    <Icon size={18} />
+    {label}
+  </button>
+);
+TabButton.propTypes = {
+  active: PropTypes.bool.isRequired,
+  onClick: PropTypes.func.isRequired,
+  icon: PropTypes.elementType.isRequired,
+  label: PropTypes.string.isRequired,
+};
 
 const ImportList = memo(({ imports, loading, onCancel }) => {
-  if (loading) {
-    return (
-      <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f6b100] mx-auto mb-4"></div>
-        <p className="text-[#ababab]">Loading imports...</p>
-      </div>
-    );
-  }
-
-  if (imports.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <MdInput size={48} className="text-[#343434] mx-auto mb-3" />
-        <p className="text-[#ababab]">No imports found</p>
-      </div>
-    );
-  }
+  if (loading) return <TableLoader message="Loading imports..." />;
+  if (imports.length === 0) return <TableEmpty icon={MdInput} message="No imports found" />;
 
   return (
     <div className="overflow-x-auto rounded-lg border border-[#343434]">
@@ -94,14 +134,7 @@ const ImportList = memo(({ imports, loading, onCancel }) => {
               <td className={tdClass}>{new Date(r.importDate).toLocaleDateString("vi-VN")}</td>
               <td className={tdClass}><StatusBadge status={r.status} /></td>
               <td className={`${tdClass} text-right`}>
-                {r.status !== "cancelled" && (
-                  <button
-                    onClick={() => onCancel(r._id)}
-                    className="px-3 py-1 text-xs bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-800 rounded transition-colors"
-                  >
-                    Cancel
-                  </button>
-                )}
+                {r.status !== "cancelled" && <CancelButton onClick={() => onCancel(r._id)} />}
               </td>
             </tr>
           ))}
@@ -110,7 +143,6 @@ const ImportList = memo(({ imports, loading, onCancel }) => {
     </div>
   );
 });
-
 ImportList.displayName = "ImportList";
 ImportList.propTypes = {
   imports: PropTypes.arrayOf(PropTypes.object).isRequired,
@@ -119,23 +151,8 @@ ImportList.propTypes = {
 };
 
 const ExportList = memo(({ exports, loading, onCancel }) => {
-  if (loading) {
-    return (
-      <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f6b100] mx-auto mb-4"></div>
-        <p className="text-[#ababab]">Loading exports...</p>
-      </div>
-    );
-  }
-
-  if (exports.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <MdOutput size={48} className="text-[#343434] mx-auto mb-3" />
-        <p className="text-[#ababab]">No exports found</p>
-      </div>
-    );
-  }
+  if (loading) return <TableLoader message="Loading exports..." />;
+  if (exports.length === 0) return <TableEmpty icon={MdOutput} message="No exports found" />;
 
   return (
     <div className="overflow-x-auto rounded-lg border border-[#343434]">
@@ -167,14 +184,7 @@ const ExportList = memo(({ exports, loading, onCancel }) => {
               <td className={tdClass}>{new Date(r.exportDate).toLocaleDateString("vi-VN")}</td>
               <td className={tdClass}><StatusBadge status={r.status} /></td>
               <td className={`${tdClass} text-right`}>
-                {r.status !== "cancelled" && (
-                  <button
-                    onClick={() => onCancel(r._id)}
-                    className="px-3 py-1 text-xs bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-800 rounded transition-colors"
-                  >
-                    Cancel
-                  </button>
-                )}
+                {r.status !== "cancelled" && <CancelButton onClick={() => onCancel(r._id)} />}
               </td>
             </tr>
           ))}
@@ -183,7 +193,6 @@ const ExportList = memo(({ exports, loading, onCancel }) => {
     </div>
   );
 });
-
 ExportList.displayName = "ExportList";
 ExportList.propTypes = {
   exports: PropTypes.arrayOf(PropTypes.object).isRequired,
@@ -192,25 +201,10 @@ ExportList.propTypes = {
 };
 
 const StockList = memo(({ items, loading }) => {
-  if (loading) {
-    return (
-      <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f6b100] mx-auto mb-4"></div>
-        <p className="text-[#ababab]">Loading stock...</p>
-      </div>
-    );
-  }
+  if (loading) return <TableLoader message="Loading stock..." />;
 
   const activeItems = items.filter((item) => item.isActive);
-
-  if (activeItems.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <MdInventory size={48} className="text-[#343434] mx-auto mb-3" />
-        <p className="text-[#ababab]">No items in storage</p>
-      </div>
-    );
-  }
+  if (activeItems.length === 0) return <TableEmpty icon={MdInventory} message="No items in storage" />;
 
   return (
     <div className="overflow-x-auto rounded-lg border border-[#343434]">
@@ -225,7 +219,6 @@ const StockList = memo(({ items, loading }) => {
           {activeItems.map((item) => {
             const isOut = item.currentStock === 0;
             const isLow = !isOut && item.currentStock <= item.minStock;
-
             return (
               <tr
                 key={item._id}
@@ -243,9 +236,7 @@ const StockList = memo(({ items, loading }) => {
                   <span className="font-medium">{item.name}</span>
                 </td>
                 <td className={tdClass}>
-                  <span className={`font-bold ${
-                    isOut ? "text-red-400" : isLow ? "text-yellow-400" : "text-green-400"
-                  }`}>
+                  <span className={`font-bold ${isOut ? "text-red-400" : isLow ? "text-yellow-400" : "text-green-400"}`}>
                     {item.currentStock}
                   </span>
                 </td>
@@ -257,7 +248,6 @@ const StockList = memo(({ items, loading }) => {
     </div>
   );
 });
-
 StockList.displayName = "StockList";
 StockList.propTypes = {
   items: PropTypes.arrayOf(PropTypes.object).isRequired,
@@ -270,23 +260,9 @@ const Storage = () => {
   const user = getStoredUser();
   const isAdmin = user?.role === "Admin";
 
-  const {
-    items: imports,
-    loading: importsLoading,
-    error: importsError,
-  } = useSelector((state) => state.storageImports);
-
-  const {
-    items: exports,
-    loading: exportsLoading,
-    error: exportsError,
-  } = useSelector((state) => state.storageExports);
-
-  const {
-    items: storageItems,
-    loading: storageItemsLoading,
-    error: storageItemsError,
-  } = useSelector((state) => state.storageItems);
+  const { items: imports, loading: importsLoading, error: importsError } = useSelector((state) => state.storageImports);
+  const { items: exports, loading: exportsLoading, error: exportsError } = useSelector((state) => state.storageExports);
+  const { items: storageItems, loading: storageItemsLoading, error: storageItemsError } = useSelector((state) => state.storageItems);
 
   const [activeTab, setActiveTab] = useState("stock");
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -294,10 +270,7 @@ const Storage = () => {
   const [editingImport, setEditingImport] = useState(null);
   const [editingExport, setEditingExport] = useState(null);
   const [dateFilter, setDateFilter] = useState("today");
-  const [customDateRange, setCustomDateRange] = useState({
-    startDate: "",
-    endDate: "",
-  });
+  const [customDateRange, setCustomDateRange] = useState({ startDate: "", endDate: "" });
 
   const dateFilterOptions = useMemo(() => [
     { value: "today", label: "Today", icon: <MdToday /> },
@@ -308,21 +281,14 @@ const Storage = () => {
 
   const getDateRange = useCallback((filter) => {
     const today = getTodayDate();
-    if (filter === "today") {
-      return { startDate: today, endDate: today };
-    }
+    if (filter === "today") return { startDate: today, endDate: today };
     if (filter === "week") {
       const d = new Date(today + "T00:00:00+07:00");
       const day = d.getDay();
-      const diff = day === 0 ? 6 : day - 1;
-      d.setDate(d.getDate() - diff);
-      const startDate = d.toISOString().slice(0, 10);
-      return { startDate, endDate: today };
+      d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+      return { startDate: d.toISOString().slice(0, 10), endDate: today };
     }
-    if (filter === "month") {
-      const startDate = today.slice(0, 7) + "-01";
-      return { startDate, endDate: today };
-    }
+    if (filter === "month") return { startDate: today.slice(0, 7) + "-01", endDate: today };
     return {};
   }, []);
 
@@ -336,30 +302,19 @@ const Storage = () => {
     return getDateRange(dateFilter);
   }, [dateFilter, customDateRange, getDateRange]);
 
-  useEffect(() => {
-    dispatch(fetchStorageItems({}));
-  }, [dispatch]);
+  useEffect(() => { dispatch(fetchStorageItems({})); }, [dispatch]);
 
   useEffect(() => {
     dispatch(fetchStorageImports(dateParams));
     dispatch(fetchStorageExports(dateParams));
   }, [dispatch, dateParams]);
 
-  const handleCreateImport = useCallback(() => {
-    setEditingImport(null);
-    setIsImportModalOpen(true);
-  }, []);
+  const handleCreateImport = useCallback(() => { setEditingImport(null); setIsImportModalOpen(true); }, []);
+  const handleCreateExport = useCallback(() => { setEditingExport(null); setIsExportModalOpen(true); }, []);
 
-  const handleCreateExport = useCallback(() => {
-    setEditingExport(null);
-    setIsExportModalOpen(true);
-  }, []);
-
-  const handleDateFilterChange = useCallback((filterValue) => {
-    setDateFilter(filterValue);
-    if (filterValue !== "custom") {
-      setCustomDateRange({ startDate: "", endDate: "" });
-    }
+  const handleDateFilterChange = useCallback((value) => {
+    setDateFilter(value);
+    if (value !== "custom") setCustomDateRange({ startDate: "", endDate: "" });
   }, []);
 
   const handleCustomDateChange = useCallback((field, value) => {
@@ -367,58 +322,45 @@ const Storage = () => {
   }, []);
 
   const handleCancelImport = useCallback(async (id) => {
-    if (window.confirm("Are you sure you want to cancel this import?")) {
-      try {
-        const result = await dispatch(cancelStorageImportAction(id));
-        if (cancelStorageImportAction.fulfilled.match(result)) {
-          enqueueSnackbar("Import cancelled successfully!", { variant: "success" });
-          dispatch(fetchStorageImports(dateParams));
-        } else {
-          enqueueSnackbar(result.payload || "Failed to cancel import", { variant: "error" });
-        }
-      } catch (err) {
-        logger.error("Error cancelling import:", err);
-        enqueueSnackbar("An unexpected error occurred", { variant: "error" });
+    if (!window.confirm("Are you sure you want to cancel this import?")) return;
+    try {
+      const result = await dispatch(cancelStorageImportAction(id));
+      if (cancelStorageImportAction.fulfilled.match(result)) {
+        enqueueSnackbar("Import cancelled successfully!", { variant: "success" });
+        dispatch(fetchStorageImports(dateParams));
+      } else {
+        enqueueSnackbar(result.payload || "Failed to cancel import", { variant: "error" });
       }
+    } catch (err) {
+      logger.error("Error cancelling import:", err);
+      enqueueSnackbar("An unexpected error occurred", { variant: "error" });
     }
   }, [dispatch, dateParams]);
 
   const handleCancelExport = useCallback(async (id) => {
-    if (window.confirm("Are you sure you want to cancel this export?")) {
-      try {
-        const result = await dispatch(cancelStorageExportAction(id));
-        if (cancelStorageExportAction.fulfilled.match(result)) {
-          enqueueSnackbar("Export cancelled successfully!", { variant: "success" });
-          dispatch(fetchStorageExports(dateParams));
-        } else {
-          enqueueSnackbar(result.payload || "Failed to cancel export", { variant: "error" });
-        }
-      } catch (err) {
-        logger.error("Error cancelling export:", err);
-        enqueueSnackbar("An unexpected error occurred", { variant: "error" });
+    if (!window.confirm("Are you sure you want to cancel this export?")) return;
+    try {
+      const result = await dispatch(cancelStorageExportAction(id));
+      if (cancelStorageExportAction.fulfilled.match(result)) {
+        enqueueSnackbar("Export cancelled successfully!", { variant: "success" });
+        dispatch(fetchStorageExports(dateParams));
+      } else {
+        enqueueSnackbar(result.payload || "Failed to cancel export", { variant: "error" });
       }
+    } catch (err) {
+      logger.error("Error cancelling export:", err);
+      enqueueSnackbar("An unexpected error occurred", { variant: "error" });
     }
   }, [dispatch, dateParams]);
 
   const handleModalSuccess = useCallback(() => {
-    if (activeTab === "imports") {
-      dispatch(fetchStorageImports(dateParams));
-    } else {
-      dispatch(fetchStorageExports(dateParams));
-    }
+    if (activeTab === "imports") dispatch(fetchStorageImports(dateParams));
+    else dispatch(fetchStorageExports(dateParams));
   }, [dispatch, activeTab, dateParams]);
 
-  if (storageItemsLoading && storageItems.length === 0 && activeTab === "stock") {
-    return <FullScreenLoader />;
-  }
-
-  if (importsLoading && imports.length === 0 && activeTab === "imports") {
-    return <FullScreenLoader />;
-  }
-
-  if (exportsLoading && exports.length === 0 && activeTab === "exports") {
-    return <FullScreenLoader />;
-  }
+  if (storageItemsLoading && storageItems.length === 0 && activeTab === "stock") return <FullScreenLoader />;
+  if (importsLoading && imports.length === 0 && activeTab === "imports") return <FullScreenLoader />;
+  if (exportsLoading && exports.length === 0 && activeTab === "exports") return <FullScreenLoader />;
 
   return (
     <div className="min-h-screen bg-[#1a1a1a] p-6">
@@ -428,12 +370,8 @@ const Storage = () => {
           <BackButton />
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#f5f5f5] mb-1">
-                Storage Management
-              </h1>
-              <p className="text-[#ababab] text-sm sm:text-base">
-                Manage imports and exports
-              </p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#f5f5f5] mb-1">Storage Management</h1>
+              <p className="text-[#ababab] text-sm sm:text-base">Manage imports and exports</p>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               {isAdmin && (
@@ -472,163 +410,40 @@ const Storage = () => {
         {/* Tabs */}
         <div className="border-b border-[#343434] mb-6">
           <div className="flex gap-1 overflow-x-auto pb-2 -mb-px scrollbar-hide">
-            <button
-              className={`
-                px-4 py-2.5 sm:px-6 sm:py-3 rounded-t-lg text-[#f5f5f5] font-medium text-sm whitespace-nowrap transition-colors flex-shrink-0 flex items-center gap-2 ${
-                  activeTab === "stock"
-                    ? "bg-[#262626] border-b-2 border-[#f6b100]"
-                    : "bg-[#1a1a1a] hover:bg-[#262626]"
-                }`}
-              onClick={() => setActiveTab("stock")}
-            >
-              <MdInventory size={18} />
-              Stock
-            </button>
-            <button
-              className={`
-                px-4 py-2.5 sm:px-6 sm:py-3 rounded-t-lg text-[#f5f5f5] font-medium text-sm whitespace-nowrap transition-colors flex-shrink-0 flex items-center gap-2 ${
-                  activeTab === "imports"
-                    ? "bg-[#262626] border-b-2 border-[#f6b100]"
-                    : "bg-[#1a1a1a] hover:bg-[#262626]"
-                }`}
-              onClick={() => setActiveTab("imports")}
-            >
-              <MdInput size={18} />
-              Imports
-            </button>
-            <button
-              className={`
-                px-4 py-2.5 sm:px-6 sm:py-3 rounded-t-lg text-[#f5f5f5] font-medium text-sm whitespace-nowrap transition-colors flex-shrink-0 flex items-center gap-2 ${
-                  activeTab === "exports"
-                    ? "bg-[#262626] border-b-2 border-[#f6b100]"
-                    : "bg-[#1a1a1a] hover:bg-[#262626]"
-                }`}
-              onClick={() => setActiveTab("exports")}
-            >
-              <MdOutput size={18} />
-              Exports
-            </button>
+            <TabButton active={activeTab === "stock"} onClick={() => setActiveTab("stock")} icon={MdInventory} label="Stock" />
+            <TabButton active={activeTab === "imports"} onClick={() => setActiveTab("imports")} icon={MdInput} label="Imports" />
+            <TabButton active={activeTab === "exports"} onClick={() => setActiveTab("exports")} icon={MdOutput} label="Exports" />
           </div>
         </div>
 
-        {/* Date Filter - shown for imports & exports tabs */}
         {activeTab !== "stock" && (
-          <div className="mb-6">
-            <div className="bg-[#1a1a1a] rounded-lg p-3 sm:p-4 border border-[#343434]">
-              <div className="flex flex-col gap-3 sm:gap-4">
-                <div>
-                  <h3 className="text-[#f5f5f5] font-semibold text-base sm:text-lg mb-0.5 sm:mb-1">Date Filter</h3>
-                  <p className="text-[#ababab] text-xs sm:text-sm">Filter data by time period</p>
-                </div>
-
-                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-                  {dateFilterOptions.map(({ value, label, icon }) => (
-                    <button
-                      key={value}
-                      onClick={() => handleDateFilterChange(value)}
-                      className={`
-                        flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors
-                        ${dateFilter === value
-                          ? "bg-[#f6b100] text-[#1f1f1f]"
-                          : "bg-[#262626] text-[#f5f5f5] hover:bg-[#343434]"
-                        }
-                      `}
-                    >
-                      <span className="text-base sm:text-lg">{icon}</span>
-                      <span className="hidden xs:inline sm:inline">{label}</span>
-                      <span className="xs:hidden">{label.split(" ").pop()}</span>
-                    </button>
-                  ))}
-                </div>
-
-                {dateFilter === "custom" && (
-                  <div className="flex flex-col gap-2 pt-2 border-t border-[#343434]">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                      <div className="flex flex-col">
-                        <label className="text-[#ababab] text-xs mb-1.5">From Date</label>
-                        <input
-                          type="date"
-                          value={customDateRange.startDate}
-                          onChange={(e) => handleCustomDateChange("startDate", e.target.value)}
-                          className="bg-[#262626] text-[#f5f5f5] border border-[#343434] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#f6b100] w-full"
-                        />
-                      </div>
-                      <div className="flex flex-col">
-                        <label className="text-[#ababab] text-xs mb-1.5">To Date</label>
-                        <input
-                          type="date"
-                          value={customDateRange.endDate}
-                          onChange={(e) => handleCustomDateChange("endDate", e.target.value)}
-                          className="bg-[#262626] text-[#f5f5f5] border border-[#343434] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#f6b100] w-full"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Error Messages */}
-        {storageItemsError && activeTab === "stock" && (
-          <div className="mb-6 p-4 bg-red-500/20 border border-red-500 text-red-400 rounded-lg">
-            {storageItemsError}
-          </div>
-        )}
-        {importsError && activeTab === "imports" && (
-          <div className="mb-6 p-4 bg-red-500/20 border border-red-500 text-red-400 rounded-lg">
-            {importsError}
-          </div>
-        )}
-        {exportsError && activeTab === "exports" && (
-          <div className="mb-6 p-4 bg-red-500/20 border border-red-500 text-red-400 rounded-lg">
-            {exportsError}
-          </div>
-        )}
-
-        {/* Tab Content */}
-        {activeTab === "stock" && (
-          <StockList
-            items={storageItems}
-            loading={storageItemsLoading}
+          <DateFilterBar
+            dateFilter={dateFilter}
+            customDateRange={customDateRange}
+            dateFilterOptions={dateFilterOptions}
+            onFilterChange={handleDateFilterChange}
+            onCustomDateChange={handleCustomDateChange}
           />
         )}
 
-        {activeTab === "imports" && (
-          <ImportList
-            imports={imports}
-            loading={importsLoading}
-            onCancel={handleCancelImport}
-          />
-        )}
+        {storageItemsError && activeTab === "stock" && <ErrorBanner message={storageItemsError} />}
+        {importsError && activeTab === "imports" && <ErrorBanner message={importsError} />}
+        {exportsError && activeTab === "exports" && <ErrorBanner message={exportsError} />}
 
-        {activeTab === "exports" && (
-          <ExportList
-            exports={exports}
-            loading={exportsLoading}
-            onCancel={handleCancelExport}
-          />
-        )}
+        {activeTab === "stock" && <StockList items={storageItems} loading={storageItemsLoading} />}
+        {activeTab === "imports" && <ImportList imports={imports} loading={importsLoading} onCancel={handleCancelImport} />}
+        {activeTab === "exports" && <ExportList exports={exports} loading={exportsLoading} onCancel={handleCancelExport} />}
 
-        {/* Modals */}
         <ImportModal
           isOpen={isImportModalOpen}
-          onClose={() => {
-            setIsImportModalOpen(false);
-            setEditingImport(null);
-          }}
+          onClose={() => { setIsImportModalOpen(false); setEditingImport(null); }}
           mode={editingImport ? "edit" : "create"}
           importRecord={editingImport}
           onSuccess={handleModalSuccess}
         />
-
         <ExportModal
           isOpen={isExportModalOpen}
-          onClose={() => {
-            setIsExportModalOpen(false);
-            setEditingExport(null);
-          }}
+          onClose={() => { setIsExportModalOpen(false); setEditingExport(null); }}
           mode={editingExport ? "edit" : "create"}
           exportRecord={editingExport}
           onSuccess={handleModalSuccess}
