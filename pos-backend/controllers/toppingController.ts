@@ -4,7 +4,7 @@ import type { ToppingUpdatePayload } from "../types/topping.js";
 import {
   isMongooseValidationError,
   mongooseValidationMessages,
-} from "../utils/mongooseValidation";
+} from "../utils/mongooseValidation.js";
 
 import Topping from "../models/toppingModel.js";
 import createHttpError from "http-errors";
