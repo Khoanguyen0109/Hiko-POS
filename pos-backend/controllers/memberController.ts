@@ -1,0 +1,569 @@
+// @ts-nocheck
+import type { MongoFilter } from "../types/mongo.js";
+import type { StoreUserAssignmentDoc } from "../types/storeUser.js";
+
+import createHttpError from "http-errors";
+import User from "../models/userModel.js";
+import StoreUser from "../models/storeUserModel.js";
+import Store from "../models/storeModel.js";
+import bcrypt from "bcrypt";
+import { userRoles } from "../constants/user.js";
+
+// Admin: Get all members (paginated)
+const getAllMembers = async (req, res, next) => {
+    try {
+        const { page, limit, search } = req.query;
+        const pageNum  = Math.max(1, parseInt(page, 10)  || 1);
+        const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
+        const skip     = (pageNum - 1) * limitNum;
+
+        const filter: MongoFilter = { role: { $ne: userRoles.ADMIN } };
+        if (search) {
+            const re = new RegExp(search.trim(), 'i');
+            filter.$or = [{ name: re }, { phone: re }, { email: re }];
+        }
+
+        const [members, total] = await Promise.all([
+            User.find(filter)
+                .select('-password')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limitNum)
+                .lean(),
+            User.countDocuments(filter),
+        ]);
+
+        // Fetch all store assignments for this page in one query
+        const memberIds = members.map(m => m._id);
+        const storeUsers = await StoreUser.find({ user: { $in: memberIds } })
+            .populate({ path: 'store', select: 'name code isActive' })
+            .lean();
+
+        const storesByUser = {};
+        for (const su of storeUsers) {
+            if (!su.store) continue;
+            const uid = su.user.toString();
+            if (!storesByUser[uid]) storesByUser[uid] = [];
+            storesByUser[uid].push({
+                _id: su.store._id,
+                name: su.store.name,
+                code: su.store.code,
+                storeRole: su.role,
+                isActive: su.isActive && su.store.isActive
+            });
+        }
+
+        const membersWithStores = members.map(m => ({
+            ...m,
+            assignedStores: storesByUser[m._id.toString()] || []
+        }));
+
+        res.status(200).json({
+            success: true,
+            data: membersWithStores,
+            pagination: {
+                total,
+                page: pageNum,
+                limit: limitNum,
+                totalPages: Math.ceil(total / limitNum),
+                hasNext: pageNum * limitNum < total,
+                hasPrev: pageNum > 1,
+            },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Admin: Get member by ID
+const getMemberById = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        
+        if (!id) {
+            const error = createHttpError(400, "Member ID is required!");
+            return next(error);
+        }
+
+        const member = await User.findById(id).select('-password');
+        if (!member) {
+            const error = createHttpError(404, "Member not found!");
+            return next(error);
+        }
+
+        if (member.role === userRoles.ADMIN) {
+            const error = createHttpError(403, "Cannot access admin account!");
+            return next(error);
+        }
+
+        res.status(200).json({
+            success: true,
+            data: member
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Admin: Create new member
+const createMember = async (req, res, next) => {
+    try {
+        const { name, email, phone, password, role, salary } = req.body;
+
+        // Validate required fields
+        if (!name || !email || !phone || !password || !role) {
+            const error = createHttpError(400, "All fields are required!");
+            return next(error);
+        }
+
+        // Validate salary if provided
+        if (salary !== undefined && salary < 0) {
+            const error = createHttpError(400, "Salary cannot be negative!");
+            return next(error);
+        }
+
+        // // Validate role (cannot create admin accounts)
+        // if (role === userRoles.ADMIN) {
+        //     const error = createHttpError(403, "Cannot create admin accounts!");
+        //     return next(error);
+        // }
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            const error = createHttpError(400, "User with this email already exists!");
+            return next(error);
+        }
+
+        // Check if phone already exists
+        const existingPhone = await User.findOne({ phone });
+        if (existingPhone) {
+            const error = createHttpError(400, "User with this phone number already exists!");
+            return next(error);
+        }
+
+        // Create new member
+        const newMember = new User({
+            name: name.trim(),
+            email: email.trim().toLowerCase(),
+            phone: phone.trim(),
+            password,
+            role,
+            salary: salary !== undefined ? salary : 0
+        });
+
+        await newMember.save();
+
+        // Return member data without password
+        const memberData = newMember.toObject();
+        delete memberData.password;
+
+        res.status(201).json({
+            success: true,
+            message: "Member created successfully!",
+            data: memberData
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Admin: Update member
+const updateMember = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { name, email, phone, role, salary } = req.body;
+
+        if (!id) {
+            const error = createHttpError(400, "Member ID is required!");
+            return next(error);
+        }
+
+        // Validate salary if provided
+        if (salary !== undefined && salary < 0) {
+            const error = createHttpError(400, "Salary cannot be negative!");
+            return next(error);
+        }
+
+        // Find member
+        const member = await User.findById(id);
+        if (!member) {
+            const error = createHttpError(404, "Member not found!");
+            return next(error);
+        }
+
+        // Prevent updating admin accounts
+        if (member.role === userRoles.ADMIN) {
+            const error = createHttpError(403, "Cannot modify admin accounts!");
+            return next(error);
+        }
+
+        // Check if new email already exists (excluding current member)
+        if (email && email !== member.email) {
+            const existingEmail = await User.findOne({ email: email.trim().toLowerCase(), _id: { $ne: id } });
+            if (existingEmail) {
+                const error = createHttpError(400, "Email already in use by another user!");
+                return next(error);
+            }
+        }
+
+        // Check if new phone already exists (excluding current member)
+        if (phone && phone !== member.phone) {
+            const existingPhone = await User.findOne({ phone: phone.trim(), _id: { $ne: id } });
+            if (existingPhone) {
+                const error = createHttpError(400, "Phone number already in use by another user!");
+                return next(error);
+            }
+        }
+
+        // Prevent changing role to admin
+        if (role && role === userRoles.ADMIN) {
+            const error = createHttpError(403, "Cannot assign admin role!");
+            return next(error);
+        }
+
+        // Update fields
+        const updateData: MongoFilter = {};
+        if (name) updateData.name = name.trim();
+        if (email) updateData.email = email.trim().toLowerCase();
+        if (phone) updateData.phone = phone.trim();
+        if (role) updateData.role = role;
+        if (salary !== undefined) updateData.salary = salary;
+
+        const updatedMember = await User.findByIdAndUpdate(
+            id,
+            updateData,
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        res.status(200).json({
+            success: true,
+            message: "Member updated successfully!",
+            data: updatedMember
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Admin: Delete member
+const deleteMember = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            const error = createHttpError(400, "Member ID is required!");
+            return next(error);
+        }
+
+        const member = await User.findById(id);
+        if (!member) {
+            const error = createHttpError(404, "Member not found!");
+            return next(error);
+        }
+
+        // Prevent deleting admin accounts
+        if (member.role === userRoles.ADMIN) {
+            const error = createHttpError(403, "Cannot delete admin accounts!");
+            return next(error);
+        }
+
+        await User.findByIdAndDelete(id);
+
+        res.status(200).json({
+            success: true,
+            message: "Member deleted successfully!"
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Admin: Toggle member active status
+const toggleMemberActiveStatus = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            const error = createHttpError(400, "Member ID is required!");
+            return next(error);
+        }
+
+        const member = await User.findById(id);
+        if (!member) {
+            const error = createHttpError(404, "Member not found!");
+            return next(error);
+        }
+
+        // Prevent toggling admin accounts
+        if (member.role === userRoles.ADMIN) {
+            const error = createHttpError(403, "Cannot modify admin accounts!");
+            return next(error);
+        }
+
+        // Toggle the active status
+        member.isActive = !member.isActive;
+        await member.save();
+
+        // Return member data without password
+        const memberData = member.toObject();
+        delete memberData.password;
+
+        res.status(200).json({
+            success: true,
+            message: `Member ${member.isActive ? 'activated' : 'deactivated'} successfully!`,
+            data: memberData
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Member: Get own profile
+const getOwnProfile = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user._id).select('-password');
+        
+        res.status(200).json({
+            success: true,
+            data: user
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Member: Update own profile
+const updateOwnProfile = async (req, res, next) => {
+    try {
+        const { name, email, phone } = req.body;
+        const userId = req.user._id;
+
+        // Validate required fields
+        if (!name && !email && !phone) {
+            const error = createHttpError(400, "At least one field is required to update!");
+            return next(error);
+        }
+
+        // Check if new email already exists
+        if (email && email !== req.user.email) {
+            const existingEmail = await User.findOne({ email: email.trim().toLowerCase(), _id: { $ne: userId } });
+            if (existingEmail) {
+                const error = createHttpError(400, "Email already in use by another user!");
+                return next(error);
+            }
+        }
+
+        // Check if new phone already exists
+        if (phone && phone !== req.user.phone) {
+            const existingPhone = await User.findOne({ phone: phone.trim(), _id: { $ne: userId } });
+            if (existingPhone) {
+                const error = createHttpError(400, "Phone number already in use by another user!");
+                return next(error);
+            }
+        }
+
+        // Update fields
+        const updateData: MongoFilter = {};
+        if (name) updateData.name = name.trim();
+        if (email) updateData.email = email.trim().toLowerCase();
+        if (phone) updateData.phone = phone.trim();
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            updateData,
+            { new: true, runValidators: true }
+        ).select('-password');
+
+        res.status(200).json({
+            success: true,
+            message: "Profile updated successfully!",
+            data: updatedUser
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Member: Change password
+const changePassword = async (req, res, next) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const userId = req.user._id;
+
+        if (!currentPassword || !newPassword) {
+            const error = createHttpError(400, "Current password and new password are required!");
+            return next(error);
+        }
+
+        if (newPassword.length < 6) {
+            const error = createHttpError(400, "New password must be at least 6 characters long!");
+            return next(error);
+        }
+
+        // Get user with password
+        const user = await User.findById(userId);
+        if (!user) {
+            const error = createHttpError(404, "User not found!");
+            return next(error);
+        }
+
+        // Verify current password
+        const isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isCurrentPasswordValid) {
+            const error = createHttpError(400, "Current password is incorrect!");
+            return next(error);
+        }
+
+        // Update password
+        user.password = newPassword;
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Password changed successfully!"
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Admin: Get stores assigned to a member
+const getMemberStores = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+
+        const member = await User.findById(id);
+        if (!member) {
+            return next(createHttpError(404, "Member not found!"));
+        }
+
+        const storeUsers = await StoreUser.find({ user: id })
+            .populate({
+                path: 'store',
+                select: 'name code address isActive'
+            })
+            .lean();
+
+        const stores = storeUsers
+            .filter(su => su.store)
+            .map(su => ({
+                _id: su.store._id,
+                name: su.store.name,
+                code: su.store.code,
+                address: su.store.address,
+                isActive: su.store.isActive,
+                storeRole: su.role,
+                memberActive: su.isActive
+            }));
+
+        res.status(200).json({ success: true, data: stores });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Admin: Update store assignments for a member (bulk assign/unassign)
+const updateMemberStores = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { assignments } = req.body;
+        // assignments: [{ storeId, role, isActive }]
+
+        if (!assignments || !Array.isArray(assignments)) {
+            return next(createHttpError(400, "Assignments array is required."));
+        }
+
+        const member = await User.findById(id);
+        if (!member) {
+            return next(createHttpError(404, "Member not found!"));
+        }
+        if (member.role === userRoles.ADMIN) {
+            return next(createHttpError(403, "Cannot manage store assignments for admin accounts."));
+        }
+
+        const assignedStoreIds = assignments.map(a => a.storeId);
+
+        // Validate all store IDs exist
+        const stores = await Store.find({ _id: { $in: assignedStoreIds } });
+        const validStoreIds = new Set(stores.map(s => s._id.toString()));
+
+        for (const storeId of assignedStoreIds) {
+            if (!validStoreIds.has(storeId)) {
+                return next(createHttpError(400, `Store ${storeId} not found.`));
+            }
+        }
+
+        // Get current assignments
+        const currentAssignments = await StoreUser.find({ user: id });
+        const currentMap = new Map(currentAssignments.map(su => [su.store.toString(), su]));
+
+        // Process each assignment
+        for (const { storeId, role } of assignments) {
+            const existing = currentMap.get(storeId) as StoreUserAssignmentDoc | undefined;
+            if (existing) {
+                existing.role = role || existing.role;
+                existing.isActive = true;
+                await existing.save();
+            } else {
+                await StoreUser.create({
+                    user: id,
+                    store: storeId,
+                    role: role || "Staff",
+                    isActive: true
+                });
+            }
+        }
+
+        // Deactivate assignments for stores not in the new list
+        const toDeactivate = currentAssignments.filter(
+            su => !assignedStoreIds.includes(su.store.toString())
+        );
+        for (const su of toDeactivate) {
+            su.isActive = false;
+            await su.save();
+        }
+
+        // Return updated list
+        const updatedStoreUsers = await StoreUser.find({ user: id, isActive: true })
+            .populate({ path: 'store', select: 'name code address isActive' })
+            .lean();
+
+        const result = updatedStoreUsers
+            .filter(su => su.store)
+            .map(su => ({
+                _id: su.store._id,
+                name: su.store.name,
+                code: su.store.code,
+                address: su.store.address,
+                isActive: su.store.isActive,
+                storeRole: su.role,
+                memberActive: su.isActive
+            }));
+
+        res.status(200).json({
+            success: true,
+            message: "Store assignments updated successfully!",
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export {
+    // Admin functions
+    getAllMembers,
+    getMemberById,
+    createMember,
+    updateMember,
+    deleteMember,
+    toggleMemberActiveStatus,
+    getMemberStores,
+    updateMemberStores,
+    
+    // Member functions
+    getOwnProfile,
+    updateOwnProfile,
+    changePassword
+};

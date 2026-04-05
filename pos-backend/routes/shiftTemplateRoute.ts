@@ -1,0 +1,23 @@
+import express from "express";
+import { getAllShiftTemplates, getActiveShiftTemplates, getShiftTemplateById, createShiftTemplate, updateShiftTemplate, deleteShiftTemplate, toggleActiveStatus } from "../controllers/shiftTemplateController.js";
+import { isVerifiedUser, isAdmin } from "../middlewares/tokenVerification.js";
+
+const router = express.Router();
+
+// Global templates — no store context needed
+router.route("/active")
+    .get(isVerifiedUser, getActiveShiftTemplates);
+
+router.route("/")
+    .get(isVerifiedUser, isAdmin, getAllShiftTemplates)
+    .post(isVerifiedUser, isAdmin, createShiftTemplate);
+
+router.route("/:id/toggle-active")
+    .patch(isVerifiedUser, isAdmin, toggleActiveStatus);
+
+router.route("/:id")
+    .get(isVerifiedUser, isAdmin, getShiftTemplateById)
+    .put(isVerifiedUser, isAdmin, updateShiftTemplate)
+    .delete(isVerifiedUser, isAdmin, deleteShiftTemplate);
+
+export default router;

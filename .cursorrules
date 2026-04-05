@@ -6,7 +6,7 @@
   - Backend: Node.js + Express, Mongoose, JWT, Razorpay
 - Monorepo structure:
   - `pos-frontend/` (Vite app)
-  - `pos-backend/` (Express API)
+  - `pos-backend/` (Express API, **TypeScript** — source `*.ts`, compile output `dist/`)
 
 ## Run & Dev Commands
 - Frontend
@@ -16,11 +16,12 @@
   - Preview: `cd pos-frontend && npm run preview`
 - Backend
   - Install: `cd pos-backend && npm install`
-  - Dev: `cd pos-backend && npm run dev` (Express on `http://localhost:3000` by default)
-  - Start: `cd pos-backend && npm start`
+  - Dev: `cd pos-backend && npm run dev` (`tsx watch app.ts`, Express on `http://localhost:3000` by default)
+  - Build: `cd pos-backend && npm run build` (`tsc` → `dist/`)
+  - Start (production): `cd pos-backend && npm run build && npm start` (`node dist/app.js`)
 
 ## Environment
-- Backend env (see `pos-backend/config/config.js`):
+- Backend env (see `pos-backend/config/config.ts`):
   - `PORT` (default 3000)
   - `MONGODB_URI`
   - `NODE_ENV`
@@ -50,8 +51,8 @@
   - Styling: Tailwind CSS; avoid inline styles unless necessary
 - Backend
   - Route -> Controller -> Model pattern
-  - Centralized error handling via `middlewares/globalErrorHandler.js`
-  - JWT auth middleware in `middlewares/tokenVerification.js`
+  - Centralized error handling via `middlewares/globalErrorHandler.ts`
+  - JWT auth middleware in `middlewares/tokenVerification.ts`
   - Mongoose models in `models/`
 
 ## File/Folder Guidelines
@@ -63,7 +64,7 @@
   - HTTP helpers in `src/https/*`
   - Utilities in `src/utils/index.js`
 - Backend
-  - Endpoints registered in `app.js`
+  - Endpoints registered in `app.ts` (compiled to `dist/app.js`)
   - Add new routes under `routes/`, controllers under `controllers/`, models under `models/`
 
 ## Testing & Quality
@@ -82,7 +83,7 @@
 - Add a new API endpoint
   1. Create model (if needed) in `pos-backend/models/`
   2. Create controller in `pos-backend/controllers/`
-  3. Register route in `pos-backend/routes/` and mount in `app.js`
+  3. Register route in `pos-backend/routes/` and mount in `app.ts`
   4. Update frontend service calls in `src/https/*`
 - Add a new page in frontend
   1. Create page under `src/pages/`

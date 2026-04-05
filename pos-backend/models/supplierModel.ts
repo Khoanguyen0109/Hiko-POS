@@ -1,0 +1,66 @@
+import mongoose from "mongoose";
+
+const supplierSchema = new mongoose.Schema({
+    store: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Store",
+        required: true,
+        index: true
+    },
+    name: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    code: {
+        type: String,
+        trim: true,
+        uppercase: true
+    },
+    email: {
+        type: String,
+        trim: true,
+        lowercase: true,
+        validate: {
+            validator: function(v) {
+                return !v || /^\S+@\S+\.\S+$/.test(v);
+            },
+            message: 'Please provide a valid email address'
+        }
+    },
+    phone: {
+        type: String,
+        trim: true
+    },
+    address: {
+        type: String,
+        trim: true
+    },
+    taxId: {
+        type: String,
+        trim: true
+    },
+    notes: {
+        type: String,
+        trim: true
+    },
+    isActive: {
+        type: Boolean,
+        default: true
+    },
+    createdBy: {
+        userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        userName: String
+    }
+}, { timestamps: true });
+
+// Indexes
+supplierSchema.index({ store: 1, name: 1 });
+supplierSchema.index({ code: 1 }, { unique: true, sparse: true });
+supplierSchema.index({ isActive: 1 });
+supplierSchema.index({ taxId: 1 }, { unique: true, sparse: true });
+
+export default mongoose.model("Supplier", supplierSchema);
