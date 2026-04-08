@@ -34,6 +34,7 @@ import shiftTemplateRoute from "./routes/shiftTemplateRoute.js";
 import scheduleRoute from "./routes/scheduleRoute.js";
 import salaryRoute from "./routes/salaryRoute.js";
 import extraWorkRoute from "./routes/extraWorkRoute.js";
+import ticketRoute from "./routes/ticketRoute.js";
 import testRoute from "./routes/testRoute.js";
 
 const app = express();
@@ -131,6 +132,7 @@ app.use("/api/shift-template", shiftTemplateRoute);
 app.use("/api/schedule", scheduleRoute);
 app.use("/api/salary", salaryRoute);
 app.use("/api/extra-work", extraWorkRoute);
+app.use("/api/ticket", ticketRoute);
 app.use("/api/test", testRoute);
 
 // ─── Global error handler ──────────────────────────────────────────────────
