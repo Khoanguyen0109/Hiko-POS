@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { MdPerson, MdEmail, MdPhone, MdLock, MdSave, MdVisibility, MdVisibilityOff, MdAttachMoney, MdCalendarToday, MdAccessTime, MdCheckCircle, MdCancel } from "react-icons/md";
+import { MdPerson, MdEmail, MdPhone, MdLock, MdSave, MdVisibility, MdVisibilityOff, MdAttachMoney, MdCalendarToday, MdAccessTime, MdCheckCircle, MdCancel, MdStar } from "react-icons/md";
 import { enqueueSnackbar } from "notistack";
 import { fetchOwnProfile, updateProfile, updatePassword, clearError } from "../redux/slices/memberSlice";
 import { getMonthlySalary } from "../https/salaryApi";
+import { getMyTickets } from "../https/ticketApi";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import BackButton from "../components/shared/BackButton";
 
@@ -40,6 +41,13 @@ const AccountSettings = () => {
   const [showShiftDetails, setShowShiftDetails] = useState(false);
   const [showExtraWorkDetails, setShowExtraWorkDetails] = useState(false);
 
+  // My Tickets state
+  const [ticketMonth, setTicketMonth] = useState(new Date().getMonth() + 1);
+  const [ticketYear, setTicketYear] = useState(new Date().getFullYear());
+  const [ticketData, setTicketData] = useState(null);
+  const [ticketLoading, setTicketLoading] = useState(false);
+  const [showTicketList, setShowTicketList] = useState(false);
+
   useEffect(() => {
     document.title = "POS | Account Settings";
     dispatch(fetchOwnProfile());
@@ -63,6 +71,22 @@ const AccountSettings = () => {
   useEffect(() => {
     fetchSalaryData();
   }, [fetchSalaryData]);
+
+  const fetchTicketData = useCallback(async () => {
+    try {
+      setTicketLoading(true);
+      const res = await getMyTickets({ month: ticketMonth, year: ticketYear });
+      setTicketData(res.data.data);
+    } catch (error) {
+      console.error('Error fetching ticket data:', error);
+    } finally {
+      setTicketLoading(false);
+    }
+  }, [ticketMonth, ticketYear]);
+
+  useEffect(() => {
+    fetchTicketData();
+  }, [fetchTicketData]);
 
   useEffect(() => {
     if (profileError) {
@@ -756,6 +780,101 @@ const AccountSettings = () => {
               )}
             </div>
           </form>
+        </div>
+
+        {/* My Tickets */}
+        <div className="bg-[#1f1f1f] rounded-lg border border-[#343434]">
+          <div className="p-4 sm:p-6 border-b border-[#343434]">
+            <h2 className="text-[#f5f5f5] text-lg sm:text-xl font-semibold flex items-center gap-2">
+              <MdStar size={18} className="sm:w-5 sm:h-5 text-[#f6b100]" />
+              My Tickets
+            </h2>
+            <p className="text-[#ababab] text-xs sm:text-sm mt-1">Your score tickets by month</p>
+          </div>
+
+          <div className="p-4 sm:p-6 space-y-4">
+            {/* Month/Year filter */}
+            <div className="flex items-center gap-3 flex-wrap">
+              <select
+                value={ticketMonth}
+                onChange={(e) => setTicketMonth(Number(e.target.value))}
+                className="bg-[#262626] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100]"
+              >
+                {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m, i) => (
+                  <option key={i} value={i + 1}>{m}</option>
+                ))}
+              </select>
+              <select
+                value={ticketYear}
+                onChange={(e) => setTicketYear(Number(e.target.value))}
+                className="bg-[#262626] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100]"
+              >
+                {Array.from({ length: 3 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Summary cards */}
+            {ticketLoading ? (
+              <div className="text-center py-6 text-[#ababab] text-sm">Loading tickets…</div>
+            ) : ticketData ? (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="bg-[#262626] rounded-lg p-3">
+                    <p className="text-[#ababab] text-xs uppercase tracking-wide">Monthly Score</p>
+                    <p className="text-[#f6b100] text-xl font-bold mt-1">{ticketData.monthlyScore}</p>
+                  </div>
+                  <div className="bg-[#262626] rounded-lg p-3">
+                    <p className="text-[#ababab] text-xs uppercase tracking-wide">Monthly Tickets</p>
+                    <p className="text-[#f5f5f5] text-xl font-bold mt-1">{ticketData.monthlyCount}</p>
+                  </div>
+                  <div className="bg-[#262626] rounded-lg p-3">
+                    <p className="text-[#ababab] text-xs uppercase tracking-wide">All-Time Score</p>
+                    <p className="text-[#f6b100] text-xl font-bold mt-1">{ticketData.allTimeScore}</p>
+                  </div>
+                  <div className="bg-[#262626] rounded-lg p-3">
+                    <p className="text-[#ababab] text-xs uppercase tracking-wide">All-Time Tickets</p>
+                    <p className="text-[#f5f5f5] text-xl font-bold mt-1">{ticketData.allTimeCount}</p>
+                  </div>
+                </div>
+
+                {/* Collapsible ticket list */}
+                {ticketData.tickets?.length > 0 && (
+                  <div>
+                    <button
+                      onClick={() => setShowTicketList(!showTicketList)}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-[#262626] rounded-lg hover:bg-[#2a2a2a] transition-colors text-sm"
+                    >
+                      <span className="text-[#f5f5f5] font-medium">
+                        {ticketData.tickets.length} ticket{ticketData.tickets.length !== 1 ? "s" : ""} this month
+                      </span>
+                      <span className="text-[#ababab]">{showTicketList ? "▲" : "▼"}</span>
+                    </button>
+                    {showTicketList && (
+                      <div className="mt-2 divide-y divide-[#343434] rounded-lg border border-[#343434] overflow-hidden">
+                        {ticketData.tickets.map((t) => (
+                          <div key={t._id} className="flex items-start gap-3 px-4 py-3 bg-[#1f1f1f]">
+                            <MdStar size={16} className="text-[#f6b100] mt-0.5 flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[#f5f5f5] text-sm font-medium truncate">{t.title}</p>
+                              {t.note && <p className="text-[#6a6a6a] text-xs mt-0.5 truncate">{t.note}</p>}
+                              <p className="text-[#ababab] text-xs mt-0.5">{new Date(t.createdAt).toLocaleDateString()}</p>
+                            </div>
+                            <span className="text-[#f6b100] font-bold text-sm flex-shrink-0">+{t.score}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {ticketData.tickets?.length === 0 && (
+                  <p className="text-[#6a6a6a] text-sm text-center py-4">No tickets this month.</p>
+                )}
+              </>
+            ) : null}
+          </div>
         </div>
 
         {/* Change Password Section */}
