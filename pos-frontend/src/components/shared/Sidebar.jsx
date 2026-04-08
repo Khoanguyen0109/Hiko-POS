@@ -13,6 +13,7 @@ import {
   MdInventory,
   MdBusiness,
   MdMenu,
+  MdStar,
 } from "react-icons/md";
 import { BiSolidDish } from "react-icons/bi";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -166,6 +167,11 @@ const Sidebar = ({ isOpen, onClose, onOpen }) => {
           {
             label: "Admin",
             items: [
+              {
+                path: ROUTES.TICKETS,
+                icon: <MdStar size={18} />,
+                label: "Tickets",
+              },
               {
                 path: ROUTES.MEMBERS,
                 icon: <FaUsers size={18} />,

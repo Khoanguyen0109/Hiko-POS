@@ -457,7 +457,8 @@ export const ROUTES = {
   STORAGE: "/storage",
   STORAGE_ITEMS: "/storage/items",
   SUPPLIERS: "/storage/suppliers",
-  STORES: "/stores"
+  STORES: "/stores",
+  TICKETS: "/tickets"
 };
 
 // Route configurations for optimized rendering
@@ -564,6 +565,10 @@ export const PROTECTED_ROUTES = [
     path: ROUTES.STORES,
     componentName: "Stores",
     adminOnly: true
+  },
+  {
+    path: ROUTES.TICKETS,
+    componentName: "Tickets"
   }
 ];
 
