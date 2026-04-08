@@ -62,7 +62,7 @@ const createTicket = async (req, res, next) => {
         const storeId = req.store._id;
         const { memberId, title, score, note } = req.body;
 
-        if (!memberId || !title || score === undefined) {
+        if (!memberId || score === undefined) {
             return next(createHttpError(400, "memberId, title, and score are required."));
         }
 
@@ -71,13 +71,10 @@ const createTicket = async (req, res, next) => {
             return next(createHttpError(400, "Score must be an integer of at least 1."));
         }
 
-        if (!title.trim()) {
-            return next(createHttpError(400, "Title cannot be empty."));
-        }
-
-        if (title.trim().length > 200) {
-            return next(createHttpError(400, "Title cannot exceed 200 characters."));
-        }
+        if (!title) return next(createHttpError(400, "Title is required."));
+        const trimmedTitle = title.trim();
+        if (!trimmedTitle) return next(createHttpError(400, "Title cannot be empty."));
+        if (trimmedTitle.length > 200) return next(createHttpError(400, "Title cannot exceed 200 characters."));
 
         // Verify member belongs to this store
         const storeUser = await StoreUser.findOne({ user: memberId, store: storeId, isActive: true });
@@ -87,10 +84,10 @@ const createTicket = async (req, res, next) => {
             return next(createHttpError(400, "Member is not assigned to this store."));
         }
 
-        const ticket = await Ticket.create({
+        const ticket = new Ticket({
             store: storeId,
             member: memberId,
-            title: title.trim(),
+            title: trimmedTitle,
             score: scoreNum,
             note: note ? note.trim() : "",
             createdBy: {
@@ -98,15 +95,13 @@ const createTicket = async (req, res, next) => {
                 userName: req.user.name
             }
         });
-
-        const populated = await Ticket.findById(ticket._id)
-            .populate({ path: "member", select: "name email role" })
-            .lean();
+        await ticket.save();
+        await ticket.populate({ path: "member", select: "name email role" });
 
         res.status(201).json({
             success: true,
             message: "Ticket created successfully!",
-            data: populated
+            data: ticket.toObject()
         });
     } catch (error) {
         next(error);
@@ -136,23 +131,21 @@ const updateTicket = async (req, res, next) => {
         }
 
         if (title !== undefined) {
-            if (!title.trim()) return next(createHttpError(400, "Title cannot be empty."));
-            if (title.trim().length > 200) return next(createHttpError(400, "Title cannot exceed 200 characters."));
-            ticket.title = title.trim();
+            const trimmedTitle = title.trim();
+            if (!trimmedTitle) return next(createHttpError(400, "Title cannot be empty."));
+            if (trimmedTitle.length > 200) return next(createHttpError(400, "Title cannot exceed 200 characters."));
+            ticket.title = trimmedTitle;
         }
 
         if (note !== undefined) ticket.note = note.trim();
 
         await ticket.save();
-
-        const updated = await Ticket.findById(id)
-            .populate({ path: "member", select: "name email role" })
-            .lean();
+        await ticket.populate({ path: "member", select: "name email role" });
 
         res.status(200).json({
             success: true,
             message: "Ticket updated successfully!",
-            data: updated
+            data: ticket.toObject()
         });
     } catch (error) {
         next(error);
@@ -165,14 +158,8 @@ const deleteTicket = async (req, res, next) => {
         const { id } = req.params;
         const storeId = req.store._id;
 
-        const ticket = await Ticket.findById(id);
+        const ticket = await Ticket.findOneAndDelete({ _id: id, store: storeId });
         if (!ticket) return next(createHttpError(404, "Ticket not found."));
-
-        if (ticket.store.toString() !== storeId.toString()) {
-            return next(createHttpError(403, "Access denied."));
-        }
-
-        await Ticket.findByIdAndDelete(id);
 
         res.status(200).json({
             success: true,
