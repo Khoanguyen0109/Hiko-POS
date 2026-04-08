@@ -98,7 +98,7 @@ const Tickets = () => {
 
   if (!canManage) {
     return (
-      <div className="flex items-center justify-center h-[60vh]">
+      <div className="bg-[#1f1f1f] min-h-screen flex items-center justify-center">
         <div className="text-center">
           <MdStar size={48} className="text-[#6a6a6a] mx-auto mb-3" />
           <p className="text-[#ababab] text-lg font-medium">Access Denied</p>
@@ -109,6 +109,7 @@ const Tickets = () => {
   }
 
   return (
+    <div className="bg-[#1f1f1f] min-h-screen pb-20">
     <div className="p-4 md:p-6 space-y-6">
       {/* Page header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -289,6 +290,7 @@ const Tickets = () => {
         ticket={selectedTicket}
         members={members}
       />
+    </div>
     </div>
   );
 };
