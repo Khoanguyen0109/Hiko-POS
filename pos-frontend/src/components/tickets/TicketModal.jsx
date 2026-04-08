@@ -194,7 +194,7 @@ const TicketModal = ({ isOpen, onClose, ticket, members }) => {
 TicketModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
-  ticket: PropTypes.object,
+  ticket: PropTypes.oneOfType([PropTypes.object, PropTypes.oneOf([null])]),
   members: PropTypes.array.isRequired,
 };
 
