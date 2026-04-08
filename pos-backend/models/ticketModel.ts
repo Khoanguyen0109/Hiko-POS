@@ -1,4 +1,3 @@
-// pos-backend/models/ticketModel.ts
 // @ts-nocheck
 import mongoose from "mongoose";
 
