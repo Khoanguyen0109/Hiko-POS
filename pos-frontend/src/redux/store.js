@@ -20,6 +20,7 @@ import storageItemReducer from "./slices/storageItemSlice";
 import storageImportReducer from "./slices/storageImportSlice";
 import storageExportReducer from "./slices/storageExportSlice";
 import storageAnalyticsReducer from "./slices/storageAnalyticsSlice";
+import ticketReducer from "./slices/ticketSlice";
 import storeReducer from "./slices/storeSlice";
 
 const store = configureStore({
@@ -45,6 +46,7 @@ const store = configureStore({
         storageImports: storageImportReducer,
         storageExports: storageExportReducer,
         storageAnalytics: storageAnalyticsReducer,
+        tickets: ticketReducer,
         store: storeReducer
     },
 
