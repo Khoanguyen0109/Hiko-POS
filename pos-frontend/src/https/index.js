@@ -298,3 +298,13 @@ export const cancelStorageExport = (id) => axiosWrapper.patch(`/api/storage/expo
 
 // Storage Analytics
 export const getStorageAnalytics = (params) => axiosWrapper.get("/api/storage/analytics", { params });
+
+// Ticket Endpoints
+export {
+  getTickets,
+  createTicket,
+  updateTicket,
+  deleteTicket,
+  getTicketSummary,
+  getMyTickets
+} from "./ticketApi";
