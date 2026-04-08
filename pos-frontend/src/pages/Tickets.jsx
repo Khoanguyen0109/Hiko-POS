@@ -11,7 +11,8 @@ import {
 } from "react-icons/md";
 import { enqueueSnackbar } from "notistack";
 import TicketModal from "../components/tickets/TicketModal";
-import { fetchTickets, fetchTicketSummary, removeTicket } from "../redux/slices/ticketSlice";
+import { fetchTickets, fetchTicketSummary, removeTicket, clearTicketError } from "../redux/slices/ticketSlice";
+import { fetchStoreMembers } from "../redux/slices/storeSlice";
 
 const MONTHS = [
   "January","February","March","April","May","June",
@@ -26,7 +27,7 @@ const Tickets = () => {
   const { role } = useSelector((s) => s.user);
   const activeStore = useSelector((s) => s.store.activeStore);
   const storeMembers = useSelector((s) => s.store.storeMembers);
-  const { tickets, pagination, loading, summary, summaryLoading } = useSelector((s) => s.tickets);
+  const { tickets, pagination, loading, error, summary, summaryLoading, summaryError } = useSelector((s) => s.tickets);
 
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -46,6 +47,13 @@ const Tickets = () => {
     role: sm.role,
   })).filter((m) => m._id) || [];
 
+  // Fetch storeMembers if not already loaded (needed for the create modal)
+  useEffect(() => {
+    if (activeStore?._id && (!storeMembers || storeMembers.length === 0)) {
+      dispatch(fetchStoreMembers(activeStore._id));
+    }
+  }, [dispatch, activeStore, storeMembers]);
+
   const loadData = useCallback(() => {
     dispatch(fetchTicketSummary({ month, year }));
     if (activeTab === "tickets") {
@@ -56,6 +64,21 @@ const Tickets = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Surface fetch errors via snackbar
+  useEffect(() => {
+    if (error) {
+      enqueueSnackbar(error, { variant: "error" });
+      dispatch(clearTicketError());
+    }
+  }, [error, dispatch]);
+
+  useEffect(() => {
+    if (summaryError) {
+      enqueueSnackbar(summaryError, { variant: "error" });
+      dispatch(clearTicketError());
+    }
+  }, [summaryError, dispatch]);
 
   const handleDelete = async (ticketId) => {
     if (!window.confirm("Delete this ticket?")) return;

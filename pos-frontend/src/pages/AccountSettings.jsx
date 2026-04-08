@@ -79,6 +79,7 @@ const AccountSettings = () => {
       setTicketData(res.data.data);
     } catch (error) {
       console.error('Error fetching ticket data:', error);
+      enqueueSnackbar(error.response?.data?.message || 'Failed to load tickets', { variant: 'error' });
     } finally {
       setTicketLoading(false);
     }

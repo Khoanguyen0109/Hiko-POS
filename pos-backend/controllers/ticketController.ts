@@ -62,7 +62,7 @@ const createTicket = async (req, res, next) => {
         const storeId = req.store._id;
         const { memberId, title, score, note } = req.body;
 
-        if (!memberId || score === undefined) {
+        if (!memberId || !title || score === undefined) {
             return next(createHttpError(400, "memberId, title, and score are required."));
         }
 
@@ -71,7 +71,6 @@ const createTicket = async (req, res, next) => {
             return next(createHttpError(400, "Score must be an integer of at least 1."));
         }
 
-        if (!title) return next(createHttpError(400, "Title is required."));
         const trimmedTitle = title.trim();
         if (!trimmedTitle) return next(createHttpError(400, "Title cannot be empty."));
         if (trimmedTitle.length > 200) return next(createHttpError(400, "Title cannot exceed 200 characters."));

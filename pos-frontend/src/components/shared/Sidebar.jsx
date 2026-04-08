@@ -25,7 +25,10 @@ const Sidebar = ({ isOpen, onClose, onOpen }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { role } = useSelector((state) => state.user);
+  const activeStore = useSelector((state) => state.store.activeStore);
   const isAdmin = role === "Admin";
+  const storeRole = activeStore?.role || activeStore?.storeRole || "";
+  const canManageTickets = isAdmin || storeRole === "Owner" || storeRole === "Manager";
 
   const sidebarRef = useRef(null);
 
@@ -162,16 +165,25 @@ const Sidebar = ({ isOpen, onClose, onOpen }) => {
           : []),
       ],
     },
-    ...(isAdmin
+    ...(canManageTickets
       ? [
           {
-            label: "Admin",
+            label: "Tickets",
             items: [
               {
                 path: ROUTES.TICKETS,
                 icon: <MdStar size={18} />,
                 label: "Tickets",
               },
+            ],
+          },
+        ]
+      : []),
+    ...(isAdmin
+      ? [
+          {
+            label: "Admin",
+            items: [
               {
                 path: ROUTES.MEMBERS,
                 icon: <FaUsers size={18} />,
