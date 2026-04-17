@@ -113,6 +113,11 @@ const orderSchema = new mongoose.Schema({
         required: true,
         index: true
     },
+    customer: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Customer",
+        default: null
+    },
     customerDetails: {
         name: { type: String, trim: true },
         phone: { type: String, trim: true },
@@ -145,6 +150,12 @@ const orderSchema = new mongoose.Schema({
         code: { type: String },
         appliedToItems: [{ type: String }] // Array of order item IDs that got the discount
     }],
+    appliedReward: {
+        rewardProgram: { type: mongoose.Schema.Types.ObjectId, ref: "RewardProgram" },
+        rewardLog: { type: mongoose.Schema.Types.ObjectId, ref: "RewardLog" },
+        type: { type: String, enum: ["percentage_discount", "free_dish"] },
+        discountAmount: { type: Number, min: 0, default: 0 }
+    },
     
     items: {
         type: [orderItemSchema],
@@ -202,6 +213,7 @@ orderSchema.index({ createdAt: -1 });
 orderSchema.index({ orderStatus: 1 });
 orderSchema.index({ 'customerDetails.phone': 1 });
 orderSchema.index({ 'createdBy.userId': 1 });
+orderSchema.index({ customer: 1, createdAt: -1 });
 
 // Virtual for total items count
 orderSchema.virtual('totalItems').get(function() {
