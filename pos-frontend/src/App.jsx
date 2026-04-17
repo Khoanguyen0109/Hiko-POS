@@ -31,6 +31,8 @@ import {
   SelectStore,
   Stores,
   Tickets,
+  RewardPrograms,
+  Customers,
 } from "./pages";
 import Header from "./components/shared/Header";
 import { useSelector, useDispatch } from "react-redux";
@@ -76,6 +78,8 @@ const COMPONENT_MAP = {
   SelectStore,
   Stores,
   Tickets,
+  RewardPrograms,
+  Customers,
 };
 
 function Layout() {

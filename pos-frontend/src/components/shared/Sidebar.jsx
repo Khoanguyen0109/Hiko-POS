@@ -14,6 +14,8 @@ import {
   MdBusiness,
   MdMenu,
   MdStar,
+  MdPeople,
+  MdCardGiftcard,
 } from "react-icons/md";
 import { BiSolidDish } from "react-icons/bi";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -141,6 +143,21 @@ const Sidebar = ({ isOpen, onClose, onOpen }) => {
                 path: ROUTES.PROMOTIONS,
                 icon: <MdLocalOffer size={18} />,
                 label: "Promotions",
+              },
+            ],
+          },
+          {
+            label: "Customers & Rewards",
+            items: [
+              {
+                path: ROUTES.CUSTOMERS,
+                icon: <MdPeople size={18} />,
+                label: "Customers",
+              },
+              {
+                path: ROUTES.REWARD_PROGRAMS,
+                icon: <MdCardGiftcard size={18} />,
+                label: "Rewards",
               },
             ],
           },

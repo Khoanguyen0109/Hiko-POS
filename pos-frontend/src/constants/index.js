@@ -458,7 +458,9 @@ export const ROUTES = {
   STORAGE_ITEMS: "/storage/items",
   SUPPLIERS: "/storage/suppliers",
   STORES: "/stores",
-  TICKETS: "/tickets"
+  TICKETS: "/tickets",
+  REWARD_PROGRAMS: "/reward-programs",
+  CUSTOMERS: "/customers"
 };
 
 // Route configurations for optimized rendering
@@ -569,6 +571,16 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.TICKETS,
     componentName: "Tickets"
+  },
+  {
+    path: ROUTES.REWARD_PROGRAMS,
+    componentName: "RewardPrograms",
+    adminOnly: true
+  },
+  {
+    path: ROUTES.CUSTOMERS,
+    componentName: "Customers",
+    adminOnly: true
   }
 ];
 
