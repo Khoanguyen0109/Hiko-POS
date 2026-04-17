@@ -10,6 +10,7 @@ import {
 import { removeCustomer } from "../../redux/slices/customerSlice";
 import { createOrder } from "../../redux/slices/orderSlice";
 import { fetchPromotions } from "../../redux/slices/promotionSlice";
+import { removeAppliedReward } from "../../redux/slices/rewardSlice";
 import { enqueueSnackbar } from "notistack";
 import Invoice from "../invoice/Invoice";
 import CouponSelector from "./CouponInput";
@@ -33,6 +34,8 @@ const Bill = forwardRef((props, ref) => {
   const { items: promotions, loading: promotionsLoading } = useSelector(
     (state) => state.promotions
   );
+  const appliedReward = useSelector((state) => state.rewards.appliedReward);
+  const selectedCustomer = useSelector((state) => state.rewards.customerRewards?.customer);
   
   // Debug logs (development only)
   logger.debug("Bill - Promotions:", promotions);
@@ -173,6 +176,17 @@ const Bill = forwardRef((props, ref) => {
         : [],
       items: enhancedItems,
       thirdPartyVendor: cartData.thirdPartyVendor,
+      customer: selectedCustomer?._id || null,
+      appliedReward: appliedReward
+        ? {
+            rewardProgram: appliedReward.rewardProgramId,
+            type: appliedReward.type,
+            discountAmount:
+              appliedReward.type === "free_dish"
+                ? Math.min(...cartData.items.map((i) => i.price || i.pricePerQuantity))
+                : Math.round(subtotal * (appliedReward.discountPercent || 0) / 100),
+          }
+        : null,
     };
 
     dispatch(createOrder(orderData))
@@ -186,10 +200,10 @@ const Bill = forwardRef((props, ref) => {
         });
         setShowInvoice(true);
 
-        // Clear cart and customer data
         setTimeout(() => {
           dispatch(removeCustomer());
           dispatch(removeAllItems());
+          dispatch(removeAppliedReward());
         }, 1500);
       })
       .catch((error) => {
@@ -236,6 +250,25 @@ const Bill = forwardRef((props, ref) => {
                     Discount ({appliedCoupon.name})
                   </p>
                   <p className="text-green-400 text-sm">-{formatVND(discount)}</p>
+                </div>
+                <hr className="border-[#343434]" />
+              </>
+            )}
+
+            {/* Reward Discount */}
+            {appliedReward && (
+              <>
+                <div className="flex items-center justify-between">
+                  <p className="text-green-400 text-xs">
+                    Reward ({appliedReward.name})
+                  </p>
+                  <p className="text-green-400 text-sm">
+                    -{formatVND(
+                      appliedReward.type === "free_dish"
+                        ? Math.min(...cartData.items.map((i) => i.price || i.pricePerQuantity))
+                        : Math.round(subtotal * (appliedReward.discountPercent || 0) / 100)
+                    )}
+                  </p>
                 </div>
                 <hr className="border-[#343434]" />
               </>

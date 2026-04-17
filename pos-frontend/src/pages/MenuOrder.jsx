@@ -4,6 +4,8 @@ import BackButton from "../components/shared/BackButton";
 import { MdRestaurantMenu, MdShoppingCart } from "react-icons/md";
 import MenuContainer from "../components/menu/MenuContainer";
 import CustomerInfo from "../components/menu/CustomerInfo";
+import CustomerLookup from "../components/menu/CustomerLookup";
+import RewardSelector from "../components/menu/RewardSelector";
 import CartInfo from "../components/menu/CartInfo";
 import Bill from "../components/menu/Bill";
 import { useSelector } from "react-redux";
@@ -40,13 +42,11 @@ const MenuOrder = () => {
 
       {/* Right Div - Cart Section (Hidden on mobile) */}
       <div className="hidden lg:flex lg:flex-[1] bg-[#1a1a1a] mt-4 mr-3 rounded-lg pt-2 flex-col">
-        {/* Customer Info */}
-        {/* <CustomerInfo /> */}
+        <CustomerLookup />
+        <RewardSelector />
         <hr className="border-[#2a2a2a] border-t-2" />
-        {/* Cart Items */}
         <CartInfo />
         <hr className="border-[#2a2a2a] border-t-2" />
-        {/* Bills */}
         <Bill />
       </div>
 
