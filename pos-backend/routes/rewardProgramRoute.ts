@@ -7,6 +7,7 @@ import {
     toggleRewardProgramStatus,
     deleteRewardProgram,
     getRewardAnalytics,
+    backfillCategoryDishCounts,
 } from "../controllers/rewardProgramController.js";
 import { isVerifiedUser, isAdmin } from "../middlewares/tokenVerification.js";
 
@@ -14,6 +15,7 @@ const router = express.Router();
 router.use(isVerifiedUser);
 
 router.route("/analytics").get(isAdmin, getRewardAnalytics);
+router.route("/backfill-categories").post(isAdmin, backfillCategoryDishCounts);
 router.route("/").get(getRewardPrograms);
 router.route("/").post(isAdmin, addRewardProgram);
 router.route("/:id").get(getRewardProgramById);

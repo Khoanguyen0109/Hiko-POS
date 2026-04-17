@@ -29,9 +29,9 @@ export const createOrder = createAsyncThunk("orders/create", async (orderData, t
     }
 });
 
-export const updateOrder = createAsyncThunk("orders/updateStatus", async ({ orderId, orderStatus, paymentMethod, thirdPartyVendor, appliedPromotions }, thunkAPI) => {
+export const updateOrder = createAsyncThunk("orders/updateStatus", async ({ orderId, orderStatus, paymentMethod, thirdPartyVendor, appliedPromotions, appliedReward, customer }, thunkAPI) => {
     try {
-        const { data } = await updateOrderStatus({ orderId, orderStatus, paymentMethod, thirdPartyVendor, appliedPromotions });
+        const { data } = await updateOrderStatus({ orderId, orderStatus, paymentMethod, thirdPartyVendor, appliedPromotions, appliedReward, customer });
         return data.data;
     } catch (error) {
         return thunkAPI.rejectWithValue(error.response?.data?.message || "Failed to update order");

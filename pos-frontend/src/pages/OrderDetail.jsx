@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -18,6 +18,9 @@ import {
   MdAdd,
   MdSave,
   MdHistory,
+  MdPerson,
+  MdCardGiftcard,
+  MdSearch,
 } from "react-icons/md";
 import {
   FaBan,
@@ -31,8 +34,10 @@ import {
   removeOrder,
 } from "../redux/slices/orderSlice";
 import { fetchPromotions } from "../redux/slices/promotionSlice";
+import { fetchCustomerRewards, clearCustomerRewards } from "../redux/slices/rewardSlice";
+import { searchCustomers, createCustomer, clearSearchResults } from "../redux/slices/customersSlice";
 import { enqueueSnackbar } from "notistack";
-import { formatVND } from "../utils";
+import { formatVND, getAvatarName } from "../utils";
 import { getStoredUser } from "../utils/auth";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import BackButton from "../components/shared/BackButton";
@@ -46,8 +51,15 @@ const OrderDetail = () => {
   const dispatch = useDispatch();
   const { currentOrder, loading, error } = useSelector((state) => state.orders);
   const { items: promotions, loading: promotionsLoading } = useSelector(state => state.promotions);
+  const { customerRewards, rewardsLoading } = useSelector(state => state.rewards);
+  const { searchResults, searchLoading } = useSelector(state => state.customersData);
   const [selectedVendor, setSelectedVendor] = useState("");
   const [isCouponAccordionOpen, setIsCouponAccordionOpen] = useState(false);
+  const [isRewardAccordionOpen, setIsRewardAccordionOpen] = useState(false);
+  const [customerQuery, setCustomerQuery] = useState("");
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const customerDebounceRef = useRef(null);
+  const customerWrapperRef = useRef(null);
   const [selectedPromotion, setSelectedPromotion] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editableItems, setEditableItems] = useState([]);
@@ -72,6 +84,18 @@ const OrderDetail = () => {
   }, [dispatch, orderId]);
 
   useEffect(() => {
+    if (currentOrder?.customer?._id) {
+      dispatch(fetchCustomerRewards(currentOrder.customer._id));
+    }
+  }, [dispatch, currentOrder?.customer?._id]);
+
+  useEffect(() => {
+    if (customerRewards?.rewards?.length > 0 && !currentOrder?.appliedReward?.rewardProgram) {
+      setIsRewardAccordionOpen(true);
+    }
+  }, [customerRewards?.rewards, currentOrder?.appliedReward?.rewardProgram]);
+
+  useEffect(() => {
     if (currentOrder) {
       setSelectedVendor(currentOrder.thirdPartyVendor || "None");
       if (currentOrder.appliedPromotions && currentOrder.appliedPromotions.length > 0) {
@@ -84,6 +108,66 @@ const OrderDetail = () => {
       }
     }
   }, [currentOrder, isEditMode]);
+
+  // Customer search: debounce + click-outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (customerWrapperRef.current && !customerWrapperRef.current.contains(e.target)) {
+        setShowCustomerDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (customerDebounceRef.current) clearTimeout(customerDebounceRef.current);
+    if (customerQuery.length >= 2) {
+      customerDebounceRef.current = setTimeout(() => {
+        dispatch(searchCustomers(customerQuery));
+      }, 300);
+    } else {
+      dispatch(clearSearchResults());
+    }
+    return () => clearTimeout(customerDebounceRef.current);
+  }, [customerQuery, dispatch]);
+
+  const handleAssignCustomer = (customer) => {
+    setShowCustomerDropdown(false);
+    setCustomerQuery("");
+    dispatch(clearSearchResults());
+    dispatch(updateOrder({ orderId, customer: customer._id }))
+      .unwrap()
+      .then(() => {
+        enqueueSnackbar("Customer assigned!", { variant: "success" });
+        dispatch(fetchOrderById(orderId));
+      })
+      .catch((err) => {
+        enqueueSnackbar(err || "Failed to assign customer", { variant: "error" });
+      });
+  };
+
+  const handleCreateAndAssign = async () => {
+    try {
+      const result = await dispatch(createCustomer({ phone: customerQuery })).unwrap();
+      handleAssignCustomer(result);
+    } catch {
+      /* errors handled by thunk */
+    }
+  };
+
+  const handleRemoveCustomer = () => {
+    dispatch(updateOrder({ orderId, customer: null, appliedReward: null }))
+      .unwrap()
+      .then(() => {
+        enqueueSnackbar("Customer removed!", { variant: "success" });
+        dispatch(clearCustomerRewards());
+        dispatch(fetchOrderById(orderId));
+      })
+      .catch((err) => {
+        enqueueSnackbar(err || "Failed to remove customer", { variant: "error" });
+      });
+  };
 
   const canEditOrder = currentOrder?.orderStatus === "progress";
 
@@ -287,6 +371,50 @@ const OrderDetail = () => {
         if (currentOrder?.appliedPromotions?.[0]) {
           setSelectedPromotion(currentOrder.appliedPromotions[0]);
         }
+      });
+  };
+
+  const handleApplyReward = (reward) => {
+    setIsRewardAccordionOpen(false);
+    const subtotal = currentOrder?.bills?.subtotal || currentOrder?.bills?.total || 0;
+    let discountAmount = 0;
+    if (reward.type === "percentage_discount") {
+      discountAmount = Math.round(subtotal * (reward.discountPercent || 0) / 100);
+    } else if (reward.type === "free_dish") {
+      const prices = (currentOrder?.items || []).map(i => i.pricePerQuantity || i.price / (i.quantity || 1));
+      discountAmount = prices.length > 0 ? Math.min(...prices) : 0;
+    }
+
+    dispatch(updateOrder({
+      orderId,
+      appliedReward: {
+        rewardProgram: reward.rewardProgramId,
+        type: reward.type,
+        discountAmount,
+      }
+    }))
+      .unwrap()
+      .then(() => {
+        enqueueSnackbar("Reward applied!", { variant: "success" });
+        dispatch(fetchOrderById(orderId));
+      })
+      .catch((err) => {
+        enqueueSnackbar(err || "Failed to apply reward", { variant: "error" });
+      });
+  };
+
+  const handleRemoveReward = () => {
+    dispatch(updateOrder({
+      orderId,
+      appliedReward: null,
+    }))
+      .unwrap()
+      .then(() => {
+        enqueueSnackbar("Reward removed!", { variant: "success" });
+        dispatch(fetchOrderById(orderId));
+      })
+      .catch((err) => {
+        enqueueSnackbar(err || "Failed to remove reward", { variant: "error" });
       });
   };
 
@@ -568,6 +696,223 @@ const OrderDetail = () => {
             )}
           </div>
 
+          {/* Customer Assignment */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[#ababab] text-xs font-medium">
+              Customer
+            </label>
+
+            {order.customer ? (
+              <div className="flex items-center gap-3 bg-[#262626] rounded-lg p-3 border border-[#343434]">
+                <div className="w-9 h-9 rounded-full bg-[#f6b100] flex items-center justify-center text-[#1a1a1a] font-bold text-sm shrink-0">
+                  {getAvatarName(order.customer.name || order.customer.phone)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[#f5f5f5] text-sm font-medium truncate">
+                    {order.customer.name || order.customer.phone}
+                  </p>
+                  <p className="text-[#ababab] text-xs">
+                    {order.customer.phone}
+                    {order.customer.totalDishCount != null && ` · ${order.customer.totalDishCount} dishes`}
+                  </p>
+                </div>
+                <button
+                  onClick={handleRemoveCustomer}
+                  disabled={loading}
+                  className="text-[#ababab] hover:text-red-400 transition-colors"
+                  title="Remove customer"
+                >
+                  <MdClose size={18} />
+                </button>
+              </div>
+            ) : (
+              <div className="relative" ref={customerWrapperRef}>
+                <div className="flex items-center gap-2 bg-[#262626] border border-[#343434] rounded-lg px-3 py-2">
+                  <MdSearch size={18} className="text-[#ababab] shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Search by phone or name…"
+                    value={customerQuery}
+                    onChange={(e) => {
+                      setCustomerQuery(e.target.value);
+                      setShowCustomerDropdown(true);
+                    }}
+                    onFocus={() => customerQuery.length >= 2 && setShowCustomerDropdown(true)}
+                    className="bg-transparent text-[#f5f5f5] text-sm placeholder-[#ababab] outline-none w-full"
+                  />
+                  {customerQuery && (
+                    <button
+                      onClick={() => {
+                        setCustomerQuery("");
+                        dispatch(clearSearchResults());
+                        setShowCustomerDropdown(false);
+                      }}
+                      className="text-[#ababab] hover:text-[#f5f5f5]"
+                    >
+                      <MdClose size={16} />
+                    </button>
+                  )}
+                </div>
+
+                {showCustomerDropdown && customerQuery.length >= 2 && (
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-[#2a2a2a] rounded-lg shadow-lg border border-[#343434] max-h-60 overflow-y-auto z-50">
+                    {searchLoading && (
+                      <p className="text-[#ababab] text-xs text-center py-3">Searching…</p>
+                    )}
+
+                    {!searchLoading && searchResults.map((c) => (
+                      <button
+                        key={c._id}
+                        onClick={() => handleAssignCustomer(c)}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#343434] transition-colors text-left"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-[#f6b100] flex items-center justify-center text-[#1a1a1a] font-bold text-xs shrink-0">
+                          {getAvatarName(c.name || c.phone)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[#f5f5f5] text-sm truncate">{c.name || c.phone}</p>
+                          <p className="text-[#ababab] text-xs">{c.phone}</p>
+                        </div>
+                        {c.totalDishCount != null && (
+                          <span className="text-[#ababab] text-xs whitespace-nowrap">{c.totalDishCount} dishes</span>
+                        )}
+                      </button>
+                    ))}
+
+                    {/^\d{10}$/.test(customerQuery) && !searchLoading && searchResults.length === 0 && (
+                      <button
+                        onClick={handleCreateAndAssign}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#343434] transition-colors text-left"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center shrink-0">
+                          <MdPerson size={16} className="text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[#f5f5f5] text-sm">
+                            <span className="bg-green-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded mr-2">NEW</span>
+                            {customerQuery}
+                          </p>
+                          <p className="text-[#ababab] text-xs">Create new customer</p>
+                        </div>
+                      </button>
+                    )}
+
+                    {!searchLoading && searchResults.length === 0 && !/^\d{10}$/.test(customerQuery) && (
+                      <p className="text-[#ababab] text-xs text-center py-3">No customers found</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Reward Selection — only when order has a customer */}
+          {order.customer && (
+            <div className="flex flex-col gap-2">
+              <label className="text-[#ababab] text-xs font-medium flex items-center gap-2">
+                Apply Reward
+                {!order.appliedReward?.rewardProgram && customerRewards?.rewards?.length > 0 && (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-green-500 text-white animate-pulse">
+                    {customerRewards.rewards.length} available
+                  </span>
+                )}
+              </label>
+
+              {/* Applied Reward Display */}
+              {order.appliedReward?.rewardProgram ? (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-green-900/20 border border-green-500/30">
+                  <div className="flex items-center space-x-2 flex-1 min-w-0">
+                    <span className="text-lg flex-shrink-0">
+                      {order.appliedReward.type === "free_dish" ? "🍜" : "🎫"}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[#f5f5f5] text-sm font-medium truncate">
+                        {order.appliedReward.rewardProgram.name || order.appliedReward.type?.replace("_", " ")}
+                      </div>
+                      <div className="text-xs text-green-400">
+                        -{formatVND(order.appliedReward.discountAmount || 0)}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleRemoveReward}
+                    disabled={loading}
+                    className="text-red-400 hover:text-red-300 transition-colors ml-2 flex-shrink-0"
+                    title="Remove reward"
+                  >
+                    <MdClose size={18} />
+                  </button>
+                </div>
+              ) : (
+                /* Reward Selection Accordion — auto-expanded, highlighted when rewards exist */
+                <div className={`bg-[#262626] rounded-lg border transition-colors ${
+                  customerRewards?.rewards?.length > 0
+                    ? "border-green-500/50 shadow-[0_0_12px_rgba(74,222,128,0.1)]"
+                    : "border-[#343434]"
+                }`}>
+                  <button
+                    onClick={() => setIsRewardAccordionOpen(!isRewardAccordionOpen)}
+                    disabled={loading}
+                    className="w-full flex items-center justify-between p-3 hover:bg-[#2a2a2a] transition-colors rounded-lg focus:outline-none"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <MdCardGiftcard size={18} className={customerRewards?.rewards?.length > 0 ? "text-green-400" : "text-[#6a6a6a]"} />
+                      <span className="text-[#f5f5f5] text-sm font-medium">
+                        {rewardsLoading ? "Loading…" : `Available Rewards (${customerRewards?.rewards?.length || 0})`}
+                      </span>
+                    </div>
+                    {isRewardAccordionOpen ? (
+                      <MdExpandLess size={20} className="text-[#ababab]" />
+                    ) : (
+                      <MdExpandMore size={20} className="text-[#ababab]" />
+                    )}
+                  </button>
+
+                  {isRewardAccordionOpen && (
+                    <div className="border-t border-[#343434] p-3">
+                      {rewardsLoading ? (
+                        <div className="text-[#ababab] text-center py-3 text-sm">Loading…</div>
+                      ) : !customerRewards?.rewards?.length ? (
+                        <div className="text-[#ababab] text-center py-3 text-sm">No rewards available</div>
+                      ) : (
+                        <div className="space-y-2">
+                          {customerRewards.rewards.map((reward, index) => (
+                            <div
+                              key={`${reward.rewardProgramId}-${index}`}
+                              onClick={() => handleApplyReward(reward)}
+                              className="p-3 bg-[#1a1a1a] border border-green-500/30 rounded-md hover:border-green-400 hover:bg-green-900/10 cursor-pointer transition-all group"
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-2 flex-1 min-w-0">
+                                  <span className="text-lg flex-shrink-0">
+                                    {reward.type === "free_dish" ? "🍜" : "🎫"}
+                                  </span>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-[#f5f5f5] text-sm font-medium truncate">
+                                      {reward.name}
+                                    </div>
+                                    <div className="text-xs text-[#ccc]">
+                                      {reward.type === "percentage_discount"
+                                        ? `${reward.discountPercent}% off order`
+                                        : "1 free dish (cheapest)"}
+                                    </div>
+                                  </div>
+                                </div>
+                                <span className="text-xs font-medium text-green-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-2">
+                                  Tap to apply
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Quick Payment Action Buttons */}
           <div className="flex flex-col gap-2">
             <label className="text-[#ababab] text-xs font-medium">
@@ -628,17 +973,6 @@ const OrderDetail = () => {
             </div>
           )}
 
-          {/* Helper Messages */}
-          <div className="flex flex-col gap-2">
-              <div className="text-blue-400 bg-blue-900/20 px-3 py-2 rounded-lg border border-blue-500/30 text-xs sm:text-sm">
-                <div className="flex items-start gap-2">
-                <span className="text-blue-400 flex-shrink-0 mt-0.5">💡</span>
-                  <span>
-                  Use quick action buttons to complete payment or cancel the order. Update vendor if needed.
-                  </span>
-                </div>
-              </div>
-          </div>
         </div>
       </div>
 
@@ -646,52 +980,48 @@ const OrderDetail = () => {
         {/* Order Information */}
         <div className="lg:col-span-2 space-y-6">
           {/* Order Items */}
-          <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
-            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-              <h2 className="text-[#f5f5f5] text-lg font-semibold">
-                Order Items ({(isEditMode ? editableItems : order.items)?.length || 0})
-              </h2>
-              {canEditOrder && (
-                <div className="flex items-center gap-2">
-                  {!isEditMode ? (
+          <div>
+            {canEditOrder && (
+              <div className="flex items-center justify-end gap-2 mb-3">
+                {!isEditMode ? (
+                  <button
+                    onClick={handleEnterEditMode}
+                    disabled={loading}
+                    className="p-2 rounded-lg text-[#ababab] hover:text-[#f6b100] hover:bg-[#262626] disabled:opacity-50 transition-colors"
+                    title="Edit Order"
+                  >
+                    <MdEdit size={18} />
+                  </button>
+                ) : (
+                  <>
                     <button
-                      onClick={handleEnterEditMode}
+                      onClick={() => setShowAddItemsModal(true)}
                       disabled={loading}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#f6b100] text-[#1f1f1f] font-medium text-sm hover:bg-[#e09900] disabled:opacity-50 transition-colors"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#262626] text-[#f5f5f5] border border-[#343434] font-medium text-xs hover:bg-[#343434] disabled:opacity-50 transition-colors"
                     >
-                      <MdEdit size={18} />
-                      Edit Order
+                      <MdAdd size={16} />
+                      Add
                     </button>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => setShowAddItemsModal(true)}
-                        disabled={loading}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#262626] text-[#f5f5f5] border border-[#343434] font-medium text-sm hover:bg-[#343434] disabled:opacity-50 transition-colors"
-                      >
-                        <MdAdd size={18} />
-                        Add Items
-                      </button>
-                      <button
-                        onClick={handleSaveOrderItems}
-                        disabled={loading || editableItems.length === 0}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-600 text-white font-medium text-sm hover:bg-green-700 disabled:opacity-50 transition-colors"
-                      >
-                        <MdSave size={18} />
-                        Save
-                      </button>
-                      <button
-                        onClick={handleCancelEdit}
-                        disabled={loading}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#262626] text-[#ababab] border border-[#343434] font-medium text-sm hover:bg-[#343434] hover:text-[#f5f5f5] disabled:opacity-50 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
+                    <button
+                      onClick={handleSaveOrderItems}
+                      disabled={loading || editableItems.length === 0}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-green-600 text-white font-medium text-xs hover:bg-green-700 disabled:opacity-50 transition-colors"
+                    >
+                      <MdSave size={16} />
+                      Save
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      disabled={loading}
+                      className="p-1.5 rounded-lg text-[#ababab] hover:text-[#f5f5f5] hover:bg-[#343434] disabled:opacity-50 transition-colors"
+                      title="Cancel"
+                    >
+                      <MdClose size={16} />
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
             <div className="space-y-4">
               {(isEditMode ? editableItems : order.items)?.map((item, index) =>
                 isEditMode ? (
@@ -717,6 +1047,62 @@ const OrderDetail = () => {
 
         {/* Order Summary */}
         <div className="space-y-6">
+          {/* Customer Info */}
+          {order.customer && (
+            <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
+              <h2 className="text-[#f5f5f5] text-lg font-semibold mb-4 flex items-center gap-2">
+                <MdPerson size={20} className="text-[#f6b100]" />
+                Customer
+              </h2>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#f6b100] rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-[#1f1f1f] font-bold text-sm">
+                    {(order.customer.name || order.customer.phone || "?").charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[#f5f5f5] font-medium truncate">
+                    {order.customer.name || order.customer.phone}
+                  </p>
+                  <p className="text-[#ababab] text-sm">{order.customer.phone}</p>
+                  {order.customer.nickname && (
+                    <p className="text-[#ababab] text-xs">"{order.customer.nickname}"</p>
+                  )}
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-[#f6b100] font-semibold text-lg">{order.customer.totalDishCount || 0}</p>
+                  <p className="text-[#ababab] text-xs">dishes</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Applied Reward */}
+          {order.appliedReward?.rewardProgram && (
+            <div className="bg-[#1f1f1f] rounded-lg p-6 border border-green-500/20">
+              <h2 className="text-[#f5f5f5] text-lg font-semibold mb-4 flex items-center gap-2">
+                <MdCardGiftcard size={20} className="text-green-400" />
+                Applied Reward
+              </h2>
+              <div className="p-4 bg-green-900/10 border border-green-500/20 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{order.appliedReward.type === "free_dish" ? "🍜" : "🎫"}</span>
+                    <span className="text-[#f5f5f5] font-medium">
+                      {order.appliedReward.rewardProgram.name || order.appliedReward.type?.replace("_", " ")}
+                    </span>
+                  </div>
+                  <span className="text-green-400 font-semibold">
+                    -{formatVND(order.appliedReward.discountAmount || 0)}
+                  </span>
+                </div>
+                <p className="text-[#ababab] text-sm capitalize">
+                  {order.appliedReward.type?.replace("_", " ")}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Applied Promotions */}
           {order.appliedPromotions && order.appliedPromotions.length > 0 && (
             <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
@@ -800,6 +1186,22 @@ const OrderDetail = () => {
                       </span>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Reward Discount */}
+              {order.appliedReward?.discountAmount > 0 && (
+                <div className="bg-green-900/10 rounded-md p-3 border border-green-500/20">
+                  <div className="flex justify-between items-center">
+                    <span className="text-green-400 font-medium">
+                      Reward Discount
+                      {order.appliedReward.rewardProgram?.name &&
+                        ` (${order.appliedReward.rewardProgram.name})`}
+                    </span>
+                    <span className="text-green-400 font-semibold">
+                      -{formatVND(order.appliedReward.discountAmount)}
+                    </span>
+                  </div>
                 </div>
               )}
 

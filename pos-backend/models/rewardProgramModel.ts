@@ -42,6 +42,10 @@ const rewardProgramSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    eligibleCategories: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Category"
+    }],
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"

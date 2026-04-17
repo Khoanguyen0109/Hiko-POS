@@ -13,6 +13,7 @@ import {
   MdStore,
   MdStorefront,
   MdDelete,
+  MdPerson,
 } from "react-icons/md";
 
 const OrderCard = ({ order }) => {
@@ -132,6 +133,16 @@ const OrderCard = ({ order }) => {
                 </div>
               );
             })()}
+
+            {/* Customer Display */}
+            {order.customer && (
+              <div className="flex items-center gap-1 text-xs sm:text-sm">
+                <MdPerson className="text-[#f6b100] text-sm" />
+                <span className="text-[#f6b100] truncate max-w-[120px]">
+                  {order.customer.name || order.customer.phone}
+                </span>
+              </div>
+            )}
           </div>
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
             {/* Mobile Status - Icon + Short Text */}

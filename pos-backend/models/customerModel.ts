@@ -27,6 +27,11 @@ const customerSchema = new mongoose.Schema({
         type: Number,
         min: 0,
         default: 0
+    },
+    categoryDishCounts: {
+        type: Map,
+        of: Number,
+        default: () => new Map()
     }
 }, { timestamps: true });
 

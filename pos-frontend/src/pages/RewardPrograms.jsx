@@ -15,6 +15,7 @@ import {
   removeRewardProgram,
   toggleProgramStatus,
 } from "../redux/slices/rewardSlice";
+import { fetchCategories } from "../redux/slices/categorySlice";
 
 const EMPTY_FORM = {
   name: "",
@@ -24,6 +25,7 @@ const EMPTY_FORM = {
   discountPercent: "",
   maxFreeDishValue: "",
   priority: 0,
+  eligibleCategories: [],
 };
 
 const RewardPrograms = () => {
@@ -31,6 +33,7 @@ const RewardPrograms = () => {
   const { programs, programsLoading, programsError } = useSelector(
     (s) => s.rewards
   );
+  const categories = useSelector((s) => s.categories?.items || []);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -39,6 +42,7 @@ const RewardPrograms = () => {
 
   useEffect(() => {
     dispatch(fetchRewardPrograms());
+    dispatch(fetchCategories());
   }, [dispatch]);
 
   useEffect(() => {
@@ -63,6 +67,9 @@ const RewardPrograms = () => {
       discountPercent: p.discountPercent ?? "",
       maxFreeDishValue: p.maxFreeDishValue ?? "",
       priority: p.priority ?? 0,
+      eligibleCategories: (p.eligibleCategories || []).map((c) =>
+        typeof c === "string" ? c : c._id
+      ),
     });
     setModalOpen(true);
   };
@@ -88,6 +95,7 @@ const RewardPrograms = () => {
       type: form.type,
       dishThreshold: Number(form.dishThreshold),
       priority: Number(form.priority),
+      eligibleCategories: form.eligibleCategories || [],
     };
     if (form.type === "percentage_discount") {
       payload.discountPercent = Number(form.discountPercent);
@@ -214,17 +222,17 @@ const RewardPrograms = () => {
                 {/* Active toggle */}
                 <button
                   onClick={() => handleToggle(p._id)}
-                  className={`flex-shrink-0 w-10 h-5 rounded-full relative transition-colors ${
-                    p.active !== false
-                      ? "bg-[#f6b100]"
-                      : "bg-[#343434]"
+                  className={`flex-shrink-0 w-11 h-6 rounded-full relative transition-colors duration-200 ${
+                    p.isActive !== false
+                      ? "bg-green-500"
+                      : "bg-[#4a4a4a]"
                   }`}
                 >
                   <span
-                    className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
-                      p.active !== false
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                      p.isActive !== false
                         ? "translate-x-5"
-                        : "translate-x-0.5"
+                        : "translate-x-0"
                     }`}
                   />
                 </button>
@@ -256,6 +264,25 @@ const RewardPrograms = () => {
                 )}
               </div>
 
+              {p.eligibleCategories?.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {p.eligibleCategories.map((cat) => (
+                    <span
+                      key={cat._id || cat}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-[#1f1f1f] text-[#ababab] border border-[#343434]"
+                    >
+                      {cat.color && (
+                        <span
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: cat.color }}
+                        />
+                      )}
+                      {cat.name || cat}
+                    </span>
+                  ))}
+                </div>
+              )}
+
               {p.description && (
                 <p className="text-[#6a6a6a] text-xs line-clamp-2">
                   {p.description}
@@ -278,10 +305,10 @@ const RewardPrograms = () => {
                 </button>
                 <span
                   className={`ml-auto text-[10px] font-semibold uppercase tracking-wide ${
-                    p.active !== false ? "text-green-400" : "text-[#6a6a6a]"
+                    p.isActive !== false ? "text-green-400" : "text-[#6a6a6a]"
                   }`}
                 >
-                  {p.active !== false ? "Active" : "Inactive"}
+                  {p.isActive !== false ? "Active" : "Inactive"}
                 </span>
               </div>
             </div>
@@ -347,6 +374,55 @@ const RewardPrograms = () => {
                   </option>
                   <option value="free_dish">Free Dish</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-[#ababab] text-xs mb-1.5">
+                  Eligible Categories
+                </label>
+                <p className="text-[#6a6a6a] text-[11px] mb-2">
+                  Leave empty to count all dishes. Select categories to only
+                  count dishes from those categories.
+                </p>
+                <div className="flex flex-wrap gap-2 p-2 bg-[#1f1f1f] border border-[#343434] rounded-lg min-h-[40px]">
+                  {categories.map((cat) => {
+                    const isSelected = form.eligibleCategories.includes(
+                      cat._id
+                    );
+                    return (
+                      <button
+                        key={cat._id}
+                        type="button"
+                        onClick={() =>
+                          setForm((prev) => ({
+                            ...prev,
+                            eligibleCategories: isSelected
+                              ? prev.eligibleCategories.filter(
+                                  (id) => id !== cat._id
+                                )
+                              : [...prev.eligibleCategories, cat._id],
+                          }))
+                        }
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                          isSelected
+                            ? "bg-[#f6b100] text-[#1a1a1a]"
+                            : "bg-[#262626] text-[#ababab] hover:bg-[#343434]"
+                        }`}
+                      >
+                        <span
+                          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: cat.color || "#6a6a6a" }}
+                        />
+                        {cat.name}
+                      </button>
+                    );
+                  })}
+                  {categories.length === 0 && (
+                    <span className="text-[#6a6a6a] text-xs">
+                      No categories available
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

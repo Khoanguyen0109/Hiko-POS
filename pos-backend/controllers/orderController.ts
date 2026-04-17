@@ -319,13 +319,19 @@ const addOrder = async (req, res, next) => {
     // Reward integration: earn dishes and optionally redeem reward
     if (req.body.customer) {
         const totalDishQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
+        const rewardItems = order.items.map(item => ({
+            dishId: item.dishId,
+            quantity: item.quantity,
+            category: item.category
+        }));
         try {
             await RewardService.earnDishes(
                 String(req.body.customer),
                 String(order._id),
                 String(req.store._id),
                 totalDishQuantity,
-                String(req.user._id)
+                String(req.user._id),
+                rewardItems
             );
 
             if (req.body.appliedReward?.rewardProgram) {
@@ -349,11 +355,13 @@ const addOrder = async (req, res, next) => {
         }
     }
 
-    // Populate dish references and promotion details for response
+    // Populate dish references, promotion details, and customer for response
     await order.populate([
       { path: 'items.dishId', select: 'name category price' },
       { path: 'appliedPromotions.promotionId', select: 'name code type discount' },
-      { path: 'items.promotionsApplied.promotionId', select: 'name code type discount' }
+      { path: 'items.promotionsApplied.promotionId', select: 'name code type discount' },
+      { path: 'customer', select: 'name phone nickname totalDishCount' },
+      { path: 'appliedReward.rewardProgram', select: 'name type dishThreshold discountPercent' }
     ]);
 
     // Enhanced response with promotion breakdown
@@ -393,7 +401,9 @@ const getOrderById = async (req, res, next) => {
     const order = await Order.findOne({ _id: id, store: req.store._id })
       .populate('items.dishId', 'name category price image')
       .populate('createdBy.userId', 'name email')
-      .populate('appliedPromotions.promotionId', 'name code type discount');
+      .populate('appliedPromotions.promotionId', 'name code type discount')
+      .populate('customer', 'name phone nickname totalDishCount')
+      .populate('appliedReward.rewardProgram', 'name type dishThreshold discountPercent');
 
     if (!order) {
       const error = createHttpError(404, "Order not found!");
@@ -449,6 +459,8 @@ const getOrders = async (req, res, next) => {
           .populate('items.dishId', 'name category price image')
           .populate('createdBy.userId', 'name email')
           .populate('appliedPromotions.promotionId', 'name code type discount')
+          .populate('customer', 'name phone nickname totalDishCount')
+          .populate('appliedReward.rewardProgram', 'name type')
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limitNum),
@@ -469,6 +481,8 @@ const getOrders = async (req, res, next) => {
         .populate('items.dishId', 'name category price image')
         .populate('createdBy.userId', 'name email')
         .populate('appliedPromotions.promotionId', 'name code type discount')
+        .populate('customer', 'name phone nickname totalDishCount')
+        .populate('appliedReward.rewardProgram', 'name type')
         .sort({ createdAt: -1 });
 
       paginationMeta = null;
@@ -494,7 +508,7 @@ const getOrders = async (req, res, next) => {
 
 const updateOrder = async (req, res, next) => {
   try {
-    const { orderStatus, paymentMethod, thirdPartyVendor, appliedPromotions } = req.body;
+    const { orderStatus, paymentMethod, thirdPartyVendor, appliedPromotions, appliedReward, customer } = req.body;
     const { id } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -577,9 +591,108 @@ const updateOrder = async (req, res, next) => {
       }
     }
 
+    // Handle customer assignment
+    if (customer !== undefined) {
+      if (customer === null) {
+        // Removing customer — deduct dishes if previously assigned
+        if (currentOrder.customer) {
+          try {
+            const totalQty = currentOrder.items.reduce((sum, item) => sum + item.quantity, 0);
+            const deductItems = currentOrder.items.map(item => ({
+              dishId: item.dishId,
+              quantity: item.quantity,
+              category: item.category
+            }));
+            await RewardService.deductDishes(
+              String(currentOrder.customer),
+              String(currentOrder._id),
+              String(req.store._id),
+              totalQty,
+              String(req.user._id),
+              deductItems
+            );
+          } catch (rewardError: unknown) {
+            console.error("Reward deduct on customer removal:", rewardError);
+          }
+        }
+        updateFields.customer = null;
+      } else if (mongoose.Types.ObjectId.isValid(customer)) {
+        updateFields.customer = customer;
+        // New customer assigned — earn dishes for existing order items
+        if (!currentOrder.customer || String(currentOrder.customer) !== String(customer)) {
+          try {
+            const totalQty = currentOrder.items.reduce((sum, item) => sum + item.quantity, 0);
+            const earnItems = currentOrder.items.map(item => ({
+              dishId: item.dishId,
+              quantity: item.quantity,
+              category: item.category
+            }));
+            await RewardService.earnDishes(
+              String(customer),
+              String(currentOrder._id),
+              String(req.store._id),
+              totalQty,
+              String(req.user._id),
+              earnItems
+            );
+          } catch (rewardError: unknown) {
+            console.error("Reward earn on customer assignment:", rewardError);
+          }
+        }
+      }
+      updatedFields.push("customer");
+    }
+
+    // Handle reward application/removal
+    if (appliedReward !== undefined) {
+      if (!appliedReward || !appliedReward.rewardProgram) {
+        if (currentOrder.appliedReward?.rewardProgram) {
+          try {
+            await RewardService.restoreReward(
+              String(currentOrder.customer),
+              String(currentOrder._id),
+              String(req.store._id),
+              String(currentOrder.appliedReward.rewardProgram),
+              String(req.user._id)
+            );
+          } catch (rewardError: unknown) {
+            console.error("Reward restore error:", rewardError);
+          }
+        }
+        updateFields.appliedReward = null;
+        updatedFields.push("reward removed");
+      } else {
+        const customerId = String(customer || currentOrder.customer);
+        if (!customerId || customerId === "null") {
+          const error = createHttpError(400, "Customer must be assigned before applying a reward");
+          return next(error);
+        }
+        try {
+          const redeemResult = await RewardService.redeemReward(
+            customerId,
+            String(currentOrder._id),
+            String(req.store._id),
+            String(appliedReward.rewardProgram),
+            String(req.user._id)
+          );
+          updateFields.appliedReward = {
+            rewardProgram: appliedReward.rewardProgram,
+            rewardLog: redeemResult.rewardLog._id,
+            type: redeemResult.type,
+            discountAmount: appliedReward.discountAmount || 0
+          };
+          updatedFields.push("reward applied");
+        } catch (rewardError: unknown) {
+          const msg = rewardError instanceof Error ? rewardError.message : "Failed to apply reward";
+          const error = createHttpError(400, msg);
+          return next(error);
+        }
+      }
+    }
+
     // Ensure at least one field is being updated
     if (Object.keys(updateFields).length === 0) {
-      const error = createHttpError(400, "At least one field (orderStatus, paymentMethod, thirdPartyVendor, or appliedPromotions) must be provided");
+      const error = createHttpError(400, "At least one field must be provided");
       return next(error);
     }
 
@@ -606,6 +719,8 @@ const updateOrder = async (req, res, next) => {
     } else if (updateFields.thirdPartyVendor) {
       changeType = 'vendor_updated';
       historyDetails = { previousValue: currentOrder.thirdPartyVendor, newValue: thirdPartyVendor };
+    } else if (updateFields.appliedReward !== undefined) {
+      changeType = 'reward_updated';
     } else {
       changeType = 'promotions_updated';
     }
@@ -615,18 +730,27 @@ const updateOrder = async (req, res, next) => {
       { _id: id, store: req.store._id },
       { $set: updateFields, $push: { orderHistory: historyEntry } },
       { new: true }
-    ).populate('items.dishId', 'name category price image');
+    )
+      .populate('items.dishId', 'name category price image')
+      .populate('customer', 'name phone nickname totalDishCount')
+      .populate('appliedReward.rewardProgram', 'name type dishThreshold discountPercent');
 
     // Reward reversal on cancellation
     if (orderStatus === "cancelled" && currentOrder.customer) {
         try {
             const totalDishQuantity = currentOrder.items.reduce((sum, item) => sum + item.quantity, 0);
+            const cancelItems = currentOrder.items.map(item => ({
+                dishId: item.dishId,
+                quantity: item.quantity,
+                category: item.category
+            }));
             await RewardService.deductDishes(
                 String(currentOrder.customer),
                 String(currentOrder._id),
                 String(req.store._id),
                 totalDishQuantity,
-                String(req.user._id)
+                String(req.user._id),
+                cancelItems
             );
             if (currentOrder.appliedReward?.rewardProgram) {
                 await RewardService.restoreReward(

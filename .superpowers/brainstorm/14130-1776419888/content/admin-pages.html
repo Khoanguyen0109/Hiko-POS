@@ -1,0 +1,198 @@
+<h2>Section 4: Admin Pages</h2>
+<p class="subtitle">Two new admin screens — Reward Programs and Customer Management</p>
+
+<div class="section">
+  <h3>1. Reward Programs Management (Owner only)</h3>
+  <p>Route: <code>/reward-programs</code> — accessible from the sidebar</p>
+</div>
+
+<div class="mockup">
+  <div class="mockup-header">Reward Programs Page</div>
+  <div class="mockup-body" style="background:#1f1f1f; padding:0; font-family:system-ui;">
+    <!-- Header -->
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #333;">
+      <div>
+        <div style="color:#f5f5f5; font-size:18px; font-weight:bold;">Reward Programs</div>
+        <div style="color:#ababab; font-size:12px;">Configure loyalty rewards for customers</div>
+      </div>
+      <button style="padding:8px 16px; background:#f6b100; color:#1f1f1f; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">+ New Program</button>
+    </div>
+    <!-- Program Cards -->
+    <div style="padding:16px 20px; display:flex; flex-direction:column; gap:12px;">
+      <!-- Card 1: Active -->
+      <div style="background:#262626; border:1px solid #343434; border-radius:10px; padding:16px; display:flex; align-items:center; gap:16px;">
+        <div style="width:44px; height:44px; background:rgba(74,222,128,0.15); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px;">🎫</div>
+        <div style="flex:1;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+            <span style="color:#f5f5f5; font-size:14px; font-weight:600;">Buy 5 Get 10% Off</span>
+            <span style="padding:2px 8px; background:rgba(74,222,128,0.15); color:#4ade80; font-size:10px; border-radius:10px; font-weight:600;">ACTIVE</span>
+          </div>
+          <div style="color:#ababab; font-size:12px;">Every 5 dishes → 10% discount on order</div>
+          <div style="display:flex; gap:16px; margin-top:6px;">
+            <span style="color:#666; font-size:11px;">Type: <span style="color:#ababab;">Percentage Discount</span></span>
+            <span style="color:#666; font-size:11px;">Threshold: <span style="color:#ababab;">5 dishes</span></span>
+            <span style="color:#666; font-size:11px;">Discount: <span style="color:#ababab;">10%</span></span>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button style="padding:6px 12px; background:#2a2a2a; color:#ababab; border:1px solid #444; border-radius:6px; font-size:12px; cursor:pointer;">Edit</button>
+          <div style="width:40px; height:22px; background:#4ade80; border-radius:11px; position:relative; cursor:pointer;">
+            <div style="width:18px; height:18px; background:white; border-radius:50%; position:absolute; top:2px; right:2px;"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Card 2: Active -->
+      <div style="background:#262626; border:1px solid #343434; border-radius:10px; padding:16px; display:flex; align-items:center; gap:16px;">
+        <div style="width:44px; height:44px; background:rgba(74,222,128,0.15); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px;">🍜</div>
+        <div style="flex:1;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+            <span style="color:#f5f5f5; font-size:14px; font-weight:600;">Buy 10 Get 1 Free Dish</span>
+            <span style="padding:2px 8px; background:rgba(74,222,128,0.15); color:#4ade80; font-size:10px; border-radius:10px; font-weight:600;">ACTIVE</span>
+          </div>
+          <div style="color:#ababab; font-size:12px;">Every 10 dishes → cheapest dish in order is free</div>
+          <div style="display:flex; gap:16px; margin-top:6px;">
+            <span style="color:#666; font-size:11px;">Type: <span style="color:#ababab;">Free Dish</span></span>
+            <span style="color:#666; font-size:11px;">Threshold: <span style="color:#ababab;">10 dishes</span></span>
+            <span style="color:#666; font-size:11px;">Free: <span style="color:#ababab;">Cheapest item</span></span>
+          </div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button style="padding:6px 12px; background:#2a2a2a; color:#ababab; border:1px solid #444; border-radius:6px; font-size:12px; cursor:pointer;">Edit</button>
+          <div style="width:40px; height:22px; background:#4ade80; border-radius:11px; position:relative; cursor:pointer;">
+            <div style="width:18px; height:18px; background:white; border-radius:50%; position:absolute; top:2px; right:2px;"></div>
+          </div>
+        </div>
+      </div>
+      <!-- Card 3: Inactive -->
+      <div style="background:#262626; border:1px solid #2a2a2a; border-radius:10px; padding:16px; display:flex; align-items:center; gap:16px; opacity:0.6;">
+        <div style="width:44px; height:44px; background:rgba(171,171,171,0.1); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px;">🎉</div>
+        <div style="flex:1;">
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+            <span style="color:#f5f5f5; font-size:14px; font-weight:600;">Holiday Double Points</span>
+            <span style="padding:2px 8px; background:rgba(171,171,171,0.1); color:#666; font-size:10px; border-radius:10px; font-weight:600;">INACTIVE</span>
+          </div>
+          <div style="color:#666; font-size:12px;">Every 3 dishes → 15% discount (seasonal)</div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button style="padding:6px 12px; background:#2a2a2a; color:#ababab; border:1px solid #444; border-radius:6px; font-size:12px; cursor:pointer;">Edit</button>
+          <div style="width:40px; height:22px; background:#444; border-radius:11px; position:relative; cursor:pointer;">
+            <div style="width:18px; height:18px; background:#888; border-radius:50%; position:absolute; top:2px; left:2px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <h3>2. Customers Management (Admin)</h3>
+  <p>Route: <code>/customers</code> — accessible from the sidebar. View all customers, their dish counts, reward history.</p>
+</div>
+
+<div class="mockup">
+  <div class="mockup-header">Customers Page</div>
+  <div class="mockup-body" style="background:#1f1f1f; padding:0; font-family:system-ui;">
+    <!-- Header -->
+    <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid #333;">
+      <div>
+        <div style="color:#f5f5f5; font-size:18px; font-weight:bold;">Customers</div>
+        <div style="color:#ababab; font-size:12px;">142 customers · 38 with active rewards</div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <input style="padding:8px 12px; background:#2a2a2a; border:1px solid #444; border-radius:8px; color:#f5f5f5; font-size:13px; width:200px;" placeholder="Search phone or name..." />
+      </div>
+    </div>
+    <!-- Table -->
+    <div style="padding:0 20px;">
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr style="border-bottom:1px solid #333;">
+            <th style="text-align:left; padding:12px 8px; color:#666; font-size:11px; font-weight:600;">CUSTOMER</th>
+            <th style="text-align:left; padding:12px 8px; color:#666; font-size:11px; font-weight:600;">PHONE</th>
+            <th style="text-align:center; padding:12px 8px; color:#666; font-size:11px; font-weight:600;">TOTAL DISHES</th>
+            <th style="text-align:center; padding:12px 8px; color:#666; font-size:11px; font-weight:600;">AVAILABLE REWARDS</th>
+            <th style="text-align:center; padding:12px 8px; color:#666; font-size:11px; font-weight:600;">REDEEMED</th>
+            <th style="text-align:right; padding:12px 8px; color:#666; font-size:11px; font-weight:600;">ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid #2a2a2a;">
+            <td style="padding:12px 8px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:32px; height:32px; background:#f6b100; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:bold;">AM</div>
+                <span style="color:#f5f5f5; font-size:13px;">Anh Minh</span>
+              </div>
+            </td>
+            <td style="padding:12px 8px; color:#ababab; font-size:13px;">0901234567</td>
+            <td style="padding:12px 8px; text-align:center; color:#f6b100; font-size:13px; font-weight:600;">47</td>
+            <td style="padding:12px 8px; text-align:center;">
+              <span style="padding:2px 8px; background:rgba(74,222,128,0.15); color:#4ade80; font-size:11px; border-radius:10px;">2 rewards</span>
+            </td>
+            <td style="padding:12px 8px; text-align:center; color:#ababab; font-size:13px;">5</td>
+            <td style="padding:12px 8px; text-align:right;">
+              <button style="padding:4px 10px; background:#2a2a2a; color:#ababab; border:1px solid #444; border-radius:6px; font-size:11px; cursor:pointer;">View</button>
+            </td>
+          </tr>
+          <tr style="border-bottom:1px solid #2a2a2a;">
+            <td style="padding:12px 8px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:32px; height:32px; background:#f6b100; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:bold;">09</div>
+                <span style="color:#f5f5f5; font-size:13px;">0909999888</span>
+              </div>
+            </td>
+            <td style="padding:12px 8px; color:#ababab; font-size:13px;">0909999888</td>
+            <td style="padding:12px 8px; text-align:center; color:#f6b100; font-size:13px; font-weight:600;">3</td>
+            <td style="padding:12px 8px; text-align:center;">
+              <span style="padding:2px 8px; background:rgba(171,171,171,0.1); color:#666; font-size:11px; border-radius:10px;">none</span>
+            </td>
+            <td style="padding:12px 8px; text-align:center; color:#ababab; font-size:13px;">0</td>
+            <td style="padding:12px 8px; text-align:right;">
+              <button style="padding:4px 10px; background:#2a2a2a; color:#ababab; border:1px solid #444; border-radius:6px; font-size:11px; cursor:pointer;">View</button>
+            </td>
+          </tr>
+          <tr style="border-bottom:1px solid #2a2a2a;">
+            <td style="padding:12px 8px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div style="width:32px; height:32px; background:#f6b100; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:bold;">TL</div>
+                <span style="color:#f5f5f5; font-size:13px;">Thu Lan</span>
+              </div>
+            </td>
+            <td style="padding:12px 8px; color:#ababab; font-size:13px;">0912345678</td>
+            <td style="padding:12px 8px; text-align:center; color:#f6b100; font-size:13px; font-weight:600;">12</td>
+            <td style="padding:12px 8px; text-align:center;">
+              <span style="padding:2px 8px; background:rgba(74,222,128,0.15); color:#4ade80; font-size:11px; border-radius:10px;">1 reward</span>
+            </td>
+            <td style="padding:12px 8px; text-align:center; color:#ababab; font-size:13px;">1</td>
+            <td style="padding:12px 8px; text-align:right;">
+              <button style="padding:4px 10px; background:#2a2a2a; color:#ababab; border:1px solid #444; border-radius:6px; font-size:11px; cursor:pointer;">View</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <h3>Admin Pages Summary</h3>
+  <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+    <div style="background:#1a1a1a; border-radius:8px; padding:16px; border-left:3px solid #f6b100;">
+      <div style="color:#f6b100; font-weight:bold; font-size:14px; margin-bottom:6px;">/reward-programs</div>
+      <div style="color:#ccc; font-size:12px; line-height:1.5;">
+        • Create/edit/delete reward programs<br>
+        • Toggle active/inactive<br>
+        • Set type, threshold, discount<br>
+        • Owner access only
+      </div>
+    </div>
+    <div style="background:#1a1a1a; border-radius:8px; padding:16px; border-left:3px solid #025cca;">
+      <div style="color:#025cca; font-weight:bold; font-size:14px; margin-bottom:6px;">/customers</div>
+      <div style="color:#ccc; font-size:12px; line-height:1.5;">
+        • Search/browse all customers<br>
+        • View dish count &amp; reward status<br>
+        • Edit name/nickname, view history<br>
+        • Admin access
+      </div>
+    </div>
+  </div>
+</div>

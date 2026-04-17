@@ -58,12 +58,14 @@ export const getOrders = (params = {}) => {
   return axiosWrapper.get(`/api/order${queryString ? `?${queryString}` : ''}`);
 };
 export const getOrderById = (orderId) => axiosWrapper.get(`/api/order/${orderId}`);
-export const updateOrderStatus = ({ orderId, orderStatus, paymentMethod, thirdPartyVendor, appliedPromotions }) => {
+export const updateOrderStatus = ({ orderId, orderStatus, paymentMethod, thirdPartyVendor, appliedPromotions, appliedReward, customer }) => {
   const updateData = {};
   if (orderStatus !== undefined) updateData.orderStatus = orderStatus;
   if (paymentMethod !== undefined) updateData.paymentMethod = paymentMethod;
   if (thirdPartyVendor !== undefined) updateData.thirdPartyVendor = thirdPartyVendor;
   if (appliedPromotions !== undefined) updateData.appliedPromotions = appliedPromotions;
+  if (appliedReward !== undefined) updateData.appliedReward = appliedReward;
+  if (customer !== undefined) updateData.customer = customer;
   return axiosWrapper.put(`/api/order/${orderId}`, updateData);
 };
 export const updateOrderItems = (orderId, items) =>

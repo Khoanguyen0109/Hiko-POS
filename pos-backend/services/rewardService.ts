@@ -3,6 +3,8 @@ import type { Types } from "mongoose";
 import Customer from "../models/customerModel.js";
 import RewardProgram from "../models/rewardProgramModel.js";
 import RewardLog from "../models/rewardLogModel.js";
+import Dish from "../models/dishModel.js";
+import Order from "../models/orderModel.js";
 
 interface AvailableReward {
     rewardProgramId: Types.ObjectId;
@@ -13,6 +15,7 @@ interface AvailableReward {
     discountPercent: number | null;
     maxFreeDishValue: number | null;
     earnedAtDishCount: number;
+    eligibleCategories?: Types.ObjectId[];
 }
 
 interface RedeemResult {
@@ -22,7 +25,62 @@ interface RedeemResult {
     maxFreeDishValue: number | null;
 }
 
+interface OrderItem {
+    dishId: string | Types.ObjectId;
+    quantity: number;
+    category?: string;
+}
+
+type CategoryBreakdown = Record<string, number>;
+
 class RewardService {
+
+    /**
+     * Resolve order items to a { [categoryId]: quantity } breakdown.
+     * Uses batched Dish lookup to get category ObjectIds from dishIds.
+     */
+    static async buildCategoryBreakdown(items: OrderItem[]): Promise<CategoryBreakdown> {
+        const dishIds = [...new Set(items.map(i => String(i.dishId)))];
+        const dishes = await Dish.find({ _id: { $in: dishIds } }).select("category").lean();
+        const dishCatMap = new Map<string, string>();
+        for (const d of dishes) {
+            if (d.category) dishCatMap.set(String(d._id), String(d.category));
+        }
+
+        const breakdown: CategoryBreakdown = {};
+        for (const item of items) {
+            const catId = dishCatMap.get(String(item.dishId));
+            if (catId) {
+                breakdown[catId] = (breakdown[catId] || 0) + item.quantity;
+            }
+        }
+        return breakdown;
+    }
+
+    /**
+     * Get the effective dish count for a program given the customer's counts.
+     * Programs without eligibleCategories use totalDishCount.
+     * Programs with eligibleCategories sum only matching category counts.
+     */
+    static getDishCountForProgram(
+        program: { eligibleCategories?: Types.ObjectId[] },
+        totalDishCount: number,
+        categoryDishCounts: Map<string, number> | Record<string, number>
+    ): number {
+        if (!program.eligibleCategories || program.eligibleCategories.length === 0) {
+            return totalDishCount;
+        }
+        let count = 0;
+        for (const catId of program.eligibleCategories) {
+            const key = String(catId);
+            if (categoryDishCounts instanceof Map) {
+                count += categoryDishCounts.get(key) || 0;
+            } else {
+                count += (categoryDishCounts as Record<string, number>)[key] || 0;
+            }
+        }
+        return count;
+    }
 
     static async calculateAvailableRewards(customerId: string): Promise<AvailableReward[]> {
         const customer = await Customer.findById(customerId);
@@ -44,12 +102,17 @@ class RewardService {
         }
 
         const available: AvailableReward[] = [];
-        const totalDishes = customer.totalDishCount;
+        const catCounts = customer.categoryDishCounts || new Map<string, number>();
 
         for (const program of programs) {
             const progId = String(program._id);
             const threshold = program.dishThreshold;
-            const totalEarned = Math.floor(totalDishes / threshold);
+            const dishCount = RewardService.getDishCountForProgram(
+                program,
+                customer.totalDishCount,
+                catCounts
+            );
+            const totalEarned = Math.floor(dishCount / threshold);
 
             const redeemed = (countMap[progId]?.["reward_redeemed"] || 0);
             const restored = (countMap[progId]?.["reward_restored"] || 0);
@@ -68,7 +131,8 @@ class RewardService {
                     dishThreshold: program.dishThreshold,
                     discountPercent: program.discountPercent,
                     maxFreeDishValue: program.maxFreeDishValue,
-                    earnedAtDishCount: earnedAtCycle * threshold
+                    earnedAtDishCount: earnedAtCycle * threshold,
+                    eligibleCategories: program.eligibleCategories
                 });
             }
         }
@@ -81,11 +145,19 @@ class RewardService {
         orderId: string,
         storeId: string,
         dishCount: number,
-        staffId: string
+        staffId: string,
+        items?: OrderItem[]
     ): Promise<{ newTotal: number; newRewards: AvailableReward[] }> {
+        const categoryBreakdown = items ? await RewardService.buildCategoryBreakdown(items) : {};
+
+        const incUpdate: Record<string, number> = { totalDishCount: dishCount };
+        for (const [catId, qty] of Object.entries(categoryBreakdown)) {
+            incUpdate[`categoryDishCounts.${catId}`] = qty;
+        }
+
         const customer = await Customer.findByIdAndUpdate(
             customerId,
-            { $inc: { totalDishCount: dishCount } },
+            { $inc: incUpdate },
             { new: true }
         );
         if (!customer) throw new Error("Customer not found");
@@ -101,12 +173,29 @@ class RewardService {
         });
 
         const programs = await RewardProgram.find({ isActive: true });
-        const previousTotal = customer.totalDishCount - dishCount;
+        const catCounts = customer.categoryDishCounts || new Map<string, number>();
         const newRewards: AvailableReward[] = [];
 
         for (const program of programs) {
-            const prevCrossings = Math.floor(previousTotal / program.dishThreshold);
-            const newCrossings = Math.floor(customer.totalDishCount / program.dishThreshold);
+            const currentCount = RewardService.getDishCountForProgram(
+                program,
+                customer.totalDishCount,
+                catCounts
+            );
+
+            let previousCount: number;
+            if (!program.eligibleCategories || program.eligibleCategories.length === 0) {
+                previousCount = customer.totalDishCount - dishCount;
+            } else {
+                let delta = 0;
+                for (const catId of program.eligibleCategories) {
+                    delta += categoryBreakdown[String(catId)] || 0;
+                }
+                previousCount = currentCount - delta;
+            }
+
+            const prevCrossings = Math.floor(previousCount / program.dishThreshold);
+            const newCrossings = Math.floor(currentCount / program.dishThreshold);
 
             for (let i = prevCrossings + 1; i <= newCrossings; i++) {
                 await RewardLog.create({
@@ -127,7 +216,8 @@ class RewardService {
                     dishThreshold: program.dishThreshold,
                     discountPercent: program.discountPercent,
                     maxFreeDishValue: program.maxFreeDishValue,
-                    earnedAtDishCount: i * program.dishThreshold
+                    earnedAtDishCount: i * program.dishThreshold,
+                    eligibleCategories: program.eligibleCategories
                 });
             }
         }
@@ -175,11 +265,19 @@ class RewardService {
         orderId: string,
         storeId: string,
         dishCount: number,
-        staffId: string
+        staffId: string,
+        items?: OrderItem[]
     ): Promise<void> {
+        const categoryBreakdown = items ? await RewardService.buildCategoryBreakdown(items) : {};
+
+        const incUpdate: Record<string, number> = { totalDishCount: -dishCount };
+        for (const [catId, qty] of Object.entries(categoryBreakdown)) {
+            incUpdate[`categoryDishCounts.${catId}`] = -qty;
+        }
+
         const customer = await Customer.findByIdAndUpdate(
             customerId,
-            { $inc: { totalDishCount: -dishCount } },
+            { $inc: incUpdate },
             { new: true }
         );
         if (!customer) throw new Error("Customer not found");
@@ -187,6 +285,17 @@ class RewardService {
         if (customer.totalDishCount < 0) {
             await Customer.findByIdAndUpdate(customerId, { totalDishCount: 0 });
             customer.totalDishCount = 0;
+        }
+
+        // Clamp negative category counts to 0
+        if (customer.categoryDishCounts) {
+            const fixes: Record<string, number> = {};
+            for (const [key, val] of customer.categoryDishCounts.entries()) {
+                if (val < 0) fixes[`categoryDishCounts.${key}`] = 0;
+            }
+            if (Object.keys(fixes).length > 0) {
+                await Customer.findByIdAndUpdate(customerId, { $set: fixes });
+            }
         }
 
         await RewardLog.create({
@@ -219,6 +328,46 @@ class RewardService {
             cumulativeDishCount: customer.totalDishCount,
             createdBy: staffId
         });
+    }
+
+    /**
+     * Rebuild categoryDishCounts for all customers from their order history.
+     * Call once after deploying category-based reward tracking.
+     */
+    static async backfillCategoryDishCounts(): Promise<{ updated: number }> {
+        const customers = await Customer.find({ totalDishCount: { $gt: 0 } }).select("_id");
+        let updated = 0;
+
+        for (const cust of customers) {
+            const orders = await Order.find({
+                customer: cust._id,
+                orderStatus: { $ne: "cancelled" }
+            }).select("items.dishId items.quantity").lean();
+
+            const allItems: OrderItem[] = [];
+            for (const order of orders) {
+                for (const item of order.items) {
+                    allItems.push({ dishId: item.dishId, quantity: item.quantity });
+                }
+            }
+
+            if (allItems.length === 0) continue;
+
+            const breakdown = await RewardService.buildCategoryBreakdown(allItems);
+            if (Object.keys(breakdown).length === 0) continue;
+
+            const catMap = new Map<string, number>();
+            for (const [catId, qty] of Object.entries(breakdown)) {
+                catMap.set(catId, qty);
+            }
+
+            await Customer.findByIdAndUpdate(cust._id, {
+                $set: { categoryDishCounts: catMap }
+            });
+            updated++;
+        }
+
+        return { updated };
     }
 
     static async getRewardAnalytics(period: string) {
@@ -271,7 +420,7 @@ class RewardService {
             programMap[progId][row._id.type === "reward_unlocked" ? "unlocked" : "redeemed"] = row.count;
         }
 
-        const programs = await RewardProgram.find().select("name type dishThreshold isActive");
+        const programs = await RewardProgram.find().select("name type dishThreshold isActive eligibleCategories").populate("eligibleCategories", "name");
         const programStats = programs.map(p => ({
             ...p.toObject(),
             unlocked: programMap[String(p._id)]?.unlocked || 0,

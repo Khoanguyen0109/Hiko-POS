@@ -1,0 +1,2 @@
+{"type":"server-started","port":50395,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:50395","screen_dir":"/Users/khn6352/out/Hiko-POS/.superpowers/brainstorm/14130-1776419888/content","state_dir":"/Users/khn6352/out/Hiko-POS/.superpowers/brainstorm/14130-1776419888/state"}
+{"type":"server-stopped","reason":"idle timeout"}

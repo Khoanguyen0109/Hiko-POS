@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { MdShoppingCart, MdArrowBack, MdPrint } from "react-icons/md";
 import { FaShoppingCart } from "react-icons/fa";
+import CustomerLookup from "../components/menu/CustomerLookup";
+import RewardSelector from "../components/menu/RewardSelector";
 import CartInfo from "../components/menu/CartInfo";
 import Bill from "../components/menu/Bill";
 
@@ -71,6 +73,8 @@ const MobileCart = () => {
 
       {/* Cart Content */}
       <div className="flex flex-col h-[calc(100vh-140px)]">
+        <CustomerLookup />
+        <RewardSelector />
         <hr className="border-[#2a2a2a] border-t-2" />
 
         {/* Cart Items - Scrollable */}

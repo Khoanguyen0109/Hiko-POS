@@ -1,0 +1,273 @@
+<h2>Section 6: Rewards Analytics Dashboard</h2>
+<p class="subtitle">Route: <code>/dashboard</code> — new tab/section within existing dashboard, Admin access</p>
+
+<div class="mockup">
+  <div class="mockup-header">Rewards Dashboard — Overview Cards</div>
+  <div class="mockup-body" style="background:#1f1f1f; padding:20px; font-family:system-ui;">
+    <!-- Period Selector -->
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+      <div style="color:#f5f5f5; font-size:18px; font-weight:bold;">Rewards Analytics</div>
+      <div style="display:flex; gap:4px; background:#262626; padding:4px; border-radius:8px;">
+        <button style="padding:6px 14px; background:#f6b100; color:#1f1f1f; border:none; border-radius:6px; font-size:12px; font-weight:600;">7D</button>
+        <button style="padding:6px 14px; background:transparent; color:#ababab; border:none; border-radius:6px; font-size:12px;">30D</button>
+        <button style="padding:6px 14px; background:transparent; color:#ababab; border:none; border-radius:6px; font-size:12px;">90D</button>
+        <button style="padding:6px 14px; background:transparent; color:#ababab; border:none; border-radius:6px; font-size:12px;">ALL</button>
+      </div>
+    </div>
+    <!-- Top KPI Cards -->
+    <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; margin-bottom:20px;">
+      <div style="background:#262626; border:1px solid #343434; border-radius:10px; padding:16px;">
+        <div style="color:#ababab; font-size:11px; margin-bottom:4px;">TOTAL CUSTOMERS</div>
+        <div style="color:#f5f5f5; font-size:24px; font-weight:bold;">142</div>
+        <div style="color:#4ade80; font-size:11px; margin-top:4px;">+12 this period</div>
+      </div>
+      <div style="background:#262626; border:1px solid #343434; border-radius:10px; padding:16px;">
+        <div style="color:#ababab; font-size:11px; margin-bottom:4px;">REWARDS REDEEMED</div>
+        <div style="color:#f5f5f5; font-size:24px; font-weight:bold;">38</div>
+        <div style="color:#4ade80; font-size:11px; margin-top:4px;">+8 this period</div>
+      </div>
+      <div style="background:#262626; border:1px solid #343434; border-radius:10px; padding:16px;">
+        <div style="color:#ababab; font-size:11px; margin-bottom:4px;">RETENTION RATE</div>
+        <div style="color:#f6b100; font-size:24px; font-weight:bold;">67%</div>
+        <div style="color:#4ade80; font-size:11px; margin-top:4px;">↑ 5% vs last period</div>
+      </div>
+      <div style="background:#262626; border:1px solid #343434; border-radius:10px; padding:16px;">
+        <div style="color:#ababab; font-size:11px; margin-bottom:4px;">DISCOUNT GIVEN</div>
+        <div style="color:#f5f5f5; font-size:24px; font-weight:bold;">1.2M₫</div>
+        <div style="color:#ababab; font-size:11px; margin-top:4px;">Avg 31,500₫/redemption</div>
+      </div>
+    </div>
+
+    <!-- Row 2: Retention + Customer segments -->
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:20px;">
+      <!-- Retention Chart -->
+      <div style="background:#262626; border:1px solid #343434; border-radius:10px; padding:16px;">
+        <div style="color:#f5f5f5; font-size:14px; font-weight:600; margin-bottom:4px;">Customer Retention</div>
+        <div style="color:#ababab; font-size:11px; margin-bottom:16px;">% of customers who ordered again within 30 days</div>
+        <!-- Fake bar chart -->
+        <div style="display:flex; align-items:flex-end; gap:8px; height:120px; padding-bottom:24px; position:relative;">
+          <div style="position:absolute; bottom:0; left:0; right:0; border-top:1px solid #333; padding-top:4px; display:flex; justify-content:space-around;">
+            <span style="color:#666; font-size:10px;">Jan</span>
+            <span style="color:#666; font-size:10px;">Feb</span>
+            <span style="color:#666; font-size:10px;">Mar</span>
+            <span style="color:#666; font-size:10px;">Apr</span>
+            <span style="color:#666; font-size:10px;">May</span>
+            <span style="color:#666; font-size:10px;">Jun</span>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+            <span style="color:#ababab; font-size:9px;">52%</span>
+            <div style="width:100%; height:52px; background:linear-gradient(180deg, #f6b100, #f6b100aa); border-radius:4px 4px 0 0;"></div>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+            <span style="color:#ababab; font-size:9px;">55%</span>
+            <div style="width:100%; height:55px; background:linear-gradient(180deg, #f6b100, #f6b100aa); border-radius:4px 4px 0 0;"></div>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+            <span style="color:#ababab; font-size:9px;">58%</span>
+            <div style="width:100%; height:58px; background:linear-gradient(180deg, #f6b100, #f6b100aa); border-radius:4px 4px 0 0;"></div>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+            <span style="color:#ababab; font-size:9px;">61%</span>
+            <div style="width:100%; height:61px; background:linear-gradient(180deg, #f6b100, #f6b100aa); border-radius:4px 4px 0 0;"></div>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+            <span style="color:#ababab; font-size:9px;">64%</span>
+            <div style="width:100%; height:64px; background:linear-gradient(180deg, #f6b100, #f6b100aa); border-radius:4px 4px 0 0;"></div>
+          </div>
+          <div style="flex:1; display:flex; flex-direction:column; align-items:center; gap:2px;">
+            <span style="color:#4ade80; font-size:9px; font-weight:bold;">67%</span>
+            <div style="width:100%; height:67px; background:linear-gradient(180deg, #4ade80, #4ade80aa); border-radius:4px 4px 0 0;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Customer Segments -->
+      <div style="background:#262626; border:1px solid #343434; border-radius:10px; padding:16px;">
+        <div style="color:#f5f5f5; font-size:14px; font-weight:600; margin-bottom:4px;">Customer Segments</div>
+        <div style="color:#ababab; font-size:11px; margin-bottom:16px;">Based on ordering frequency</div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <!-- Segment: New -->
+          <div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+              <span style="color:#f5f5f5; font-size:12px;">New (1 order)</span>
+              <span style="color:#ababab; font-size:12px;">34 <span style="color:#666; font-size:10px;">(24%)</span></span>
+            </div>
+            <div style="height:6px; background:#333; border-radius:3px; overflow:hidden;">
+              <div style="width:24%; height:100%; background:#60a5fa; border-radius:3px;"></div>
+            </div>
+          </div>
+          <!-- Segment: Returning -->
+          <div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+              <span style="color:#f5f5f5; font-size:12px;">Returning (2-4 orders)</span>
+              <span style="color:#ababab; font-size:12px;">51 <span style="color:#666; font-size:10px;">(36%)</span></span>
+            </div>
+            <div style="height:6px; background:#333; border-radius:3px; overflow:hidden;">
+              <div style="width:36%; height:100%; background:#f6b100; border-radius:3px;"></div>
+            </div>
+          </div>
+          <!-- Segment: Regular -->
+          <div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+              <span style="color:#f5f5f5; font-size:12px;">Regular (5-9 orders)</span>
+              <span style="color:#ababab; font-size:12px;">38 <span style="color:#666; font-size:10px;">(27%)</span></span>
+            </div>
+            <div style="height:6px; background:#333; border-radius:3px; overflow:hidden;">
+              <div style="width:27%; height:100%; background:#f59e0b; border-radius:3px;"></div>
+            </div>
+          </div>
+          <!-- Segment: Loyal -->
+          <div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+              <span style="color:#f5f5f5; font-size:12px;">Loyal (10+ orders)</span>
+              <span style="color:#ababab; font-size:12px;">19 <span style="color:#666; font-size:10px;">(13%)</span></span>
+            </div>
+            <div style="height:6px; background:#333; border-radius:3px; overflow:hidden;">
+              <div style="width:13%; height:100%; background:#4ade80; border-radius:3px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3: Program performance + Top customers -->
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+      <!-- Reward Program Performance -->
+      <div style="background:#262626; border:1px solid #343434; border-radius:10px; padding:16px;">
+        <div style="color:#f5f5f5; font-size:14px; font-weight:600; margin-bottom:4px;">Program Performance</div>
+        <div style="color:#ababab; font-size:11px; margin-bottom:16px;">Redemption rate and cost per program</div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <!-- Program 1 -->
+          <div style="padding:12px; background:#1a1a1a; border-radius:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:16px;">🎫</span>
+                <span style="color:#f5f5f5; font-size:13px; font-weight:600;">10% Discount</span>
+              </div>
+              <span style="padding:2px 8px; background:rgba(74,222,128,0.15); color:#4ade80; font-size:10px; border-radius:10px;">ACTIVE</span>
+            </div>
+            <div style="display:flex; gap:20px;">
+              <div>
+                <div style="color:#666; font-size:10px;">Unlocked</div>
+                <div style="color:#f5f5f5; font-size:14px; font-weight:600;">52</div>
+              </div>
+              <div>
+                <div style="color:#666; font-size:10px;">Redeemed</div>
+                <div style="color:#f6b100; font-size:14px; font-weight:600;">28</div>
+              </div>
+              <div>
+                <div style="color:#666; font-size:10px;">Redemption %</div>
+                <div style="color:#4ade80; font-size:14px; font-weight:600;">54%</div>
+              </div>
+              <div>
+                <div style="color:#666; font-size:10px;">Total Cost</div>
+                <div style="color:#ababab; font-size:14px; font-weight:600;">680K₫</div>
+              </div>
+            </div>
+          </div>
+          <!-- Program 2 -->
+          <div style="padding:12px; background:#1a1a1a; border-radius:8px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:16px;">🍜</span>
+                <span style="color:#f5f5f5; font-size:13px; font-weight:600;">Free Dish</span>
+              </div>
+              <span style="padding:2px 8px; background:rgba(74,222,128,0.15); color:#4ade80; font-size:10px; border-radius:10px;">ACTIVE</span>
+            </div>
+            <div style="display:flex; gap:20px;">
+              <div>
+                <div style="color:#666; font-size:10px;">Unlocked</div>
+                <div style="color:#f5f5f5; font-size:14px; font-weight:600;">18</div>
+              </div>
+              <div>
+                <div style="color:#666; font-size:10px;">Redeemed</div>
+                <div style="color:#f6b100; font-size:14px; font-weight:600;">10</div>
+              </div>
+              <div>
+                <div style="color:#666; font-size:10px;">Redemption %</div>
+                <div style="color:#4ade80; font-size:14px; font-weight:600;">56%</div>
+              </div>
+              <div>
+                <div style="color:#666; font-size:10px;">Total Cost</div>
+                <div style="color:#ababab; font-size:14px; font-weight:600;">520K₫</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Customers + At Risk -->
+      <div style="background:#262626; border:1px solid #343434; border-radius:10px; padding:16px;">
+        <div style="color:#f5f5f5; font-size:14px; font-weight:600; margin-bottom:4px;">Customer Insights</div>
+        <div style="color:#ababab; font-size:11px; margin-bottom:12px;">Top customers and at-risk retention</div>
+        
+        <!-- Top Customers -->
+        <div style="color:#666; font-size:10px; font-weight:600; margin-bottom:6px;">TOP CUSTOMERS</div>
+        <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:16px;">
+          <div style="display:flex; align-items:center; gap:8px; padding:6px 8px; background:#1a1a1a; border-radius:6px;">
+            <span style="color:#f6b100; font-size:11px; font-weight:bold; width:18px;">1</span>
+            <div style="width:24px; height:24px; background:#f6b100; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:bold;">AM</div>
+            <span style="color:#f5f5f5; font-size:12px; flex:1;">Anh Minh</span>
+            <span style="color:#f6b100; font-size:12px; font-weight:600;">47 dishes</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; padding:6px 8px; background:#1a1a1a; border-radius:6px;">
+            <span style="color:#ababab; font-size:11px; font-weight:bold; width:18px;">2</span>
+            <div style="width:24px; height:24px; background:#f6b100; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:bold;">TL</div>
+            <span style="color:#f5f5f5; font-size:12px; flex:1;">Thu Lan</span>
+            <span style="color:#ababab; font-size:12px; font-weight:600;">35 dishes</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; padding:6px 8px; background:#1a1a1a; border-radius:6px;">
+            <span style="color:#ababab; font-size:11px; font-weight:bold; width:18px;">3</span>
+            <div style="width:24px; height:24px; background:#f6b100; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:bold;">HN</div>
+            <span style="color:#f5f5f5; font-size:12px; flex:1;">Hoang Nam</span>
+            <span style="color:#ababab; font-size:12px; font-weight:600;">28 dishes</span>
+          </div>
+        </div>
+
+        <!-- At Risk -->
+        <div style="color:#ef4444; font-size:10px; font-weight:600; margin-bottom:6px;">AT RISK (no order in 30+ days)</div>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <div style="display:flex; align-items:center; gap:8px; padding:6px 8px; background:rgba(239,68,68,0.05); border:1px solid rgba(239,68,68,0.15); border-radius:6px;">
+            <div style="width:24px; height:24px; background:#444; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:bold; color:#999;">BT</div>
+            <div style="flex:1;">
+              <span style="color:#f5f5f5; font-size:12px;">Ba Tu</span>
+              <span style="color:#666; font-size:10px; margin-left:6px;">12 dishes · last order 42d ago</span>
+            </div>
+            <span style="padding:2px 6px; background:rgba(239,68,68,0.15); color:#ef4444; font-size:9px; border-radius:4px;">1 unused reward</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px; padding:6px 8px; background:rgba(239,68,68,0.05); border:1px solid rgba(239,68,68,0.15); border-radius:6px;">
+            <div style="width:24px; height:24px; background:#444; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:9px; font-weight:bold; color:#999;">09</div>
+            <div style="flex:1;">
+              <span style="color:#f5f5f5; font-size:12px;">0908776655</span>
+              <span style="color:#666; font-size:10px; margin-left:6px;">7 dishes · last order 38d ago</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 4: Reward vs Non-Reward Revenue -->
+    <div style="background:#262626; border:1px solid #343434; border-radius:10px; padding:16px; margin-top:12px;">
+      <div style="color:#f5f5f5; font-size:14px; font-weight:600; margin-bottom:4px;">Revenue Impact</div>
+      <div style="color:#ababab; font-size:11px; margin-bottom:16px;">Orders with reward customers vs walk-ins</div>
+      <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:16px;">
+        <div>
+          <div style="color:#666; font-size:10px;">Avg Order (Reward Customer)</div>
+          <div style="color:#4ade80; font-size:20px; font-weight:bold;">185K₫</div>
+        </div>
+        <div>
+          <div style="color:#666; font-size:10px;">Avg Order (Walk-in)</div>
+          <div style="color:#ababab; font-size:20px; font-weight:bold;">142K₫</div>
+        </div>
+        <div>
+          <div style="color:#666; font-size:10px;">Revenue from Reward Customers</div>
+          <div style="color:#f6b100; font-size:20px; font-weight:bold;">62%</div>
+        </div>
+        <div>
+          <div style="color:#666; font-size:10px;">Avg Visits/Customer (30d)</div>
+          <div style="color:#f5f5f5; font-size:20px; font-weight:bold;">3.2</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -6,7 +6,7 @@ import RewardService from "../services/rewardService.js";
 
 const addRewardProgram = async (req, res, next) => {
     try {
-        const { name, type, dishThreshold, discountPercent, maxFreeDishValue, description, priority } = req.body;
+        const { name, type, dishThreshold, discountPercent, maxFreeDishValue, description, priority, eligibleCategories } = req.body;
 
         if (!name || !type || !dishThreshold) {
             const error = createHttpError(400, "Name, type, and dishThreshold are required!");
@@ -26,10 +26,12 @@ const addRewardProgram = async (req, res, next) => {
             maxFreeDishValue: maxFreeDishValue ?? null,
             description: description || "",
             priority: priority ?? 0,
+            eligibleCategories: eligibleCategories || [],
             createdBy: req.user._id,
         });
 
         await program.save();
+        await program.populate("eligibleCategories", "name color");
 
         res.status(201).json({ success: true, message: "Reward program created!", data: program });
     } catch (error) {
@@ -45,7 +47,9 @@ const getRewardPrograms = async (req, res, next) => {
             filter.isActive = req.query.isActive === "true";
         }
 
-        const programs = await RewardProgram.find(filter).sort({ priority: 1, createdAt: -1 });
+        const programs = await RewardProgram.find(filter)
+            .populate("eligibleCategories", "name color")
+            .sort({ priority: 1, createdAt: -1 });
 
         res.status(200).json({ success: true, data: programs });
     } catch (error) {
@@ -62,7 +66,7 @@ const getRewardProgramById = async (req, res, next) => {
             return next(error);
         }
 
-        const program = await RewardProgram.findById(id);
+        const program = await RewardProgram.findById(id).populate("eligibleCategories", "name color");
         if (!program) {
             const error = createHttpError(404, "Reward program not found!");
             return next(error);
@@ -83,7 +87,7 @@ const updateRewardProgram = async (req, res, next) => {
             return next(error);
         }
 
-        const { name, type, dishThreshold, discountPercent, maxFreeDishValue, description, priority } = req.body;
+        const { name, type, dishThreshold, discountPercent, maxFreeDishValue, description, priority, eligibleCategories } = req.body;
         const updates: Record<string, unknown> = {};
 
         if (name !== undefined) updates.name = name;
@@ -93,8 +97,10 @@ const updateRewardProgram = async (req, res, next) => {
         if (maxFreeDishValue !== undefined) updates.maxFreeDishValue = maxFreeDishValue;
         if (description !== undefined) updates.description = description;
         if (priority !== undefined) updates.priority = priority;
+        if (eligibleCategories !== undefined) updates.eligibleCategories = eligibleCategories;
 
-        const updated = await RewardProgram.findByIdAndUpdate(id, updates, { new: true, runValidators: true });
+        const updated = await RewardProgram.findByIdAndUpdate(id, updates, { new: true, runValidators: true })
+            .populate("eligibleCategories", "name color");
         if (!updated) {
             const error = createHttpError(404, "Reward program not found!");
             return next(error);
@@ -166,6 +172,19 @@ const getRewardAnalytics = async (req, res, next) => {
     }
 };
 
+const backfillCategoryDishCounts = async (req, res, next) => {
+    try {
+        const result = await RewardService.backfillCategoryDishCounts();
+        res.status(200).json({
+            success: true,
+            message: `Backfill complete. Updated ${result.updated} customer(s).`,
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 export {
     addRewardProgram,
     getRewardPrograms,
@@ -174,4 +193,5 @@ export {
     toggleRewardProgramStatus,
     deleteRewardProgram,
     getRewardAnalytics,
+    backfillCategoryDishCounts,
 };

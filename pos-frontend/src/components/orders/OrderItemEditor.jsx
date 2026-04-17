@@ -92,11 +92,11 @@ const OrderItemEditor = ({ item, index, onQuantityChange, onRemove }) => {
           <button
             type="button"
             onClick={() => onRemove(index)}
-            className="flex items-center gap-1 px-2 py-1.5 rounded-md bg-red-900/30 text-red-400 hover:bg-red-900/50 transition-colors text-sm font-medium"
+            className="h-8 w-8 rounded-md text-red-400 hover:bg-red-900/30 flex items-center justify-center transition-colors"
             aria-label="Remove item"
+            title="Remove"
           >
-            <MdDelete size={16} />
-            Remove
+            <MdDelete size={18} />
           </button>
         </div>
       </div>
