@@ -11,6 +11,7 @@ import PromotionService from "../services/promotionService.js";
 import mongoose from "mongoose";
 import { getDateRangeVietnam } from "../utils/dateUtils.js";
 import { calculateOrderBills, formatOrderLevelPromotions } from "../utils/orderBillsUtils.js";
+import RewardService from "../services/rewardService.js";
 
 const STATUS_LABELS = {
   pending: "Pending",
@@ -297,7 +298,8 @@ const addOrder = async (req, res, next) => {
       thirdPartyVendor: thirdPartyVendor || 'None',
       paymentData: paymentData || {},
       createdBy: (userId && userName) ? { userId, userName } : undefined,
-      store: req.store._id
+      store: req.store._id,
+      customer: req.body.customer || null,
     };
 
     const order = new Order(orderPayload);
@@ -313,6 +315,39 @@ const addOrder = async (req, res, next) => {
     ];
 
     await order.save();
+
+    // Reward integration: earn dishes and optionally redeem reward
+    if (req.body.customer) {
+        const totalDishQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
+        try {
+            await RewardService.earnDishes(
+                String(req.body.customer),
+                String(order._id),
+                String(req.store._id),
+                totalDishQuantity,
+                String(req.user._id)
+            );
+
+            if (req.body.appliedReward?.rewardProgram) {
+                const redeemResult = await RewardService.redeemReward(
+                    String(req.body.customer),
+                    String(order._id),
+                    String(req.store._id),
+                    String(req.body.appliedReward.rewardProgram),
+                    String(req.user._id)
+                );
+                order.appliedReward = {
+                    rewardProgram: req.body.appliedReward.rewardProgram,
+                    rewardLog: redeemResult.rewardLog._id,
+                    type: redeemResult.type,
+                    discountAmount: req.body.appliedReward.discountAmount || 0
+                };
+                await order.save();
+            }
+        } catch (rewardError: unknown) {
+            console.error("Reward processing error:", rewardError);
+        }
+    }
 
     // Populate dish references and promotion details for response
     await order.populate([
@@ -582,6 +617,30 @@ const updateOrder = async (req, res, next) => {
       { new: true }
     ).populate('items.dishId', 'name category price image');
 
+    // Reward reversal on cancellation
+    if (orderStatus === "cancelled" && currentOrder.customer) {
+        try {
+            const totalDishQuantity = currentOrder.items.reduce((sum, item) => sum + item.quantity, 0);
+            await RewardService.deductDishes(
+                String(currentOrder.customer),
+                String(currentOrder._id),
+                String(req.store._id),
+                totalDishQuantity,
+                String(req.user._id)
+            );
+            if (currentOrder.appliedReward?.rewardProgram) {
+                await RewardService.restoreReward(
+                    String(currentOrder.customer),
+                    String(currentOrder._id),
+                    String(req.store._id),
+                    String(currentOrder.appliedReward.rewardProgram),
+                    String(req.user._id)
+                );
+            }
+        } catch (rewardError: unknown) {
+            console.error("Reward reversal error:", rewardError);
+        }
+    }
 
     res.status(200).json({ 
       success: true, 
