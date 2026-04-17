@@ -1,5 +1,14 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { getCustomers, addCustomer, updateCustomer, deleteCustomer } from "../../https";
+import { getCustomers, addCustomer, updateCustomer, deleteCustomer, searchCustomers as searchCustomersApi } from "../../https";
+
+export const searchCustomers = createAsyncThunk("customers/search", async (query, thunkAPI) => {
+    try {
+        const { data } = await searchCustomersApi(query);
+        return data.data;
+    } catch (error) {
+        return thunkAPI.rejectWithValue(error.response?.data?.message || "Failed to search customers");
+    }
+});
 
 export const fetchCustomers = createAsyncThunk("customers/fetchAll", async (_, thunkAPI) => {
     try{
@@ -40,13 +49,19 @@ export const removeCustomerData = createAsyncThunk("customers/delete", async (cu
 const initialState = {
     items: [],
     loading: false,
-    error: null
+    error: null,
+    searchResults: [],
+    searchLoading: false
 };
 
 const customersSlice = createSlice({
     name: "customersData",
     initialState,
-    reducers: {},
+    reducers: {
+        clearSearchResults: (state) => {
+            state.searchResults = [];
+        }
+    },
     extraReducers: (builder) => {
         builder
             .addCase(fetchCustomers.pending, (state) => {
@@ -74,8 +89,12 @@ const customersSlice = createSlice({
             .addCase(removeCustomerData.fulfilled, (state, action) => {
                 const id = action.payload;
                 state.items = state.items.filter(c => c._id !== id);
-            });
+            })
+            .addCase(searchCustomers.pending, (state) => { state.searchLoading = true; })
+            .addCase(searchCustomers.fulfilled, (state, action) => { state.searchLoading = false; state.searchResults = action.payload || []; })
+            .addCase(searchCustomers.rejected, (state) => { state.searchLoading = false; state.searchResults = []; });
     }
 });
 
+export const { clearSearchResults } = customersSlice.actions;
 export default customersSlice.reducer; 

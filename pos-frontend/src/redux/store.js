@@ -22,6 +22,7 @@ import storageExportReducer from "./slices/storageExportSlice";
 import storageAnalyticsReducer from "./slices/storageAnalyticsSlice";
 import ticketReducer from "./slices/ticketSlice";
 import storeReducer from "./slices/storeSlice";
+import rewardReducer from "./slices/rewardSlice";
 
 const store = configureStore({
     reducer: {
@@ -47,7 +48,8 @@ const store = configureStore({
         storageExports: storageExportReducer,
         storageAnalytics: storageAnalyticsReducer,
         tickets: ticketReducer,
-        store: storeReducer
+        store: storeReducer,
+        rewards: rewardReducer
     },
 
     devTools: import.meta.env.NODE_ENV !== "production",

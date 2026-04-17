@@ -161,6 +161,34 @@ export const getPromotionAnalytics = (params = {}) => {
 };
 export const validateCouponCode = (code) => axiosWrapper.post("/api/promotion/validate-coupon", { code });
 
+// Customer Search & Rewards Endpoints
+export const searchCustomers = (query) => axiosWrapper.get(`/api/customer/search?q=${encodeURIComponent(query)}`);
+export const getCustomerRewards = (customerId) => axiosWrapper.get(`/api/customer/${customerId}/rewards`);
+export const getCustomerHistory = (customerId) => axiosWrapper.get(`/api/customer/${customerId}/history`);
+
+// Reward Program Endpoints
+export const getRewardPrograms = (params = {}) => {
+  const queryParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== '' && value !== null && value !== undefined) {
+      queryParams.append(key, String(value));
+    }
+  });
+  const queryString = queryParams.toString();
+  return axiosWrapper.get(`/api/reward-program${queryString ? `?${queryString}` : ''}`);
+};
+export const getRewardProgramById = (id) => axiosWrapper.get(`/api/reward-program/${id}`);
+export const addRewardProgram = (data) => axiosWrapper.post("/api/reward-program", data);
+export const updateRewardProgram = ({ id, ...data }) => axiosWrapper.put(`/api/reward-program/${id}`, data);
+export const deleteRewardProgram = (id) => axiosWrapper.delete(`/api/reward-program/${id}`);
+export const toggleRewardProgramStatus = (id) => axiosWrapper.patch(`/api/reward-program/${id}/toggle-status`);
+export const getRewardAnalytics = (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.period) queryParams.append('period', params.period);
+  const queryString = queryParams.toString();
+  return axiosWrapper.get(`/api/reward-program/analytics${queryString ? `?${queryString}` : ''}`);
+};
+
 // Spending Endpoints
 export {
   addSpending,
