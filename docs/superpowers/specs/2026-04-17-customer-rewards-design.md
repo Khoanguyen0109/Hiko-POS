@@ -24,7 +24,7 @@ A configurable loyalty rewards system where customers earn dish-based rewards ac
 | Expiration | No expiration |
 | Customer identity | Phone is primary ID, global across all stores |
 | Reward scope | Global — dishes accumulate across all stores |
-| Program management | System owner only |
+| Program management | Admin (Owner/Manager) |
 
 ---
 
@@ -54,7 +54,7 @@ Customer {
 
 ### RewardProgram (new)
 
-Global reward program definitions. No `store` field — managed by system owner.
+Global reward program definitions. No `store` field — managed by admins (Owner/Manager).
 
 ```
 RewardProgram {
@@ -160,12 +160,12 @@ All reward logic is isolated here, not in controllers.
 
 | Method | Path | Auth | Purpose |
 |--------|------|------|---------|
-| `POST` | `/api/reward-program` | Owner | Create reward program |
+| `POST` | `/api/reward-program` | Admin | Create reward program |
 | `GET` | `/api/reward-program` | Staff | List all programs (active filter optional) |
 | `GET` | `/api/reward-program/:id` | Staff | Get program details |
-| `PUT` | `/api/reward-program/:id` | Owner | Update program |
-| `PATCH` | `/api/reward-program/:id/toggle-status` | Owner | Activate/deactivate |
-| `DELETE` | `/api/reward-program/:id` | Owner | Delete program |
+| `PUT` | `/api/reward-program/:id` | Admin | Update program |
+| `PATCH` | `/api/reward-program/:id/toggle-status` | Admin | Activate/deactivate |
+| `DELETE` | `/api/reward-program/:id` | Admin | Delete program |
 
 ### Order controller integration
 
@@ -206,7 +206,7 @@ The right-side cart panel in `MenuOrder` gets a new "Customer & Rewards" section
 
 ### 4b. Admin Pages
 
-**Reward Programs page** (`/reward-programs`, Owner only)
+**Reward Programs page** (`/reward-programs`, Admin)
 - Card-based list of all reward programs
 - Each card shows: name, type, threshold, discount, active/inactive toggle
 - Create/edit form: name, description, type (dropdown), threshold, discount percent or max free dish value
@@ -223,15 +223,69 @@ The right-side cart panel in `MenuOrder` gets a new "Customer & Rewards" section
 
 **Sidebar additions:**
 - "Customers" link under admin section
-- "Reward Programs" link under admin section (Owner only)
+- "Reward Programs" link under admin section
 
 **New routes:**
 - `/customers` → `Customers` page (admin-protected)
-- `/reward-programs` → `RewardPrograms` page (owner-protected)
+- `/reward-programs` → `RewardPrograms` page (admin-protected)
 
 ---
 
-## 5. Edge Cases & Error Handling
+## 5. Rewards Analytics Dashboard
+
+A new "Rewards" tab within the existing `/dashboard` page (Admin access). Uses data from RewardLog, Customer, and Order collections.
+
+### API Endpoint
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| `GET` | `/api/reward-program/analytics` | Admin | Aggregated reward analytics with period filter |
+
+**Query params:** `period` (7d, 30d, 90d, all), returns all metrics below in a single response.
+
+### Metrics
+
+**Top KPI Cards (with period filter: 7D / 30D / 90D / All)**
+- **Total Customers** — count + new customers this period
+- **Rewards Redeemed** — count + growth vs previous period
+- **Retention Rate** — % of customers who placed another order within 30 days of their previous order
+- **Discount Given** — total monetary cost of all redeemed rewards + average per redemption
+
+**Retention Chart**
+- Monthly bar chart showing retention rate trend over time
+- Retention = (customers with 2+ orders in month) / (total active customers in month)
+
+**Customer Segments**
+- Breakdown by ordering frequency:
+  - New (1 order)
+  - Returning (2–4 orders)
+  - Regular (5–9 orders)
+  - Loyal (10+ orders)
+- Count and percentage per segment
+
+**Program Performance**
+- Per reward program: times unlocked, times redeemed, redemption rate %, total discount cost
+- Helps evaluate which programs are effective
+
+**Customer Insights**
+- **Top customers** — ranked by totalDishCount
+- **At-risk customers** — no order in 30+ days, especially those with unused rewards (recovery opportunities)
+
+**Revenue Impact**
+- Average order value: reward customers vs walk-ins
+- % of total revenue from reward-linked orders
+- Average visits per customer per 30 days
+
+### Frontend Integration
+
+- New tab component within the existing `Dashboard` page
+- Follows existing chart patterns (the project already has chart components in `src/components/charts/`)
+- Period selector toggles all metrics at once
+- Data fetched via a new `rewardAnalytics` async thunk in the reward slice
+
+---
+
+## 6. Edge Cases & Error Handling
 
 ### Order cancellation
 - `deductDishes()` reverses the dish count on the Customer
