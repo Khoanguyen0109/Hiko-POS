@@ -35,7 +35,6 @@ const Bill = forwardRef((props, ref) => {
     (state) => state.promotions
   );
   const appliedReward = useSelector((state) => state.rewards.appliedReward);
-  const selectedCustomer = useSelector((state) => state.rewards.customerRewards?.customer);
   
   // Debug logs (development only)
   logger.debug("Bill - Promotions:", promotions);
@@ -176,17 +175,6 @@ const Bill = forwardRef((props, ref) => {
         : [],
       items: enhancedItems,
       thirdPartyVendor: cartData.thirdPartyVendor,
-      customer: selectedCustomer?._id || null,
-      appliedReward: appliedReward
-        ? {
-            rewardProgram: appliedReward.rewardProgramId,
-            type: appliedReward.type,
-            discountAmount:
-              appliedReward.type === "free_dish"
-                ? Math.min(...cartData.items.map((i) => i.price || i.pricePerQuantity))
-                : Math.round(subtotal * (appliedReward.discountPercent || 0) / 100),
-          }
-        : null,
     };
 
     dispatch(createOrder(orderData))
