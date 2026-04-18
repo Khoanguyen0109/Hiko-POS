@@ -18,12 +18,20 @@ const CustomerLookup = () => {
     (state) => state.customersData
   );
 
+  const customerRewards = useSelector((state) => state.rewards.customerRewards);
+
   const [query, setQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
   const debounceRef = useRef(null);
   const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    if (!customerRewards && selectedCustomer) {
+      setSelectedCustomer(null);
+    }
+  }, [customerRewards, selectedCustomer]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {

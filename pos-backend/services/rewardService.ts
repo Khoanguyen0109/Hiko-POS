@@ -82,6 +82,18 @@ class RewardService {
         return count;
     }
 
+    /**
+     * Calculate how many times a reward has been earned given a dish count.
+     * When cycleLength is set, the reward fires once per cycle at the threshold
+     * position, preventing lower-threshold programs from double-triggering.
+     */
+    static computeTotalEarned(dishCount: number, threshold: number, cycleLength: number | null | undefined): number {
+        const cycle = cycleLength && cycleLength > 0 ? cycleLength : threshold;
+        const completeCycles = Math.floor(dishCount / cycle);
+        const positionInCycle = dishCount % cycle;
+        return completeCycles + (positionInCycle >= threshold ? 1 : 0);
+    }
+
     static async calculateAvailableRewards(customerId: string): Promise<AvailableReward[]> {
         const customer = await Customer.findById(customerId);
         if (!customer) return [];
@@ -107,12 +119,13 @@ class RewardService {
         for (const program of programs) {
             const progId = String(program._id);
             const threshold = program.dishThreshold;
+            const cycle = program.cycleLength && program.cycleLength > 0 ? program.cycleLength : threshold;
             const dishCount = RewardService.getDishCountForProgram(
                 program,
                 customer.totalDishCount,
                 catCounts
             );
-            const totalEarned = Math.floor(dishCount / threshold);
+            const totalEarned = RewardService.computeTotalEarned(dishCount, threshold, program.cycleLength);
 
             const redeemed = (countMap[progId]?.["reward_redeemed"] || 0);
             const restored = (countMap[progId]?.["reward_restored"] || 0);
@@ -131,7 +144,7 @@ class RewardService {
                     dishThreshold: program.dishThreshold,
                     discountPercent: program.discountPercent,
                     maxFreeDishValue: program.maxFreeDishValue,
-                    earnedAtDishCount: earnedAtCycle * threshold,
+                    earnedAtDishCount: earnedAtCycle * cycle,
                     eligibleCategories: program.eligibleCategories
                 });
             }
@@ -194,10 +207,11 @@ class RewardService {
                 previousCount = currentCount - delta;
             }
 
-            const prevCrossings = Math.floor(previousCount / program.dishThreshold);
-            const newCrossings = Math.floor(currentCount / program.dishThreshold);
+            const prevEarned = RewardService.computeTotalEarned(previousCount, program.dishThreshold, program.cycleLength);
+            const newEarned = RewardService.computeTotalEarned(currentCount, program.dishThreshold, program.cycleLength);
+            const cycle = program.cycleLength && program.cycleLength > 0 ? program.cycleLength : program.dishThreshold;
 
-            for (let i = prevCrossings + 1; i <= newCrossings; i++) {
+            for (let i = prevEarned + 1; i <= newEarned; i++) {
                 await RewardLog.create({
                     customer: customerId,
                     order: orderId,
@@ -216,7 +230,7 @@ class RewardService {
                     dishThreshold: program.dishThreshold,
                     discountPercent: program.discountPercent,
                     maxFreeDishValue: program.maxFreeDishValue,
-                    earnedAtDishCount: i * program.dishThreshold,
+                    earnedAtDishCount: i * cycle,
                     eligibleCategories: program.eligibleCategories
                 });
             }

@@ -23,6 +23,11 @@ const rewardProgramSchema = new mongoose.Schema({
         required: true,
         min: 1
     },
+    cycleLength: {
+        type: Number,
+        min: 1,
+        default: null
+    },
     discountPercent: {
         type: Number,
         min: 0,

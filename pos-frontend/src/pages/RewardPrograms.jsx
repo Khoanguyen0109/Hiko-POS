@@ -22,6 +22,7 @@ const EMPTY_FORM = {
   description: "",
   type: "percentage_discount",
   dishThreshold: "",
+  cycleLength: "",
   discountPercent: "",
   maxFreeDishValue: "",
   priority: 0,
@@ -64,6 +65,7 @@ const RewardPrograms = () => {
       description: p.description || "",
       type: p.type || "percentage_discount",
       dishThreshold: p.dishThreshold ?? "",
+      cycleLength: p.cycleLength ?? "",
       discountPercent: p.discountPercent ?? "",
       maxFreeDishValue: p.maxFreeDishValue ?? "",
       priority: p.priority ?? 0,
@@ -94,6 +96,7 @@ const RewardPrograms = () => {
       description: form.description.trim(),
       type: form.type,
       dishThreshold: Number(form.dishThreshold),
+      cycleLength: form.cycleLength ? Number(form.cycleLength) : null,
       priority: Number(form.priority),
       eligibleCategories: form.eligibleCategories || [],
     };
@@ -259,6 +262,14 @@ const RewardPrograms = () => {
                     <p className="text-[#6a6a6a]">Max Value</p>
                     <p className="text-[#f6b100] font-bold">
                       {p.maxFreeDishValue || "—"}
+                    </p>
+                  </div>
+                )}
+                {p.cycleLength && (
+                  <div className="bg-[#1f1f1f] rounded-lg px-3 py-2">
+                    <p className="text-[#6a6a6a]">Cycle</p>
+                    <p className="text-[#f5f5f5] font-bold">
+                      {p.cycleLength} dishes
                     </p>
                   </div>
                 )}
@@ -441,6 +452,29 @@ const RewardPrograms = () => {
                   />
                 </div>
 
+                <div>
+                  <label className="block text-[#ababab] text-xs mb-1.5">
+                    Cycle Length
+                  </label>
+                  <input
+                    name="cycleLength"
+                    type="number"
+                    min={form.dishThreshold || 1}
+                    value={form.cycleLength}
+                    onChange={handleChange}
+                    placeholder="Same as threshold"
+                    className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100] placeholder-[#4a4a4a]"
+                  />
+                </div>
+              </div>
+
+              <p className="text-[#6a6a6a] text-[11px] -mt-2">
+                Cycle length controls how often this reward repeats. Set the same
+                value on linked programs to prevent double-triggering. Leave empty
+                if this program is standalone.
+              </p>
+
+              <div className="grid grid-cols-2 gap-3">
                 {form.type === "percentage_discount" && (
                   <div>
                     <label className="block text-[#ababab] text-xs mb-1.5">

@@ -10,7 +10,7 @@ import {
 import { removeCustomer } from "../../redux/slices/customerSlice";
 import { createOrder } from "../../redux/slices/orderSlice";
 import { fetchPromotions } from "../../redux/slices/promotionSlice";
-import { removeAppliedReward } from "../../redux/slices/rewardSlice";
+import { removeAppliedReward, clearCustomerRewards } from "../../redux/slices/rewardSlice";
 import { enqueueSnackbar } from "notistack";
 import Invoice from "../invoice/Invoice";
 import CouponSelector from "./CouponInput";
@@ -204,6 +204,7 @@ const Bill = forwardRef((props, ref) => {
           dispatch(removeCustomer());
           dispatch(removeAllItems());
           dispatch(removeAppliedReward());
+          dispatch(clearCustomerRewards());
         }, 1500);
       })
       .catch((error) => {

@@ -6,7 +6,7 @@ import RewardService from "../services/rewardService.js";
 
 const addRewardProgram = async (req, res, next) => {
     try {
-        const { name, type, dishThreshold, discountPercent, maxFreeDishValue, description, priority, eligibleCategories } = req.body;
+        const { name, type, dishThreshold, cycleLength, discountPercent, maxFreeDishValue, description, priority, eligibleCategories } = req.body;
 
         if (!name || !type || !dishThreshold) {
             const error = createHttpError(400, "Name, type, and dishThreshold are required!");
@@ -18,10 +18,16 @@ const addRewardProgram = async (req, res, next) => {
             return next(error);
         }
 
+        if (cycleLength != null && cycleLength < dishThreshold) {
+            const error = createHttpError(400, "Cycle length must be >= dish threshold!");
+            return next(error);
+        }
+
         const program = new RewardProgram({
             name,
             type,
             dishThreshold,
+            cycleLength: cycleLength ?? null,
             discountPercent: discountPercent ?? null,
             maxFreeDishValue: maxFreeDishValue ?? null,
             description: description || "",
@@ -87,12 +93,13 @@ const updateRewardProgram = async (req, res, next) => {
             return next(error);
         }
 
-        const { name, type, dishThreshold, discountPercent, maxFreeDishValue, description, priority, eligibleCategories } = req.body;
+        const { name, type, dishThreshold, cycleLength, discountPercent, maxFreeDishValue, description, priority, eligibleCategories } = req.body;
         const updates: Record<string, unknown> = {};
 
         if (name !== undefined) updates.name = name;
         if (type !== undefined) updates.type = type;
         if (dishThreshold !== undefined) updates.dishThreshold = dishThreshold;
+        if (cycleLength !== undefined) updates.cycleLength = cycleLength || null;
         if (discountPercent !== undefined) updates.discountPercent = discountPercent;
         if (maxFreeDishValue !== undefined) updates.maxFreeDishValue = maxFreeDishValue;
         if (description !== undefined) updates.description = description;
