@@ -1022,7 +1022,7 @@ const OrderDetail = () => {
                 )}
               </div>
             )}
-            <div className="space-y-4">
+            <div className="space-y-2">
               {(isEditMode ? editableItems : order.items)?.map((item, index) =>
                 isEditMode ? (
                   <OrderItemEditor
@@ -1155,16 +1155,6 @@ const OrderDetail = () => {
               Bill Summary
             </h2>
             <div className="space-y-3">
-              {/* Subtotal */}
-              <div className="flex justify-between">
-                <span className="text-[#ababab]">
-                  Subtotal ({order.items?.length || 0} items)
-                </span>
-                <span className="text-[#f5f5f5]">
-                  {formatVND(order.bills?.subtotal || order.bills?.total || 0)}
-                </span>
-              </div>
-
               {/* Promotion Discount */}
               {order.bills?.promotionDiscount > 0 && (
                 <div className="bg-green-900/10 rounded-md p-3 border border-green-500/20">
@@ -1372,12 +1362,24 @@ const OrderDetail = () => {
   );
 };
 
+const formatCompactPrice = (price) => {
+  if (!price && price !== 0) return "0k";
+  const k = Math.round(price / 1000);
+  return `${k}k`;
+};
+
 // Order Item Component
-const OrderItem = ({ item }) => {
+const OrderItem = ({ item, onRemove }) => {
+  const sizeLabel = item.variant?.size ? ` · ${item.variant.size}` : "";
+  const toppingSummary =
+    item.toppings && item.toppings.length > 0
+      ? item.toppings.map((t) => t.name).join(", ")
+      : "Không topping";
+
   return (
-    <div className="flex items-start gap-4 p-4 bg-[#262626] rounded-lg border border-[#343434]">
-      {/* Item Image */}
-      <div className="w-16 h-16 bg-[#343434] rounded-lg  flex-shrink-0">
+    <div className="flex items-center gap-3 px-4 py-3 bg-[#262626] rounded-xl">
+      {/* Item Image / Emoji */}
+      <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center bg-[#343434]">
         {item.image ? (
           <img
             src={item.image}
@@ -1385,107 +1387,36 @@ const OrderItem = ({ item }) => {
             className="w-full h-full object-cover"
             onError={(e) => {
               e.target.style.display = "none";
+              e.target.nextSibling && (e.target.nextSibling.style.display = "flex");
             }}
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <MdReceipt className="text-[#ababab]" size={24} />
-          </div>
+          <MdReceipt className="text-[#ababab]" size={20} />
         )}
       </div>
 
-      {/* Item Details */}
-      <div className="flex-1">
-        <div className="flex justify-between items-start mb-2">
-          <div>
-            <h3 className="text-[#f5f5f5] font-medium">{item.name}</h3>
-            {item.category && (
-              <p className="text-[#ababab] text-xs">{item.category}</p>
-            )}
-          </div>
-          <div className="text-right">
-            <p className="text-[#f6b100] font-semibold">
-              {formatVND(item.price)}
-            </p>
-            <p className="text-[#ababab] text-xs">
-              {formatVND(item.pricePerQuantity)} × {item.quantity}
-            </p>
-          </div>
-        </div>
-
-        {/* Variant and Toppings Information */}
-        {(item.variant || item.toppings) && (
-          <div className="mt-2 pt-2 border-t border-[#343434] space-y-2">
-            {/* Size variant info */}
-            {item.variant && (
-              <div className="flex items-center gap-4">
-                <span className="text-[#ababab] text-xs">
-                  Size:{" "}
-                  <span className="text-[#f5f5f5]">{item.variant.size}</span>
-                </span>
-              </div>
-            )}
-
-            {/* Toppings info */}
-            {item.toppings && item.toppings.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-[#ababab] text-xs font-medium">
-                    Toppings:
-                  </span>
-                  <div className="flex-1 h-px bg-[#343434]"></div>
-                </div>
-                <div className="bg-[#1f1f1f] rounded-md p-3 space-y-2">
-                  {item.toppings.map((topping, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-[#f6b100] rounded-full"></div>
-                        <span className="text-[#f5f5f5] text-xs">
-                          {topping.name}
-                        </span>
-                        <span className="text-[#ababab] text-xs bg-[#262626] px-2 py-0.5 rounded-full">
-                          ×{topping.quantity}
-                        </span>
-                      </div>
-                      <span className="text-[#f6b100] text-xs font-medium">
-                        {formatVND(topping.totalPrice ?? (topping.price || 0) * (topping.quantity || 1))}
-                      </span>
-                    </div>
-                  ))}
-
-                  {/* Total toppings price */}
-                  {item.toppings.length > 1 && (
-                    <div className="pt-2 mt-2 border-t border-[#343434] flex items-center justify-between">
-                      <span className="text-[#ababab] text-xs font-medium">
-                        Toppings Total:
-                      </span>
-                      <span className="text-[#f6b100] text-xs font-bold">
-                        {formatVND(
-                          item.toppings.reduce(
-                            (sum, t) => sum + (t.totalPrice ?? (t.price || 0) * (t.quantity || 1)),
-                            0
-                          )
-                        )}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Special Instructions */}
-        {item.note && (
-          <div className="mt-2 pt-2 border-t border-[#343434]">
-            <p className="text-[#ababab] text-xs">Note:</p>
-            <p className="text-[#f5f5f5] text-sm">{item.note}</p>
-          </div>
-        )}
+      {/* Name & Toppings */}
+      <div className="flex-1 min-w-0">
+        <p className="text-[#f5f5f5] font-semibold text-sm truncate">
+          {item.name}{sizeLabel}
+        </p>
+        <p className="text-[#7a7a7a] text-xs truncate">{toppingSummary}</p>
       </div>
+
+      {/* Price */}
+      <span className="text-[#f6b100] font-bold text-base whitespace-nowrap">
+        {formatCompactPrice(item.price)}
+      </span>
+
+      {/* Remove button */}
+      {onRemove && (
+        <button
+          onClick={onRemove}
+          className="text-[#6a6a6a] hover:text-red-400 transition-colors flex-shrink-0 ml-1"
+        >
+          <MdClose size={18} />
+        </button>
+      )}
     </div>
   );
 };
@@ -1494,8 +1425,8 @@ OrderItem.propTypes = {
   item: PropTypes.shape({
     name: PropTypes.string.isRequired,
     price: PropTypes.number.isRequired,
-    pricePerQuantity: PropTypes.number.isRequired,
-    quantity: PropTypes.number.isRequired,
+    pricePerQuantity: PropTypes.number,
+    quantity: PropTypes.number,
     category: PropTypes.string,
     image: PropTypes.string,
     variant: PropTypes.shape({
@@ -1514,6 +1445,7 @@ OrderItem.propTypes = {
     ),
     note: PropTypes.string,
   }).isRequired,
+  onRemove: PropTypes.func,
 };
 
 export default OrderDetail;

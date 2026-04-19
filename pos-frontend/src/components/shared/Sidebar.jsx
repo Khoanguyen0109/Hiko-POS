@@ -219,16 +219,18 @@ const Sidebar = ({ isOpen, onClose, onOpen }) => {
 
   return (
     <>
-      {/* New order FAB */}
-      <button
-        onClick={() => {
-          navigate(ROUTES.MENU_ORDER);
-          onClose();
-        }}
-        className="fixed bottom-4 right-4 z-30 bg-[#f6b100] text-[#f5f5f5] rounded-full p-3 md:p-4 shadow-lg"
-      >
-        <BiSolidDish size={28} />
-      </button>
+      {/* New order FAB — hidden on the menu-order page */}
+      {location.pathname !== ROUTES.MENU_ORDER && (
+        <button
+          onClick={() => {
+            navigate(ROUTES.MENU_ORDER);
+            onClose();
+          }}
+          className="fixed bottom-4 right-4 z-30 bg-[#f6b100] text-[#f5f5f5] rounded-full p-3 md:p-4 shadow-lg"
+        >
+          <BiSolidDish size={28} />
+        </button>
+      )}
 
       {/* Backdrop — only when fully expanded */}
       <div

@@ -58,6 +58,12 @@ export const formatVND = (price) => {
   }).format(price);
 };
 
+// Format price to compact "k" format (e.g., 55000 -> "55k")
+export const formatPriceK = (price) => {
+  if (!price && price !== 0) return "0k";
+  return Math.round(price / 1000) + "k";
+};
+
 // Import Vietnam timezone utilities
 import { 
   getTodayDateVietnam, 
