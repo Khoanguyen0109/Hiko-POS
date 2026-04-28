@@ -29,15 +29,6 @@ const STATUS_STYLES = {
   cancelled: "bg-red-900/30 text-red-400 border border-red-800",
 };
 
-const REASON_LABELS = {
-  production: "Production",
-  waste: "Waste",
-  damage: "Damage",
-  theft: "Theft",
-  transfer: "Transfer",
-  other: "Other",
-};
-
 const thClass = "px-4 py-3 text-left text-xs font-medium text-[#ababab] uppercase tracking-wider";
 const tdClass = "px-4 py-3 text-sm text-[#f5f5f5] whitespace-nowrap";
 
@@ -161,7 +152,6 @@ const ExportList = memo(({ exports, loading, onCancel }) => {
           <tr>
             <th className={`${thClass} sticky left-0 bg-[#262626] z-[1]`}>Item</th>
             <th className={thClass}>Qty</th>
-            <th className={thClass}>Reason</th>
             <th className={thClass}>Exported By</th>
             <th className={thClass}>Date</th>
             <th className={thClass}>Status</th>
@@ -175,11 +165,6 @@ const ExportList = memo(({ exports, loading, onCancel }) => {
                 <span className="font-medium">{r.storageItemId?.name || "N/A"}</span>
               </td>
               <td className={tdClass}>{r.quantity} {r.unit}</td>
-              <td className={tdClass}>
-                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-900/30 text-blue-400 border border-blue-800">
-                  {REASON_LABELS[r.reason] || r.reason}
-                </span>
-              </td>
               <td className={tdClass}>{r.exportedBy?.userName || "N/A"}</td>
               <td className={tdClass}>{new Date(r.exportDate).toLocaleDateString("vi-VN")}</td>
               <td className={tdClass}><StatusBadge status={r.status} /></td>
