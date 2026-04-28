@@ -6,14 +6,7 @@ import { fetchStorageItems } from "../../redux/slices/storageItemSlice";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
 
-const REASON_OPTIONS = [
-  { value: 'production', label: 'Production' },
-  { value: 'waste', label: 'Waste' },
-  { value: 'damage', label: 'Damage' },
-  { value: 'theft', label: 'Theft' },
-  { value: 'transfer', label: 'Transfer' },
-  { value: 'other', label: 'Other' }
-];
+const DEFAULT_EXPORT_REASON = "production";
 
 const ExportModal = ({ 
   isOpen, 
@@ -28,7 +21,6 @@ const ExportModal = ({
   const initialFormData = useMemo(() => ({
     storageItemId: "",
     quantity: 0,
-    reason: "production",
     notes: ""
   }), []);
 
@@ -53,7 +45,6 @@ const ExportModal = ({
       setFormData({
         storageItemId: exportRecord.storageItemId?._id || exportRecord.storageItemId || "",
         quantity: exportRecord.quantity || 0,
-        reason: exportRecord.reason || "production",
         notes: exportRecord.notes || ""
       });
     } else if (mode === "create") {
@@ -98,7 +89,10 @@ const ExportModal = ({
       const submitData = {
         storageItemId: formData.storageItemId,
         quantity: formData.quantity,
-        reason: formData.reason,
+        reason:
+          mode === "edit" && exportRecord?.reason
+            ? exportRecord.reason
+            : DEFAULT_EXPORT_REASON,
         notes: formData.notes || undefined
       };
 
@@ -228,28 +222,6 @@ const ExportModal = ({
                 Remaining stock after export: {Math.max(0, selectedItem.currentStock - formData.quantity)} {selectedItem.unit}
               </p>
             )}
-          </div>
-
-          {/* Reason */}
-          <div>
-            <label className="block text-[#ababab] text-sm mb-2">
-              Reason <span className="text-red-500">*</span>
-            </label>
-            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-[#f6b100]">
-              <select
-                name="reason"
-                value={formData.reason}
-                onChange={handleInputChange}
-                required
-                className="bg-transparent flex-1 text-white focus:outline-none"
-              >
-                {REASON_OPTIONS.map(reason => (
-                  <option key={reason.value} value={reason.value} className="bg-[#1f1f1f]">
-                    {reason.label}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
 
           {/* Notes */}
