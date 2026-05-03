@@ -59,7 +59,7 @@ const MenuOrder = () => {
         type="button"
         onClick={handleCartClick}
         aria-label="Open cart"
-        className="lg:hidden fixed z-40 bottom-[max(1.5rem,calc(env(safe-area-inset-bottom,0px)+1rem))] right-[max(1.5rem,calc(env(safe-area-inset-right,0px)+1rem))] flex h-14 w-14 items-center justify-center rounded-full bg-[#2a2a2a] text-[#f5f5f5] shadow-lg shadow-black/50 ring-1 ring-white/10 active:scale-95 transition-transform"
+        className="lg:hidden fixed z-40 bottom-[max(1.5rem,calc(env(safe-area-inset-bottom,0px)+1rem))] right-[max(1.5rem,calc(env(safe-area-inset-right,0px)+1rem))] flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500 text-white shadow-xl shadow-emerald-950/50 ring-2 ring-emerald-300/70 active:scale-95 transition-transform"
       >
         <span className="relative inline-flex">
           <FiShoppingCart size={24} />
