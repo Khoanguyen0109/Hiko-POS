@@ -123,8 +123,14 @@ function isAdmin(user: AuthUser): boolean {
   return user.role === userRoles.ADMIN;
 }
 
+const activeOnlyFilter = { deletedAt: null };
+
+async function findActiveNodeById(id: string) {
+  return DocNode.findOne({ _id: id, ...activeOnlyFilter });
+}
+
 async function getNextSortOrder(parentId: Types.ObjectId | null): Promise<number> {
-  const last = await DocNode.findOne({ parentId })
+  const last = await DocNode.findOne({ parentId, ...activeOnlyFilter })
     .sort({ sortOrder: -1 })
     .select("sortOrder")
     .lean();
@@ -138,7 +144,7 @@ async function validateParentId(
 ): Promise<Types.ObjectId | null> {
   if (!parentId) return null;
 
-  const parent = await DocNode.findById(parentId);
+  const parent = await DocNode.findOne({ _id: parentId, ...activeOnlyFilter });
   if (!parent) {
     throw createHttpError(404, "Parent folder not found");
   }
@@ -152,15 +158,26 @@ async function validateParentId(
   return parent._id as Types.ObjectId;
 }
 
-async function assertNoChildren(nodeId: string): Promise<void> {
-  const childCount = await DocNode.countDocuments({ parentId: nodeId });
-  if (childCount > 0) {
-    throw createHttpError(409, "Cannot delete a folder that contains items");
+async function softDeleteDescendants(
+  parentId: Types.ObjectId,
+  user: AuthUser
+): Promise<void> {
+  const children = await DocNode.find({ parentId, ...activeOnlyFilter });
+
+  for (const child of children) {
+    if (child.type === DOC_NODE_TYPES.FOLDER) {
+      await softDeleteDescendants(child._id as Types.ObjectId, user);
+    }
+
+    child.deletedAt = new Date();
+    child.deletedBy = user._id;
+    child.updatedBy = user._id;
+    await child.save();
   }
 }
 
 export async function getDocTree(user: AuthUser) {
-  const nodes = await DocNode.find()
+  const nodes = await DocNode.find(activeOnlyFilter)
     .sort({ sortOrder: 1, title: 1 })
     .populate("createdBy", "name email")
     .populate("updatedBy", "name email")
@@ -183,7 +200,7 @@ export async function getDocTree(user: AuthUser) {
 }
 
 export async function getDocById(id: string, user: AuthUser) {
-  const node = await DocNode.findById(id)
+  const node = await DocNode.findOne({ _id: id, ...activeOnlyFilter })
     .populate("createdBy", "name email")
     .populate("updatedBy", "name email")
     .populate("publishedBy", "name email")
@@ -262,7 +279,7 @@ export async function updateDocNode(
     sortOrder?: number;
   }
 ) {
-  const node = await DocNode.findById(id);
+  const node = await findActiveNodeById(id);
   if (!node) {
     throw createHttpError(404, "Document not found");
   }
@@ -295,7 +312,7 @@ export async function updateDocNode(
 }
 
 export async function publishDocNode(user: AuthUser, id: string) {
-  const node = await DocNode.findById(id);
+  const node = await findActiveNodeById(id);
   if (!node) {
     throw createHttpError(404, "Document not found");
   }
@@ -317,7 +334,7 @@ export async function publishDocNode(user: AuthUser, id: string) {
 }
 
 export async function unpublishDocNode(user: AuthUser, id: string) {
-  const node = await DocNode.findById(id);
+  const node = await findActiveNodeById(id);
   if (!node) {
     throw createHttpError(404, "Document not found");
   }
@@ -336,16 +353,20 @@ export async function unpublishDocNode(user: AuthUser, id: string) {
     .lean();
 }
 
-export async function deleteDocNode(id: string) {
-  const node = await DocNode.findById(id);
+export async function deleteDocNode(user: AuthUser, id: string) {
+  const node = await findActiveNodeById(id);
   if (!node) {
     throw createHttpError(404, "Document not found");
   }
 
   if (node.type === DOC_NODE_TYPES.FOLDER) {
-    await assertNoChildren(id);
+    await softDeleteDescendants(node._id as Types.ObjectId, user);
   }
 
-  await DocNode.findByIdAndDelete(id);
-  return { _id: id };
+  node.deletedAt = new Date();
+  node.deletedBy = user._id;
+  node.updatedBy = user._id;
+  await node.save();
+
+  return { _id: id, type: node.type };
 }

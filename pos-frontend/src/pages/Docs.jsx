@@ -7,6 +7,7 @@ import {
   MdChevronLeft,
   MdCreateNewFolder,
   MdDelete,
+  MdEdit,
   MdMenuBook,
   MdPublish,
   MdUnpublished,
@@ -18,6 +19,7 @@ import DocsTree from "../components/docs/DocsTree";
 import DocsEditor from "../components/docs/DocsEditor";
 import DocsViewer from "../components/docs/DocsViewer";
 import CreateNodeModal from "../components/docs/CreateNodeModal";
+import RenameNodeModal from "../components/docs/RenameNodeModal";
 import DocsActionsMenu from "../components/docs/DocsActionsMenu";
 import DocsCreateMenu from "../components/docs/DocsCreateMenu";
 import {
@@ -32,6 +34,7 @@ import {
   clearSelectedDoc,
 } from "../redux/slices/docsSlice";
 import { ROUTES } from "../constants";
+import { DOCS_ROOT_ID } from "../constants/docs";
 
 const findNodeById = (nodes, id) => {
   for (const node of nodes) {
@@ -61,9 +64,11 @@ const Docs = () => {
     error,
   } = useSelector((state) => state.docs);
 
-  const [selectedFolderId, setSelectedFolderId] = useState(null);
-  const [selectedFolderTitle, setSelectedFolderTitle] = useState("");
+  const [selectedFolderId, setSelectedFolderId] = useState(DOCS_ROOT_ID);
+  const [selectedFolderTitle, setSelectedFolderTitle] = useState("Root");
   const [createModal, setCreateModal] = useState(null);
+  const [renameNode, setRenameNode] = useState(null);
+  const [renameLoading, setRenameLoading] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
@@ -119,7 +124,54 @@ const Docs = () => {
     setSelectedFolderTitle(node.title);
   };
 
-  const getParentId = () => selectedFolderId || null;
+  const handleSelectRoot = () => {
+    setSelectedFolderId(DOCS_ROOT_ID);
+    setSelectedFolderTitle("Root");
+  };
+
+  const getParentId = () =>
+    selectedFolderId === DOCS_ROOT_ID ? null : selectedFolderId;
+
+  const getCreateParentTitle = () => selectedFolderTitle || "Root";
+
+  const handleRename = async (newTitle) => {
+    if (!renameNode?._id) return;
+    setRenameLoading(true);
+    try {
+      await dispatch(
+        updateDoc({
+          id: renameNode._id,
+          data: { title: newTitle },
+        })
+      ).unwrap();
+      enqueueSnackbar("Renamed successfully", { variant: "success" });
+      setRenameNode(null);
+
+      if (renameNode._id === selectedFolderId) {
+        setSelectedFolderTitle(newTitle);
+      }
+
+      if (docId === renameNode._id) {
+        dispatch(fetchDoc(renameNode._id));
+      }
+
+      await refreshTree();
+    } catch (err) {
+      enqueueSnackbar(err || "Failed to rename", { variant: "error" });
+    } finally {
+      setRenameLoading(false);
+    }
+  };
+
+  const openRenameModal = (node) => {
+    setRenameNode(node);
+  };
+
+  const handleRenameSelectedFolder = () => {
+    if (selectedFolderNode) {
+      openRenameModal(selectedFolderNode);
+    }
+  };
 
   const refreshTree = async () => {
     await dispatch(fetchDocTree());
@@ -192,24 +244,52 @@ const Docs = () => {
     }
   };
 
-  const handleDelete = async () => {
-    if (!selectedDoc?._id) return;
-    const label = selectedDoc.type === "folder" ? "folder" : "document";
-    if (!window.confirm(`Delete this ${label}? This cannot be undone.`)) return;
+  const handleDelete = async (nodeOverride) => {
+    const target = nodeOverride || selectedDoc;
+    if (!target?._id) return;
+
+    const isFolder = target.type === "folder";
+    const label = isFolder ? "folder" : "document";
+    const cascadeNote = isFolder
+      ? " All documents inside will also be removed."
+      : "";
+    const message = `Delete this ${label} "${target.title}"?${cascadeNote} This can be restored by an administrator later.`;
+
+    if (!window.confirm(message)) return;
 
     try {
-      await dispatch(deleteNode(selectedDoc._id)).unwrap();
-      enqueueSnackbar("Deleted", { variant: "success" });
-      navigate(ROUTES.DOCS);
+      await dispatch(deleteNode(target._id)).unwrap();
+      enqueueSnackbar(
+        isFolder ? "Folder deleted" : "Document deleted",
+        { variant: "success" }
+      );
+
+      if (isFolder && selectedFolderId === target._id) {
+        handleSelectRoot();
+      }
+
+      if (docId === target._id || isFolder) {
+        navigate(ROUTES.DOCS);
+      }
+
       await refreshTree();
     } catch (err) {
       enqueueSnackbar(err || "Failed to delete", { variant: "error" });
     }
   };
 
-  const selectedFolderNode = selectedFolderId
-    ? findNodeById(tree, selectedFolderId)
-    : null;
+  const handleDeleteSelectedFolder = () => {
+    if (selectedFolderNode) {
+      handleDelete(selectedFolderNode);
+    }
+  };
+
+  const selectedFolderNode =
+    selectedFolderId && selectedFolderId !== DOCS_ROOT_ID
+      ? findNodeById(tree, selectedFolderId)
+      : null;
+
+  const isRootSelected = selectedFolderId === DOCS_ROOT_ID;
 
   const isDocSelected = selectedDoc?.type === "doc";
   const isPublished = selectedDoc?.status === "published";
@@ -256,10 +336,18 @@ const Docs = () => {
         </Button>
       )}
       <Button
+        variant="secondary"
+        size="sm"
+        icon={<MdEdit size={16} />}
+        onClick={() => openRenameModal(selectedDoc)}
+      >
+        Rename
+      </Button>
+      <Button
         variant="danger"
         size="sm"
         icon={<MdDelete size={16} />}
-        onClick={handleDelete}
+        onClick={() => handleDelete()}
         loading={deleteLoading}
       >
         Delete
@@ -340,6 +428,7 @@ const Docs = () => {
               onSave={handleSave}
               onPublish={handlePublish}
               onUnpublish={handleUnpublish}
+              onRename={() => selectedDoc && openRenameModal(selectedDoc)}
               onDelete={handleDelete}
             />
           ) : (
@@ -356,14 +445,46 @@ const Docs = () => {
           }`}
         >
           <div className="px-3 py-3 border-b border-[#343434]">
-            <p className="text-xs uppercase tracking-wide text-[#ababab]">
-              Browse
-            </p>
-            {selectedFolderNode && (
-              <p className="text-xs text-[#888] mt-1 truncate">
-                Selected folder: {selectedFolderNode.title}
-              </p>
-            )}
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-xs uppercase tracking-wide text-[#ababab]">
+                  Browse
+                </p>
+                <p className="text-xs text-[#888] mt-1 truncate">
+                  Create in:{" "}
+                  {isRootSelected ? "Root" : selectedFolderNode?.title ?? "—"}
+                </p>
+              </div>
+              {isAdmin && selectedFolderNode && (
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    title="Rename folder"
+                    aria-label="Rename folder"
+                    onClick={handleRenameSelectedFolder}
+                    disabled={renameLoading}
+                    className="p-2 rounded-lg text-[#888] hover:text-[#f6b100] hover:bg-[#f6b100]/10 transition-colors disabled:opacity-40"
+                  >
+                    <MdEdit size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    title="Delete folder"
+                    aria-label="Delete folder"
+                    onClick={handleDeleteSelectedFolder}
+                    disabled={deleteLoading}
+                    className="p-2 rounded-lg text-[#888] hover:text-red-400 hover:bg-red-900/20 transition-colors disabled:opacity-40"
+                  >
+                    <MdDelete size={18} />
+                  </button>
+                </div>
+              )}
+              {isAdmin && isRootSelected && (
+                <span className="text-[10px] uppercase tracking-wide text-[#ababab] shrink-0">
+                  Root
+                </span>
+              )}
+            </div>
           </div>
           <div className="max-h-[calc(100vh-180px)] lg:max-h-[calc(100vh-220px)] overflow-y-auto">
             <DocsTree
@@ -372,6 +493,9 @@ const Docs = () => {
               selectedFolderId={selectedFolderId}
               onSelect={handleSelectDoc}
               onSelectFolder={handleSelectFolder}
+              onSelectRoot={handleSelectRoot}
+              onRename={isAdmin ? openRenameModal : undefined}
+              onDelete={isAdmin ? handleDelete : undefined}
               isAdmin={isAdmin}
               loading={treeLoading}
             />
@@ -456,8 +580,30 @@ const Docs = () => {
               {showViewer && <DocsViewer content={selectedDoc.content} />}
 
               {isAdmin && selectedDoc.type === "folder" && (
-                <div className="text-[#ababab] text-sm py-8 text-center">
-                  Folder selected. Create or open a document inside this folder.
+                <div className="text-center py-8 space-y-4">
+                  <p className="text-[#ababab] text-sm">
+                    Folder selected. Create or open a document inside this folder.
+                  </p>
+                  <div className="flex items-center justify-center gap-2 flex-wrap">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<MdEdit size={16} />}
+                      onClick={() => openRenameModal(selectedDoc)}
+                      loading={renameLoading}
+                    >
+                      Rename folder
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      icon={<MdDelete size={16} />}
+                      onClick={() => handleDelete(selectedDoc)}
+                      loading={deleteLoading}
+                    >
+                      Delete folder
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -477,7 +623,15 @@ const Docs = () => {
         onSubmit={handleCreate}
         type={createModal || "doc"}
         loading={createLoading}
-        parentTitle={selectedFolderTitle || undefined}
+        parentTitle={getCreateParentTitle()}
+      />
+
+      <RenameNodeModal
+        isOpen={!!renameNode}
+        onClose={() => setRenameNode(null)}
+        onSubmit={handleRename}
+        node={renameNode}
+        loading={renameLoading}
       />
     </section>
   );

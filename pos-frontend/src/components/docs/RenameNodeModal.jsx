@@ -3,23 +3,26 @@ import PropTypes from "prop-types";
 import Modal from "../ui/Modal";
 import FormField from "../ui/FormField";
 
-const CreateNodeModal = ({
+const RenameNodeModal = ({
   isOpen,
   onClose,
   onSubmit,
-  type,
+  node,
   loading,
-  parentTitle,
 }) => {
   const [title, setTitle] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (isOpen && node) {
+      setTitle(node.title || "");
+      setError("");
+    }
     if (!isOpen) {
       setTitle("");
       setError("");
     }
-  }, [isOpen]);
+  }, [isOpen, node]);
 
   const handleClose = () => {
     setTitle("");
@@ -33,17 +36,22 @@ const CreateNodeModal = ({
       setError("Title is required");
       return;
     }
+    if (trimmed === node?.title) {
+      handleClose();
+      return;
+    }
     onSubmit(trimmed);
   };
 
-  const isFolder = type === "folder";
-  const label = isFolder ? "Folder" : "Document";
+  if (!node) return null;
+
+  const label = node.type === "folder" ? "Folder" : "Document";
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={`New ${label}`}
+      title={`Rename ${label}`}
       size="sm"
       footerActions={[
         {
@@ -52,18 +60,13 @@ const CreateNodeModal = ({
           onClick: handleClose,
         },
         {
-          label: `Create ${label}`,
+          label: "Save",
           variant: "primary",
           onClick: handleSubmit,
           loading,
         },
       ]}
     >
-      {parentTitle != null && (
-        <p className="text-sm text-[#ababab] mb-4">
-          Inside: <span className="text-[#f5f5f5]">{parentTitle}</span>
-        </p>
-      )}
       <FormField
         label="Title"
         value={title}
@@ -80,13 +83,16 @@ const CreateNodeModal = ({
   );
 };
 
-CreateNodeModal.propTypes = {
+RenameNodeModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   onSubmit: PropTypes.func.isRequired,
-  type: PropTypes.oneOf(["folder", "doc"]).isRequired,
+  node: PropTypes.shape({
+    _id: PropTypes.string.isRequired,
+    type: PropTypes.string.isRequired,
+    title: PropTypes.string,
+  }),
   loading: PropTypes.bool,
-  parentTitle: PropTypes.string,
 };
 
-export default CreateNodeModal;
+export default RenameNodeModal;

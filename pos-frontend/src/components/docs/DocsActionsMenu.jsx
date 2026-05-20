@@ -6,6 +6,7 @@ import {
   MdPublish,
   MdUnpublished,
   MdDelete,
+  MdEdit,
 } from "react-icons/md";
 
 const DocsActionsMenu = ({
@@ -16,6 +17,7 @@ const DocsActionsMenu = ({
   onSave,
   onPublish,
   onUnpublish,
+  onRename,
   onDelete,
 }) => {
   const [open, setOpen] = useState(false);
@@ -34,6 +36,15 @@ const DocsActionsMenu = ({
   }, [open]);
 
   const items = [
+    ...(onRename
+      ? [
+          {
+            label: "Rename",
+            icon: <MdEdit size={18} />,
+            onClick: onRename,
+          },
+        ]
+      : []),
     {
       label: "Save draft",
       icon: <MdSave size={18} />,
@@ -108,6 +119,7 @@ DocsActionsMenu.propTypes = {
   onSave: PropTypes.func.isRequired,
   onPublish: PropTypes.func.isRequired,
   onUnpublish: PropTypes.func.isRequired,
+  onRename: PropTypes.func,
   onDelete: PropTypes.func.isRequired,
 };
 

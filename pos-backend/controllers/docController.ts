@@ -120,7 +120,7 @@ const unpublishHandler = async (req, res, next) => {
 const deleteHandler = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const deleted = await deleteDocNode(id);
+    const deleted = await deleteDocNode(req.user, id);
     res.status(200).json({
       success: true,
       message: "Deleted successfully",
