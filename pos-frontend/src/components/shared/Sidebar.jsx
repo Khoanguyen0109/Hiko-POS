@@ -17,6 +17,7 @@ import {
   MdStar,
   MdPeople,
   MdCardGiftcard,
+  MdMenuBook,
 } from "react-icons/md";
 import { BiSolidDish } from "react-icons/bi";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -35,7 +36,15 @@ const Sidebar = ({ isOpen, onClose, onOpen }) => {
 
   const sidebarRef = useRef(null);
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => {
+    if (path === ROUTES.DOCS) {
+      return (
+        location.pathname === path ||
+        location.pathname.startsWith(`${path}/`)
+      );
+    }
+    return location.pathname === path;
+  };
 
   const handleNav = (path) => {
     navigate(path);
@@ -83,6 +92,11 @@ const Sidebar = ({ isOpen, onClose, onOpen }) => {
           path: ROUTES.TABLES,
           icon: <MdTableBar size={18} />,
           label: "Tables",
+        },
+        {
+          path: ROUTES.DOCS,
+          icon: <MdMenuBook size={18} />,
+          label: "Documentation",
         },
       ],
     },

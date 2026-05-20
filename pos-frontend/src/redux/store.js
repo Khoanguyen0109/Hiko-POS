@@ -24,6 +24,7 @@ import storageAnalyticsReducer from "./slices/storageAnalyticsSlice";
 import ticketReducer from "./slices/ticketSlice";
 import storeReducer from "./slices/storeSlice";
 import rewardReducer from "./slices/rewardSlice";
+import docsReducer from "./slices/docsSlice";
 
 const store = configureStore({
     reducer: {
@@ -51,7 +52,8 @@ const store = configureStore({
         storageAnalytics: storageAnalyticsReducer,
         tickets: ticketReducer,
         store: storeReducer,
-        rewards: rewardReducer
+        rewards: rewardReducer,
+        docs: docsReducer
     },
 
     devTools: import.meta.env.NODE_ENV !== "production",

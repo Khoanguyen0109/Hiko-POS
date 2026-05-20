@@ -51,3 +51,58 @@ body {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+/* Tiptap editor content */
+.ProseMirror {
+  outline: none;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #666;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.prose-invert h1,
+.prose-invert h2,
+.prose-invert h3 {
+  color: #f5f5f5;
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.prose-invert h2 {
+  font-size: 1.25rem;
+}
+
+.prose-invert p {
+  margin-bottom: 0.75em;
+  line-height: 1.6;
+}
+
+.prose-invert ul,
+.prose-invert ol {
+  padding-left: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+.prose-invert ul {
+  list-style-type: disc;
+}
+
+.prose-invert ol {
+  list-style-type: decimal;
+}
+
+.prose-invert a {
+  color: #f6b100;
+  text-decoration: underline;
+}
+
+.prose-invert strong {
+  font-weight: 600;
+  color: #f5f5f5;
+}

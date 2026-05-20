@@ -461,7 +461,8 @@ export const ROUTES = {
   STORES: "/stores",
   TICKETS: "/tickets",
   REWARD_PROGRAMS: "/reward-programs",
-  CUSTOMERS: "/customers"
+  CUSTOMERS: "/customers",
+  DOCS: "/docs"
 };
 
 // Route configurations for optimized rendering
@@ -586,6 +587,14 @@ export const PROTECTED_ROUTES = [
     path: ROUTES.CUSTOMERS,
     componentName: "Customers",
     adminOnly: true
+  },
+  {
+    path: ROUTES.DOCS,
+    componentName: "Docs"
+  },
+  {
+    path: `${ROUTES.DOCS}/:docId`,
+    componentName: "Docs"
   }
 ];
 
