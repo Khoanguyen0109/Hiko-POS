@@ -16,7 +16,14 @@ import FullScreenLoader from "../shared/FullScreenLoader";
 
 const TOLERANCE = 0;
 
-const ShiftCheckoutModal = ({ isOpen, onClose, scheduleId, onSuccess }) => {
+const ShiftCheckoutModal = ({
+  isOpen,
+  onClose,
+  scheduleId,
+  memberId,
+  refreshDate,
+  onSuccess,
+}) => {
   const dispatch = useDispatch();
   const { preview, previewLoading, submitLoading, error } = useSelector(
     (state) => state.shiftCheckout
@@ -28,7 +35,7 @@ const ShiftCheckoutModal = ({ isOpen, onClose, scheduleId, onSuccess }) => {
 
   useEffect(() => {
     if (isOpen && scheduleId) {
-      dispatch(fetchShiftCheckoutPreview(scheduleId));
+      dispatch(fetchShiftCheckoutPreview({ scheduleId, memberId }));
       setCountedCash("");
       setCountedBanking("");
       setNotes("");
@@ -36,7 +43,7 @@ const ShiftCheckoutModal = ({ isOpen, onClose, scheduleId, onSuccess }) => {
     if (!isOpen) {
       dispatch(clearPreview());
     }
-  }, [isOpen, scheduleId, dispatch]);
+  }, [isOpen, scheduleId, memberId, dispatch]);
 
   useEffect(() => {
     if (error) {
@@ -82,6 +89,7 @@ const ShiftCheckoutModal = ({ isOpen, onClose, scheduleId, onSuccess }) => {
       const result = await dispatch(
         submitShiftCheckout({
           scheduleId,
+          memberId: memberId || undefined,
           countedCash: countedCashNum,
           countedBanking: countedBankingNum,
           notes: notes.trim(),
@@ -93,7 +101,9 @@ const ShiftCheckoutModal = ({ isOpen, onClose, scheduleId, onSuccess }) => {
         variant: status === "balanced" ? "success" : "warning",
       });
 
-      dispatch(fetchMyShiftCheckouts({ date: getTodayDate() }));
+      dispatch(
+        fetchMyShiftCheckouts({ date: refreshDate || getTodayDate() })
+      );
       onSuccess?.();
       onClose();
     } catch {
@@ -114,6 +124,11 @@ const ShiftCheckoutModal = ({ isOpen, onClose, scheduleId, onSuccess }) => {
             {shift && (
               <p className="text-sm text-[#ababab]">
                 {shift.name} · {shift.startTime} – {shift.endTime}
+                {expected.member?.name && (
+                  <span className="block text-[#f5f5f5] mt-0.5">
+                    Staff: {expected.member.name}
+                  </span>
+                )}
               </p>
             )}
           </div>
@@ -249,6 +264,8 @@ ShiftCheckoutModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   scheduleId: PropTypes.string,
+  memberId: PropTypes.string,
+  refreshDate: PropTypes.string,
   onSuccess: PropTypes.func,
 };
 

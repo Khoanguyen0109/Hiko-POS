@@ -1,7 +1,9 @@
 import { axiosWrapper } from "./axiosWrapper";
 
-export const getShiftCheckoutPreview = (scheduleId) =>
-  axiosWrapper.get(`/api/shift-checkout/preview/${scheduleId}`);
+export const getShiftCheckoutPreview = (scheduleId, memberId) =>
+  axiosWrapper.get(`/api/shift-checkout/preview/${scheduleId}`, {
+    params: memberId ? { memberId } : {},
+  });
 
 export const submitShiftCheckout = (data) =>
   axiosWrapper.post("/api/shift-checkout", data);

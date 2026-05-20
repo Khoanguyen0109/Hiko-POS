@@ -17,9 +17,12 @@ export const fetchMyShiftCheckouts = createAsyncThunk(
 
 export const fetchShiftCheckoutPreview = createAsyncThunk(
   "shiftCheckout/fetchPreview",
-  async (scheduleId, { rejectWithValue }) => {
+  async ({ scheduleId, memberId }, { rejectWithValue }) => {
     try {
-      const response = await shiftCheckoutApi.getShiftCheckoutPreview(scheduleId);
+      const response = await shiftCheckoutApi.getShiftCheckoutPreview(
+        scheduleId,
+        memberId
+      );
       return response.data;
     } catch (error) {
       return rejectWithValue(

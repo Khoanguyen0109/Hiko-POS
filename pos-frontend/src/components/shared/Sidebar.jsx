@@ -88,11 +88,11 @@ const Sidebar = ({ isOpen, onClose, onOpen }) => {
           icon: <MdOutlineReorder size={18} />,
           label: "Orders",
         },
-        {
-          path: ROUTES.TABLES,
-          icon: <MdTableBar size={18} />,
-          label: "Tables",
-        },
+        // {
+        //   path: ROUTES.TABLES,
+        //   icon: <MdTableBar size={18} />,
+        //   label: "Tables",
+        // },
         {
           path: ROUTES.DOCS,
           icon: <MdMenuBook size={18} />,

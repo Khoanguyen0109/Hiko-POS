@@ -55,8 +55,9 @@ const ShiftCheckout = () => {
   const activeStore = useSelector((state) => state.store.activeStore);
   const storeRole = activeStore?.role || activeStore?.storeRole || "";
   const isAdmin = role === "Admin";
-  const canViewDay =
+  const canViewStoreShifts =
     isAdmin || storeRole === "Owner" || storeRole === "Manager";
+  const canViewDay = canViewStoreShifts;
 
   const {
     myShifts,
@@ -72,6 +73,7 @@ const ShiftCheckout = () => {
   const [dayDate, setDayDate] = useState(getTodayDate());
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedScheduleId, setSelectedScheduleId] = useState(null);
+  const [selectedMemberId, setSelectedMemberId] = useState(null);
 
   useEffect(() => {
     document.title = "POS | Shift Checkout";
@@ -81,6 +83,7 @@ const ShiftCheckout = () => {
     const scheduleId = location.state?.scheduleId;
     if (scheduleId) {
       setSelectedScheduleId(scheduleId);
+      setSelectedMemberId(location.state?.memberId || null);
       setModalOpen(true);
       window.history.replaceState({}, document.title);
     }
@@ -105,8 +108,9 @@ const ShiftCheckout = () => {
     }
   }, [error, dispatch]);
 
-  const openCheckout = (scheduleId) => {
+  const openCheckout = (scheduleId, memberId = null) => {
     setSelectedScheduleId(scheduleId);
+    setSelectedMemberId(memberId);
     setModalOpen(true);
   };
 
@@ -148,7 +152,7 @@ const ShiftCheckout = () => {
               : "border-transparent text-[#ababab]"
           }`}
         >
-          My shift
+          {canViewStoreShifts ? "All shifts" : "My shift"}
         </button>
         {canViewDay && (
           <button
@@ -181,7 +185,9 @@ const ShiftCheckout = () => {
 
           {!loading && myShifts.length === 0 && (
             <p className="text-[#ababab] py-8 text-center">
-              No shifts assigned for this date.
+              {canViewStoreShifts
+                ? "No shifts scheduled for this date."
+                : "No shifts assigned for this date."}
             </p>
           )}
 
@@ -189,15 +195,24 @@ const ShiftCheckout = () => {
             const tpl = row.schedule?.shiftTemplate;
             const checkout = row.checkout;
             const preview = row.expectedPreview;
+            const memberId = row.member?._id;
+            const rowKey = memberId
+              ? `${row.schedule._id}-${memberId}`
+              : row.schedule._id;
 
             return (
               <div
-                key={row.schedule._id}
+                key={rowKey}
                 className="bg-[#262626] border border-[#383838] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
               >
                 <div>
                   <p className="font-semibold text-[#f5f5f5]">
                     {tpl?.name || tpl?.shortName || "Shift"}
+                    {row.member?.name && (
+                      <span className="text-[#ababab] font-normal text-sm ml-2">
+                        — {row.member.name}
+                      </span>
+                    )}
                   </p>
                   <p className="text-sm text-[#ababab] flex items-center gap-1 mt-1">
                     <MdAccessTime size={14} />
@@ -221,7 +236,7 @@ const ShiftCheckout = () => {
                   {statusBadge(row.checkoutStatus)}
                   <button
                     type="button"
-                    onClick={() => openCheckout(row.schedule._id)}
+                    onClick={() => openCheckout(row.schedule._id, memberId)}
                     className="px-4 py-2 text-sm font-medium bg-[#f6b100] text-[#1f1f1f] rounded-lg hover:bg-[#e5a600]"
                   >
                     {checkout ? "View" : "Check out"}
@@ -323,8 +338,11 @@ const ShiftCheckout = () => {
         onClose={() => {
           setModalOpen(false);
           setSelectedScheduleId(null);
+          setSelectedMemberId(null);
         }}
         scheduleId={selectedScheduleId}
+        memberId={selectedMemberId}
+        refreshDate={selectedDate}
         onSuccess={() =>
           dispatch(fetchMyShiftCheckouts({ date: selectedDate }))
         }

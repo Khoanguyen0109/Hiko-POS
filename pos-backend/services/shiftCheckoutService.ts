@@ -1,9 +1,11 @@
 // @ts-nocheck
 import createHttpError from "http-errors";
+import mongoose from "mongoose";
 import type { Types } from "mongoose";
 import Order from "../models/orderModel.js";
 import Schedule from "../models/scheduleModel.js";
 import ShiftCheckout from "../models/shiftCheckoutModel.js";
+import User from "../models/userModel.js";
 import {
   SHIFT_CHECKOUT_MIN_NOTES_LENGTH,
   SHIFT_CHECKOUT_TOLERANCE_VND,
@@ -54,14 +56,43 @@ export async function loadScheduleForCheckout(
 
 export function assertMemberAssigned(
   schedule: { assignedMembers: { member: Types.ObjectId }[] },
-  memberId: Types.ObjectId
+  memberId: Types.ObjectId | string
 ) {
   const assigned = schedule.assignedMembers.some(
     (am) => am.member.toString() === memberId.toString()
   );
   if (!assigned) {
-    throw createHttpError(403, "You are not assigned to this shift");
+    throw createHttpError(403, "Selected member is not assigned to this shift");
   }
+}
+
+function resolveCheckoutMemberId(
+  schedule: {
+    assignedMembers: { member: Types.ObjectId }[];
+  },
+  user: AuthUser,
+  storeRole: string | undefined,
+  memberIdParam?: string
+): Types.ObjectId {
+  if (isManagerOrAbove(user.role, storeRole)) {
+    if (memberIdParam) {
+      if (!mongoose.Types.ObjectId.isValid(memberIdParam)) {
+        throw createHttpError(400, "Invalid memberId");
+      }
+      assertMemberAssigned(schedule, memberIdParam);
+      return new mongoose.Types.ObjectId(memberIdParam);
+    }
+    if (schedule.assignedMembers.length === 1) {
+      return schedule.assignedMembers[0].member;
+    }
+    throw createHttpError(
+      400,
+      "memberId is required when multiple staff are assigned to this shift"
+    );
+  }
+
+  assertMemberAssigned(schedule, user._id);
+  return user._id;
 }
 
 export async function getExpectedTotalsForSchedule(
@@ -95,20 +126,25 @@ export async function buildCheckoutPreview(
   scheduleId: string,
   store: StoreContext,
   user: AuthUser,
-  storeRole?: string
+  storeRole?: string,
+  memberIdParam?: string
 ) {
   const schedule = await loadScheduleForCheckout(scheduleId, store._id);
-
-  if (!isManagerOrAbove(user.role, storeRole)) {
-    assertMemberAssigned(schedule, user._id);
-  }
+  const targetMemberId = resolveCheckoutMemberId(
+    schedule,
+    user,
+    storeRole,
+    memberIdParam
+  );
 
   const expected = await getExpectedTotalsForSchedule(store._id, schedule);
 
   const existing = await ShiftCheckout.findOne({
     schedule: schedule._id,
-    member: user._id,
+    member: targetMemberId,
   });
+
+  const memberDoc = await User.findById(targetMemberId).select("name email");
 
   return {
     schedule: {
@@ -116,6 +152,9 @@ export async function buildCheckoutPreview(
       date: schedule.date,
       shiftTemplate: schedule.shiftTemplate,
     },
+    member: memberDoc
+      ? { _id: memberDoc._id, name: memberDoc.name, email: memberDoc.email }
+      : { _id: targetMemberId },
     ...expected,
     existingCheckout: existing,
   };
@@ -125,14 +164,25 @@ export async function submitShiftCheckout(
   scheduleId: string,
   store: StoreContext,
   user: AuthUser,
-  body: { countedCash: number; countedBanking: number; notes?: string }
+  body: {
+    countedCash: number;
+    countedBanking: number;
+    notes?: string;
+    memberId?: string;
+  },
+  storeRole?: string
 ) {
   const schedule = await loadScheduleForCheckout(scheduleId, store._id);
-  assertMemberAssigned(schedule, user._id);
+  const targetMemberId = resolveCheckoutMemberId(
+    schedule,
+    user,
+    storeRole,
+    body.memberId
+  );
 
   const existing = await ShiftCheckout.findOne({
     schedule: schedule._id,
-    member: user._id,
+    member: targetMemberId,
   });
   if (existing) {
     throw createHttpError(409, "Checkout already submitted for this shift");
@@ -175,7 +225,7 @@ export async function submitShiftCheckout(
   const checkout = await ShiftCheckout.create({
     store: store._id,
     schedule: schedule._id,
-    member: user._id,
+    member: targetMemberId,
     shiftDate: schedule.date,
     shiftTemplate: schedule.shiftTemplate._id,
     periodStart: expected.periodStart,
@@ -257,6 +307,83 @@ export async function getMyShiftCheckoutsForDate(
       };
     })
   );
+
+  return rows;
+}
+
+/**
+ * All store shifts on a date — one row per assigned member (admin / manager).
+ */
+export async function getStoreShiftCheckoutsForDate(
+  storeId: Types.ObjectId,
+  dateStr: string
+) {
+  const { start, end } = getDateRangeVietnam(dateStr, dateStr);
+
+  const schedules = await Schedule.find({
+    store: storeId,
+    date: { $gte: start, $lte: end },
+  })
+    .populate("shiftTemplate")
+    .populate("assignedMembers.member", "name email")
+    .sort({ date: 1 });
+
+  const scheduleIds = schedules.map((s) => s._id);
+  const checkouts = await ShiftCheckout.find({
+    store: storeId,
+    schedule: { $in: scheduleIds },
+  });
+
+  const checkoutByKey = new Map(
+    checkouts.map((c) => [`${c.schedule.toString()}:${c.member.toString()}`, c])
+  );
+
+  const rows = [];
+
+  for (const schedule of schedules) {
+    if (!schedule.assignedMembers?.length) continue;
+
+    for (const am of schedule.assignedMembers) {
+      const memberRef = am.member;
+      const memberId =
+        memberRef?._id?.toString?.() || memberRef?.toString?.() || memberRef;
+      if (!memberId) continue;
+
+      const key = `${schedule._id.toString()}:${memberId}`;
+      const checkout = checkoutByKey.get(key) || null;
+
+      let expectedPreview = null;
+      if (!checkout && schedule.shiftTemplate) {
+        const expected = await getExpectedTotalsForSchedule(storeId, schedule);
+        expectedPreview = {
+          expectedCash: expected.expectedCash,
+          expectedBanking: expected.expectedBanking,
+          orderCount: expected.orderCount,
+        };
+      }
+
+      const member =
+        memberRef && typeof memberRef === "object" && memberRef.name
+          ? {
+              _id: memberRef._id,
+              name: memberRef.name,
+              email: memberRef.email,
+            }
+          : { _id: memberId };
+
+      rows.push({
+        schedule: {
+          _id: schedule._id,
+          date: schedule.date,
+          shiftTemplate: schedule.shiftTemplate,
+        },
+        member,
+        checkout,
+        expectedPreview: checkout ? null : expectedPreview,
+        checkoutStatus: checkout ? checkout.status : "not_submitted",
+      });
+    }
+  }
 
   return rows;
 }

@@ -8,6 +8,7 @@ import {
   getCheckoutById,
   getDayCheckouts,
   getMyShiftCheckoutsForDate,
+  getStoreShiftCheckoutsForDate,
   listShiftCheckouts,
   submitShiftCheckout,
   deleteShiftCheckout,
@@ -20,11 +21,14 @@ const getPreview = async (req, res, next) => {
       return next(createHttpError(400, "Schedule ID is required"));
     }
 
+    const { memberId } = req.query;
+
     const data = await buildCheckoutPreview(
       scheduleId,
       req.store,
       req.user,
-      req.storeUser?.role
+      req.storeUser?.role,
+      memberId ? String(memberId) : undefined
     );
 
     res.status(200).json({ success: true, data });
@@ -35,7 +39,7 @@ const getPreview = async (req, res, next) => {
 
 const submitCheckout = async (req, res, next) => {
   try {
-    const { scheduleId, countedCash, countedBanking, notes } = req.body;
+    const { scheduleId, countedCash, countedBanking, notes, memberId } = req.body;
 
     if (!scheduleId) {
       return next(createHttpError(400, "scheduleId is required"));
@@ -45,7 +49,8 @@ const submitCheckout = async (req, res, next) => {
       scheduleId,
       req.store,
       req.user,
-      { countedCash, countedBanking, notes }
+      { countedCash, countedBanking, notes, memberId },
+      req.storeUser?.role
     );
 
     res.status(201).json({
@@ -67,16 +72,25 @@ const getMyToday = async (req, res, next) => {
       req.query.date ||
       formatVietnamTime(new Date(), "yyyy-MM-dd");
 
-    const data = await getMyShiftCheckoutsForDate(
-      req.store._id,
-      req.user._id,
-      dateStr
-    );
+    const isAdmin = req.user.role === "Admin";
+    const isManager =
+      isAdmin ||
+      req.storeUser?.role === "Owner" ||
+      req.storeUser?.role === "Manager";
+
+    const data = isManager
+      ? await getStoreShiftCheckoutsForDate(req.store._id, dateStr)
+      : await getMyShiftCheckoutsForDate(
+          req.store._id,
+          req.user._id,
+          dateStr
+        );
 
     res.status(200).json({
       success: true,
       date: dateStr,
       count: data.length,
+      view: isManager ? "store" : "my",
       data,
     });
   } catch (error) {
