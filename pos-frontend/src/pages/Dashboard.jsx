@@ -11,6 +11,7 @@ import PromotionMetrics from "../components/dashboard/PromotionMetrics";
 import SalaryMetrics from "../components/dashboard/SalaryMetrics";
 import StorageAnalytics from "../components/dashboard/StorageAnalytics";
 import RewardsDashboard from "../components/dashboard/RewardsDashboard";
+import ShiftCheckoutDashboard from "../components/dashboard/ShiftCheckoutDashboard";
 import CategoryModal from "../components/dashboard/CategoryModal";
 import DishModal from "../components/dashboard/DishModal";
 import { getStoredUser } from "../utils/auth";
@@ -234,7 +235,7 @@ const Dashboard = () => {
 
   // Memoize tabs array
   const tabs = useMemo(() => 
-    ["Metrics", "Promotions", ...(isAdmin ? ["Spending", "Salary", "Storage Analytics", "Rewards"] : [])],
+    ["Metrics", "Promotions", ...(isAdmin ? ["Spending", "Shift Checkout", "Salary", "Storage Analytics", "Rewards"] : [])],
     [isAdmin]
   );
 
@@ -433,6 +434,12 @@ const Dashboard = () => {
           dashboardData={dashboardData}
           loading={dashboardLoading}
           error={dashboardError}
+        />
+      )}
+      {activeTab === "Shift Checkout" && isAdmin && (
+        <ShiftCheckoutDashboard
+          dateFilter={dateFilter}
+          customDateRange={customDateRange}
         />
       )}
       {activeTab === "Salary" && isAdmin && (

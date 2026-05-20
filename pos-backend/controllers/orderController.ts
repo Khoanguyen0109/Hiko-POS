@@ -9,7 +9,7 @@ import Order from "../models/orderModel.js";
 import Dish from "../models/dishModel.js";
 import PromotionService from "../services/promotionService.js";
 import mongoose from "mongoose";
-import { getDateRangeVietnam } from "../utils/dateUtils.js";
+import { getDateRangeVietnam, getCurrentVietnamTime } from "../utils/dateUtils.js";
 import { calculateOrderBills, formatOrderLevelPromotions } from "../utils/orderBillsUtils.js";
 import RewardService from "../services/rewardService.js";
 
@@ -284,6 +284,7 @@ const addOrder = async (req, res, next) => {
             : undefined,
       },
       orderStatus: orderStatus || "pending",
+      completedAt: orderStatus === "completed" ? getCurrentVietnamTime() : null,
       bills: {
         subtotal: bills.subtotal ?? calculatedBills.subtotal,
         promotionDiscount:
@@ -705,6 +706,17 @@ const updateOrder = async (req, res, next) => {
     if (orderStatus === 'completed' && !currentOrder.paymentMethod && !paymentMethod) {
       const error = createHttpError(400, "Payment method must be set before completing an order");
       return next(error);
+    }
+
+    if (updateFields.orderStatus) {
+      if (orderStatus === 'completed' && currentOrder.orderStatus !== 'completed') {
+        updateFields.completedAt = getCurrentVietnamTime();
+      } else if (
+        orderStatus !== 'completed' &&
+        currentOrder.orderStatus === 'completed'
+      ) {
+        updateFields.completedAt = null;
+      }
     }
 
     // Determine the primary change type and details for the history entry

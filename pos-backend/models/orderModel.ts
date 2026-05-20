@@ -183,6 +183,11 @@ const orderSchema = new mongoose.Schema({
         enum: ['pending', 'processing', 'completed', 'failed'],
         default: 'pending'
     },
+    completedAt: {
+        type: Date,
+        default: null,
+        index: true
+    },
     createdBy: {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
         userName: { type: String, trim: true }
@@ -209,6 +214,7 @@ const orderSchema = new mongoose.Schema({
 orderSchema.index({ store: 1, createdAt: -1 });
 orderSchema.index({ store: 1, orderStatus: 1 });
 orderSchema.index({ store: 1, orderStatus: 1, createdAt: -1 });
+orderSchema.index({ store: 1, orderStatus: 1, completedAt: -1 });
 orderSchema.index({ createdAt: -1 });
 orderSchema.index({ orderStatus: 1 });
 orderSchema.index({ 'customerDetails.phone': 1 });

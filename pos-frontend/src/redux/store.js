@@ -14,6 +14,7 @@ import spendingReducer from "./slices/spendingSlice";
 import shiftTemplateReducer from "./slices/shiftTemplateSlice";
 import scheduleReducer from "./slices/scheduleSlice";
 import extraWorkReducer from "./slices/extraWorkSlice";
+import shiftCheckoutReducer from "./slices/shiftCheckoutSlice";
 import salaryReducer from "./slices/salarySlice";
 import supplierReducer from "./slices/supplierSlice";
 import storageItemReducer from "./slices/storageItemSlice";
@@ -41,6 +42,7 @@ const store = configureStore({
         shiftTemplates: shiftTemplateReducer,
         schedules: scheduleReducer,
         extraWork: extraWorkReducer,
+        shiftCheckout: shiftCheckoutReducer,
         salary: salaryReducer,
         suppliers: supplierReducer,
         storageItems: storageItemReducer,

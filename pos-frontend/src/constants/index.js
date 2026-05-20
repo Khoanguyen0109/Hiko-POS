@@ -452,6 +452,7 @@ export const ROUTES = {
   TOPPINGS: "/toppings",
   PROMOTIONS: "/promotions",
   SPENDING: "/spending",
+  SHIFT_CHECKOUT: "/shift-checkout",
   SCHEDULES: "/schedules",
   SHIFT_TEMPLATES: "/shift-templates",
   STORAGE: "/storage",
@@ -539,6 +540,10 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.SPENDING,
     componentName: "SpendingManager"
+  },
+  {
+    path: ROUTES.SHIFT_CHECKOUT,
+    componentName: "ShiftCheckout"
   },
   {
     path: ROUTES.SCHEDULES,
