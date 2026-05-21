@@ -58,15 +58,6 @@ const DocsEditor = ({ content, onChange, editable = true }) => {
   });
 
   useEffect(() => {
-    if (!editor) return;
-    const current = editor.getHTML();
-    const next = content || "";
-    if (current !== next) {
-      editor.commands.setContent(next, false);
-    }
-  }, [content, editor]);
-
-  useEffect(() => {
     if (editor) {
       editor.setEditable(editable);
     }
@@ -91,50 +82,50 @@ const DocsEditor = ({ content, onChange, editable = true }) => {
       {editable && (
         <div className="flex items-center gap-1 px-2 py-2 border-b border-[#343434] bg-[#1f1f1f] overflow-x-auto scrollbar-hide">
           <div className="flex items-center gap-1 flex-nowrap min-w-max">
-          <ToolbarButton
-            onClick={() => editor.chain().focus().toggleBold().run()}
-            active={editor.isActive("bold")}
-            title="Bold"
-          >
-            <MdFormatBold size={18} />
-          </ToolbarButton>
-          <ToolbarButton
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-            active={editor.isActive("italic")}
-            title="Italic"
-          >
-            <MdFormatItalic size={18} />
-          </ToolbarButton>
-          <ToolbarButton
-            onClick={() =>
-              editor.chain().focus().toggleHeading({ level: 2 }).run()
-            }
-            active={editor.isActive("heading", { level: 2 })}
-            title="Heading"
-          >
-            <MdTitle size={18} />
-          </ToolbarButton>
-          <ToolbarButton
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-            active={editor.isActive("bulletList")}
-            title="Bullet list"
-          >
-            <MdFormatListBulleted size={18} />
-          </ToolbarButton>
-          <ToolbarButton
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            active={editor.isActive("orderedList")}
-            title="Numbered list"
-          >
-            <MdFormatListNumbered size={18} />
-          </ToolbarButton>
-          <ToolbarButton
-            onClick={setLink}
-            active={editor.isActive("link")}
-            title="Link"
-          >
-            <MdLink size={18} />
-          </ToolbarButton>
+            <ToolbarButton
+              onClick={() => editor.chain().focus().toggleBold().run()}
+              active={editor.isActive("bold")}
+              title="Bold"
+            >
+              <MdFormatBold size={18} />
+            </ToolbarButton>
+            <ToolbarButton
+              onClick={() => editor.chain().focus().toggleItalic().run()}
+              active={editor.isActive("italic")}
+              title="Italic"
+            >
+              <MdFormatItalic size={18} />
+            </ToolbarButton>
+            <ToolbarButton
+              onClick={() =>
+                editor.chain().focus().toggleHeading({ level: 2 }).run()
+              }
+              active={editor.isActive("heading", { level: 2 })}
+              title="Heading"
+            >
+              <MdTitle size={18} />
+            </ToolbarButton>
+            <ToolbarButton
+              onClick={() => editor.chain().focus().toggleBulletList().run()}
+              active={editor.isActive("bulletList")}
+              title="Bullet list"
+            >
+              <MdFormatListBulleted size={18} />
+            </ToolbarButton>
+            <ToolbarButton
+              onClick={() => editor.chain().focus().toggleOrderedList().run()}
+              active={editor.isActive("orderedList")}
+              title="Numbered list"
+            >
+              <MdFormatListNumbered size={18} />
+            </ToolbarButton>
+            <ToolbarButton
+              onClick={setLink}
+              active={editor.isActive("link")}
+              title="Link"
+            >
+              <MdLink size={18} />
+            </ToolbarButton>
           </div>
         </div>
       )}

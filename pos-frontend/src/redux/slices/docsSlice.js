@@ -116,6 +116,7 @@ export const deleteNode = createAsyncThunk(
 const initialState = {
   tree: [],
   selectedDoc: null,
+  activeDocId: null,
   treeLoading: false,
   docLoading: false,
   saveLoading: false,
@@ -132,6 +133,7 @@ const docsSlice = createSlice({
     },
     clearSelectedDoc: (state) => {
       state.selectedDoc = null;
+      state.activeDocId = null;
     },
     setSelectedDocLocal: (state, action) => {
       state.selectedDoc = action.payload;
@@ -151,18 +153,23 @@ const docsSlice = createSlice({
         state.treeLoading = false;
         state.error = action.payload;
       })
-      .addCase(fetchDoc.pending, (state) => {
+      .addCase(fetchDoc.pending, (state, action) => {
         state.docLoading = true;
+        state.activeDocId = action.meta.arg;
         state.error = null;
       })
       .addCase(fetchDoc.fulfilled, (state, action) => {
         state.docLoading = false;
-        state.selectedDoc = action.payload.data;
+        if (action.meta.arg === state.activeDocId) {
+          state.selectedDoc = action.payload.data;
+        }
       })
       .addCase(fetchDoc.rejected, (state, action) => {
         state.docLoading = false;
-        state.error = action.payload;
-        state.selectedDoc = null;
+        if (action.meta.arg === state.activeDocId) {
+          state.error = action.payload;
+          state.selectedDoc = null;
+        }
       })
       .addCase(createFolder.fulfilled, (state) => {
         state.error = null;

@@ -84,6 +84,9 @@ const Docs = () => {
 
   useEffect(() => {
     if (docId) {
+      setEditTitle("");
+      setEditContent("");
+      setIsDirty(false);
       dispatch(fetchDoc(docId));
     } else {
       dispatch(clearSelectedDoc());
@@ -91,12 +94,16 @@ const Docs = () => {
   }, [dispatch, docId]);
 
   useEffect(() => {
-    if (selectedDoc) {
+    if (
+      selectedDoc &&
+      docId &&
+      String(selectedDoc._id) === String(docId)
+    ) {
       setEditTitle(selectedDoc.title || "");
       setEditContent(selectedDoc.content || "");
       setIsDirty(false);
     }
-  }, [selectedDoc]);
+  }, [selectedDoc, docId]);
 
   useEffect(() => {
     if (error) {
@@ -201,11 +208,13 @@ const Docs = () => {
   };
 
   const handleSave = async () => {
-    if (!selectedDoc?._id) return;
+    if (!docId || !selectedDoc?._id) return;
+    if (String(selectedDoc._id) !== String(docId)) return;
+
     try {
       await dispatch(
         updateDoc({
-          id: selectedDoc._id,
+          id: docId,
           data: { title: editTitle, content: editContent },
         })
       ).unwrap();
@@ -537,7 +546,7 @@ const Docs = () => {
             </div>
           )}
 
-          {selectedDoc && !docLoading && (
+          {selectedDoc && !docLoading && String(selectedDoc._id) === String(docId) && (
             <div className="space-y-4">
               <div className="flex items-start justify-between gap-4 flex-wrap">
                 {showEditor ? (
@@ -567,8 +576,9 @@ const Docs = () => {
                 </span>
               )}
 
-              {showEditor && (
+              {showEditor && docId && (
                 <DocsEditor
+                  key={docId}
                   content={editContent}
                   onChange={(html) => {
                     setEditContent(html);
@@ -577,7 +587,9 @@ const Docs = () => {
                 />
               )}
 
-              {showViewer && <DocsViewer content={selectedDoc.content} />}
+              {showViewer && docId && (
+                <DocsViewer key={docId} content={selectedDoc.content} />
+              )}
 
               {isAdmin && selectedDoc.type === "folder" && (
                 <div className="text-center py-8 space-y-4">
