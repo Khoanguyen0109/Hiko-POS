@@ -242,32 +242,25 @@ const Categories = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] p-6">
+    <div className="min-h-screen bg-[#0f0f0f] p-4 sm:p-6 overflow-x-hidden">
       {/* Header Section */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
+      <div className="mb-6 sm:mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-4 min-w-0">
             <BackButton />
-            <h1 className="text-[#f5f5f5] text-2xl font-bold tracking-wider">
-              Categories
-            </h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-[#f6b100] rounded-lg">
-              <MdCategory size={28} className="text-[#1f1f1f]" />
-            </div>
-            <div>
-              <h1 className="text-[#f5f5f5] text-2xl font-bold">Categories</h1>
-              <p className="text-[#ababab] text-sm">
+            <div className="min-w-0">
+              <h1 className="text-[#f5f5f5] text-xl sm:text-2xl font-bold tracking-wider">
+                Categories
+              </h1>
+              <p className="text-[#ababab] text-xs sm:text-sm mt-1">
                 Manage your dish categories
               </p>
             </div>
           </div>
 
-          {/* Add Category Button */}
           <button
             onClick={handleAddCategory}
-            className="flex items-center gap-2 px-4 py-3 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-semibold hover:bg-[#e09900] transition-colors"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-semibold hover:bg-[#e09900] transition-colors whitespace-nowrap"
           >
             <IoMdAdd size={20} />
             Add Category
@@ -312,7 +305,7 @@ const Categories = () => {
         </div>
 
         {/* Filter Buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <span className="text-[#ababab] text-sm font-medium">Filter:</span>
           {["all", "active", "inactive"].map((status) => (
             <button

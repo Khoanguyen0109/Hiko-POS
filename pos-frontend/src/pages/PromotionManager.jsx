@@ -155,23 +155,23 @@ const PromotionManager = () => {
   }, { active: 0, inactive: 0 });
 
   return (
-    <div className="min-h-screen bg-[#1f1f1f] pb-20">
+    <div className="min-h-screen bg-[#1f1f1f] pb-20 overflow-x-hidden">
       <div className="container mx-auto px-4 md:px-6">
         {/* Header */}
-        <div className="bg-[#1a1a1a] rounded-lg border border-[#343434] p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <TagIcon size={32} className="text-blue-600" />
-              <div>
-                <h1 className="text-2xl font-bold text-[#f5f5f5]">Promotion Manager</h1>
-                <p className="text-[#ababab]">Manage your restaurant promotions and discounts</p>
+        <div className="bg-[#1a1a1a] rounded-lg border border-[#343434] p-4 sm:p-6 mb-6">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <TagIcon size={28} className="text-blue-600 shrink-0" />
+              <div className="min-w-0">
+                <h1 className="text-xl sm:text-2xl font-bold text-[#f5f5f5]">Promotion Manager</h1>
+                <p className="text-[#ababab] text-sm">Manage your restaurant promotions and discounts</p>
               </div>
             </div>
             
-              <div className="flex space-x-3">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full lg:w-auto">
                 <button
                   onClick={() => setShowAnalytics(!showAnalytics)}
-                  className="flex items-center px-4 py-2 bg-[#1f1f1f] hover:bg-[#262626] text-[#f5f5f5] rounded-lg border border-[#343434] transition-colors"
+                  className="flex items-center justify-center px-4 py-2 bg-[#1f1f1f] hover:bg-[#262626] text-[#f5f5f5] rounded-lg border border-[#343434] transition-colors text-sm whitespace-nowrap"
                 >
                   <ChartBarIcon size={20} className="mr-2" />
                   Analytics
@@ -182,7 +182,7 @@ const PromotionManager = () => {
                     setEditingPromotion(null);
                     setShowForm(true);
                   }}
-                  className="flex items-center px-4 py-2 bg-[#f6b100] hover:bg-[#e6a000] text-[#1f1f1f] rounded-lg font-semibold transition-colors"
+                  className="flex items-center justify-center px-4 py-2 bg-[#f6b100] hover:bg-[#e6a000] text-[#1f1f1f] rounded-lg font-semibold transition-colors text-sm whitespace-nowrap"
                 >
                   <PlusIcon size={20} className="mr-2" />
                   New Promotion

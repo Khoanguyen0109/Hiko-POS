@@ -197,12 +197,12 @@ const ShiftCheckout = () => {
   };
 
   return (
-    <section className="bg-[#1f1f1f] min-h-[calc(100vh-80px)] pb-24 px-4 md:px-8">
-      <div className="flex items-center gap-3 py-6">
+    <section className="bg-[#1f1f1f] min-h-[calc(100vh-80px)] pb-24 px-4 md:px-8 overflow-x-hidden">
+      <div className="flex items-center gap-3 py-4 sm:py-6">
         <BackButton />
-        <div className="flex items-center gap-2">
-          <MdAccountBalanceWallet className="text-[#f6b100]" size={28} />
-          <h1 className="text-2xl font-bold text-[#f5f5f5]">Shift checkout</h1>
+        <div className="flex items-center gap-2 min-w-0">
+          <MdAccountBalanceWallet className="text-[#f6b100] shrink-0" size={24} />
+          <h1 className="text-xl sm:text-2xl font-bold text-[#f5f5f5] truncate">Shift checkout</h1>
         </div>
       </div>
 

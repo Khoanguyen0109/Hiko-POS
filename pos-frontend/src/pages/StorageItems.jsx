@@ -126,7 +126,7 @@ const StorageItems = () => {
   if (loading && storageItems.length === 0) return <FullScreenLoader />;
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a] p-6">
+    <div className="min-h-screen bg-[#1a1a1a] p-4 sm:p-6 overflow-x-hidden">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">

@@ -134,13 +134,15 @@ const Toppings = () => {
   });
 
   return (
-    <section className="bg-[#1f1f1f] pb-20 min-h-screen ">
+    <section className="bg-[#1f1f1f] pb-20 min-h-screen overflow-x-hidden p-4 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-[#f5f5f5]">Toppings Management</h1>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-[#f5f5f5] min-w-0">
+          Toppings Management
+        </h1>
         <button
           onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 bg-[#f6b100] text-[#1f1f1f] px-4 py-2 rounded-lg font-semibold hover:bg-[#e09900] transition-colors"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#f6b100] text-[#1f1f1f] px-4 py-2 rounded-lg font-semibold hover:bg-[#e09900] transition-colors whitespace-nowrap"
         >
           <MdAdd size={20} />
           Add Topping
@@ -148,7 +150,7 @@ const Toppings = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6">
         <select
           value={filterCategory}
           onChange={(e) => setFilterCategory(e.target.value)}

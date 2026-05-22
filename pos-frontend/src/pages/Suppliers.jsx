@@ -252,23 +252,23 @@ const Suppliers = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a] p-6">
+    <div className="min-h-screen bg-[#1a1a1a] p-4 sm:p-6 overflow-x-hidden">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <BackButton />
-          <div className="flex items-center justify-between mt-4">
-            <div>
-              <h1 className="text-3xl font-bold text-[#f5f5f5] mb-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-4">
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold text-[#f5f5f5] mb-1 sm:mb-2">
                 Supplier Management
               </h1>
-              <p className="text-[#ababab]">
+              <p className="text-[#ababab] text-sm sm:text-base">
                 Manage your suppliers and vendors
               </p>
             </div>
             <button
               onClick={handleAddSupplier}
-              className="flex items-center gap-2 px-6 py-3 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-semibold hover:bg-[#e5a000] transition-colors"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-semibold hover:bg-[#e5a000] transition-colors text-sm sm:text-base whitespace-nowrap"
             >
               <IoMdAdd size={20} />
               Add Supplier

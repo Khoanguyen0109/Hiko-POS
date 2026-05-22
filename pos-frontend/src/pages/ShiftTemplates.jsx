@@ -119,31 +119,31 @@ const ShiftTemplates = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] pb-20">
+    <div className="min-h-screen bg-[#0f0f0f] pb-20 overflow-x-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-10 py-4 border-b border-[#343434]">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-10 py-4 border-b border-[#343434] gap-4">
+        <div className="flex items-center gap-4 min-w-0">
           <BackButton />
-          <div>
-            <h1 className="text-[#f5f5f5] text-2xl font-bold tracking-wider">
+          <div className="min-w-0">
+            <h1 className="text-[#f5f5f5] text-xl sm:text-2xl font-bold tracking-wider">
               Shift Templates
             </h1>
-            <p className="text-[#ababab] text-sm mt-1">
+            <p className="text-[#ababab] text-xs sm:text-sm mt-1">
               {shiftTemplates.length} templates
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto shrink-0">
           <button
             onClick={handleCreateClick}
-            className="px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#f6b100]/90 transition-colors flex items-center gap-2"
+            className="px-3 sm:px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#f6b100]/90 transition-colors flex items-center justify-center gap-2 text-sm whitespace-nowrap"
           >
             <MdAdd size={16} /> Add Template
           </button>
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="px-4 py-2 bg-[#262626] text-[#f5f5f5] rounded-lg font-medium hover:bg-[#343434] transition-colors flex items-center gap-2"
+            className="px-3 sm:px-4 py-2 bg-[#262626] text-[#f5f5f5] rounded-lg font-medium hover:bg-[#343434] transition-colors flex items-center justify-center gap-2 text-sm whitespace-nowrap"
           >
             <MdRefresh size={16} className={loading ? "animate-spin" : ""} />{" "}
             Refresh
@@ -152,7 +152,7 @@ const ShiftTemplates = () => {
       </div>
 
       {/* Content */}
-      <div className="px-10 py-6">
+      <div className="px-4 sm:px-10 py-6">
         {loading ? (
           <FullScreenLoader />
         ) : shiftTemplates.length > 0 ? (
