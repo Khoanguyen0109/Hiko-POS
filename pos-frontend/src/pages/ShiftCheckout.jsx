@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
@@ -27,6 +27,22 @@ const TABS = {
   MY_SHIFT: "my_shift",
   DAY: "day",
 };
+
+const shiftStartMinutes = (startTime) => {
+  if (!startTime || typeof startTime !== "string") return 0;
+  const [hours, minutes] = startTime.split(":").map(Number);
+  return (hours || 0) * 60 + (minutes || 0);
+};
+
+const sortByShiftStartTimeAsc = (rows, getTemplate) =>
+  [...rows].sort((a, b) => {
+    const ta = shiftStartMinutes(getTemplate(a)?.startTime);
+    const tb = shiftStartMinutes(getTemplate(b)?.startTime);
+    if (ta !== tb) return ta - tb;
+    const nameA = a.member?.name || "";
+    const nameB = b.member?.name || "";
+    return nameA.localeCompare(nameB);
+  });
 
 const statusBadge = (status) => {
   if (status === "balanced") {
@@ -144,6 +160,24 @@ const ShiftCheckout = () => {
     );
   };
 
+  const sortedMyShifts = useMemo(
+    () =>
+      sortByShiftStartTimeAsc(
+        myShifts,
+        (row) => row.schedule?.shiftTemplate
+      ),
+    [myShifts]
+  );
+
+  const sortedDayCheckouts = useMemo(
+    () =>
+      sortByShiftStartTimeAsc(
+        dayCheckouts,
+        (c) => c.shiftTemplate
+      ),
+    [dayCheckouts]
+  );
+
   const handleDeleteCheckout = async (checkout) => {
     const memberName = checkout.member?.name || "this member";
     if (
@@ -213,7 +247,7 @@ const ShiftCheckout = () => {
 
           {(loading || checkInLoading) && <FullScreenLoader />}
 
-          {!loading && myShifts.length === 0 && (
+          {!loading && sortedMyShifts.length === 0 && (
             <p className="text-[#ababab] py-8 text-center">
               {canViewStoreShifts
                 ? "No shifts scheduled for this date."
@@ -221,7 +255,7 @@ const ShiftCheckout = () => {
             </p>
           )}
 
-          {myShifts.map((row) => {
+          {sortedMyShifts.map((row) => {
             const tpl = row.schedule?.shiftTemplate;
             const checkout = row.checkout;
             const checkIn = row.checkIn;
@@ -319,7 +353,7 @@ const ShiftCheckout = () => {
 
           {dayLoading && <FullScreenLoader />}
 
-          {!dayLoading && dayCheckouts.length === 0 && (
+          {!dayLoading && sortedDayCheckouts.length === 0 && (
             <p className="text-[#ababab] py-8 text-center">
               No shift checkouts for this date.
             </p>
@@ -340,7 +374,7 @@ const ShiftCheckout = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#383838]">
-                {dayCheckouts.map((c) => (
+                {sortedDayCheckouts.map((c) => (
                   <tr key={c._id} className="bg-[#262626] text-[#f5f5f5]">
                     <td className="px-4 py-3">{c.member?.name || "—"}</td>
                     <td className="px-4 py-3">
