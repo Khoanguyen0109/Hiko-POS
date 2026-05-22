@@ -102,9 +102,9 @@ const ShiftCheckoutModal = ({
         variant: status === "balanced" ? "success" : "warning",
       });
 
-      dispatch(
-        fetchMyShiftCheckouts({ date: refreshDate || getTodayDate() })
-      );
+      if (refreshDate) {
+        await dispatch(fetchMyShiftCheckouts({ date: refreshDate })).unwrap();
+      }
       onSuccess?.();
       onClose();
     } catch {

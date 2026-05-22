@@ -41,6 +41,7 @@ const DishBottomSheet = ({
     return null;
   });
   const [selectedToppings, setSelectedToppings] = useState({});
+  const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
     dispatch(fetchToppingsByCategory());
@@ -73,6 +74,10 @@ const DishBottomSheet = ({
     .flat()
     .filter((t) => t.isAvailable);
 
+  const handleQuantityChange = (change) => {
+    setQuantity((prev) => Math.max(1, prev + change));
+  };
+
   const handleToppingQuantityChange = (toppingId, change) => {
     setSelectedToppings((prev) => {
       const current = prev[toppingId] || 0;
@@ -89,7 +94,8 @@ const DishBottomSheet = ({
   const handleAddToCart = () => {
     const currentPrice = getCurrentPrice();
     const toppingsPrice = getToppingsPrice();
-    const totalItemPrice = currentPrice + toppingsPrice;
+    const pricePerQuantity = currentPrice + toppingsPrice;
+    const totalItemPrice = pricePerQuantity * quantity;
 
     let dishName = dish.name;
     if (selectedVariant) {
@@ -113,9 +119,9 @@ const DishBottomSheet = ({
       const orderItem = {
         dishId: dish._id,
         name: dishName,
-        originalPricePerQuantity: totalItemPrice,
-        pricePerQuantity: totalItemPrice,
-        quantity: 1,
+        originalPricePerQuantity: pricePerQuantity,
+        pricePerQuantity,
+        quantity,
         originalPrice: totalItemPrice,
         price: totalItemPrice,
         category: dish.category?.name || selectedCategory?.name || "Unknown",
@@ -144,8 +150,8 @@ const DishBottomSheet = ({
         id: `${dish._id}-${selectedVariant?.size || "default"}-${Date.now()}`,
         dishId: dish._id,
         name: dishName,
-        pricePerQuantity: totalItemPrice,
-        quantity: 1,
+        pricePerQuantity,
+        quantity,
         price: totalItemPrice,
         category: dish.category?.name || selectedCategory?.name || "Unknown",
         image: dish.image || defaultDishImage,
@@ -167,6 +173,7 @@ const DishBottomSheet = ({
 
   const hasVariants = dish.hasSizeVariants && dish.sizeVariants?.length > 0;
   const hasToppings = allToppings.length > 0;
+  const totalPrice = (getCurrentPrice() + getToppingsPrice()) * quantity;
 
   return (
     <>
@@ -330,14 +337,41 @@ const DishBottomSheet = ({
             )}
           </div>
 
-          {/* Add to Order Button */}
-          <div className="px-5 pb-5 pt-3 flex-shrink-0">
+          {/* Quantity & Add to Order */}
+          <div className="px-5 pb-5 pt-3 flex-shrink-0 border-t border-[#2a2a2a]">
+            <div className="flex items-center justify-between py-3">
+              <span className="text-[#888] text-xs font-semibold tracking-widest uppercase">
+                Số lượng
+              </span>
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => handleQuantityChange(-1)}
+                  disabled={quantity <= 1}
+                  className="w-8 h-8 rounded-lg bg-[#333] text-[#aaa] flex items-center justify-center disabled:opacity-30 transition-colors hover:bg-[#444]"
+                >
+                  <MdRemove size={16} />
+                </button>
+                <span className="text-white text-base font-semibold w-6 text-center">
+                  {quantity}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleQuantityChange(1)}
+                  className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center transition-colors hover:bg-emerald-500"
+                >
+                  <MdAdd size={16} />
+                </button>
+              </div>
+            </div>
             <button
               onClick={handleAddToCart}
               disabled={!dish.isAvailable}
               className="w-full py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-base transition-colors"
             >
-              {dish.isAvailable ? "+ Thêm vào đơn" : "Hết hàng"}
+              {dish.isAvailable
+                ? `+ Thêm vào đơn · ${formatCompactPrice(totalPrice)}`
+                : "Hết hàng"}
             </button>
           </div>
         </div>

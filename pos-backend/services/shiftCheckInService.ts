@@ -64,26 +64,25 @@ export async function submitShiftCheckIn(
   return checkIn;
 }
 
-export function attachCheckInsToShiftRows(
-  rows: Array<{
-    schedule: { _id: Types.ObjectId };
-    member?: { _id: Types.ObjectId };
-  }>,
-  checkIns: Array<{ schedule: Types.ObjectId; member: Types.ObjectId }>
-) {
+function toIdString(ref) {
+  if (!ref) return "";
+  if (typeof ref === "string") return ref;
+  if (typeof ref === "object" && ref._id != null) {
+    return String(ref._id);
+  }
+  return String(ref);
+}
+
+export function attachCheckInsToShiftRows(rows, checkIns) {
   const map = new Map(
     checkIns.map((ci) => [
-      `${ci.schedule.toString()}:${ci.member.toString()}`,
+      `${toIdString(ci.schedule)}:${toIdString(ci.member)}`,
       ci,
     ])
   );
 
   return rows.map((row) => {
-    const memberId =
-      row.member?._id?.toString?.() ||
-      (row.member as Types.ObjectId)?.toString?.() ||
-      "";
-    const key = `${row.schedule._id.toString()}:${memberId}`;
+    const key = `${toIdString(row.schedule?._id)}:${toIdString(row.member?._id)}`;
     const checkIn = map.get(key) || null;
     return {
       ...row,

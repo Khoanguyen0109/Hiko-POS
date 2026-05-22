@@ -63,7 +63,7 @@ const ShiftCheckInModal = ({
         variant: "success",
       });
       if (refreshDate) {
-        dispatch(fetchMyShiftCheckouts({ date: refreshDate }));
+        await dispatch(fetchMyShiftCheckouts({ date: refreshDate })).unwrap();
       }
       onSuccess?.();
       onClose();

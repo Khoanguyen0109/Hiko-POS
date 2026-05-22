@@ -228,13 +228,18 @@ export async function getMyShiftCheckoutsForDate(
     loadCheckInsForSchedules(storeId, scheduleIds),
   ]);
 
-  const checkoutBySchedule = new Map(
-    checkouts.map((c) => [c.schedule.toString(), c])
+  const checkoutByKey = new Map(
+    checkouts.map((c) => [
+      `${c.schedule.toString()}:${c.member.toString()}`,
+      c,
+    ])
   );
 
   const rows = await Promise.all(
     schedules.map(async (schedule) => {
-      const checkout = checkoutBySchedule.get(schedule._id.toString());
+      const checkout = checkoutByKey.get(
+        `${schedule._id.toString()}:${memberId.toString()}`
+      );
       let expected = null;
       if (!checkout && schedule.shiftTemplate) {
         expected = await getExpectedTotalsForSchedule(storeId, schedule);

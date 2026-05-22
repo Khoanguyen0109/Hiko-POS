@@ -163,9 +163,33 @@ const shiftCheckoutSlice = createSlice({
         state.submitLoading = true;
         state.error = null;
       })
-      .addCase(submitShiftCheckout.fulfilled, (state) => {
+      .addCase(submitShiftCheckout.fulfilled, (state, action) => {
         state.submitLoading = false;
         state.preview = null;
+        const checkout = action.payload.data;
+        if (!checkout) return;
+
+        const scheduleId = String(
+          checkout.schedule?._id || checkout.schedule
+        );
+        const memberId = String(checkout.member?._id || checkout.member);
+
+        state.myShifts = state.myShifts.map((row) => {
+          const rowScheduleId = String(row.schedule?._id);
+          const rowMemberId = String(row.member?._id || "");
+          if (
+            rowScheduleId === scheduleId &&
+            (!rowMemberId || rowMemberId === memberId)
+          ) {
+            return {
+              ...row,
+              checkout,
+              checkoutStatus: checkout.status,
+              expectedPreview: null,
+            };
+          }
+          return row;
+        });
       })
       .addCase(submitShiftCheckout.rejected, (state, action) => {
         state.submitLoading = false;
@@ -261,6 +285,8 @@ const shiftCheckoutSlice = createSlice({
       .addCase(submitShiftCheckIn.fulfilled, (state, action) => {
         state.checkInLoading = false;
         const checkIn = action.payload.data;
+        if (!checkIn) return;
+
         const scheduleId = String(checkIn.schedule?._id || checkIn.schedule);
         const memberId = String(checkIn.member?._id || checkIn.member);
 
