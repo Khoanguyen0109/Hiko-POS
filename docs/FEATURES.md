@@ -36,6 +36,7 @@ A restaurant point-of-sale and operations platform for taking orders, managing s
 - View daily cash vs banking totals
 - End-of-shift checkout: staff enter counted cash and banking; system compares to completed orders in the scheduled shift window
 - Admin (and managers) can view all store shifts for a date and check out on behalf of any assigned member
+- Shift check-in: staff record opening cash in the drawer before the shift; check-out is required after check-in
 - Mismatch warnings with required notes; managers review all checkouts per day
 
 ---

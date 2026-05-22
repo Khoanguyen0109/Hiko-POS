@@ -32,6 +32,20 @@ export const fetchShiftCheckoutPreview = createAsyncThunk(
   }
 );
 
+export const submitShiftCheckIn = createAsyncThunk(
+  "shiftCheckout/checkIn",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const response = await shiftCheckoutApi.submitShiftCheckIn(payload);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to check in"
+      );
+    }
+  }
+);
+
 export const submitShiftCheckout = createAsyncThunk(
   "shiftCheckout/submit",
   async (payload, { rejectWithValue }) => {
@@ -98,6 +112,7 @@ const initialState = {
   listLoading: false,
   listError: null,
   deleteLoading: false,
+  checkInLoading: false,
   preview: null,
   loading: false,
   previewLoading: false,
@@ -238,6 +253,36 @@ const shiftCheckoutSlice = createSlice({
       .addCase(deleteShiftCheckout.rejected, (state, action) => {
         state.deleteLoading = false;
         state.listError = action.payload;
+      })
+      .addCase(submitShiftCheckIn.pending, (state) => {
+        state.checkInLoading = true;
+        state.error = null;
+      })
+      .addCase(submitShiftCheckIn.fulfilled, (state, action) => {
+        state.checkInLoading = false;
+        const checkIn = action.payload.data;
+        const scheduleId = String(checkIn.schedule?._id || checkIn.schedule);
+        const memberId = String(checkIn.member?._id || checkIn.member);
+
+        state.myShifts = state.myShifts.map((row) => {
+          const rowScheduleId = String(row.schedule?._id);
+          const rowMemberId = String(row.member?._id || "");
+          if (
+            rowScheduleId === scheduleId &&
+            (!rowMemberId || rowMemberId === memberId)
+          ) {
+            return {
+              ...row,
+              checkIn,
+              checkInStatus: "checked_in",
+            };
+          }
+          return row;
+        });
+      })
+      .addCase(submitShiftCheckIn.rejected, (state, action) => {
+        state.checkInLoading = false;
+        state.error = action.payload;
       });
   },
 });

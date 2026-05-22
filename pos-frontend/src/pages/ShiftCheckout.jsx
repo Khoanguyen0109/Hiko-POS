@@ -9,9 +9,11 @@ import {
   MdWarning,
   MdAccessTime,
   MdDelete,
+  MdLogin,
 } from "react-icons/md";
 import BackButton from "../components/shared/BackButton";
 import ShiftCheckoutModal from "../components/shiftcheckout/ShiftCheckoutModal";
+import ShiftCheckInModal from "../components/shiftcheckout/ShiftCheckInModal";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import {
   fetchMyShiftCheckouts,
@@ -66,14 +68,18 @@ const ShiftCheckout = () => {
     dayLoading,
     error,
     deleteLoading,
+    checkInLoading,
   } = useSelector((state) => state.shiftCheckout);
 
   const [activeTab, setActiveTab] = useState(TABS.MY_SHIFT);
   const [selectedDate, setSelectedDate] = useState(getTodayDate());
   const [dayDate, setDayDate] = useState(getTodayDate());
   const [modalOpen, setModalOpen] = useState(false);
+  const [checkInModalOpen, setCheckInModalOpen] = useState(false);
   const [selectedScheduleId, setSelectedScheduleId] = useState(null);
   const [selectedMemberId, setSelectedMemberId] = useState(null);
+  const [selectedMemberName, setSelectedMemberName] = useState("");
+  const [selectedShiftName, setSelectedShiftName] = useState("");
 
   useEffect(() => {
     document.title = "POS | Shift Checkout";
@@ -108,10 +114,34 @@ const ShiftCheckout = () => {
     }
   }, [error, dispatch]);
 
+  const openCheckIn = (row) => {
+    const tpl = row.schedule?.shiftTemplate;
+    setSelectedScheduleId(row.schedule._id);
+    setSelectedMemberId(row.member?._id || null);
+    setSelectedMemberName(row.member?.name || "");
+    setSelectedShiftName(tpl?.name || tpl?.shortName || "Shift");
+    setCheckInModalOpen(true);
+  };
+
   const openCheckout = (scheduleId, memberId = null) => {
     setSelectedScheduleId(scheduleId);
     setSelectedMemberId(memberId);
     setModalOpen(true);
+  };
+
+  const checkInBadge = (status) => {
+    if (status === "checked_in") {
+      return (
+        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-emerald-900/40 text-emerald-400">
+          <MdLogin size={14} /> Checked in
+        </span>
+      );
+    }
+    return (
+      <span className="text-xs px-2 py-0.5 rounded bg-[#383838] text-[#ababab]">
+        Not checked in
+      </span>
+    );
   };
 
   const handleDeleteCheckout = async (checkout) => {
@@ -181,7 +211,7 @@ const ShiftCheckout = () => {
             />
           </div>
 
-          {loading && <FullScreenLoader />}
+          {(loading || checkInLoading) && <FullScreenLoader />}
 
           {!loading && myShifts.length === 0 && (
             <p className="text-[#ababab] py-8 text-center">
@@ -194,8 +224,10 @@ const ShiftCheckout = () => {
           {myShifts.map((row) => {
             const tpl = row.schedule?.shiftTemplate;
             const checkout = row.checkout;
+            const checkIn = row.checkIn;
             const preview = row.expectedPreview;
             const memberId = row.member?._id;
+            const isCheckedIn = row.checkInStatus === "checked_in";
             const rowKey = memberId
               ? `${row.schedule._id}-${memberId}`
               : row.schedule._id;
@@ -225,6 +257,11 @@ const ShiftCheckout = () => {
                       {preview.orderCount} orders)
                     </p>
                   )}
+                  {checkIn && (
+                    <p className="text-xs text-emerald-400/90 mt-2">
+                      Opening cash: {formatVND(checkIn.openingCash)}
+                    </p>
+                  )}
                   {checkout && (
                     <p className="text-xs text-[#ababab] mt-2">
                       Counted: {formatVND(checkout.countedCash)} cash ·{" "}
@@ -232,15 +269,35 @@ const ShiftCheckout = () => {
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-3">
-                  {statusBadge(row.checkoutStatus)}
-                  <button
-                    type="button"
-                    onClick={() => openCheckout(row.schedule._id, memberId)}
-                    className="px-4 py-2 text-sm font-medium bg-[#f6b100] text-[#1f1f1f] rounded-lg hover:bg-[#e5a600]"
-                  >
-                    {checkout ? "View" : "Check out"}
-                  </button>
+                <div className="flex flex-col items-end gap-2">
+                  <div className="flex items-center gap-2 flex-wrap justify-end">
+                    {checkInBadge(row.checkInStatus)}
+                    {statusBadge(row.checkoutStatus)}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {!isCheckedIn && (
+                      <button
+                        type="button"
+                        onClick={() => openCheckIn(row)}
+                        className="px-4 py-2 text-sm font-medium bg-[#10B981] text-white rounded-lg hover:bg-[#059669]"
+                      >
+                        Check in
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => openCheckout(row.schedule._id, memberId)}
+                      disabled={!isCheckedIn}
+                      title={
+                        !isCheckedIn
+                          ? "Check in before checking out"
+                          : undefined
+                      }
+                      className="px-4 py-2 text-sm font-medium bg-[#f6b100] text-[#1f1f1f] rounded-lg hover:bg-[#e5a600] disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {checkout ? "View" : "Check out"}
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -332,6 +389,25 @@ const ShiftCheckout = () => {
           </div>
         </div>
       )}
+
+      <ShiftCheckInModal
+        isOpen={checkInModalOpen}
+        onClose={() => {
+          setCheckInModalOpen(false);
+          setSelectedScheduleId(null);
+          setSelectedMemberId(null);
+          setSelectedMemberName("");
+          setSelectedShiftName("");
+        }}
+        scheduleId={selectedScheduleId}
+        memberId={selectedMemberId}
+        memberName={selectedMemberName}
+        shiftName={selectedShiftName}
+        refreshDate={selectedDate}
+        onSuccess={() =>
+          dispatch(fetchMyShiftCheckouts({ date: selectedDate }))
+        }
+      />
 
       <ShiftCheckoutModal
         isOpen={modalOpen}

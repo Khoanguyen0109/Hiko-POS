@@ -13,6 +13,7 @@ import {
   submitShiftCheckout,
   deleteShiftCheckout,
 } from "../services/shiftCheckoutService.js";
+import { submitShiftCheckIn } from "../services/shiftCheckInService.js";
 
 const getPreview = async (req, res, next) => {
   try {
@@ -181,6 +182,32 @@ const getById = async (req, res, next) => {
   }
 };
 
+const submitCheckIn = async (req, res, next) => {
+  try {
+    const { scheduleId, openingCash, notes, memberId } = req.body;
+
+    if (!scheduleId) {
+      return next(createHttpError(400, "scheduleId is required"));
+    }
+
+    const checkIn = await submitShiftCheckIn(
+      scheduleId,
+      req.store._id,
+      req.user,
+      { openingCash, notes, memberId },
+      req.storeUser?.role
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "Shift check-in recorded",
+      data: checkIn,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const deleteCheckout = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -203,6 +230,7 @@ const deleteCheckout = async (req, res, next) => {
 export {
   getPreview,
   submitCheckout,
+  submitCheckIn,
   getMyToday,
   getDay,
   getList,

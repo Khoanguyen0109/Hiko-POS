@@ -54,6 +54,7 @@ const ShiftCheckoutModal = ({
 
   const expected = preview || {};
   const existing = expected.existingCheckout;
+  const checkInRecord = expected.checkIn;
 
   const countedCashNum = parseFloat(countedCash) || 0;
   const countedBankingNum = parseFloat(countedBanking) || 0;
@@ -170,6 +171,17 @@ const ShiftCheckoutModal = ({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
+            {checkInRecord && (
+              <div className="p-3 bg-emerald-900/20 border border-emerald-700/40 rounded-lg text-sm">
+                <p className="text-emerald-300">
+                  Opening cash at check-in:{" "}
+                  <span className="font-semibold">
+                    {formatVND(checkInRecord.openingCash)}
+                  </span>
+                </p>
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4 p-4 bg-[#1f1f1f] rounded-lg">
               <div>
                 <p className="text-xs text-[#ababab] uppercase mb-1">Expected cash</p>

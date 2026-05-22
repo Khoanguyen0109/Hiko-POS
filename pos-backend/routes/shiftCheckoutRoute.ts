@@ -2,6 +2,7 @@ import express from "express";
 import {
   getPreview,
   submitCheckout,
+  submitCheckIn,
   getMyToday,
   getDay,
   getList,
@@ -33,6 +34,10 @@ router
 router
   .route("/preview/:scheduleId")
   .get(isVerifiedUser, storeContext, getPreview);
+
+router
+  .route("/check-in")
+  .post(isVerifiedUser, storeContext, submitCheckIn);
 
 router.route("/").post(isVerifiedUser, storeContext, submitCheckout);
 

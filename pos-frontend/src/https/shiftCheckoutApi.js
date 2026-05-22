@@ -8,6 +8,9 @@ export const getShiftCheckoutPreview = (scheduleId, memberId) =>
 export const submitShiftCheckout = (data) =>
   axiosWrapper.post("/api/shift-checkout", data);
 
+export const submitShiftCheckIn = (data) =>
+  axiosWrapper.post("/api/shift-checkout/check-in", data);
+
 export const getMyShiftCheckoutsToday = (params) =>
   axiosWrapper.get("/api/shift-checkout/my-today", { params });
 
