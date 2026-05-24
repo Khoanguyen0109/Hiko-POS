@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
@@ -73,6 +73,25 @@ const Docs = () => {
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
   const [isDirty, setIsDirty] = useState(false);
+  const pendingSaveRef = useRef({
+    docId: null,
+    editTitle: "",
+    editContent: "",
+    isDirty: false,
+    isAdmin: false,
+    selectedDocId: null,
+  });
+
+  useEffect(() => {
+    pendingSaveRef.current = {
+      docId,
+      editTitle,
+      editContent,
+      isDirty,
+      isAdmin,
+      selectedDocId: selectedDoc?._id ?? null,
+    };
+  });
 
   useEffect(() => {
     document.title = "POS | Documentation";
@@ -111,19 +130,70 @@ const Docs = () => {
     }
   }, [error]);
 
-  const confirmDiscard = useCallback(() => {
-    if (!isDirty) return true;
-    return window.confirm("You have unsaved changes. Discard them?");
-  }, [isDirty]);
+  useEffect(() => {
+    const leavingDocId = docId;
 
-  const handleBackToBrowse = () => {
-    if (!confirmDiscard()) return;
+    return () => {
+      const pending = pendingSaveRef.current;
+      if (!pending.isAdmin || !pending.isDirty || !leavingDocId) return;
+      if (String(pending.docId) !== String(leavingDocId)) return;
+      if (String(pending.selectedDocId) !== String(leavingDocId)) return;
+
+      dispatch(
+        updateDoc({
+          id: leavingDocId,
+          data: { title: pending.editTitle, content: pending.editContent },
+        })
+      );
+    };
+  }, [dispatch, docId]);
+
+  const saveDoc = async ({ silent = false, refresh = false } = {}) => {
+    if (!isAdmin || !docId || !selectedDoc?._id) return false;
+    if (String(selectedDoc._id) !== String(docId)) return false;
+    if (!isDocNode(selectedDoc)) return false;
+    if (!isDirty) return true;
+
+    try {
+      await dispatch(
+        updateDoc({
+          id: docId,
+          data: { title: editTitle, content: editContent },
+        })
+      ).unwrap();
+      setIsDirty(false);
+      pendingSaveRef.current = {
+        ...pendingSaveRef.current,
+        isDirty: false,
+      };
+      if (!silent) {
+        enqueueSnackbar("Saved", { variant: "success" });
+      }
+      if (refresh) {
+        await refreshTree();
+      }
+      return true;
+    } catch (err) {
+      enqueueSnackbar(err || "Failed to save", { variant: "error" });
+      return false;
+    }
+  };
+
+  const autoSaveIfDirty = () => saveDoc({ silent: true, refresh: false });
+
+  const handleBackToBrowse = async () => {
+    await autoSaveIfDirty();
     navigate(ROUTES.DOCS);
   };
 
-  const handleSelectDoc = (node) => {
-    if (!confirmDiscard()) return;
+  const handleSelectDoc = async (node) => {
+    await autoSaveIfDirty();
     navigate(`${ROUTES.DOCS}/${node._id}`);
+  };
+
+  const handleLeaveDocs = async () => {
+    await autoSaveIfDirty();
+    navigate(-1);
   };
 
   const handleSelectFolder = (node) => {
@@ -213,33 +283,14 @@ const Docs = () => {
     }
   };
 
-  const handleSave = async () => {
-    if (!docId || !selectedDoc?._id) return false;
-    if (String(selectedDoc._id) !== String(docId)) return false;
-
-    try {
-      await dispatch(
-        updateDoc({
-          id: docId,
-          data: { title: editTitle, content: editContent },
-        })
-      ).unwrap();
-      setIsDirty(false);
-      enqueueSnackbar("Saved", { variant: "success" });
-      await refreshTree();
-      return true;
-    } catch (err) {
-      enqueueSnackbar(err || "Failed to save", { variant: "error" });
-      return false;
-    }
-  };
+  const handleSave = async () => saveDoc({ silent: false, refresh: true });
 
   const handlePublish = async () => {
     if (!docId || !selectedDoc?._id) return;
     if (String(selectedDoc._id) !== String(docId)) return;
 
     if (isDirty) {
-      const saved = await handleSave();
+      const saved = await saveDoc({ silent: true, refresh: false });
       if (!saved) return;
     }
     try {
@@ -395,7 +446,7 @@ const Docs = () => {
         }`}
       >
         <div className="flex items-center gap-3 min-w-0">
-          <BackButton />
+          <BackButton onClick={handleLeaveDocs} />
           <div className="flex items-center gap-2 min-w-0">
             <MdMenuBook size={22} className="text-[#f6b100] shrink-0" />
             <h1 className="text-xl lg:text-2xl font-semibold text-[#f5f5f5] truncate">
