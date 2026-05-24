@@ -10,7 +10,7 @@ import {
   MdEdit,
   MdHome,
 } from "react-icons/md";
-import { DOCS_ROOT_ID } from "../../constants/docs";
+import { DOCS_ROOT_ID, isFolderNode } from "../../constants/docs";
 
 const DocsTreeNode = ({
   node,
@@ -24,13 +24,13 @@ const DocsTreeNode = ({
   depth = 0,
 }) => {
   const [expanded, setExpanded] = useState(depth < 2);
-  const isFolder = node.type === "folder";
+  const isFolder = isFolderNode(node);
   const hasDocSelection = Boolean(selectedId);
   const isSelected = hasDocSelection
     ? !isFolder && String(selectedId) === String(node._id)
     : isFolder && String(highlightFolderId) === String(node._id);
   const hasChildren = isFolder && node.children?.length > 0;
-  const isDraft = node.type === "doc" && node.status === "draft";
+  const isDraft = !isFolder && node.status === "draft";
 
   const handleClick = () => {
     if (isFolder) {

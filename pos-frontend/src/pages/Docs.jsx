@@ -34,7 +34,7 @@ import {
   clearSelectedDoc,
 } from "../redux/slices/docsSlice";
 import { ROUTES } from "../constants";
-import { DOCS_ROOT_ID } from "../constants/docs";
+import { DOCS_ROOT_ID, isDocNode, isFolderNode } from "../constants/docs";
 
 const findNodeById = (nodes, id) => {
   for (const node of nodes) {
@@ -214,8 +214,8 @@ const Docs = () => {
   };
 
   const handleSave = async () => {
-    if (!docId || !selectedDoc?._id) return;
-    if (String(selectedDoc._id) !== String(docId)) return;
+    if (!docId || !selectedDoc?._id) return false;
+    if (String(selectedDoc._id) !== String(docId)) return false;
 
     try {
       await dispatch(
@@ -227,8 +227,10 @@ const Docs = () => {
       setIsDirty(false);
       enqueueSnackbar("Saved", { variant: "success" });
       await refreshTree();
+      return true;
     } catch (err) {
       enqueueSnackbar(err || "Failed to save", { variant: "error" });
+      return false;
     }
   };
 
@@ -237,7 +239,8 @@ const Docs = () => {
     if (String(selectedDoc._id) !== String(docId)) return;
 
     if (isDirty) {
-      await handleSave();
+      const saved = await handleSave();
+      if (!saved) return;
     }
     try {
       const result = await dispatch(publishDoc(docId)).unwrap();
@@ -271,7 +274,7 @@ const Docs = () => {
     const target = nodeOverride || selectedDoc;
     if (!target?._id) return;
 
-    const isFolder = target.type === "folder";
+    const isFolder = isFolderNode(target);
     const label = isFolder ? "folder" : "document";
     const cascadeNote = isFolder
       ? " All documents inside will also be removed."
@@ -314,10 +317,11 @@ const Docs = () => {
 
   const isRootSelected = selectedFolderId === DOCS_ROOT_ID;
 
-  const isDocSelected = Boolean(selectedDoc && selectedDoc.type !== "folder");
+  const isDocSelected = Boolean(selectedDoc && isDocNode(selectedDoc));
   const isPublished = selectedDoc?.status === "published";
   const showEditor = isAdmin && isDocSelected;
   const showViewer = !isAdmin && isDocSelected && isPublished;
+  const contentKey = `${docId || "none"}-${selectedDoc?.status || "unknown"}-${selectedDoc?.updatedAt || ""}`;
   const showBrowseView = !docId;
   const showDocView = !!docId;
 
@@ -592,7 +596,7 @@ const Docs = () => {
 
               {showEditor && docId && (
                 <DocsEditor
-                  key={docId}
+                  key={contentKey}
                   content={editContent}
                   onChange={(html) => {
                     setEditContent(html);
@@ -602,10 +606,10 @@ const Docs = () => {
               )}
 
               {showViewer && docId && (
-                <DocsViewer key={docId} content={selectedDoc.content} />
+                <DocsViewer key={contentKey} content={editContent} />
               )}
 
-              {isAdmin && selectedDoc.type === "folder" && (
+              {isAdmin && isFolderNode(selectedDoc) && (
                 <div className="text-center py-8 space-y-4">
                   <p className="text-[#ababab] text-sm">
                     Folder selected. Create or open a document inside this folder.

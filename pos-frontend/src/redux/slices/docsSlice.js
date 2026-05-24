@@ -205,6 +205,7 @@ const docsSlice = createSlice({
           state.tree = updateNodeInTree(state.tree, node._id, (existing) => ({
             ...existing,
             title: node.title,
+            content: node.content,
             status: node.status,
           }));
         }
@@ -223,6 +224,8 @@ const docsSlice = createSlice({
         if (node?._id) {
           state.tree = updateNodeInTree(state.tree, node._id, (existing) => ({
             ...existing,
+            title: node.title,
+            content: node.content,
             status: node.status,
             publishedAt: node.publishedAt,
             publishedBy: node.publishedBy,

@@ -37,6 +37,7 @@ ToolbarButton.propTypes = {
 
 const DocsEditor = ({ content, onChange, editable = true }) => {
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit,
       Link.configure({ openOnClick: false }),
@@ -63,6 +64,15 @@ const DocsEditor = ({ content, onChange, editable = true }) => {
     }
   }, [editor, editable]);
 
+  useEffect(() => {
+    if (!editor) return;
+    const nextContent = content || "";
+    const currentContent = editor.getHTML();
+    if (nextContent !== currentContent) {
+      editor.commands.setContent(nextContent, { emitUpdate: false });
+    }
+  }, [editor, content]);
+
   const setLink = () => {
     if (!editor) return;
     const previousUrl = editor.getAttributes("link").href;
@@ -75,7 +85,16 @@ const DocsEditor = ({ content, onChange, editable = true }) => {
     editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
   };
 
-  if (!editor) return null;
+  if (!editor) {
+    return (
+      <div className="border border-[#343434] rounded-xl overflow-hidden bg-[#1a1a1a]">
+        <div
+          className="prose prose-invert max-w-none min-h-[240px] lg:min-h-[320px] px-4 py-3 text-[#f5f5f5]"
+          dangerouslySetInnerHTML={{ __html: content || "" }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="border border-[#343434] rounded-xl overflow-hidden bg-[#1a1a1a]">

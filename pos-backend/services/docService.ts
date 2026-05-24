@@ -7,6 +7,7 @@ import { userRoles } from "../constants/user.js";
 export interface FlatDocNode {
   _id: string;
   type: string;
+  nodeType?: string;
   parentId: string | null;
   title: string;
   content?: string;
@@ -106,9 +107,11 @@ export function pruneEmptyFolders(tree: DocTreeNode[]): DocTreeNode[] {
 }
 
 function serializeNode(node: Record<string, unknown>): FlatDocNode {
+  const nodeType = String(node.type);
   return {
     _id: String(node._id),
-    type: String(node.type),
+    type: nodeType,
+    nodeType,
     parentId: toIdString(node.parentId),
     title: String(node.title),
     content: node.content != null ? String(node.content) : "",
@@ -129,6 +132,17 @@ function normalizeFlatNodes(flatNodes: FlatDocNode[]): FlatDocNode[] {
     _id: String(node._id),
     parentId: toIdString(node.parentId),
   }));
+}
+
+async function serializeLeanDoc(id: unknown) {
+  const node = await DocNode.findById(id)
+    .populate("createdBy", "name email")
+    .populate("updatedBy", "name email")
+    .populate("publishedBy", "name email")
+    .lean();
+
+  if (!node) return null;
+  return serializeNode(node as Record<string, unknown>);
 }
 
 function isAdmin(user: AuthUser): boolean {
@@ -231,7 +245,7 @@ export async function getDocById(id: string, user: AuthUser) {
     throw createHttpError(404, "Document not found");
   }
 
-  return node;
+  return serializeNode(node as Record<string, unknown>);
 }
 
 export async function createFolder(
@@ -252,10 +266,7 @@ export async function createFolder(
     updatedBy: user._id,
   });
 
-  return DocNode.findById(folder._id)
-    .populate("createdBy", "name email")
-    .populate("updatedBy", "name email")
-    .lean();
+  return serializeLeanDoc(folder._id);
 }
 
 export async function createDoc(
@@ -276,10 +287,7 @@ export async function createDoc(
     updatedBy: user._id,
   });
 
-  return DocNode.findById(doc._id)
-    .populate("createdBy", "name email")
-    .populate("updatedBy", "name email")
-    .lean();
+  return serializeLeanDoc(doc._id);
 }
 
 export async function updateDocNode(
@@ -317,11 +325,7 @@ export async function updateDocNode(
   node.updatedBy = user._id;
   await node.save();
 
-  return DocNode.findById(node._id)
-    .populate("createdBy", "name email")
-    .populate("updatedBy", "name email")
-    .populate("publishedBy", "name email")
-    .lean();
+  return serializeLeanDoc(node._id);
 }
 
 export async function publishDocNode(user: AuthUser, id: string) {
@@ -339,11 +343,7 @@ export async function publishDocNode(user: AuthUser, id: string) {
   node.updatedBy = user._id;
   await node.save();
 
-  return DocNode.findById(node._id)
-    .populate("createdBy", "name email")
-    .populate("updatedBy", "name email")
-    .populate("publishedBy", "name email")
-    .lean();
+  return serializeLeanDoc(node._id);
 }
 
 export async function unpublishDocNode(user: AuthUser, id: string) {
@@ -359,11 +359,7 @@ export async function unpublishDocNode(user: AuthUser, id: string) {
   node.updatedBy = user._id;
   await node.save();
 
-  return DocNode.findById(node._id)
-    .populate("createdBy", "name email")
-    .populate("updatedBy", "name email")
-    .populate("publishedBy", "name email")
-    .lean();
+  return serializeLeanDoc(node._id);
 }
 
 export async function deleteDocNode(user: AuthUser, id: string) {

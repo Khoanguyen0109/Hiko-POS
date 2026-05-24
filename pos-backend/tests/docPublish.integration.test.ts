@@ -63,6 +63,10 @@ describe("doc publish integration", () => {
     const memberDoc = await getDocById(String(doc._id), memberUser);
     expect(memberDoc.status).toBe(DOC_STATUS.PUBLISHED);
     expect(memberDoc.content).toContain("Turn on lights");
+
+    const memberDocJson = JSON.parse(JSON.stringify(memberDoc));
+    expect(memberDocJson.type).toBe(DOC_NODE_TYPES.DOC);
+    expect(memberDocJson.content).toContain("Turn on lights");
   });
 
   it("published root-level doc appears for member", async () => {
