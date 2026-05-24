@@ -7,7 +7,6 @@ import {
   buildCheckoutPreview,
   getCheckoutById,
   getDayCheckouts,
-  getMyShiftCheckoutsForDate,
   getStoreShiftCheckoutsForDate,
   listShiftCheckouts,
   submitShiftCheckout,
@@ -73,25 +72,17 @@ const getMyToday = async (req, res, next) => {
       req.query.date ||
       formatVietnamTime(new Date(), "yyyy-MM-dd");
 
-    const isAdmin = req.user.role === "Admin";
-    const isManager =
-      isAdmin ||
-      req.storeUser?.role === "Owner" ||
-      req.storeUser?.role === "Manager";
-
-    const data = isManager
-      ? await getStoreShiftCheckoutsForDate(req.store._id, dateStr)
-      : await getMyShiftCheckoutsForDate(
-          req.store._id,
-          req.user._id,
-          dateStr
-        );
+    const data = await getStoreShiftCheckoutsForDate(
+      req.store._id,
+      dateStr,
+      req.user._id
+    );
 
     res.status(200).json({
       success: true,
       date: dateStr,
       count: data.length,
-      view: isManager ? "store" : "my",
+      view: "store",
       data,
     });
   } catch (error) {

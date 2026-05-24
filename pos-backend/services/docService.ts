@@ -65,6 +65,10 @@ export function buildTreeFromFlatNodes(flatNodes: FlatDocNode[]): DocTreeNode[] 
   return roots;
 }
 
+function sameId(a: unknown, b: unknown): boolean {
+  return a != null && b != null && String(a) === String(b);
+}
+
 export function filterNodesForMember(flatNodes: FlatDocNode[]): FlatDocNode[] {
   const visibleIds = new Set<string>();
 
@@ -73,16 +77,16 @@ export function filterNodesForMember(flatNodes: FlatDocNode[]): FlatDocNode[] {
   );
 
   for (const doc of publishedDocs) {
-    visibleIds.add(doc._id);
+    visibleIds.add(String(doc._id));
     let parentId = toIdString(doc.parentId);
     while (parentId) {
       visibleIds.add(parentId);
-      const parent = flatNodes.find((n) => n._id === parentId);
+      const parent = flatNodes.find((n) => sameId(n._id, parentId));
       parentId = parent ? toIdString(parent.parentId) : null;
     }
   }
 
-  return flatNodes.filter((n) => visibleIds.has(n._id));
+  return flatNodes.filter((n) => visibleIds.has(String(n._id)));
 }
 
 export function pruneEmptyFolders(tree: DocTreeNode[]): DocTreeNode[] {
@@ -117,6 +121,14 @@ function serializeNode(node: Record<string, unknown>): FlatDocNode {
     createdAt: node.createdAt as Date | undefined,
     updatedAt: node.updatedAt as Date | undefined,
   };
+}
+
+function normalizeFlatNodes(flatNodes: FlatDocNode[]): FlatDocNode[] {
+  return flatNodes.map((node) => ({
+    ...node,
+    _id: String(node._id),
+    parentId: toIdString(node.parentId),
+  }));
 }
 
 function isAdmin(user: AuthUser): boolean {
@@ -185,6 +197,7 @@ export async function getDocTree(user: AuthUser) {
     .lean();
 
   let flatNodes = nodes.map((n) => serializeNode(n as Record<string, unknown>));
+  flatNodes = normalizeFlatNodes(flatNodes);
 
   if (!isAdmin(user)) {
     flatNodes = filterNodesForMember(flatNodes);

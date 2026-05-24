@@ -69,13 +69,12 @@ const statusBadge = (status) => {
 const ShiftCheckout = () => {
   const dispatch = useDispatch();
   const location = useLocation();
-  const { role } = useSelector((state) => state.user);
+  const { role, _id: userId } = useSelector((state) => state.user);
   const activeStore = useSelector((state) => state.store.activeStore);
   const storeRole = activeStore?.role || activeStore?.storeRole || "";
   const isAdmin = role === "Admin";
-  const canViewStoreShifts =
+  const canViewDay =
     isAdmin || storeRole === "Owner" || storeRole === "Manager";
-  const canViewDay = canViewStoreShifts;
 
   const {
     myShifts,
@@ -216,7 +215,7 @@ const ShiftCheckout = () => {
               : "border-transparent text-[#ababab]"
           }`}
         >
-          {canViewStoreShifts ? "All shifts" : "My shift"}
+          All shifts
         </button>
         {canViewDay && (
           <button
@@ -249,9 +248,7 @@ const ShiftCheckout = () => {
 
           {!loading && sortedMyShifts.length === 0 && (
             <p className="text-[#ababab] py-8 text-center">
-              {canViewStoreShifts
-                ? "No shifts scheduled for this date."
-                : "No shifts assigned for this date."}
+              No shifts scheduled for this date.
             </p>
           )}
 
@@ -261,6 +258,8 @@ const ShiftCheckout = () => {
             const checkIn = row.checkIn;
             const preview = row.expectedPreview;
             const memberId = row.member?._id;
+            const isOwnShift =
+              row.isOwnShift ?? String(memberId) === String(userId);
             const isCheckedIn = row.checkInStatus === "checked_in";
             const rowKey = memberId
               ? `${row.schedule._id}-${memberId}`
@@ -269,17 +268,26 @@ const ShiftCheckout = () => {
             return (
               <div
                 key={rowKey}
-                className="bg-[#262626] border border-[#383838] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+                className={`bg-[#262626] border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${
+                  isOwnShift ? "border-[#f6b100]/40" : "border-[#383838]"
+                }`}
               >
                 <div>
-                  <p className="font-semibold text-[#f5f5f5]">
-                    {tpl?.name || tpl?.shortName || "Shift"}
-                    {row.member?.name && (
-                      <span className="text-[#ababab] font-normal text-sm ml-2">
-                        — {row.member.name}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-semibold text-[#f5f5f5]">
+                      {tpl?.name || tpl?.shortName || "Shift"}
+                      {row.member?.name && (
+                        <span className="text-[#ababab] font-normal text-sm ml-2">
+                          — {row.member.name}
+                        </span>
+                      )}
+                    </p>
+                    {isOwnShift && (
+                      <span className="text-xs px-2 py-0.5 rounded bg-[#f6b100]/20 text-[#f6b100]">
+                        Your shift
                       </span>
                     )}
-                  </p>
+                  </div>
                   <p className="text-sm text-[#ababab] flex items-center gap-1 mt-1">
                     <MdAccessTime size={14} />
                     {tpl?.startTime} – {tpl?.endTime}
@@ -309,7 +317,7 @@ const ShiftCheckout = () => {
                     {statusBadge(row.checkoutStatus)}
                   </div>
                   <div className="flex items-center gap-2">
-                    {!isCheckedIn && (
+                    {isOwnShift && !isCheckedIn && (
                       <button
                         type="button"
                         onClick={() => openCheckIn(row)}
@@ -321,15 +329,15 @@ const ShiftCheckout = () => {
                     <button
                       type="button"
                       onClick={() => openCheckout(row.schedule._id, memberId)}
-                      disabled={!isCheckedIn}
+                      disabled={isOwnShift && !isCheckedIn && !checkout}
                       title={
-                        !isCheckedIn
+                        isOwnShift && !isCheckedIn && !checkout
                           ? "Check in before checking out"
                           : undefined
                       }
                       className="px-4 py-2 text-sm font-medium bg-[#f6b100] text-[#1f1f1f] rounded-lg hover:bg-[#e5a600] disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      {checkout ? "View" : "Check out"}
+                      {isOwnShift && !checkout ? "Check out" : "View"}
                     </button>
                   </div>
                 </div>

@@ -27,8 +27,8 @@ const DocsTreeNode = ({
   const isFolder = node.type === "folder";
   const hasDocSelection = Boolean(selectedId);
   const isSelected = hasDocSelection
-    ? !isFolder && selectedId === node._id
-    : isFolder && highlightFolderId === node._id;
+    ? !isFolder && String(selectedId) === String(node._id)
+    : isFolder && String(highlightFolderId) === String(node._id);
   const hasChildren = isFolder && node.children?.length > 0;
   const isDraft = node.type === "doc" && node.status === "draft";
 

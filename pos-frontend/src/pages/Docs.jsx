@@ -38,7 +38,7 @@ import { DOCS_ROOT_ID } from "../constants/docs";
 
 const findNodeById = (nodes, id) => {
   for (const node of nodes) {
-    if (node._id === id) return node;
+    if (String(node._id) === String(id)) return node;
     if (node.children?.length) {
       const found = findNodeById(node.children, id);
       if (found) return found;
@@ -181,7 +181,13 @@ const Docs = () => {
   };
 
   const refreshTree = async () => {
-    await dispatch(fetchDocTree());
+    try {
+      await dispatch(fetchDocTree()).unwrap();
+    } catch (err) {
+      enqueueSnackbar(err || "Failed to refresh documentation tree", {
+        variant: "error",
+      });
+    }
   };
 
   const handleCreate = async (title) => {
@@ -227,27 +233,35 @@ const Docs = () => {
   };
 
   const handlePublish = async () => {
-    if (!selectedDoc?._id) return;
+    if (!docId || !selectedDoc?._id) return;
+    if (String(selectedDoc._id) !== String(docId)) return;
+
     if (isDirty) {
       await handleSave();
     }
     try {
-      await dispatch(publishDoc(selectedDoc._id)).unwrap();
+      const result = await dispatch(publishDoc(docId)).unwrap();
+      setEditTitle(result.data.title || "");
+      setEditContent(result.data.content || "");
+      setIsDirty(false);
       enqueueSnackbar("Document published", { variant: "success" });
       await refreshTree();
-      dispatch(fetchDoc(selectedDoc._id));
     } catch (err) {
       enqueueSnackbar(err || "Failed to publish", { variant: "error" });
     }
   };
 
   const handleUnpublish = async () => {
-    if (!selectedDoc?._id) return;
+    if (!docId || !selectedDoc?._id) return;
+    if (String(selectedDoc._id) !== String(docId)) return;
+
     try {
-      await dispatch(unpublishDoc(selectedDoc._id)).unwrap();
+      const result = await dispatch(unpublishDoc(docId)).unwrap();
+      setEditTitle(result.data.title || "");
+      setEditContent(result.data.content || "");
+      setIsDirty(false);
       enqueueSnackbar("Document unpublished", { variant: "success" });
       await refreshTree();
-      dispatch(fetchDoc(selectedDoc._id));
     } catch (err) {
       enqueueSnackbar(err || "Failed to unpublish", { variant: "error" });
     }
@@ -300,7 +314,7 @@ const Docs = () => {
 
   const isRootSelected = selectedFolderId === DOCS_ROOT_ID;
 
-  const isDocSelected = selectedDoc?.type === "doc";
+  const isDocSelected = Boolean(selectedDoc && selectedDoc.type !== "folder");
   const isPublished = selectedDoc?.status === "published";
   const showEditor = isAdmin && isDocSelected;
   const showViewer = !isAdmin && isDocSelected && isPublished;

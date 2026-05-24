@@ -22,9 +22,11 @@ import {
   resolveCheckoutStatus,
 } from "../utils/shiftWindowUtils.js";
 import {
+  canManageShiftSession,
   isManagerOrAbove,
   loadScheduleForCheckout,
   resolveCheckoutMemberId,
+  resolvePreviewMemberId,
 } from "../utils/shiftSessionUtils.js";
 
 export { loadScheduleForCheckout, resolveCheckoutMemberId };
@@ -73,7 +75,7 @@ export async function buildCheckoutPreview(
   memberIdParam?: string
 ) {
   const schedule = await loadScheduleForCheckout(scheduleId, store._id);
-  const targetMemberId = resolveCheckoutMemberId(
+  const targetMemberId = resolvePreviewMemberId(
     schedule,
     user,
     storeRole,
@@ -107,6 +109,7 @@ export async function buildCheckoutPreview(
     checkIn,
     ...expected,
     existingCheckout: existing,
+    canManage: canManageShiftSession(user, storeRole, targetMemberId),
   };
 }
 
@@ -279,7 +282,8 @@ export async function getMyShiftCheckoutsForDate(
  */
 export async function getStoreShiftCheckoutsForDate(
   storeId: Types.ObjectId,
-  dateStr: string
+  dateStr: string,
+  currentUserId?: Types.ObjectId
 ) {
   const { start, end } = getDateRangeVietnam(dateStr, dateStr);
 
@@ -347,6 +351,9 @@ export async function getStoreShiftCheckoutsForDate(
         checkout,
         expectedPreview: checkout ? null : expectedPreview,
         checkoutStatus: checkout ? checkout.status : "not_submitted",
+        isOwnShift: currentUserId
+          ? memberId === currentUserId.toString()
+          : false,
       });
     }
   }

@@ -124,6 +124,22 @@ const initialState = {
   error: null,
 };
 
+const sameId = (a, b) => a != null && b != null && String(a) === String(b);
+
+const updateNodeInTree = (nodes, id, updater) =>
+  nodes.map((node) => {
+    if (sameId(node._id, id)) {
+      return updater(node);
+    }
+    if (node.children?.length) {
+      return {
+        ...node,
+        children: updateNodeInTree(node.children, id, updater),
+      };
+    }
+    return node;
+  });
+
 const docsSlice = createSlice({
   name: "docs",
   initialState,
@@ -160,13 +176,13 @@ const docsSlice = createSlice({
       })
       .addCase(fetchDoc.fulfilled, (state, action) => {
         state.docLoading = false;
-        if (action.meta.arg === state.activeDocId) {
+        if (sameId(action.meta.arg, state.activeDocId)) {
           state.selectedDoc = action.payload.data;
         }
       })
       .addCase(fetchDoc.rejected, (state, action) => {
         state.docLoading = false;
-        if (action.meta.arg === state.activeDocId) {
+        if (sameId(action.meta.arg, state.activeDocId)) {
           state.error = action.payload;
           state.selectedDoc = null;
         }
@@ -183,7 +199,15 @@ const docsSlice = createSlice({
       })
       .addCase(updateDoc.fulfilled, (state, action) => {
         state.saveLoading = false;
-        state.selectedDoc = action.payload.data;
+        const node = action.payload.data;
+        state.selectedDoc = node;
+        if (node?._id) {
+          state.tree = updateNodeInTree(state.tree, node._id, (existing) => ({
+            ...existing,
+            title: node.title,
+            status: node.status,
+          }));
+        }
       })
       .addCase(updateDoc.rejected, (state, action) => {
         state.saveLoading = false;
@@ -194,7 +218,16 @@ const docsSlice = createSlice({
       })
       .addCase(publishDoc.fulfilled, (state, action) => {
         state.saveLoading = false;
-        state.selectedDoc = action.payload.data;
+        const node = action.payload.data;
+        state.selectedDoc = node;
+        if (node?._id) {
+          state.tree = updateNodeInTree(state.tree, node._id, (existing) => ({
+            ...existing,
+            status: node.status,
+            publishedAt: node.publishedAt,
+            publishedBy: node.publishedBy,
+          }));
+        }
       })
       .addCase(publishDoc.rejected, (state, action) => {
         state.saveLoading = false;
@@ -205,7 +238,16 @@ const docsSlice = createSlice({
       })
       .addCase(unpublishDoc.fulfilled, (state, action) => {
         state.saveLoading = false;
-        state.selectedDoc = action.payload.data;
+        const node = action.payload.data;
+        state.selectedDoc = node;
+        if (node?._id) {
+          state.tree = updateNodeInTree(state.tree, node._id, (existing) => ({
+            ...existing,
+            status: node.status,
+            publishedAt: node.publishedAt,
+            publishedBy: node.publishedBy,
+          }));
+        }
       })
       .addCase(unpublishDoc.rejected, (state, action) => {
         state.saveLoading = false;

@@ -77,3 +77,37 @@ export function resolveCheckoutMemberId(
   assertMemberAssigned(schedule, user._id);
   return user._id;
 }
+
+/** Preview any assigned member's shift; submit/check-in still uses resolveCheckoutMemberId. */
+export function resolvePreviewMemberId(
+  schedule: {
+    assignedMembers: { member: Types.ObjectId }[];
+  },
+  user: AuthUser,
+  storeRole: string | undefined,
+  memberIdParam?: string
+): Types.ObjectId {
+  if (isManagerOrAbove(user.role, storeRole)) {
+    return resolveCheckoutMemberId(schedule, user, storeRole, memberIdParam);
+  }
+
+  if (memberIdParam) {
+    if (!mongoose.Types.ObjectId.isValid(memberIdParam)) {
+      throw createHttpError(400, "Invalid memberId");
+    }
+    assertMemberAssigned(schedule, memberIdParam);
+    return new mongoose.Types.ObjectId(memberIdParam);
+  }
+
+  assertMemberAssigned(schedule, user._id);
+  return user._id;
+}
+
+export function canManageShiftSession(
+  user: AuthUser,
+  storeRole: string | undefined,
+  targetMemberId: Types.ObjectId | string
+): boolean {
+  if (isManagerOrAbove(user.role, storeRole)) return true;
+  return String(targetMemberId) === String(user._id);
+}

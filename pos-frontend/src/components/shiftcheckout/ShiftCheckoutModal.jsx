@@ -55,6 +55,7 @@ const ShiftCheckoutModal = ({
   const expected = preview || {};
   const existing = expected.existingCheckout;
   const checkInRecord = expected.checkIn;
+  const canManage = Boolean(preview?.canManage);
 
   const countedCashNum = parseFloat(countedCash) || 0;
   const countedBankingNum = parseFloat(countedBanking) || 0;
@@ -168,6 +169,39 @@ const ShiftCheckoutModal = ({
             {existing.notes && (
               <p className="text-sm text-[#f5f5f5]">Notes: {existing.notes}</p>
             )}
+          </div>
+        ) : !canManage ? (
+          <div className="p-6 space-y-4">
+            {checkInRecord && (
+              <div className="p-3 bg-emerald-900/20 border border-emerald-700/40 rounded-lg text-sm">
+                <p className="text-emerald-300">
+                  Opening cash at check-in:{" "}
+                  <span className="font-semibold">
+                    {formatVND(checkInRecord.openingCash)}
+                  </span>
+                </p>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-4 p-4 bg-[#1f1f1f] rounded-lg">
+              <div>
+                <p className="text-xs text-[#ababab] uppercase mb-1">Expected cash</p>
+                <p className="text-[#f6b100] font-semibold">
+                  {formatVND(expected.expectedCash || 0)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-[#ababab] uppercase mb-1">Expected banking</p>
+                <p className="text-[#8B5CF6] font-semibold">
+                  {formatVND(expected.expectedBanking || 0)}
+                </p>
+              </div>
+              <p className="col-span-2 text-xs text-[#ababab]">
+                {expected.orderCount ?? 0} completed orders in this shift window
+              </p>
+            </div>
+            <p className="text-sm text-[#ababab] text-center">
+              Checkout not submitted yet.
+            </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
