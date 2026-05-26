@@ -3,7 +3,7 @@ import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
 import PropTypes from "prop-types";
-import { useEffect } from "react";
+import { forwardRef, useEffect, useImperativeHandle } from "react";
 import {
   MdFormatBold,
   MdFormatItalic,
@@ -35,7 +35,7 @@ ToolbarButton.propTypes = {
   title: PropTypes.string,
 };
 
-const DocsEditor = ({ content, onChange, editable = true }) => {
+const DocsEditor = forwardRef(({ content, onChange, editable = true }, ref) => {
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
@@ -47,7 +47,9 @@ const DocsEditor = ({ content, onChange, editable = true }) => {
     ],
     content: content || "",
     editable,
-    onUpdate: ({ editor: ed }) => {
+    onUpdate: ({ editor: ed, transaction }) => {
+      // Ignore programmatic setContent; only sync real user edits to parent state.
+      if (!transaction.docChanged) return;
       onChange?.(ed.getHTML());
     },
     editorProps: {
@@ -57,6 +59,14 @@ const DocsEditor = ({ content, onChange, editable = true }) => {
       },
     },
   });
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      getHTML: () => editor?.getHTML() ?? "",
+    }),
+    [editor]
+  );
 
   useEffect(() => {
     if (editor) {
@@ -151,7 +161,9 @@ const DocsEditor = ({ content, onChange, editable = true }) => {
       <EditorContent editor={editor} />
     </div>
   );
-};
+});
+
+DocsEditor.displayName = "DocsEditor";
 
 DocsEditor.propTypes = {
   content: PropTypes.string,

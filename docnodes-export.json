@@ -1,0 +1,71 @@
+{
+  "collection": "docnodes",
+  "database": "pos-db",
+  "note": "Folders have no body text. Only type=doc rows store content.",
+  "folderCount": 1,
+  "documentCount": 1,
+  "folders": [
+    {
+      "_id": "6a0dd5343190143a07871937",
+      "type": "folder",
+      "parentId": null,
+      "title": "new",
+      "content": "",
+      "status": "published",
+      "sortOrder": 0,
+      "createdBy": "69489b6ec19e1083bccb696e",
+      "updatedBy": "69489b6ec19e1083bccb696e",
+      "publishedAt": null,
+      "publishedBy": null,
+      "createdAt": "2026-05-20T15:37:24.084Z",
+      "updatedAt": "2026-05-20T15:37:24.084Z",
+      "__v": 0
+    }
+  ],
+  "documents": [
+    {
+      "_id": "6a0dd53a3190143a07871943",
+      "title": "Doc new",
+      "parentId": "6a0dd5343190143a07871937",
+      "status": "published",
+      "contentHtml": "<p>Híadads</p>",
+      "contentPlainText": "Híadads",
+      "createdAt": "2026-05-20T15:37:30.448Z",
+      "updatedAt": "2026-05-20T16:21:09.250Z"
+    }
+  ],
+  "raw": [
+    {
+      "_id": "6a0dd5343190143a07871937",
+      "type": "folder",
+      "parentId": null,
+      "title": "new",
+      "content": "",
+      "status": "published",
+      "sortOrder": 0,
+      "createdBy": "69489b6ec19e1083bccb696e",
+      "updatedBy": "69489b6ec19e1083bccb696e",
+      "publishedAt": null,
+      "publishedBy": null,
+      "createdAt": "2026-05-20T15:37:24.084Z",
+      "updatedAt": "2026-05-20T15:37:24.084Z",
+      "__v": 0
+    },
+    {
+      "_id": "6a0dd53a3190143a07871943",
+      "type": "doc",
+      "parentId": "6a0dd5343190143a07871937",
+      "title": "Doc new",
+      "content": "<p>Híadads</p>",
+      "status": "published",
+      "sortOrder": 0,
+      "createdBy": "69489b6ec19e1083bccb696e",
+      "updatedBy": "69489b6ec19e1083bccb696e",
+      "publishedAt": "2026-05-20T15:37:34.040Z",
+      "publishedBy": "69489b6ec19e1083bccb696e",
+      "createdAt": "2026-05-20T15:37:30.448Z",
+      "updatedAt": "2026-05-20T16:21:09.250Z",
+      "__v": 0
+    }
+  ]
+}

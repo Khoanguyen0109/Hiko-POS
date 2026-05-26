@@ -34,7 +34,12 @@ import {
   clearSelectedDoc,
 } from "../redux/slices/docsSlice";
 import { ROUTES } from "../constants";
-import { DOCS_ROOT_ID, isDocNode, isFolderNode } from "../constants/docs";
+import {
+  DOCS_ROOT_ID,
+  getDocApiNode,
+  isDocNode,
+  isFolderNode,
+} from "../constants/docs";
 
 const findNodeById = (nodes, id) => {
   for (const node of nodes) {
@@ -73,6 +78,7 @@ const Docs = () => {
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
   const [isDirty, setIsDirty] = useState(false);
+  const editorRef = useRef(null);
   const pendingSaveRef = useRef({
     docId: null,
     editTitle: "",
@@ -82,11 +88,14 @@ const Docs = () => {
     selectedDocId: null,
   });
 
+  const getCurrentEditorContent = () =>
+    editorRef.current?.getHTML?.() ?? editContent;
+
   useEffect(() => {
     pendingSaveRef.current = {
       docId,
       editTitle,
-      editContent,
+      editContent: getCurrentEditorContent(),
       isDirty,
       isAdmin,
       selectedDocId: selectedDoc?._id ?? null,
@@ -148,6 +157,41 @@ const Docs = () => {
     };
   }, [dispatch, docId]);
 
+  const persistDocContent = async ({ force = false } = {}) => {
+    if (!isAdmin || !docId || !selectedDoc?._id) return false;
+    if (String(selectedDoc._id) !== String(docId)) return false;
+    if (!isDocNode(selectedDoc)) return false;
+
+    const content = getCurrentEditorContent();
+    const title = editTitle;
+    const unchanged =
+      content === (selectedDoc.content ?? "") &&
+      title === (selectedDoc.title ?? "");
+
+    if (!force && !isDirty && unchanged) return true;
+    if (!force && !isDirty) return true;
+
+    try {
+      await dispatch(
+        updateDoc({
+          id: docId,
+          data: { title, content },
+        })
+      ).unwrap();
+      setEditContent(content);
+      setIsDirty(false);
+      pendingSaveRef.current = {
+        ...pendingSaveRef.current,
+        editContent: content,
+        isDirty: false,
+      };
+      return true;
+    } catch (err) {
+      enqueueSnackbar(err || "Failed to save", { variant: "error" });
+      return false;
+    }
+  };
+
   const saveDoc = async ({ silent = false, refresh = false } = {}) => {
     if (!isAdmin || !docId || !selectedDoc?._id) return false;
     if (String(selectedDoc._id) !== String(docId)) return false;
@@ -155,17 +199,8 @@ const Docs = () => {
     if (!isDirty) return true;
 
     try {
-      await dispatch(
-        updateDoc({
-          id: docId,
-          data: { title: editTitle, content: editContent },
-        })
-      ).unwrap();
-      setIsDirty(false);
-      pendingSaveRef.current = {
-        ...pendingSaveRef.current,
-        isDirty: false,
-      };
+      const saved = await persistDocContent({ force: true });
+      if (!saved) return false;
       if (!silent) {
         enqueueSnackbar("Saved", { variant: "success" });
       }
@@ -272,7 +307,7 @@ const Docs = () => {
           createDoc({ title, parentId, content: "" })
         ).unwrap();
         enqueueSnackbar("Document created", { variant: "success" });
-        navigate(`${ROUTES.DOCS}/${result.data._id}`);
+        navigate(`${ROUTES.DOCS}/${getDocApiNode(result)._id}`);
       }
       setCreateModal(null);
       await refreshTree();
@@ -289,14 +324,15 @@ const Docs = () => {
     if (!docId || !selectedDoc?._id) return;
     if (String(selectedDoc._id) !== String(docId)) return;
 
-    if (isDirty) {
-      const saved = await saveDoc({ silent: true, refresh: false });
-      if (!saved) return;
-    }
+    const saved = await persistDocContent({ force: true });
+    if (!saved) return;
+
     try {
-      const result = await dispatch(publishDoc(docId)).unwrap();
-      setEditTitle(result.data.title || "");
-      setEditContent(result.data.content || "");
+      await dispatch(publishDoc(docId)).unwrap();
+      const refreshed = await dispatch(fetchDoc(docId)).unwrap();
+      const node = getDocApiNode(refreshed);
+      setEditTitle(node.title || "");
+      setEditContent(node.content || "");
       setIsDirty(false);
       enqueueSnackbar("Document published", { variant: "success" });
       await refreshTree();
@@ -310,9 +346,11 @@ const Docs = () => {
     if (String(selectedDoc._id) !== String(docId)) return;
 
     try {
-      const result = await dispatch(unpublishDoc(docId)).unwrap();
-      setEditTitle(result.data.title || "");
-      setEditContent(result.data.content || "");
+      await dispatch(unpublishDoc(docId)).unwrap();
+      const refreshed = await dispatch(fetchDoc(docId)).unwrap();
+      const node = getDocApiNode(refreshed);
+      setEditTitle(node.title || "");
+      setEditContent(node.content || "");
       setIsDirty(false);
       enqueueSnackbar("Document unpublished", { variant: "success" });
       await refreshTree();
@@ -372,6 +410,7 @@ const Docs = () => {
   const isPublished = selectedDoc?.status === "published";
   const showEditor = isAdmin && isDocSelected;
   const showViewer = !isAdmin && isDocSelected && isPublished;
+  const viewerContent = selectedDoc?.content ?? editContent;
   const contentKey = `${docId || "none"}-${selectedDoc?.status || "unknown"}-${selectedDoc?.updatedAt || ""}`;
   const showBrowseView = !docId;
   const showDocView = !!docId;
@@ -647,6 +686,7 @@ const Docs = () => {
 
               {showEditor && docId && (
                 <DocsEditor
+                  ref={editorRef}
                   key={contentKey}
                   content={editContent}
                   onChange={(html) => {
@@ -657,7 +697,7 @@ const Docs = () => {
               )}
 
               {showViewer && docId && (
-                <DocsViewer key={contentKey} content={editContent} />
+                <DocsViewer key={contentKey} content={viewerContent} />
               )}
 
               {isAdmin && isFolderNode(selectedDoc) && (

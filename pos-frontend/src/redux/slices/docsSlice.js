@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import * as docsApi from "../../https/docsApi";
+import { getDocApiNode } from "../../constants/docs";
 
 export const fetchDocTree = createAsyncThunk(
   "docs/fetchTree",
@@ -177,7 +178,7 @@ const docsSlice = createSlice({
       .addCase(fetchDoc.fulfilled, (state, action) => {
         state.docLoading = false;
         if (sameId(action.meta.arg, state.activeDocId)) {
-          state.selectedDoc = action.payload.data;
+          state.selectedDoc = getDocApiNode(action.payload);
         }
       })
       .addCase(fetchDoc.rejected, (state, action) => {
@@ -191,7 +192,7 @@ const docsSlice = createSlice({
         state.error = null;
       })
       .addCase(createDoc.fulfilled, (state, action) => {
-        state.selectedDoc = action.payload.data;
+        state.selectedDoc = getDocApiNode(action.payload);
         state.error = null;
       })
       .addCase(updateDoc.pending, (state) => {
@@ -199,7 +200,7 @@ const docsSlice = createSlice({
       })
       .addCase(updateDoc.fulfilled, (state, action) => {
         state.saveLoading = false;
-        const node = action.payload.data;
+        const node = getDocApiNode(action.payload);
         state.selectedDoc = node;
         if (node?._id) {
           state.tree = updateNodeInTree(state.tree, node._id, (existing) => ({
@@ -219,7 +220,7 @@ const docsSlice = createSlice({
       })
       .addCase(publishDoc.fulfilled, (state, action) => {
         state.saveLoading = false;
-        const node = action.payload.data;
+        const node = getDocApiNode(action.payload);
         state.selectedDoc = node;
         if (node?._id) {
           state.tree = updateNodeInTree(state.tree, node._id, (existing) => ({
@@ -241,7 +242,7 @@ const docsSlice = createSlice({
       })
       .addCase(unpublishDoc.fulfilled, (state, action) => {
         state.saveLoading = false;
-        const node = action.payload.data;
+        const node = getDocApiNode(action.payload);
         state.selectedDoc = node;
         if (node?._id) {
           state.tree = updateNodeInTree(state.tree, node._id, (existing) => ({
