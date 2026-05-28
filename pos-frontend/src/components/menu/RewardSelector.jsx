@@ -9,8 +9,8 @@ const RewardSelector = () => {
 
   if (!customerRewards) return null;
 
-  const { availableRewards = [], nextReward } = customerRewards;
-  if (availableRewards.length === 0 && !nextReward) return null;
+  const { rewards = [] } = customerRewards;
+  if (rewards.length === 0) return null;
 
   const isApplied = (reward) =>
     appliedReward?.rewardProgramId === reward.rewardProgramId &&
@@ -27,9 +27,9 @@ const RewardSelector = () => {
       )}
 
       <div className="space-y-2">
-        {availableRewards.map((reward, idx) => {
+        {rewards.map((reward, idx) => {
           const active = isApplied(reward);
-          const icon = reward.type === "percentage" ? "🎫" : "🍜";
+          const icon = reward.type === "percentage_discount" ? "🎫" : "🍜";
 
           return (
             <div
@@ -75,30 +75,6 @@ const RewardSelector = () => {
           );
         })}
       </div>
-
-      {nextReward && (
-        <div className="mt-3">
-          <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-[#ababab]">
-              Next: {nextReward.name}
-            </span>
-            <span className="text-[#f6b100] font-medium">
-              {nextReward.currentCount}/{nextReward.threshold}
-            </span>
-          </div>
-          <div className="w-full h-1.5 bg-[#343434] rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[#f6b100] rounded-full transition-all"
-              style={{
-                width: `${Math.min(
-                  100,
-                  ((nextReward.currentCount || 0) / (nextReward.threshold || 1)) * 100
-                )}%`,
-              }}
-            />
-          </div>
-        </div>
-      )}
     </div>
   );
 };

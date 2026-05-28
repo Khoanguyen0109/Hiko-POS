@@ -15,6 +15,7 @@
     "test:coverage": "jest --coverage",
     "test:unit": "jest --testPathPatterns=orderController|promotionService",
     "test:integration": "jest --testPathPatterns=integration",
+    "test:rewards": "NODE_OPTIONS=--experimental-vm-modules jest --testPathPatterns=rewardApply",
     "test:runner": "tsx test-runner.ts",
     "test:orders": "tsx manual-test-orders.ts",
     "test:orders:full": "tsx tests/order-promotion-tests.ts"

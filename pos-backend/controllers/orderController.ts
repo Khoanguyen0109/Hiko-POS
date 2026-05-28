@@ -7,10 +7,11 @@ import type { OrderItemInput, ProcessedOrderItem } from "../types/order.js";
 import createHttpError from "http-errors";
 import Order from "../models/orderModel.js";
 import Dish from "../models/dishModel.js";
+import RewardProgram from "../models/rewardProgramModel.js";
 import PromotionService from "../services/promotionService.js";
 import mongoose from "mongoose";
 import { getDateRangeVietnam, getCurrentVietnamTime } from "../utils/dateUtils.js";
-import { calculateOrderBills, formatOrderLevelPromotions } from "../utils/orderBillsUtils.js";
+import { calculateOrderBills, formatOrderLevelPromotions, calculateRewardDiscount, applyRewardDiscountToBills, removeRewardDiscountFromBills } from "../utils/orderBillsUtils.js";
 import RewardService from "../services/rewardService.js";
 
 const STATUS_LABELS = {
@@ -225,6 +226,19 @@ const addOrder = async (req, res, next) => {
       bills.tax || 0
     );
 
+    let rewardDiscount = 0;
+    if (req.body.appliedReward?.rewardProgram) {
+      const program = await RewardProgram.findById(req.body.appliedReward.rewardProgram);
+      if (program) {
+        rewardDiscount = calculateRewardDiscount(
+          program,
+          finalProcessedItems,
+          calculatedBills.subtotal
+        );
+      }
+    }
+    const expectedTotal = Math.max(0, calculatedBills.total - rewardDiscount);
+
     if (process.env.NODE_ENV === "development") {
       console.log("Backend calculation debug:", {
         promotions: finalAppliedPromotions?.map((p) => ({
@@ -246,10 +260,10 @@ const addOrder = async (req, res, next) => {
         );
         return next(error);
       }
-      if (Math.abs(calculatedBills.total - bills.total) > 0.01) {
+      if (Math.abs(bills.total - expectedTotal) > 0.01) {
         const error = createHttpError(
           400,
-          `Bill total (${bills.total}) does not match calculated total (${calculatedBills.total})`
+          `Bill total (${bills.total}) does not match calculated total (${expectedTotal})`
         );
         return next(error);
       }
@@ -265,10 +279,10 @@ const addOrder = async (req, res, next) => {
         return next(error);
       }
     } else {
-      if (Math.abs(calculatedBills.total - bills.total) > 0.01) {
+      if (Math.abs(bills.total - expectedTotal) > 0.01) {
         const error = createHttpError(
           400,
-          `Bill total (${bills.total}) does not match calculated total (${calculatedBills.total})`
+          `Bill total (${bills.total}) does not match calculated total (${expectedTotal})`
         );
         return next(error);
       }
@@ -343,12 +357,38 @@ const addOrder = async (req, res, next) => {
                     String(req.body.appliedReward.rewardProgram),
                     String(req.user._id)
                 );
+                const orderSubtotal =
+                    order.bills.subtotal ??
+                    order.items.reduce(
+                        (sum, item) => sum + (item.originalPrice || item.price),
+                        0
+                    );
+                const serverRewardDiscount = calculateRewardDiscount(
+                    {
+                        type: redeemResult.type,
+                        discountPercent: redeemResult.discountPercent,
+                        maxFreeDishValue: redeemResult.maxFreeDishValue,
+                    },
+                    order.items,
+                    orderSubtotal
+                );
                 order.appliedReward = {
                     rewardProgram: req.body.appliedReward.rewardProgram,
                     rewardLog: redeemResult.rewardLog._id,
                     type: redeemResult.type,
-                    discountAmount: req.body.appliedReward.discountAmount || 0
+                    discountAmount: serverRewardDiscount,
                 };
+                order.bills = applyRewardDiscountToBills(
+                    {
+                        subtotal: order.bills.subtotal,
+                        promotionDiscount: order.bills.promotionDiscount || 0,
+                        rewardDiscount: 0,
+                        total: calculatedBills.total,
+                        tax: order.bills.tax || 0,
+                        totalWithTax: calculatedBills.total + (order.bills.tax || 0),
+                    },
+                    serverRewardDiscount
+                );
                 await order.save();
             }
         } catch (rewardError: unknown) {
@@ -646,6 +686,14 @@ const updateOrder = async (req, res, next) => {
 
     // Handle reward application/removal
     if (appliedReward !== undefined) {
+      const tax = currentOrder.bills.tax || 0;
+      const orderSubtotal =
+        currentOrder.bills.subtotal ??
+        currentOrder.items.reduce(
+          (sum, item) => sum + (item.originalPrice || item.price),
+          0
+        );
+
       if (!appliedReward || !appliedReward.rewardProgram) {
         if (currentOrder.appliedReward?.rewardProgram) {
           try {
@@ -659,6 +707,19 @@ const updateOrder = async (req, res, next) => {
           } catch (rewardError: unknown) {
             console.error("Reward restore error:", rewardError);
           }
+          const restoredDiscount =
+            currentOrder.bills.rewardDiscount ||
+            currentOrder.appliedReward.discountAmount ||
+            0;
+          const restoredTotal = currentOrder.bills.total + restoredDiscount;
+          updateFields.bills = {
+            subtotal: currentOrder.bills.subtotal,
+            promotionDiscount: currentOrder.bills.promotionDiscount || 0,
+            rewardDiscount: 0,
+            total: restoredTotal,
+            tax,
+            totalWithTax: restoredTotal + tax,
+          };
         }
         updateFields.appliedReward = null;
         updatedFields.push("reward removed");
@@ -669,6 +730,22 @@ const updateOrder = async (req, res, next) => {
           return next(error);
         }
         try {
+          let preRewardTotal = currentOrder.bills.total;
+
+          if (currentOrder.appliedReward?.rewardProgram) {
+            preRewardTotal +=
+              currentOrder.bills.rewardDiscount ||
+              currentOrder.appliedReward.discountAmount ||
+              0;
+            await RewardService.restoreReward(
+              customerId,
+              String(currentOrder._id),
+              String(req.store._id),
+              String(currentOrder.appliedReward.rewardProgram),
+              String(req.user._id)
+            );
+          }
+
           const redeemResult = await RewardService.redeemReward(
             customerId,
             String(currentOrder._id),
@@ -676,11 +753,30 @@ const updateOrder = async (req, res, next) => {
             String(appliedReward.rewardProgram),
             String(req.user._id)
           );
+          const rewardDiscount = calculateRewardDiscount(
+            {
+              type: redeemResult.type,
+              discountPercent: redeemResult.discountPercent,
+              maxFreeDishValue: redeemResult.maxFreeDishValue,
+            },
+            currentOrder.items,
+            orderSubtotal
+          );
+          const adjustedTotal = Math.max(0, preRewardTotal - rewardDiscount);
+
           updateFields.appliedReward = {
             rewardProgram: appliedReward.rewardProgram,
             rewardLog: redeemResult.rewardLog._id,
             type: redeemResult.type,
-            discountAmount: appliedReward.discountAmount || 0
+            discountAmount: rewardDiscount,
+          };
+          updateFields.bills = {
+            subtotal: currentOrder.bills.subtotal,
+            promotionDiscount: currentOrder.bills.promotionDiscount || 0,
+            rewardDiscount,
+            total: adjustedTotal,
+            tax,
+            totalWithTax: adjustedTotal + tax,
           };
           updatedFields.push("reward applied");
         } catch (rewardError: unknown) {
@@ -876,18 +972,37 @@ const updateOrderItems = async (req, res, next) => {
       currentOrder.bills?.tax || 0
     );
 
+    let finalBills = bills;
+    if (currentOrder.appliedReward?.rewardProgram) {
+      const program = await RewardProgram.findById(currentOrder.appliedReward.rewardProgram);
+      if (program) {
+        const rewardDiscount = calculateRewardDiscount(
+          program,
+          processedItems,
+          bills.subtotal
+        );
+        finalBills = applyRewardDiscountToBills(
+          { ...bills, rewardDiscount: 0 },
+          rewardDiscount
+        );
+      }
+    }
+
     const updatePayload: MongoFilter = {
       items: processedItems,
-      bills,
+      bills: finalBills,
     };
     if (hasOrderLevelPromotions) {
       updatePayload.appliedPromotions = appliedPromotions;
+    }
+    if (currentOrder.appliedReward?.rewardProgram && finalBills.rewardDiscount != null) {
+      updatePayload["appliedReward.discountAmount"] = finalBills.rewardDiscount;
     }
 
     const itemsHistoryEntry = buildOrderHistoryEntry(
       req.user,
       'items_updated',
-      `Order items updated: ${processedItems.length} item(s), total ${bills.total}`,
+      `Order items updated: ${processedItems.length} item(s), total ${finalBills.total}`,
       { previousValue: currentOrder.items.length, newValue: processedItems.length }
     );
 
@@ -902,9 +1017,9 @@ const updateOrderItems = async (req, res, next) => {
     const responseData = {
       ...order.toObject(),
       promotionSummary: {
-        totalOriginalAmount: bills.subtotal,
-        totalDiscountAmount: bills.promotionDiscount,
-        totalFinalAmount: bills.total,
+        totalOriginalAmount: finalBills.subtotal,
+        totalDiscountAmount: finalBills.promotionDiscount,
+        totalFinalAmount: finalBills.total,
         itemLevelDiscounts: processedItems.reduce(
           (sum, item) => sum + (item.happyHourDiscount || 0),
           0

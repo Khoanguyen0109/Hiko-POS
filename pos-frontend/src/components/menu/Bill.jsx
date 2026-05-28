@@ -35,6 +35,24 @@ const Bill = forwardRef((props, ref) => {
     (state) => state.promotions
   );
   const appliedReward = useSelector((state) => state.rewards.appliedReward);
+  const customerRewards = useSelector((state) => state.rewards.customerRewards);
+
+  const getRewardDiscountAmount = () => {
+    if (!appliedReward) return 0;
+    if (appliedReward.type === "free_dish") {
+      const prices = (cartData.items || []).map(
+        (item) => item.pricePerQuantity || item.price / (item.quantity || 1)
+      );
+      return prices.length > 0 ? Math.min(...prices) : 0;
+    }
+    if (appliedReward.type === "percentage_discount") {
+      return Math.round(subtotal * (appliedReward.discountPercent || 0) / 100);
+    }
+    return 0;
+  };
+
+  const rewardDiscount = getRewardDiscountAmount();
+  const totalWithReward = Math.max(0, total - rewardDiscount);
   
   // Debug logs (development only)
   logger.debug("Bill - Promotions:", promotions);
@@ -62,7 +80,7 @@ const Bill = forwardRef((props, ref) => {
   // Ensure pricing is calculated when component mounts or cart changes
   useEffect(() => {
     dispatch(calculatePricing());
-  }, [dispatch, cartData.items.length, appliedCoupon]);
+  }, [dispatch, cartData.items.length, appliedCoupon, appliedReward]);
 
   // Note: Periodic Happy Hour checks removed - users now manually select promotions
 
@@ -146,6 +164,7 @@ const Bill = forwardRef((props, ref) => {
     }));
 
     const orderData = {
+      customer: customerRewards?.customer?._id || null,
       customerDetails: {
         name: customerData.customerName,
         phone: customerData.customerPhone,
@@ -155,9 +174,9 @@ const Bill = forwardRef((props, ref) => {
       bills: {
         subtotal: subtotal,
         promotionDiscount: discount,
-        total: total,
+        total: totalWithReward,
         tax: 0,
-        totalWithTax: total,
+        totalWithTax: totalWithReward,
       },
       appliedPromotions: appliedCoupon
         ? [
@@ -175,6 +194,15 @@ const Bill = forwardRef((props, ref) => {
         : [],
       items: enhancedItems,
       thirdPartyVendor: cartData.thirdPartyVendor,
+      ...(appliedReward && customerRewards?.customer?._id
+        ? {
+            appliedReward: {
+              rewardProgram: appliedReward.rewardProgramId,
+              type: appliedReward.type,
+              discountAmount: rewardDiscount,
+            },
+          }
+        : {}),
     };
 
     dispatch(createOrder(orderData))
@@ -252,11 +280,7 @@ const Bill = forwardRef((props, ref) => {
                     Reward ({appliedReward.name})
                   </p>
                   <p className="text-green-400 text-sm">
-                    -{formatVND(
-                      appliedReward.type === "free_dish"
-                        ? Math.min(...cartData.items.map((i) => i.price || i.pricePerQuantity))
-                        : Math.round(subtotal * (appliedReward.discountPercent || 0) / 100)
-                    )}
+                    -{formatVND(rewardDiscount)}
                   </p>
                 </div>
                 <hr className="border-[#343434]" />
@@ -272,7 +296,7 @@ const Bill = forwardRef((props, ref) => {
                 </p>
               </div>
               <h1 className="text-[#f6b100] text-lg font-bold">
-                {formatVND(total)}
+                {formatVND(totalWithReward)}
               </h1>
             </div>
           </div>

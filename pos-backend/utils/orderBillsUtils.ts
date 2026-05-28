@@ -1,6 +1,23 @@
 interface BillLineItem {
   originalPrice?: number;
   price: number;
+  pricePerQuantity?: number;
+  quantity?: number;
+}
+
+interface RewardProgramForBill {
+  type: string;
+  discountPercent?: number | null;
+  maxFreeDishValue?: number | null;
+}
+
+interface OrderBills {
+  subtotal: number;
+  promotionDiscount: number;
+  total: number;
+  tax: number;
+  totalWithTax: number;
+  rewardDiscount?: number;
 }
 
 interface AppliedPromotionForBill {
@@ -108,7 +125,63 @@ function formatOrderLevelPromotions(
   });
 }
 
+function calculateRewardDiscount(
+  program: RewardProgramForBill,
+  items: BillLineItem[],
+  subtotal: number
+): number {
+  if (program.type === "percentage_discount") {
+    return Math.round(subtotal * (program.discountPercent || 0) / 100);
+  }
+
+  if (program.type === "free_dish" && items.length > 0) {
+    const unitPrices = items.map(
+      (item) =>
+        item.pricePerQuantity ??
+        item.price / (item.quantity && item.quantity > 0 ? item.quantity : 1)
+    );
+    const cheapest = Math.min(...unitPrices);
+    if (program.maxFreeDishValue != null && program.maxFreeDishValue > 0) {
+      return Math.min(cheapest, program.maxFreeDishValue);
+    }
+    return cheapest;
+  }
+
+  return 0;
+}
+
+function applyRewardDiscountToBills(
+  bills: OrderBills,
+  rewardDiscount: number
+): OrderBills {
+  const tax = bills.tax || 0;
+  const total = Math.max(0, bills.total - rewardDiscount);
+
+  return {
+    ...bills,
+    rewardDiscount: Math.max(0, rewardDiscount),
+    total,
+    totalWithTax: total + tax,
+  };
+}
+
+function removeRewardDiscountFromBills(bills: OrderBills): OrderBills {
+  const tax = bills.tax || 0;
+  const rewardDiscount = bills.rewardDiscount || 0;
+  const total = bills.total + rewardDiscount;
+
+  return {
+    ...bills,
+    rewardDiscount: 0,
+    total,
+    totalWithTax: total + tax,
+  };
+}
+
 export {
   calculateOrderBills,
   formatOrderLevelPromotions,
+  calculateRewardDiscount,
+  applyRewardDiscountToBills,
+  removeRewardDiscountFromBills,
 };

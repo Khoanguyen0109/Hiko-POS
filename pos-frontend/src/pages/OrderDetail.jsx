@@ -37,7 +37,7 @@ import { fetchPromotions } from "../redux/slices/promotionSlice";
 import { fetchCustomerRewards, clearCustomerRewards } from "../redux/slices/rewardSlice";
 import { searchCustomers, createCustomer, clearSearchResults } from "../redux/slices/customersSlice";
 import { enqueueSnackbar } from "notistack";
-import { formatVND, getAvatarName } from "../utils";
+import { formatVND, getAvatarName, getOrderDisplayTotal, getOrderRewardDiscount } from "../utils";
 import { getStoredUser } from "../utils/auth";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import BackButton from "../components/shared/BackButton";
@@ -397,6 +397,9 @@ const OrderDetail = () => {
       .then(() => {
         enqueueSnackbar("Reward applied!", { variant: "success" });
         dispatch(fetchOrderById(orderId));
+        if (currentOrder?.customer?._id) {
+          dispatch(fetchCustomerRewards(currentOrder.customer._id));
+        }
       })
       .catch((err) => {
         enqueueSnackbar(err || "Failed to apply reward", { variant: "error" });
@@ -412,6 +415,9 @@ const OrderDetail = () => {
       .then(() => {
         enqueueSnackbar("Reward removed!", { variant: "success" });
         dispatch(fetchOrderById(orderId));
+        if (currentOrder?.customer?._id) {
+          dispatch(fetchCustomerRewards(currentOrder.customer._id));
+        }
       })
       .catch((err) => {
         enqueueSnackbar(err || "Failed to remove reward", { variant: "error" });
@@ -1155,6 +1161,15 @@ const OrderDetail = () => {
               Bill Summary
             </h2>
             <div className="space-y-3">
+              {order.bills?.subtotal != null && (
+                <div className="flex justify-between">
+                  <span className="text-[#ababab]">Subtotal</span>
+                  <span className="text-[#f5f5f5]">
+                    {formatVND(order.bills.subtotal)}
+                  </span>
+                </div>
+              )}
+
               {/* Promotion Discount */}
               {order.bills?.promotionDiscount > 0 && (
                 <div className="bg-green-900/10 rounded-md p-3 border border-green-500/20">
@@ -1180,7 +1195,7 @@ const OrderDetail = () => {
               )}
 
               {/* Reward Discount */}
-              {order.appliedReward?.discountAmount > 0 && (
+              {getOrderRewardDiscount(order) > 0 && (
                 <div className="bg-green-900/10 rounded-md p-3 border border-green-500/20">
                   <div className="flex justify-between items-center">
                     <span className="text-green-400 font-medium">
@@ -1189,7 +1204,7 @@ const OrderDetail = () => {
                         ` (${order.appliedReward.rewardProgram.name})`}
                     </span>
                     <span className="text-green-400 font-semibold">
-                      -{formatVND(order.appliedReward.discountAmount)}
+                      -{formatVND(getOrderRewardDiscount(order))}
                     </span>
                   </div>
                 </div>
@@ -1211,9 +1226,7 @@ const OrderDetail = () => {
               <div className="flex justify-between text-lg font-semibold">
                 <span className="text-[#f5f5f5]">Total</span>
                 <span className="text-[#f6b100]">
-                  {formatVND(
-                    order.bills?.totalWithTax || order.bills?.total || 0
-                  )}
+                  {formatVND(getOrderDisplayTotal(order))}
                 </span>
               </div>
             </div>

@@ -94,3 +94,5 @@ export const isSameDay = (date1, date2) => {
   const d2 = toVietnamTime(date2);
   return d1.toDateString() === d2.toDateString();
 };
+
+export { getOrderDisplayTotal, getOrderRewardDiscount } from "./orderBills.js";

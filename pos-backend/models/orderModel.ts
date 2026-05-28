@@ -136,7 +136,8 @@ const orderSchema = new mongoose.Schema({
     bills: {
         subtotal: { type: Number, required: true, min: 0 }, // Before any discounts
         promotionDiscount: { type: Number, default: 0, min: 0 }, // Total promotion discount
-        total: { type: Number, required: true, min: 0 }, // After promotions
+        rewardDiscount: { type: Number, default: 0, min: 0 }, // Total reward discount
+        total: { type: Number, required: true, min: 0 }, // After promotions and rewards
         tax: { type: Number, default: 0, min: 0 },
         totalWithTax: { type: Number, required: true, min: 0 }
     },
