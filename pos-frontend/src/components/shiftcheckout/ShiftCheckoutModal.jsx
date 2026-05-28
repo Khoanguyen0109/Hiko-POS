@@ -59,9 +59,12 @@ const ShiftCheckoutModal = ({
 
   const countedCashNum = parseFloat(countedCash) || 0;
   const countedBankingNum = parseFloat(countedBanking) || 0;
+  const openingCash = checkInRecord?.openingCash ?? 0;
+  const shiftCollectedCash = countedCashNum - openingCash;
 
-  const cashDiff = countedCashNum - (expected.expectedCash || 0);
+  const cashDiff = shiftCollectedCash - (expected.expectedCash || 0);
   const bankingDiff = countedBankingNum - (expected.expectedBanking || 0);
+  const expectedTotalCash = (expected.expectedCash || 0) + openingCash;
 
   const hasMismatch = useMemo(() => {
     if (!countedCash && !countedBanking && countedCash !== 0) return false;
@@ -184,7 +187,7 @@ const ShiftCheckoutModal = ({
             )}
             <div className="grid grid-cols-2 gap-4 p-4 bg-[#1f1f1f] rounded-lg">
               <div>
-                <p className="text-xs text-[#ababab] uppercase mb-1">Expected cash</p>
+                <p className="text-xs text-[#ababab] uppercase mb-1">Expected shift cash</p>
                 <p className="text-[#f6b100] font-semibold">
                   {formatVND(expected.expectedCash || 0)}
                 </p>
@@ -195,6 +198,14 @@ const ShiftCheckoutModal = ({
                   {formatVND(expected.expectedBanking || 0)}
                 </p>
               </div>
+              {checkInRecord && (
+                <div className="col-span-2">
+                  <p className="text-xs text-[#ababab] uppercase mb-1">Expected total cash in drawer</p>
+                  <p className="text-[#f6b100] font-semibold">
+                    {formatVND(expectedTotalCash)}
+                  </p>
+                </div>
+              )}
               <p className="col-span-2 text-xs text-[#ababab]">
                 {expected.orderCount ?? 0} completed orders in this shift window
               </p>
@@ -218,7 +229,7 @@ const ShiftCheckoutModal = ({
 
             <div className="grid grid-cols-2 gap-4 p-4 bg-[#1f1f1f] rounded-lg">
               <div>
-                <p className="text-xs text-[#ababab] uppercase mb-1">Expected cash</p>
+                <p className="text-xs text-[#ababab] uppercase mb-1">Expected shift cash</p>
                 <p className="text-[#f6b100] font-semibold">
                   {formatVND(expected.expectedCash || 0)}
                 </p>
@@ -229,6 +240,17 @@ const ShiftCheckoutModal = ({
                   {formatVND(expected.expectedBanking || 0)}
                 </p>
               </div>
+              {checkInRecord && (
+                <div className="col-span-2">
+                  <p className="text-xs text-[#ababab] uppercase mb-1">Expected total cash in drawer</p>
+                  <p className="text-[#f6b100] font-semibold">
+                    {formatVND(expectedTotalCash)}
+                  </p>
+                  <p className="text-xs text-[#ababab] mt-1">
+                    Opening {formatVND(openingCash)} + shift sales {formatVND(expected.expectedCash || 0)}
+                  </p>
+                </div>
+              )}
               <p className="col-span-2 text-xs text-[#ababab]">
                 {expected.orderCount ?? 0} completed orders in this shift window
               </p>
@@ -236,7 +258,7 @@ const ShiftCheckoutModal = ({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-[#ababab] mb-1">Counted cash</label>
+                <label className="block text-sm text-[#ababab] mb-1">Total cash in drawer</label>
                 <input
                   type="number"
                   min="0"
@@ -244,8 +266,14 @@ const ShiftCheckoutModal = ({
                   value={countedCash}
                   onChange={(e) => setCountedCash(e.target.value)}
                   className="w-full bg-[#1f1f1f] border border-[#383838] rounded-lg px-3 py-2 text-[#f5f5f5]"
+                  placeholder="Check-in cash + shift sales"
                   required
                 />
+                {countedCash !== "" && checkInRecord && (
+                  <p className="text-xs text-[#ababab] mt-1">
+                    Shift cash collected: {formatVND(shiftCollectedCash)}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm text-[#ababab] mb-1">Counted banking</label>
@@ -264,7 +292,7 @@ const ShiftCheckoutModal = ({
             {(countedCash !== "" || countedBanking !== "") && (
               <div className="text-sm space-y-1">
                 <p className={cashDiff !== 0 ? "text-amber-400" : "text-[#ababab]"}>
-                  Cash difference: {formatVND(cashDiff)}
+                  Cash difference (total − check-in vs expected shift): {formatVND(cashDiff)}
                 </p>
                 <p className={bankingDiff !== 0 ? "text-amber-400" : "text-[#ababab]"}>
                   Banking difference: {formatVND(bankingDiff)}

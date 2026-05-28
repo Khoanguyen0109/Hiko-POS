@@ -96,6 +96,7 @@ export function aggregateShiftPayments(
 
 /**
  * Compare counted vs expected amounts; returns balanced or mismatch.
+ * For cash, `countedCash` is shift-collected cash (total in drawer minus opening check-in).
  */
 export function resolveCheckoutStatus(
   expectedCash: number,

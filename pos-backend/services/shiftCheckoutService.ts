@@ -152,11 +152,21 @@ export async function submitShiftCheckout(
     throw createHttpError(400, "Counted cash and banking must be non-negative numbers");
   }
 
-  const expected = await getExpectedTotalsForSchedule(store._id, schedule);
+  const [expected, checkIn] = await Promise.all([
+    getExpectedTotalsForSchedule(store._id, schedule),
+    ShiftCheckIn.findOne({
+      schedule: schedule._id,
+      member: targetMemberId,
+    }),
+  ]);
+
+  const openingCash = checkIn?.openingCash ?? 0;
+  const shiftCollectedCash = countedCash - openingCash;
+
   const status = resolveCheckoutStatus(
     expected.expectedCash,
     expected.expectedBanking,
-    countedCash,
+    shiftCollectedCash,
     countedBanking,
     SHIFT_CHECKOUT_TOLERANCE_VND
   );
@@ -172,7 +182,7 @@ export async function submitShiftCheckout(
     );
   }
 
-  const cashDifference = countedCash - expected.expectedCash;
+  const cashDifference = shiftCollectedCash - expected.expectedCash;
   const bankingDifference = countedBanking - expected.expectedBanking;
 
   const checkout = await ShiftCheckout.create({

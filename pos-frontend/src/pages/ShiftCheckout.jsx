@@ -306,7 +306,7 @@ const ShiftCheckout = () => {
                   )}
                   {checkout && (
                     <p className="text-xs text-[#ababab] mt-2">
-                      Counted: {formatVND(checkout.countedCash)} cash ·{" "}
+                      Total cash: {formatVND(checkout.countedCash)} ·{" "}
                       {formatVND(checkout.countedBanking)} banking
                     </p>
                   )}
