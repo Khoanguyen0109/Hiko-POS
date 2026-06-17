@@ -8,20 +8,38 @@ import StorageItem from "../models/storageItemModel.js";
 import Supplier from "../models/supplierModel.js";
 import { Spending, SpendingCategory } from "../models/spendingModel.js";
 
-// Helper function to get or create "Ingredient" category
-const getIngredientCategory = async (storeId) => {
-    let category = await SpendingCategory.findOne({ name: "Ingredient", store: storeId });
-    if (!category) {
-        category = new SpendingCategory({
-            store: storeId,
-            name: "Ingredient",
+const INGREDIENT_CATEGORY_NAME = "Ingredient";
+
+// Spending categories are globally unique by name (see spendingModel name index).
+// Reuse the existing "Ingredient" category for all stores.
+const getIngredientCategory = async () => {
+    let category = await SpendingCategory.findOne({ name: INGREDIENT_CATEGORY_NAME });
+    if (category) {
+        return category;
+    }
+
+    try {
+        category = await SpendingCategory.create({
+            name: INGREDIENT_CATEGORY_NAME,
             description: "Storage imports and ingredient purchases",
             color: "#10B981",
-            isActive: true
+            isActive: true,
         });
-        await category.save();
+        return category;
+    } catch (error) {
+        if (
+            typeof error === "object" &&
+            error !== null &&
+            "code" in error &&
+            (error as { code: number }).code === 11000
+        ) {
+            const existing = await SpendingCategory.findOne({
+                name: INGREDIENT_CATEGORY_NAME,
+            });
+            if (existing) return existing;
+        }
+        throw error;
     }
-    return category;
 };
 
 // Create import record
@@ -83,7 +101,7 @@ const createStorageImport = async (req, res, next) => {
         const totalCost = quantity * unitCost;
 
         // Get Ingredient category
-        const ingredientCategory = await getIngredientCategory(req.store._id);
+        const ingredientCategory = await getIngredientCategory();
 
         // Create spending record
         const spending = new Spending({
