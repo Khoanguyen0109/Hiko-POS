@@ -10,29 +10,35 @@ import { Spending, SpendingCategory } from "../models/spendingModel.js";
 
 const INGREDIENT_CATEGORY_NAME = "Ingredient";
 
+const isDuplicateKeyError = (error: unknown): boolean =>
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code: number }).code === 11000;
+
 // Spending categories are globally unique by name (see spendingModel name index).
 // Reuse the existing "Ingredient" category for all stores.
 const getIngredientCategory = async () => {
-    let category = await SpendingCategory.findOne({ name: INGREDIENT_CATEGORY_NAME });
+    const category = await SpendingCategory.findOne({ name: INGREDIENT_CATEGORY_NAME });
     if (category) {
         return category;
     }
 
     try {
-        category = await SpendingCategory.create({
-            name: INGREDIENT_CATEGORY_NAME,
-            description: "Storage imports and ingredient purchases",
-            color: "#10B981",
-            isActive: true,
-        });
-        return category;
+        return await SpendingCategory.findOneAndUpdate(
+            { name: INGREDIENT_CATEGORY_NAME },
+            {
+                $setOnInsert: {
+                    name: INGREDIENT_CATEGORY_NAME,
+                    description: "Storage imports and ingredient purchases",
+                    color: "#10B981",
+                    isActive: true,
+                },
+            },
+            { upsert: true, new: true, runValidators: true }
+        );
     } catch (error) {
-        if (
-            typeof error === "object" &&
-            error !== null &&
-            "code" in error &&
-            (error as { code: number }).code === 11000
-        ) {
+        if (isDuplicateKeyError(error)) {
             const existing = await SpendingCategory.findOne({
                 name: INGREDIENT_CATEGORY_NAME,
             });

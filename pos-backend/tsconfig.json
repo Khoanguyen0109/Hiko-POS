@@ -21,6 +21,7 @@
     "node_modules",
     "dist",
     "coverage",
+    "scripts",
     "api-test.ts",
     "manual-test-orders.ts",
     "test-runner.ts",
