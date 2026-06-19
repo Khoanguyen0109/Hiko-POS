@@ -11,7 +11,7 @@ import ByMemberView from "../components/schedule/ByMemberView";
 import MyScheduleView from "../components/schedule/MyScheduleView";
 import ExtraWorkModal from "../components/extrawork/ExtraWorkModal";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
-import { getCurrentWeekInfo, getWeekDates, formatDate, getDayName, getWeekNumber, getLocalDateString } from "../utils/dateUtils";
+import { getCurrentWeekInfo, getWeekDates, formatDate, getDayName, getWeekNumber, getLocalDateString, isShiftOver } from "../utils/dateUtils";
 import {
   fetchSchedulesByWeek,
   createNewSchedule,
@@ -101,6 +101,11 @@ const WeeklySchedule = () => {
 
   const handleCellClick = async (date, shiftTemplate) => {
     if (!isAdmin) return;
+
+    if (isShiftOver(date, shiftTemplate.endTime)) {
+      enqueueSnackbar("This shift has ended and can no longer be changed", { variant: "info" });
+      return;
+    }
 
     try {
       const existingSchedule = findSchedule(date, shiftTemplate._id);
@@ -337,6 +342,8 @@ const WeeklySchedule = () => {
                             </td>
                             {weekDates.map((date, dateIndex) => {
                               const schedule = findSchedule(date, template._id);
+                              const shiftEnded = isShiftOver(date, template.endTime);
+                              const cellDisabled = !isAdmin || shiftEnded;
                               return (
                                 <td
                                   key={dateIndex}
@@ -347,7 +354,14 @@ const WeeklySchedule = () => {
                                     shiftTemplate={template}
                                     members={members}
                                     onClick={() => handleCellClick(date, template)}
-                                    disabled={!isAdmin}
+                                    disabled={cellDisabled}
+                                    disabledTitle={
+                                      shiftEnded
+                                        ? "Shift ended"
+                                        : !isAdmin
+                                        ? "View only"
+                                        : undefined
+                                    }
                                   />
                                 </td>
                               );

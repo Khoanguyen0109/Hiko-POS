@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import { useSelector } from "react-redux";
 import { MdAdd as MdAddIcon } from "react-icons/md";
 
-const ScheduleCell = ({ schedule, shiftTemplate, onClick, members, disabled = false }) => {
+const ScheduleCell = ({ schedule, shiftTemplate, onClick, members, disabled = false, disabledTitle }) => {
   const { _id: currentUserId } = useSelector((state) => state.user);
 
   if (!shiftTemplate) return null;
@@ -60,7 +60,11 @@ const ScheduleCell = ({ schedule, shiftTemplate, onClick, members, disabled = fa
           ? "bg-[#1e1e1e] border-[#3a3a3a] hover:border-[#4ECDC4] hover:bg-[#252525] cursor-pointer"
           : "bg-[#2a2a2a] border-[#4a4a4a] hover:border-[#4ECDC4] cursor-pointer"
       }`}
-      title={disabled ? (hasCurrentUser ? "Your shift" : "View only") : "Click to assign members"}
+      title={
+        disabled
+          ? disabledTitle || (hasCurrentUser ? "Your shift" : "View only")
+          : "Click to assign members"
+      }
     >
       <div className="flex items-center justify-between mb-2">
         <div
@@ -150,7 +154,8 @@ ScheduleCell.propTypes = {
   members: PropTypes.arrayOf(
     PropTypes.shape({ _id: PropTypes.string, name: PropTypes.string })
   ),
-  disabled: PropTypes.bool
+  disabled: PropTypes.bool,
+  disabledTitle: PropTypes.string
 };
 
 export default ScheduleCell;

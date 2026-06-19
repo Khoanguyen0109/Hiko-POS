@@ -112,6 +112,27 @@ export const isPast = (date) => {
     return new Date(date) < today;
 };
 
+// Check if a shift has ended (date is past, or today and current time >= endTime)
+export const isShiftOver = (date, endTime) => {
+    if (!date || !endTime) return false;
+
+    const now = new Date();
+    const shiftDate = new Date(date);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const shiftDay = new Date(shiftDate);
+    shiftDay.setHours(0, 0, 0, 0);
+
+    if (shiftDay < today) return true;
+    if (shiftDay > today) return false;
+
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const endMinutes = endHour * 60 + endMin;
+    return nowMinutes >= endMinutes;
+};
+
 // Get current year and week
 export const getCurrentWeekInfo = () => {
     const now = new Date();

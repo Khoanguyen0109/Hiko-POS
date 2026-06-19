@@ -7,6 +7,7 @@ import { fetchMembers } from "../../redux/slices/memberSlice";
 import { batchAssignMembers } from "../../redux/slices/scheduleSlice";
 import { checkScheduleConflicts } from "../../https/scheduleApi";
 import FullScreenLoader from "../shared/FullScreenLoader";
+import { isShiftOver } from "../../utils/dateUtils";
 
 const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLogExtraWork }) => {
   const dispatch = useDispatch();
@@ -19,6 +20,10 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLog
   const [conflicts, setConflicts] = useState({});
   const [conflictsLoading, setConflictsLoading] = useState(false);
   const initialMembersRef = useRef([]);
+
+  const shiftEnded = schedule && shiftTemplate
+    ? isShiftOver(schedule.date, shiftTemplate.endTime)
+    : false;
 
   const getAssignedMemberIds = useCallback((assignedMembers) => {
     if (!assignedMembers) return [];
@@ -92,6 +97,7 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLog
   );
 
   const handleToggleMember = (memberId) => {
+    if (shiftEnded) return;
     if (conflicts[memberId]) return; // Block conflicting members
     setSelectedMembers(prev =>
       prev.includes(memberId)
@@ -108,6 +114,7 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLog
   };
 
   const handleSave = async () => {
+    if (shiftEnded) return;
     if (!hasChanges()) { onClose(); return; }
 
     try {
@@ -168,6 +175,13 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLog
             </button>
           </div>
 
+          {shiftEnded && (
+            <div className="mx-6 mt-6 px-4 py-3 bg-[#3a3a3a]/50 border border-[#4a4a4a] rounded-lg flex items-center gap-2 text-sm text-[#ababab]">
+              <MdBlock size={16} className="text-[#f6b100] shrink-0" />
+              This shift has ended. Assignments can no longer be changed.
+            </div>
+          )}
+
           {/* Search */}
           <div className="p-6 border-b border-[#3a3a3a]">
             <input
@@ -175,7 +189,8 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLog
               placeholder="Search members by name or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 bg-[#1e1e1e] border border-[#3a3a3a] rounded-lg text-[#f5f5f5] placeholder-[#6a6a6a] focus:outline-none focus:border-[#4ECDC4]"
+              disabled={shiftEnded}
+              className="w-full px-4 py-2 bg-[#1e1e1e] border border-[#3a3a3a] rounded-lg text-[#f5f5f5] placeholder-[#6a6a6a] focus:outline-none focus:border-[#4ECDC4] disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -197,7 +212,8 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLog
                 {filteredMembers.map((member) => {
                   const isSelected = selectedMembers.includes(member._id);
                   const conflict = conflicts[member._id];
-                  const isBlocked = !!conflict;
+                  const hasConflict = !!conflict;
+                  const isBlocked = hasConflict || shiftEnded;
 
                   return (
                     <button
@@ -205,8 +221,12 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLog
                       onClick={() => handleToggleMember(member._id)}
                       disabled={isBlocked}
                       className={`w-full flex items-center justify-between p-4 rounded-lg transition-all ${
-                        isBlocked
+                        hasConflict
                           ? "bg-red-900/10 border-2 border-red-900/30 cursor-not-allowed opacity-60"
+                          : shiftEnded
+                          ? isSelected
+                            ? "bg-[#4ECDC4] bg-opacity-20 border-2 border-[#4ECDC4] cursor-not-allowed opacity-80"
+                            : "bg-[#1e1e1e] border-2 border-[#3a3a3a] cursor-not-allowed opacity-80"
                           : isSelected
                           ? "bg-[#4ECDC4] bg-opacity-20 border-2 border-[#4ECDC4] cursor-pointer"
                           : "bg-[#1e1e1e] border-2 border-[#3a3a3a] hover:border-[#4a4a4a] cursor-pointer"
@@ -215,12 +235,12 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLog
                       <div className="flex items-center space-x-3">
                         <div
                           className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                            isBlocked ? "bg-red-900/30"
+                            hasConflict ? "bg-red-900/30"
                             : isSelected ? "bg-[#4ECDC4]"
                             : "bg-[#3a3a3a]"
                           }`}
                         >
-                          {isBlocked
+                          {hasConflict
                             ? <MdBlock size={20} className="text-red-400" />
                             : <MdPerson size={20} className="text-[#f5f5f5]" />
                           }
@@ -229,7 +249,7 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLog
                           <p className="font-semibold text-[#f5f5f5]">
                             {member.name}
                           </p>
-                          {isBlocked ? (
+                          {hasConflict ? (
                             <p className="text-xs text-red-400 flex items-center gap-1">
                               <MdWarning size={12} />
                               {conflict.conflictStore} &bull; {conflict.conflictShift} ({conflict.conflictTime})
@@ -239,18 +259,18 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLog
                               {member.email || member.phone}
                             </p>
                           )}
-                          {member.role && !isBlocked && (
+                          {member.role && !hasConflict && (
                             <span className="text-xs text-[#6a6a6a]">{member.role}</span>
                           )}
                         </div>
                       </div>
 
-                      {isSelected && !isBlocked && (
+                      {isSelected && !hasConflict && (
                         <div className="w-6 h-6 rounded-full bg-[#4ECDC4] flex items-center justify-center">
                           <MdCheck size={16} className="text-[#1e1e1e]" />
                         </div>
                       )}
-                      {isBlocked && (
+                      {hasConflict && (
                         <span className="text-xs text-red-400 font-medium px-2 py-1 bg-red-900/20 rounded">
                           Conflict
                         </span>
@@ -287,8 +307,8 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLog
               </button>
               <button
                 onClick={handleSave}
-                disabled={assignLoading}
-                className="px-6 py-2 bg-[#4ECDC4] hover:bg-[#4ECDC4]/90 text-[#1e1e1e] font-medium rounded-lg transition-colors disabled:opacity-50"
+                disabled={assignLoading || shiftEnded}
+                className="px-6 py-2 bg-[#4ECDC4] hover:bg-[#4ECDC4]/90 text-[#1e1e1e] font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {assignLoading ? "Saving..." : "Save"}
               </button>
