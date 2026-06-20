@@ -41,8 +41,10 @@ export const getSchedulesByMember = (memberId, params) =>
 export const getScheduleById = (id) => 
     axiosWrapper.get(`/api/schedule/${id}`);
 
-export const createSchedule = (data) => 
-    axiosWrapper.post("/api/schedule", data);
+// `storeId` (optional) overrides the active-store header so an admin can create
+// a schedule for any store without switching their global active store.
+export const createSchedule = (data, storeId) =>
+    axiosWrapper.post("/api/schedule", data, storeId ? { headers: { "X-Store-Id": storeId } } : undefined);
 
 export const bulkCreateSchedules = (schedules) => 
     axiosWrapper.post("/api/schedule/bulk", { schedules });
@@ -56,8 +58,11 @@ export const deleteSchedule = (id) =>
 export const assignMemberToShift = (scheduleId, memberId) => 
     axiosWrapper.patch(`/api/schedule/${scheduleId}/assign`, { memberId });
 
-export const batchAssignMembers = (scheduleId, memberIds) => 
-    axiosWrapper.patch(`/api/schedule/${scheduleId}/batch-assign`, { memberIds });
+// `storeId` (optional) overrides the active-store header. Required when assigning
+// to a schedule that belongs to a store other than the current active store,
+// because batch-assign looks the schedule up scoped to the request's store.
+export const batchAssignMembers = (scheduleId, memberIds, storeId) =>
+    axiosWrapper.patch(`/api/schedule/${scheduleId}/batch-assign`, { memberIds }, storeId ? { headers: { "X-Store-Id": storeId } } : undefined);
 
 export const unassignMemberFromShift = (scheduleId, memberId) => 
     axiosWrapper.patch(`/api/schedule/${scheduleId}/unassign`, { memberId });

@@ -30,7 +30,10 @@ export const createNewSchedule = createAsyncThunk(
     "schedule/create",
     async (data, { rejectWithValue }) => {
         try {
-            const response = await scheduleApi.createSchedule(data);
+            // `storeId` (optional) targets a specific store via header override
+            // and is not part of the request body.
+            const { storeId, ...payload } = data;
+            const response = await scheduleApi.createSchedule(payload, storeId);
             return response.data;
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || "Failed to create schedule");
@@ -88,9 +91,9 @@ export const assignMember = createAsyncThunk(
 
 export const batchAssignMembers = createAsyncThunk(
     "schedule/batchAssignMembers",
-    async ({ scheduleId, memberIds }, { rejectWithValue }) => {
+    async ({ scheduleId, memberIds, storeId }, { rejectWithValue }) => {
         try {
-            const response = await scheduleApi.batchAssignMembers(scheduleId, memberIds);
+            const response = await scheduleApi.batchAssignMembers(scheduleId, memberIds, storeId);
             return response.data;
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || "Failed to update member assignments");

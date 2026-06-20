@@ -9,11 +9,13 @@ import ScheduleCell from "../components/schedule/ScheduleCell";
 import MemberAssignmentModal from "../components/schedule/MemberAssignmentModal";
 import ByMemberView from "../components/schedule/ByMemberView";
 import MyScheduleView from "../components/schedule/MyScheduleView";
+import AllStoresWeekGrid from "../components/schedule/AllStoresWeekGrid";
 import ExtraWorkModal from "../components/extrawork/ExtraWorkModal";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import { getCurrentWeekInfo, getWeekDates, formatDate, getDayName, getWeekNumber, getLocalDateString, isShiftOver } from "../utils/dateUtils";
 import {
   fetchSchedulesByWeek,
+  fetchAllMembersWeek,
   createNewSchedule,
   clearError
 } from "../redux/slices/scheduleSlice";
@@ -22,6 +24,7 @@ import {
   fetchActiveShiftTemplates} from "../redux/slices/shiftTemplateSlice";
 import { fetchMembers } from "../redux/slices/memberSlice";
 import { fetchExtraWork } from "../redux/slices/extraWorkSlice";
+import { fetchAllStores } from "../redux/slices/storeSlice";
 import { ROUTES } from "../constants";
 
 const TABS = {
@@ -32,11 +35,12 @@ const TABS = {
 
 const WeeklySchedule = () => {
   const dispatch = useDispatch();
-  const { schedules, loading, error, createLoading } = useSelector((state) => state.schedules);
+  const { schedules, loading, error, createLoading, allMembersSchedules, allMembersLoading } = useSelector((state) => state.schedules);
   const { activeShiftTemplates, loading: templatesLoading } = useSelector(
     (state) => state.shiftTemplates
   );
   const { members } = useSelector((state) => state.members);
+  const { allStores, activeStore } = useSelector((state) => state.store);
   const { extraWorkEntries, totalHours, totalPayment, loading: extraWorkLoading } = useSelector((state) => state.extraWork);
   const { role } = useSelector((state) => state.user);
   const isAdmin = role === "Admin";
@@ -47,6 +51,7 @@ const WeeklySchedule = () => {
   const [showExtraWorkModal, setShowExtraWorkModal] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [selectedShiftTemplate, setSelectedShiftTemplate] = useState(null);
+  const [selectedStore, setSelectedStore] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedMemberForExtraWork, setSelectedMemberForExtraWork] = useState(null);
   const [extraWorkFilters, setExtraWorkFilters] = useState({
@@ -59,12 +64,18 @@ const WeeklySchedule = () => {
     document.title = "POS | Weekly Schedule";
     dispatch(fetchActiveShiftTemplates());
     if (activeTab === TABS.BY_STORE) {
-      dispatch(fetchSchedulesByWeek(currentWeek));
+      if (isAdmin) {
+        // Admin sees every store's grid at once (cross-store week data).
+        dispatch(fetchAllMembersWeek(currentWeek));
+        if (allStores.length === 0) dispatch(fetchAllStores());
+      } else {
+        dispatch(fetchSchedulesByWeek(currentWeek));
+      }
     }
     if (isAdmin) {
       dispatch(fetchMembers());
     }
-  }, [dispatch, isAdmin, currentWeek, activeTab]);
+  }, [dispatch, isAdmin, currentWeek, activeTab, allStores.length]);
 
   useEffect(() => {
     if (isAdmin) {
@@ -140,10 +151,73 @@ const WeeklySchedule = () => {
     }
   };
 
+  // Find a schedule for a specific store within the cross-store week data.
+  const findScheduleForStore = (storeId, date, shiftTemplateId) => {
+    if (!allMembersSchedules || allMembersSchedules.length === 0) return null;
+    const targetDateStr = getLocalDateString(date);
+    return allMembersSchedules.find(schedule => {
+      const sId = typeof schedule.store === 'object' ? schedule.store?._id : schedule.store;
+      if (sId !== storeId) return false;
+      const scheduleDateStr = getLocalDateString(new Date(schedule.date));
+      const scheduleTemplateId = typeof schedule.shiftTemplate === 'string'
+        ? schedule.shiftTemplate
+        : schedule.shiftTemplate?._id;
+      return scheduleDateStr === targetDateStr && scheduleTemplateId === shiftTemplateId;
+    });
+  };
+
+  // Cell click from the admin all-stores grid: open/create a schedule for the
+  // clicked store without changing the active store.
+  const handleCombinedCellClick = async (store, date, shiftTemplate) => {
+    if (!isAdmin) return;
+
+    if (isShiftOver(date, shiftTemplate.endTime)) {
+      enqueueSnackbar("This shift has ended and can no longer be changed", { variant: "info" });
+      return;
+    }
+
+    try {
+      const existingSchedule = findScheduleForStore(store._id, date, shiftTemplate._id);
+      if (existingSchedule) {
+        setSelectedSchedule(existingSchedule);
+        setSelectedShiftTemplate(shiftTemplate);
+        setSelectedStore(store);
+        setShowAssignmentModal(true);
+      } else {
+        const dateStr = formatDate(date, "iso");
+        const scheduleDate = new Date(date);
+        const year = scheduleDate.getFullYear();
+        const weekNumber = getWeekNumber(scheduleDate);
+
+        const result = await dispatch(createNewSchedule({
+          date: dateStr,
+          shiftTemplateId: shiftTemplate._id,
+          memberIds: [],
+          year,
+          weekNumber,
+          storeId: store._id
+        })).unwrap();
+
+        setSelectedSchedule(result.data);
+        setSelectedShiftTemplate(shiftTemplate);
+        setSelectedStore(store);
+        setShowAssignmentModal(true);
+      }
+    } catch (err) {
+      enqueueSnackbar(err || "Failed to access schedule", { variant: "error" });
+    }
+  };
+
+  // Refresh the cross-store week data after an edit so the combined grid updates.
+  const refreshAdminWeek = () => {
+    dispatch(fetchAllMembersWeek(currentWeek));
+  };
+
   const handleCloseModal = () => {
     setShowAssignmentModal(false);
     setSelectedSchedule(null);
     setSelectedShiftTemplate(null);
+    setSelectedStore(null);
   };
 
   const handleOpenExtraWorkModal = (date = null, memberId = null) => {
@@ -269,7 +343,7 @@ const WeeklySchedule = () => {
         {/* ── By Store Tab ── */}
         {activeTab === TABS.BY_STORE && (
           <>
-            {loading || templatesLoading ? (
+            {(isAdmin ? allMembersLoading : loading) || templatesLoading ? (
               <FullScreenLoader />
             ) : activeShiftTemplates.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -293,88 +367,93 @@ const WeeklySchedule = () => {
               </div>
             ) : (
               <div className="space-y-6">
-                {/* Weekly Grid */}
-                <div className="bg-[#1f1f1f] rounded-lg border border-[#343434] overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[1000px]">
-                      <thead>
-                        <tr className="border-b border-[#343434]">
-                          <th className="px-4 py-3 text-left text-[#ababab] text-sm font-medium w-32">
-                            Shift
-                          </th>
-                          {weekDates.map((date, index) => (
-                            <th
-                              key={index}
-                              className="px-4 py-3 text-center text-[#ababab] text-sm font-medium"
-                            >
-                              <div>{getDayName(date, "short")}</div>
-                              <div className="text-[#f5f5f5] font-semibold mt-1">
-                                {formatDate(date, "short")}
-                              </div>
+                {/* Weekly Grid — admin sees every store at once; members see their active store */}
+                {isAdmin ? (
+                  <AllStoresWeekGrid
+                    stores={allStores.filter((s) => s.isActive !== false)}
+                    schedules={allMembersSchedules}
+                    shiftTemplates={activeShiftTemplates}
+                    members={members}
+                    weekDates={weekDates}
+                    activeStoreId={activeStore?._id}
+                    onCellClick={handleCombinedCellClick}
+                  />
+                ) : (
+                  <div className="bg-[#1f1f1f] rounded-lg border border-[#343434] overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[1000px]">
+                        <thead>
+                          <tr className="border-b border-[#343434]">
+                            <th className="px-4 py-3 text-left text-[#ababab] text-sm font-medium w-32">
+                              Shift
                             </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {activeShiftTemplates.map((template) => (
-                          <tr
-                            key={template._id}
-                            className="border-b border-[#343434] last:border-0"
-                          >
-                            <td className="px-4 py-6 align-top">
-                              <div className="flex items-start gap-2">
-                                <div
-                                  className="w-3 h-3 rounded-full mt-1"
-                                  style={{ backgroundColor: template.color }}
-                                />
-                                <div>
-                                  <div className="text-[#f5f5f5] font-medium text-sm">
-                                    {template.name}
-                                  </div>
-                                  <div className="text-[#ababab] text-xs mt-1">
-                                    {template.startTime} - {template.endTime}
-                                  </div>
-                                  <div className="text-[#6a6a6a] text-xs mt-0.5">
-                                    {template.durationHours}h
+                            {weekDates.map((date, index) => (
+                              <th
+                                key={index}
+                                className="px-4 py-3 text-center text-[#ababab] text-sm font-medium"
+                              >
+                                <div>{getDayName(date, "short")}</div>
+                                <div className="text-[#f5f5f5] font-semibold mt-1">
+                                  {formatDate(date, "short")}
+                                </div>
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {activeShiftTemplates.map((template) => (
+                            <tr
+                              key={template._id}
+                              className="border-b border-[#343434] last:border-0"
+                            >
+                              <td className="px-4 py-6 align-top">
+                                <div className="flex items-start gap-2">
+                                  <div
+                                    className="w-3 h-3 rounded-full mt-1"
+                                    style={{ backgroundColor: template.color }}
+                                  />
+                                  <div>
+                                    <div className="text-[#f5f5f5] font-medium text-sm">
+                                      {template.name}
+                                    </div>
+                                    <div className="text-[#ababab] text-xs mt-1">
+                                      {template.startTime} - {template.endTime}
+                                    </div>
+                                    <div className="text-[#6a6a6a] text-xs mt-0.5">
+                                      {template.durationHours}h
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            </td>
-                            {weekDates.map((date, dateIndex) => {
-                              const schedule = findSchedule(date, template._id);
-                              const shiftEnded = isShiftOver(date, template.endTime);
-                              const cellDisabled = !isAdmin || shiftEnded;
-                              return (
-                                <td
-                                  key={dateIndex}
-                                  className="px-2 py-3 align-top bg-[#262626]/30"
-                                >
-                                  <ScheduleCell
-                                    schedule={schedule}
-                                    shiftTemplate={template}
-                                    members={members}
-                                    onClick={() => handleCellClick(date, template)}
-                                    disabled={cellDisabled}
-                                    disabledTitle={
-                                      shiftEnded
-                                        ? "Shift ended"
-                                        : !isAdmin
-                                        ? "View only"
-                                        : undefined
-                                    }
-                                  />
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                              </td>
+                              {weekDates.map((date, dateIndex) => {
+                                const schedule = findSchedule(date, template._id);
+                                const shiftEnded = isShiftOver(date, template.endTime);
+                                return (
+                                  <td
+                                    key={dateIndex}
+                                    className="px-2 py-3 align-top bg-[#262626]/30"
+                                  >
+                                    <ScheduleCell
+                                      schedule={schedule}
+                                      shiftTemplate={template}
+                                      members={members}
+                                      onClick={() => handleCellClick(date, template)}
+                                      disabled
+                                      disabledTitle={shiftEnded ? "Shift ended" : "View only"}
+                                    />
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
+                )}
 
-                {/* Summary Stats */}
-                {schedules && schedules.length > 0 && (
+                {/* Summary Stats (member single-store view) */}
+                {!isAdmin && schedules && schedules.length > 0 && (
                   <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
                     <h4 className="text-[#f5f5f5] text-lg font-semibold mb-4">
                       Week Summary
@@ -581,7 +660,9 @@ const WeeklySchedule = () => {
         onClose={handleCloseModal}
         schedule={selectedSchedule}
         shiftTemplate={selectedShiftTemplate}
+        store={selectedStore}
         onLogExtraWork={handleOpenExtraWorkModal}
+        onSaved={isAdmin ? refreshAdminWeek : undefined}
       />
 
       <ExtraWorkModal

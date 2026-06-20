@@ -2,18 +2,22 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
-import { MdClose, MdPerson, MdCheck, MdAccessTime, MdWarning, MdBlock } from "react-icons/md";
+import { MdClose, MdPerson, MdCheck, MdAccessTime, MdWarning, MdBlock, MdStore } from "react-icons/md";
 import { fetchMembers } from "../../redux/slices/memberSlice";
 import { batchAssignMembers } from "../../redux/slices/scheduleSlice";
 import { checkScheduleConflicts } from "../../https/scheduleApi";
 import FullScreenLoader from "../shared/FullScreenLoader";
 import { isShiftOver } from "../../utils/dateUtils";
 
-const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLogExtraWork }) => {
+const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, store, onLogExtraWork, onSaved }) => {
   const dispatch = useDispatch();
   const { members, loading: membersLoading } = useSelector((state) => state.members);
   const { assignLoading } = useSelector((state) => state.schedules);
   const { activeStore } = useSelector((state) => state.store);
+
+  // Store this shift belongs to. Defaults to the active store; when assigning
+  // from the all-stores view, `store` targets a different store than the active one.
+  const targetStore = store || activeStore;
 
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -80,12 +84,12 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLog
     }
   }, [isOpen, schedule, shiftTemplate, dispatch, getAssignedMemberIds, members]);
 
-  // Get store members (members assigned to the current store)
+  // Get store members (members assigned to the target store)
   const storeMembers = members?.filter(m => {
     if (!m.isActive) return false;
     // Filter by store assignment if available
-    if (m.assignedStores && m.assignedStores.length > 0 && activeStore) {
-      return m.assignedStores.some(s => s._id === activeStore._id && s.isActive);
+    if (m.assignedStores && m.assignedStores.length > 0 && targetStore) {
+      return m.assignedStores.some(s => s._id === targetStore._id && s.isActive);
     }
     return true;
   }) || [];
@@ -120,10 +124,12 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLog
     try {
       await dispatch(batchAssignMembers({
         scheduleId: schedule._id,
-        memberIds: selectedMembers
+        memberIds: selectedMembers,
+        storeId: targetStore?._id
       })).unwrap();
       enqueueSnackbar("Member assignments updated", { variant: "success" });
       setSearchQuery("");
+      if (onSaved) onSaved();
       onClose();
     } catch (error) {
       if (typeof error === 'string' && error.includes('conflict')) {
@@ -158,9 +164,16 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, onLog
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-[#3a3a3a]">
             <div>
-              <h2 className="text-xl font-bold text-[#f5f5f5]">
-                Assign Members to Shift
-              </h2>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-xl font-bold text-[#f5f5f5]">
+                  Assign Members to Shift
+                </h2>
+                {targetStore && (
+                  <span className="flex items-center gap-1 text-xs font-medium text-[#f6b100] bg-[#f6b100]/10 px-2 py-1 rounded">
+                    <MdStore size={13} /> {targetStore.name}
+                  </span>
+                )}
+              </div>
               {schedule && shiftTemplate && (
                 <p className="text-sm text-[#ababab] mt-1">
                   {shiftTemplate.name} &bull; {formatDate(schedule.date)} &bull; {shiftTemplate.startTime} - {shiftTemplate.endTime}
@@ -334,7 +347,12 @@ MemberAssignmentModal.propTypes = {
     startTime: PropTypes.string,
     endTime: PropTypes.string,
   }),
+  store: PropTypes.shape({
+    _id: PropTypes.string,
+    name: PropTypes.string,
+  }),
   onLogExtraWork: PropTypes.func,
+  onSaved: PropTypes.func,
 };
 
 export default MemberAssignmentModal;
