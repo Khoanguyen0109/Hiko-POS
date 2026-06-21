@@ -1,4 +1,41 @@
+import axios from "axios";
 import { axiosWrapper } from "./axiosWrapper";
+import { clearAuthData, getAuthToken } from "../utils/auth";
+
+// Dedicated instance for admin cross-store writes. Identical to axiosWrapper
+// (auth token + 401 handling) but deliberately does NOT inject the active-store
+// header, so an explicit X-Store-Id passed per request is preserved. Scoped to
+// this module so the global request flow is unaffected.
+const storeScopedAxios = axios.create({
+  baseURL: import.meta.env.VITE_BACKEND_URL || "http://localhost:3000/api",
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
+  withCredentials: true,
+});
+
+storeScopedAxios.interceptors.request.use(
+  (config) => {
+    const token = getAuthToken();
+    if (token) {
+      config.headers["Authorization"] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+storeScopedAxios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      clearAuthData();
+      window.location.href = "/auth";
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Shift Template APIs
 export const getAllShiftTemplates = (params) => 
@@ -44,7 +81,9 @@ export const getScheduleById = (id) =>
 // `storeId` (optional) overrides the active-store header so an admin can create
 // a schedule for any store without switching their global active store.
 export const createSchedule = (data, storeId) =>
-    axiosWrapper.post("/api/schedule", data, storeId ? { headers: { "X-Store-Id": storeId } } : undefined);
+    storeId
+        ? storeScopedAxios.post("/api/schedule", data, { headers: { "X-Store-Id": storeId } })
+        : axiosWrapper.post("/api/schedule", data);
 
 export const bulkCreateSchedules = (schedules) => 
     axiosWrapper.post("/api/schedule/bulk", { schedules });
@@ -62,7 +101,9 @@ export const assignMemberToShift = (scheduleId, memberId) =>
 // to a schedule that belongs to a store other than the current active store,
 // because batch-assign looks the schedule up scoped to the request's store.
 export const batchAssignMembers = (scheduleId, memberIds, storeId) =>
-    axiosWrapper.patch(`/api/schedule/${scheduleId}/batch-assign`, { memberIds }, storeId ? { headers: { "X-Store-Id": storeId } } : undefined);
+    storeId
+        ? storeScopedAxios.patch(`/api/schedule/${scheduleId}/batch-assign`, { memberIds }, { headers: { "X-Store-Id": storeId } })
+        : axiosWrapper.patch(`/api/schedule/${scheduleId}/batch-assign`, { memberIds });
 
 export const unassignMemberFromShift = (scheduleId, memberId) => 
     axiosWrapper.patch(`/api/schedule/${scheduleId}/unassign`, { memberId });
