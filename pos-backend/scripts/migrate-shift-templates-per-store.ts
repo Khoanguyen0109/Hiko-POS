@@ -50,6 +50,32 @@ async function run() {
   console.log(`Mode: ${isExecute ? "EXECUTE" : "DRY-RUN"}`);
   console.log(`Source store code: ${sourceCode}\n`);
 
+  // Step 0: drop legacy global name index (blocks per-store duplicate names)
+  const templateCollection = mongoose.connection.collection("shifttemplates");
+  const indexes = await templateCollection.indexes();
+  const legacyNameIndex = indexes.find(
+    (idx) => idx.key?.name === 1 && !idx.key?.store
+  );
+
+  console.log("--- Step 0: index cleanup ---");
+  if (legacyNameIndex) {
+    const indexName = legacyNameIndex.name || "name_1";
+    console.log(`Found legacy global index: ${indexName}`);
+    if (isExecute) {
+      await templateCollection.dropIndex(indexName);
+      console.log(`Dropped ${indexName}`);
+      await ShiftTemplate.syncIndexes();
+      console.log("Synced shift template indexes (store + name unique)\n");
+    } else {
+      console.log(`Would drop ${indexName} and sync compound store+name index\n`);
+    }
+  } else {
+    console.log("No legacy global name index — OK\n");
+    if (isExecute) {
+      await ShiftTemplate.syncIndexes();
+    }
+  }
+
   const sourceStore = await Store.findOne({ code: sourceCode });
   if (!sourceStore) {
     throw new Error(`Source store with code "${sourceCode}" not found`);
