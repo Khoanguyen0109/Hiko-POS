@@ -4,9 +4,8 @@ const shiftTemplateSchema = new mongoose.Schema({
     store: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Store",
-        required: false,
-        index: true,
-        default: null
+        required: [true, "Store is required"],
+        index: true
     },
     name: {
         type: String,
@@ -70,8 +69,7 @@ const shiftTemplateSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-shiftTemplateSchema.index({ store: 1, name: 1 });
-shiftTemplateSchema.index({ name: 1 });
+shiftTemplateSchema.index({ store: 1, name: 1 }, { unique: true });
 
 // Calculate duration before saving (handles overnight shifts spanning midnight)
 shiftTemplateSchema.pre('save', function(next) {

@@ -21,7 +21,9 @@ import {
 } from "../redux/slices/scheduleSlice";
 import { deleteExtraWork } from "../redux/slices/extraWorkSlice";
 import {
-  fetchActiveShiftTemplates} from "../redux/slices/shiftTemplateSlice";
+  fetchActiveShiftTemplates,
+  fetchAllActiveShiftTemplates
+} from "../redux/slices/shiftTemplateSlice";
 import { fetchMembers } from "../redux/slices/memberSlice";
 import { fetchExtraWork } from "../redux/slices/extraWorkSlice";
 import { fetchAllStores } from "../redux/slices/storeSlice";
@@ -62,7 +64,11 @@ const WeeklySchedule = () => {
 
   useEffect(() => {
     document.title = "POS | Weekly Schedule";
-    dispatch(fetchActiveShiftTemplates());
+    if (isAdmin) {
+      dispatch(fetchAllActiveShiftTemplates());
+    } else {
+      dispatch(fetchActiveShiftTemplates());
+    }
     if (activeTab === TABS.BY_STORE) {
       if (isAdmin) {
         // Admin sees every store's grid at once (cross-store week data).
@@ -75,7 +81,7 @@ const WeeklySchedule = () => {
     if (isAdmin) {
       dispatch(fetchMembers());
     }
-  }, [dispatch, isAdmin, currentWeek, activeTab, allStores.length]);
+  }, [dispatch, isAdmin, currentWeek, activeTab, allStores.length, activeStore?._id]);
 
   useEffect(() => {
     if (isAdmin) {
@@ -345,7 +351,7 @@ const WeeklySchedule = () => {
           <>
             {(isAdmin ? allMembersLoading : loading) || templatesLoading ? (
               <FullScreenLoader />
-            ) : activeShiftTemplates.length === 0 ? (
+            ) : !isAdmin && activeShiftTemplates.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <div className="w-20 h-20 bg-[#262626] rounded-full flex items-center justify-center mb-6">
                   <MdCalendarToday size={40} className="text-[#ababab]" />

@@ -23,6 +23,11 @@ const memberIdOf = (am) => {
   return typeof m === "object" ? m._id : m;
 };
 
+const templateIdOf = (ref) => {
+  if (!ref) return null;
+  return typeof ref === "object" ? ref._id : ref;
+};
+
 /**
  * Admin combined view: one editable weekly grid per store, stacked vertically.
  * Lets an admin see and edit every store's schedule on a single page without
@@ -51,7 +56,7 @@ const AllStoresWeekGrid = ({
       if (!sId) continue;
 
       const dateStr = getLocalDateString(new Date(sched.date));
-      const tId = storeIdOf(sched.shiftTemplate);
+      const tId = templateIdOf(sched.shiftTemplate);
 
       if (!map[sId]) map[sId] = {};
       if (!map[sId][dateStr]) map[sId][dateStr] = {};
@@ -72,6 +77,20 @@ const AllStoresWeekGrid = ({
 
     return { byStore: map, statsByStore: stats };
   }, [schedules]);
+
+  const templatesByStore = useMemo(() => {
+    const map = {};
+    for (const template of shiftTemplates || []) {
+      const sId = storeIdOf(template.store);
+      if (!sId) continue;
+      if (!map[sId]) map[sId] = [];
+      map[sId].push(template);
+    }
+    for (const list of Object.values(map)) {
+      list.sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
+    }
+    return map;
+  }, [shiftTemplates]);
 
   // Active store first, then alphabetical — keeps the admin's default context on top.
   const orderedStores = useMemo(() => {
@@ -165,6 +184,7 @@ const AllStoresWeekGrid = ({
         const isCollapsed = collapsed.has(store._id);
         const st = statsByStore[store._id] || { shifts: 0, assigned: 0, staff: new Set(), hours: 0 };
         const staffCount = st.staff?.size || 0;
+        const storeTemplates = templatesByStore[store._id] || [];
 
         return (
           <div
@@ -223,6 +243,13 @@ const AllStoresWeekGrid = ({
 
             {/* Weekly grid */}
             {!isCollapsed && (
+              storeTemplates.length === 0 ? (
+                <div className="border-t border-[#343434] px-6 py-10 text-center">
+                  <p className="text-[#ababab] text-sm">
+                    No shift templates for this store. Switch to this store and create templates in Shift Templates.
+                  </p>
+                </div>
+              ) : (
               <div className="overflow-x-auto border-t border-[#343434]">
                 <table className="w-full min-w-[1000px]">
                   <thead>
@@ -239,7 +266,7 @@ const AllStoresWeekGrid = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {shiftTemplates.map((template) => (
+                    {storeTemplates.map((template) => (
                       <tr key={template._id} className="border-b border-[#343434] last:border-0">
                         <td className="px-4 py-6 align-top">
                           <div className="flex items-start gap-2">
@@ -278,6 +305,7 @@ const AllStoresWeekGrid = ({
                   </tbody>
                 </table>
               </div>
+              )
             )}
           </div>
         );

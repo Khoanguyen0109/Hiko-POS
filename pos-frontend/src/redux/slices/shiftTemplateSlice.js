@@ -26,6 +26,18 @@ export const fetchActiveShiftTemplates = createAsyncThunk(
     }
 );
 
+export const fetchAllActiveShiftTemplates = createAsyncThunk(
+    "shiftTemplate/fetchActiveAllStores",
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await scheduleApi.getActiveShiftTemplatesAllStores();
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || "Failed to fetch active shift templates");
+        }
+    }
+);
+
 export const createNewShiftTemplate = createAsyncThunk(
     "shiftTemplate/create",
     async (data, { rejectWithValue }) => {
@@ -109,9 +121,15 @@ const shiftTemplateSlice = createSlice({
                 state.error = action.payload;
             });
 
-        // Fetch active shift templates
+        // Fetch active shift templates (single store)
         builder
             .addCase(fetchActiveShiftTemplates.fulfilled, (state, action) => {
+                state.activeShiftTemplates = action.payload.data;
+            });
+
+        // Fetch active shift templates across all stores (admin)
+        builder
+            .addCase(fetchAllActiveShiftTemplates.fulfilled, (state, action) => {
                 state.activeShiftTemplates = action.payload.data;
             });
 

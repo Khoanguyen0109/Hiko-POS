@@ -37,12 +37,19 @@ storeScopedAxios.interceptors.response.use(
   }
 );
 
-// Shift Template APIs
+// Shift Template APIs (store-scoped via axiosWrapper active-store header)
 export const getAllShiftTemplates = (params) => 
     axiosWrapper.get("/api/shift-template", { params });
 
 export const getActiveShiftTemplates = () => 
     axiosWrapper.get("/api/shift-template/active");
+
+// Admin cross-store reads — no X-Store-Id so backend returns templates for all stores
+export const getAllShiftTemplatesAllStores = (params) =>
+    storeScopedAxios.get("/api/shift-template", { params });
+
+export const getActiveShiftTemplatesAllStores = () =>
+    storeScopedAxios.get("/api/shift-template/active");
 
 export const getShiftTemplateById = (id) => 
     axiosWrapper.get(`/api/shift-template/${id}`);

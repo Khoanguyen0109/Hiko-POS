@@ -27,6 +27,7 @@ const ShiftTemplates = () => {
   const { shiftTemplates, loading, error, deleteLoading } = useSelector(
     (state) => state.shiftTemplates
   );
+  const { activeStore } = useSelector((state) => state.store);
   const { role } = useSelector((state) => state.user);
   const isAdmin = role === "Admin";
 
@@ -37,10 +38,10 @@ const ShiftTemplates = () => {
 
   useEffect(() => {
     document.title = "POS | Shift Templates";
-    if (isAdmin) {
+    if (isAdmin && activeStore?._id) {
       dispatch(fetchShiftTemplates());
     }
-  }, [dispatch, isAdmin]);
+  }, [dispatch, isAdmin, activeStore?._id]);
 
   useEffect(() => {
     if (error) {
@@ -118,6 +119,21 @@ const ShiftTemplates = () => {
     );
   }
 
+  if (!activeStore?._id) {
+    return (
+      <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-[#f5f5f5] text-xl font-semibold mb-4">
+            Select a Store
+          </h2>
+          <p className="text-[#ababab]">
+            Choose a store from the header to manage its shift templates.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#0f0f0f] pb-20 overflow-x-hidden">
       {/* Header */}
@@ -129,7 +145,9 @@ const ShiftTemplates = () => {
               Shift Templates
             </h1>
             <p className="text-[#ababab] text-xs sm:text-sm mt-1">
-              {shiftTemplates.length} templates
+              {activeStore?.name
+                ? `${shiftTemplates.length} templates for ${activeStore.name}`
+                : `${shiftTemplates.length} templates`}
             </p>
           </div>
         </div>
@@ -176,7 +194,9 @@ const ShiftTemplates = () => {
               No Shift Templates
             </h3>
             <p className="text-[#ababab] text-sm max-w-md mb-6">
-              Create your first shift template to start managing schedules.
+              {activeStore?.name
+                ? `Create shift templates for ${activeStore.name} to start managing schedules.`
+                : "Select a store and create your first shift template to start managing schedules."}
               Common templates include Morning, Afternoon, and Evening shifts.
             </p>
             <button

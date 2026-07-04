@@ -21,6 +21,28 @@ const timeRangesOverlap = (s1, e1, s2, e2) => {
     return a < d && c < b;
 };
 
+const storeIdOf = (ref) => {
+    if (!ref) return null;
+    return typeof ref === "object" ? String(ref._id) : String(ref);
+};
+
+const verifyShiftTemplateForStore = (shiftTemplate, storeId, next) => {
+    if (!shiftTemplate) {
+        next(createHttpError(404, "Shift template not found"));
+        return false;
+    }
+    if (!shiftTemplate.isActive) {
+        next(createHttpError(400, "Cannot use inactive shift template"));
+        return false;
+    }
+    const templateStoreId = storeIdOf(shiftTemplate.store);
+    if (!templateStoreId || templateStoreId !== storeIdOf(storeId)) {
+        next(createHttpError(400, "Shift template does not belong to this store"));
+        return false;
+    }
+    return true;
+};
+
 /**
  * Returns an array of conflict objects for a set of member IDs on a given date.
  * Each conflict: { memberId, memberName, conflictStore, conflictShift, conflictTime }
@@ -253,10 +275,7 @@ const createSchedule = async (req, res, next) => {
         scheduleDate.setHours(0, 0, 0, 0);
 
         const shiftTemplate = await ShiftTemplate.findById(shiftTemplateId);
-        if (!shiftTemplate) return next(createHttpError(404, "Shift template not found"));
-        if (!shiftTemplate.isActive) {
-            return next(createHttpError(400, "Cannot create schedule with inactive shift template"));
-        }
+        if (!verifyShiftTemplateForStore(shiftTemplate, req.store._id, next)) return;
 
         const startOfDay = new Date(scheduleDate); startOfDay.setHours(0, 0, 0, 0);
         const endOfDay = new Date(scheduleDate); endOfDay.setHours(23, 59, 59, 999);
@@ -356,6 +375,11 @@ const bulkCreateSchedules = async (req, res, next) => {
                     errors.push({ date, shiftTemplateId, error: "Invalid or inactive shift template" });
                     continue;
                 }
+                const templateStoreId = storeIdOf(shiftTemplate.store);
+                if (!templateStoreId || templateStoreId !== storeIdOf(req.store._id)) {
+                    errors.push({ date, shiftTemplateId, error: "Shift template does not belong to this store" });
+                    continue;
+                }
 
                 const scheduleDate = parseDate(date);
                 if (isNaN(scheduleDate.getTime())) {
@@ -441,7 +465,7 @@ const updateSchedule = async (req, res, next) => {
         }
         if (shiftTemplateId) {
             const st = await ShiftTemplate.findById(shiftTemplateId);
-            if (!st) return next(createHttpError(404, "Shift template not found"));
+            if (!verifyShiftTemplateForStore(st, req.store._id, next)) return;
             schedule.shiftTemplate = shiftTemplateId;
         }
         if (notes !== undefined) schedule.notes = notes;

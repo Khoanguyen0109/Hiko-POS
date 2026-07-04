@@ -9,6 +9,8 @@
     "migrate": "tsx seeds/migrateToMultiStore.ts",
     "migrate:dry": "tsx seeds/migrateToMultiStore.ts --dry-run",
     "migrate:rollback": "tsx seeds/rollbackMultiStore.ts",
+    "migrate:shift-templates": "tsx scripts/migrate-shift-templates-per-store.ts",
+    "migrate:shift-templates:execute": "tsx scripts/migrate-shift-templates-per-store.ts --execute",
     "build": "tsc",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
     "test:watch": "jest --watch",
