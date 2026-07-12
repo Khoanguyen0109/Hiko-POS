@@ -64,7 +64,9 @@ const StorageItems = () => {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    dispatch(fetchStorageItems({ isActive: filterStatus === "all" ? undefined : filterStatus === "active" }));
+    const isActive =
+      filterStatus === "all" ? "all" : filterStatus === "active";
+    dispatch(fetchStorageItems({ isActive }));
   }, [dispatch, filterStatus]);
 
   const handleAddItem = useCallback(() => {
@@ -105,7 +107,9 @@ const StorageItems = () => {
   }, [dispatch]);
 
   const handleModalSuccess = useCallback(() => {
-    dispatch(fetchStorageItems({ isActive: filterStatus === "all" ? undefined : filterStatus === "active" }));
+    const isActive =
+      filterStatus === "all" ? "all" : filterStatus === "active";
+    dispatch(fetchStorageItems({ isActive }));
   }, [dispatch, filterStatus]);
 
   const handleCloseModal = useCallback(() => {

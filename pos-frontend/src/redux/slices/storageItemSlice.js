@@ -150,12 +150,16 @@ const storageItemSlice = createSlice({
                     state.selectedItem = updated;
                 }
             })
-            // Delete storage item
+            // Delete storage item (soft delete)
             .addCase(removeStorageItem.fulfilled, (state, action) => {
                 const id = action.payload;
-                state.items = state.items.filter(item => item._id !== id);
+                const idx = state.items.findIndex(item => item._id === id);
+                if (idx !== -1) {
+                    // Soft-deleted items stay in "all"/"inactive" views as inactive
+                    state.items[idx] = { ...state.items[idx], isActive: false };
+                }
                 if (state.selectedItem && state.selectedItem._id === id) {
-                    state.selectedItem = null;
+                    state.selectedItem = { ...state.selectedItem, isActive: false };
                 }
             })
             // Fetch low stock items

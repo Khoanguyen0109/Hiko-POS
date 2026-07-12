@@ -287,7 +287,7 @@ const Storage = () => {
     return getDateRange(dateFilter);
   }, [dateFilter, customDateRange, getDateRange]);
 
-  useEffect(() => { dispatch(fetchStorageItems({})); }, [dispatch]);
+  useEffect(() => { dispatch(fetchStorageItems({ isActive: true })); }, [dispatch]);
 
   useEffect(() => {
     dispatch(fetchStorageImports(dateParams));

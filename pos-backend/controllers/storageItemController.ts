@@ -36,9 +36,10 @@ const addStorageItem = async (req, res, next) => {
             return next(createHttpError(400, "Unit is required"));
         }
 
-        // Check if storage item with same name or code exists
+        // Check if storage item with same name or code exists (among non-deleted)
         const existingItem = await StorageItem.findOne({
             store: req.store._id,
+            isActive: true,
             $or: [
                 { name: name.trim() },
                 { code: code.trim().toUpperCase() }
@@ -104,7 +105,7 @@ const addStorageItem = async (req, res, next) => {
     }
 };
 
-// Get all storage items
+// Get all storage items (non-deleted by default; pass isActive to override)
 const getStorageItems = async (req, res, next) => {
     try {
         const {
@@ -112,21 +113,26 @@ const getStorageItems = async (req, res, next) => {
             isActive,
             stockStatus,
             search,
-            page = 1,
-            limit = 50,
+            page,
+            limit,
             sortBy = 'name',
             sortOrder = 'asc'
         } = req.query;
 
-        // Build query
+        // Build query — default to non-deleted (isActive: true)
         let query: MongoFilter = { store: req.store._id };
 
         if (category && category !== 'all') {
             query.category = category;
         }
 
-        if (isActive !== undefined) {
+        // Default to non-deleted items; pass isActive=all to include inactive/deleted
+        if (isActive === 'all') {
+            // no isActive filter — return active and inactive
+        } else if (isActive !== undefined) {
             query.isActive = isActive === 'true';
+        } else {
+            query.isActive = true;
         }
 
         if (search) {
@@ -136,22 +142,23 @@ const getStorageItems = async (req, res, next) => {
             ];
         }
 
-        // Pagination
-        const pageNum = parseInt(page);
-        const limitNum = parseInt(limit);
-        const skip = (pageNum - 1) * limitNum;
-
         // Sort
         const sortOptions = {};
         sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
-        // Execute query
+        // Pagination is off by default; pass page/limit to activate it
+        const shouldPaginate = page !== undefined || limit !== undefined;
+        const pageNum = shouldPaginate ? parseInt(String(page || 1), 10) : 1;
+        const limitNum = shouldPaginate ? parseInt(String(limit || 50), 10) : 0;
+        const skip = shouldPaginate ? (pageNum - 1) * limitNum : 0;
+
+        let itemsQuery = StorageItem.find(query).sort(sortOptions);
+        if (shouldPaginate) {
+            itemsQuery = itemsQuery.skip(skip).limit(limitNum);
+        }
+
         const [items, totalCount] = await Promise.all([
-            StorageItem.find(query)
-                .sort(sortOptions)
-                .skip(skip)
-                .limit(limitNum)
-                .lean(),
+            itemsQuery.lean(),
             StorageItem.countDocuments(query)
         ]);
 
@@ -175,9 +182,9 @@ const getStorageItems = async (req, res, next) => {
             data: filteredItems,
             pagination: {
                 page: pageNum,
-                limit: limitNum,
+                limit: shouldPaginate ? limitNum : totalCount,
                 total: totalCount,
-                pages: Math.ceil(totalCount / limitNum)
+                pages: shouldPaginate ? Math.ceil(totalCount / limitNum) : 1
             }
         });
     } catch (error) {
@@ -241,7 +248,8 @@ const updateStorageItem = async (req, res, next) => {
             const existingItem = await StorageItem.findOne({
                 name: name.trim(),
                 _id: { $ne: id },
-                store: req.store._id
+                store: req.store._id,
+                isActive: true
             });
             if (existingItem) {
                 return next(createHttpError(400, "Storage item with this name already exists"));
@@ -254,7 +262,8 @@ const updateStorageItem = async (req, res, next) => {
             const existingItem = await StorageItem.findOne({
                 code: code.trim().toUpperCase(),
                 _id: { $ne: id },
-                store: req.store._id
+                store: req.store._id,
+                isActive: true
             });
             if (existingItem) {
                 return next(createHttpError(400, "Storage item with this code already exists"));
@@ -322,7 +331,7 @@ const updateStorageItem = async (req, res, next) => {
     }
 };
 
-// Delete storage item (hard delete)
+// Delete storage item (soft delete — sets isActive to false)
 const deleteStorageItem = async (req, res, next) => {
     try {
         const { id } = req.params;
@@ -331,11 +340,18 @@ const deleteStorageItem = async (req, res, next) => {
             return next(createHttpError(400, "Invalid storage item ID"));
         }
 
-        const item = await StorageItem.findOneAndDelete({ _id: id, store: req.store._id });
+        const item = await StorageItem.findOne({ _id: id, store: req.store._id });
 
         if (!item) {
             return next(createHttpError(404, "Storage item not found"));
         }
+
+        if (!item.isActive) {
+            return next(createHttpError(400, "Storage item is already deleted"));
+        }
+
+        item.isActive = false;
+        await item.save();
 
         res.status(200).json({
             success: true,
