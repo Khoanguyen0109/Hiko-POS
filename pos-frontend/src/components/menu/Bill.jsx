@@ -166,8 +166,10 @@ const Bill = forwardRef((props, ref) => {
     const orderData = {
       customer: customerRewards?.customer?._id || null,
       customerDetails: {
-        name: customerData.customerName,
-        phone: customerData.customerPhone,
+        name:
+          customerRewards?.customer?.name || customerData.customerName || "",
+        phone:
+          customerRewards?.customer?.phone || customerData.customerPhone || "",
         guests: customerData.guests,
       },
       orderStatus: "progress",
@@ -235,8 +237,10 @@ const Bill = forwardRef((props, ref) => {
   // Prepare thermal receipt data
   const thermalReceiptData = {
     orderId: customerData.orderId || Date.now(),
-    customerName: customerData.customerName,
-    customerPhone: customerData.customerPhone,
+    customerName:
+      customerRewards?.customer?.name || customerData.customerName || "",
+    customerPhone:
+      customerRewards?.customer?.phone || customerData.customerPhone || "",
     guests: customerData.guests,
     items: cartData.items,
     subtotal: total,

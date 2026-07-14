@@ -9,6 +9,7 @@ import {
   fetchCustomerRewards,
   clearCustomerRewards,
 } from "../../redux/slices/rewardSlice";
+import { setCustomer, removeCustomer } from "../../redux/slices/customerSlice";
 import { MdPerson, MdClose, MdSearch } from "react-icons/md";
 import { getAvatarName } from "../../utils";
 
@@ -28,10 +29,13 @@ const CustomerLookup = () => {
   const wrapperRef = useRef(null);
 
   useEffect(() => {
-    if (!customerRewards && selectedCustomer) {
+    if (!customerRewards) {
       setSelectedCustomer(null);
+      setQuery("");
+      setShowDropdown(false);
+      dispatch(clearSearchResults());
     }
-  }, [customerRewards, selectedCustomer]);
+  }, [customerRewards, dispatch]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -64,6 +68,13 @@ const CustomerLookup = () => {
     setShowDropdown(false);
     setQuery("");
     dispatch(clearSearchResults());
+    dispatch(
+      setCustomer({
+        name: customer.name || "",
+        phone: customer.phone || "",
+        guests: 0,
+      })
+    );
     dispatch(fetchCustomerRewards(customer._id));
   };
 
@@ -78,6 +89,9 @@ const CustomerLookup = () => {
 
   const handleDeselect = () => {
     setSelectedCustomer(null);
+    setQuery("");
+    setShowDropdown(false);
+    dispatch(removeCustomer());
     dispatch(clearCustomerRewards());
     dispatch(clearSearchResults());
   };
