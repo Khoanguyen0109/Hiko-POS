@@ -7,6 +7,7 @@ import PropTypes from "prop-types";
 import { fetchMySchedulesAllStores } from "../../redux/slices/scheduleSlice";
 import { getWeekDates, getDayName, formatDate, getLocalDateString } from "../../utils/dateUtils";
 import { ROUTES } from "../../constants";
+import LoadingState from "../shared/LoadingState";
 
 const MyScheduleView = ({ year, week }) => {
   const dispatch = useDispatch();
@@ -63,11 +64,7 @@ const MyScheduleView = ({ year, week }) => {
   };
 
   if (myAllStoresLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
-      </div>
-    );
+    return <LoadingState centered className="py-20" />;
   }
 
   return (

@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { MdPeople, MdCardGiftcard, MdTrendingUp, MdLocalOffer } from "react-icons/md";
 import { fetchRewardAnalytics } from "../../redux/slices/rewardSlice";
+import LoadingState from "../shared/LoadingState";
+import EmptyState from "../shared/EmptyState";
 
 const PERIODS = [
   { label: "7D", value: "7d" },
@@ -20,23 +22,17 @@ const RewardsDashboard = () => {
   }, [dispatch, period]);
 
   if (analyticsLoading) {
-    return (
-      <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4" />
-        <p className="text-[#ababab] text-lg">Loading rewards analytics…</p>
-      </div>
-    );
+    return <LoadingState message="Loading rewards analytics…" />;
   }
 
   if (!analytics) {
     return (
-      <div className="text-center py-12">
-        <MdCardGiftcard className="mx-auto text-6xl text-[#ababab] mb-4" />
-        <p className="text-[#ababab] text-lg">No analytics data available</p>
-        <p className="text-[#ababab] text-sm mt-2">
-          Create reward programs and customers first
-        </p>
-      </div>
+      <EmptyState
+        icon={MdCardGiftcard}
+        variant="rich"
+        title="No analytics data available"
+        message="Create reward programs and customers first"
+      />
     );
   }
 

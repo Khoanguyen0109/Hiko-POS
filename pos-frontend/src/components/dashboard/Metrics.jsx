@@ -8,6 +8,7 @@ import { fetchSpendingAnalytics } from "../../redux/slices/spendingSlice";
 import { getTodayDate, formatVND } from "../../utils";
 import { getDateRangeByPeriodVietnam } from "../../utils/dateUtils";
 import PropTypes from "prop-types";
+import LoadingState from "../shared/LoadingState";
 import { Pie } from "react-chartjs-2";
 import {
   RevenueTrendChart,
@@ -291,13 +292,8 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
 
   if (ordersLoading || dishesLoading || categoriesLoading || spendingLoading) {
     return (
-      <div className="container mx-auto py-2 px-6 md:px-4">
-        <div className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
-            <p className="text-[#ababab] text-lg">Loading metrics...</p>
-          </div>
-        </div>
+      <div className="container mx-auto px-6 py-2 md:px-4">
+        <LoadingState message="Loading metrics..." />
       </div>
     );
   }

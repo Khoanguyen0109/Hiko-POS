@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, memo, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import PropTypes from "prop-types";
 import { IoMdAdd } from "react-icons/io";
-import { MdInput, MdOutput, MdSettings, MdBusiness, MdInventory, MdToday, MdDateRange, MdCalendarMonth } from "react-icons/md";
+import { MdInput, MdOutput, MdSettings, MdBusiness, MdInventory, MdToday, MdDateRange, MdCalendarMonth, MdFilterList } from "react-icons/md";
 import {
   fetchStorageImports,
   cancelStorageImportAction,
@@ -15,50 +15,24 @@ import { fetchStorageItems } from "../redux/slices/storageItemSlice";
 import { enqueueSnackbar } from "notistack";
 import ImportModal from "../components/storage/ImportModal";
 import ExportModal from "../components/storage/ExportModal";
-import DateFilterBar from "../components/storage/DateFilterBar";
+import DateFilterBar from "../components/shared/DateFilterBar";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import FeaturePageHeader from "../components/shared/FeaturePageHeader";
+import LoadingState from "../components/shared/LoadingState";
+import EmptyState from "../components/shared/EmptyState";
+import ErrorBanner from "../components/shared/ErrorBanner";
+import HeaderActionButton from "../components/shared/HeaderActionButton";
+import FilterToggleButton from "../components/shared/FilterToggleButton";
+import RecordStatusBadge from "../components/shared/RecordStatusBadge";
 import { useNavigate } from "react-router-dom";
 import StorageStockCard from "../components/v2/StorageStockCard";
 import { useV2Ui } from "../hooks/useV2Ui";
 import { getStoredUser } from "../utils/auth";
 import { logger } from "../utils/logger";
-import { getTodayDate } from "../utils";
-
-const STATUS_STYLES = {
-  completed: "bg-green-900/30 text-green-400 border border-green-800",
-  pending: "bg-yellow-900/30 text-yellow-400 border border-yellow-800",
-  cancelled: "bg-red-900/30 text-red-400 border border-red-800",
-};
+import { getDateRangeByPeriodVietnam } from "../utils/dateUtils";
 
 const thClass = "px-4 py-3 text-left text-xs font-medium text-[#ababab] uppercase tracking-wider";
 const tdClass = "px-4 py-3 text-sm text-[#f5f5f5] whitespace-nowrap";
-
-const StatusBadge = ({ status }) => (
-  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[status] || STATUS_STYLES.cancelled}`}>
-    {status}
-  </span>
-);
-StatusBadge.propTypes = { status: PropTypes.string.isRequired };
-
-const TableLoader = ({ message }) => (
-  <div className="text-center py-12">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4" />
-    <p className="text-[#ababab]">{message}</p>
-  </div>
-);
-TableLoader.propTypes = { message: PropTypes.string.isRequired };
-
-const TableEmpty = ({ icon: Icon, message }) => (
-  <div className="text-center py-12">
-    <Icon size={48} className="text-[#343434] mx-auto mb-3" />
-    <p className="text-[#ababab]">{message}</p>
-  </div>
-);
-TableEmpty.propTypes = {
-  icon: PropTypes.elementType.isRequired,
-  message: PropTypes.string.isRequired,
-};
 
 const CancelButton = ({ onClick }) => (
   <button
@@ -70,22 +44,9 @@ const CancelButton = ({ onClick }) => (
 );
 CancelButton.propTypes = { onClick: PropTypes.func.isRequired };
 
-const ErrorBanner = ({ message }) => (
-  <div className="mb-6 p-4 bg-red-500/20 border border-red-500 text-red-400 rounded-lg">
-    {message}
-  </div>
-);
-ErrorBanner.propTypes = { message: PropTypes.string.isRequired };
-
-const headerActionClass =
-  "flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg border border-[#343434] bg-[#1f1f1f] px-3 py-2 text-xs font-medium text-[#f5f5f5] transition-colors hover:bg-[#262626] sm:text-sm";
-
-const headerPrimaryClass =
-  "flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-[#f5f5f5] transition-colors hover:bg-brand-hover sm:px-4 sm:text-sm";
-
 const ImportList = memo(({ imports, loading, onCancel }) => {
-  if (loading) return <TableLoader message="Loading imports..." />;
-  if (imports.length === 0) return <TableEmpty icon={MdInput} message="No imports found" />;
+  if (loading) return <LoadingState message="Loading imports..." />;
+  if (imports.length === 0) return <EmptyState icon={MdInput} message="No imports found" />;
 
   return (
     <div className="overflow-x-auto rounded-lg border border-[#343434]">
@@ -113,7 +74,7 @@ const ImportList = memo(({ imports, loading, onCancel }) => {
               <td className={`${tdClass} text-brand font-semibold`}>{r.totalCost?.toLocaleString("vi-VN")}</td>
               <td className={tdClass}>{r.supplierName || "—"}</td>
               <td className={tdClass}>{new Date(r.importDate).toLocaleDateString("vi-VN")}</td>
-              <td className={tdClass}><StatusBadge status={r.status} /></td>
+              <td className={tdClass}><RecordStatusBadge status={r.status} /></td>
               <td className={`${tdClass} text-right`}>
                 {r.status !== "cancelled" && <CancelButton onClick={() => onCancel(r._id)} />}
               </td>
@@ -132,8 +93,8 @@ ImportList.propTypes = {
 };
 
 const ExportList = memo(({ exports, loading, onCancel }) => {
-  if (loading) return <TableLoader message="Loading exports..." />;
-  if (exports.length === 0) return <TableEmpty icon={MdOutput} message="No exports found" />;
+  if (loading) return <LoadingState message="Loading exports..." />;
+  if (exports.length === 0) return <EmptyState icon={MdOutput} message="No exports found" />;
 
   return (
     <div className="overflow-x-auto rounded-lg border border-[#343434]">
@@ -157,7 +118,7 @@ const ExportList = memo(({ exports, loading, onCancel }) => {
               <td className={tdClass}>{r.quantity} {r.unit}</td>
               <td className={tdClass}>{r.exportedBy?.userName || "N/A"}</td>
               <td className={tdClass}>{new Date(r.exportDate).toLocaleDateString("vi-VN")}</td>
-              <td className={tdClass}><StatusBadge status={r.status} /></td>
+              <td className={tdClass}><RecordStatusBadge status={r.status} /></td>
               <td className={`${tdClass} text-right`}>
                 {r.status !== "cancelled" && <CancelButton onClick={() => onCancel(r._id)} />}
               </td>
@@ -176,10 +137,10 @@ ExportList.propTypes = {
 };
 
 const StockList = memo(({ items, loading }) => {
-  if (loading) return <TableLoader message="Loading stock..." />;
+  if (loading) return <LoadingState message="Loading stock..." />;
 
   const activeItems = items.filter((item) => item.isActive);
-  if (activeItems.length === 0) return <TableEmpty icon={MdInventory} message="No items in storage" />;
+  if (activeItems.length === 0) return <EmptyState icon={MdInventory} message="No items in storage" />;
 
   return (
     <div className="overflow-x-auto rounded-lg border border-[#343434]">
@@ -230,15 +191,15 @@ StockList.propTypes = {
 };
 
 const StockCardList = memo(({ items, loading }) => {
-  if (loading) return <TableLoader message="Loading stock..." />;
+  if (loading) return <LoadingState message="Loading stock..." />;
 
   const activeItems = items.filter((item) => item.isActive);
   if (activeItems.length === 0) {
-    return <TableEmpty icon={MdInventory} message="No items in storage" />;
+    return <EmptyState icon={MdInventory} message="No items in storage" />;
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
       {activeItems.map((item) => (
         <StorageStockCard key={item._id} item={item} />
       ))}
@@ -309,48 +270,58 @@ const Storage = () => {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [editingImport, setEditingImport] = useState(null);
   const [editingExport, setEditingExport] = useState(null);
-  const [dateFilter, setDateFilter] = useState("today");
+  const [dateFilter, setDateFilter] = useState("week");
   const [customDateRange, setCustomDateRange] = useState({ startDate: "", endDate: "" });
+  const [showDateFilter, setShowDateFilter] = useState(true);
 
   const dateFilterOptions = useMemo(() => [
     { value: "today", label: "Today", icon: <MdToday /> },
     { value: "week", label: "This Week", icon: <MdDateRange /> },
     { value: "month", label: "This Month", icon: <MdCalendarMonth /> },
-    { value: "custom", label: "Custom Range", icon: <MdDateRange /> },
+    { value: "custom", label: "Custom", icon: <MdDateRange /> },
   ], []);
-
-  const getDateRange = useCallback((filter) => {
-    const today = getTodayDate();
-    if (filter === "today") return { startDate: today, endDate: today };
-    if (filter === "week") {
-      const d = new Date(today + "T00:00:00+07:00");
-      const day = d.getDay();
-      d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
-      return { startDate: d.toISOString().slice(0, 10), endDate: today };
-    }
-    if (filter === "month") return { startDate: today.slice(0, 7) + "-01", endDate: today };
-    return {};
-  }, []);
 
   const dateParams = useMemo(() => {
     if (dateFilter === "custom") {
-      const params = {};
-      if (customDateRange.startDate) params.startDate = customDateRange.startDate;
-      if (customDateRange.endDate) params.endDate = customDateRange.endDate;
-      return params;
+      if (!customDateRange.startDate || !customDateRange.endDate) return null;
+      return {
+        startDate: customDateRange.startDate,
+        endDate: customDateRange.endDate,
+      };
     }
-    return getDateRange(dateFilter);
-  }, [dateFilter, customDateRange, getDateRange]);
+
+    const periodMap = {
+      today: "today",
+      week: "thisWeek",
+      month: "thisMonth",
+    };
+    const { start, end } = getDateRangeByPeriodVietnam(periodMap[dateFilter] || "today");
+    return { startDate: start, endDate: end };
+  }, [dateFilter, customDateRange]);
+
+  const activeDateLabel = useMemo(() => {
+    if (!dateParams) return "Select dates";
+    if (dateParams.startDate === dateParams.endDate) {
+      return new Date(`${dateParams.startDate}T12:00:00`).toLocaleDateString("vi-VN");
+    }
+    return `${new Date(`${dateParams.startDate}T12:00:00`).toLocaleDateString("vi-VN")} – ${new Date(`${dateParams.endDate}T12:00:00`).toLocaleDateString("vi-VN")}`;
+  }, [dateParams]);
 
   useEffect(() => { dispatch(fetchStorageItems({ isActive: true })); }, [dispatch]);
 
   useEffect(() => {
-    dispatch(fetchStorageImports(dateParams));
-    dispatch(fetchStorageExports(dateParams));
-  }, [dispatch, dateParams]);
+    if (!dateParams) return;
+    if (activeTab === "imports") dispatch(fetchStorageImports(dateParams));
+    if (activeTab === "exports") dispatch(fetchStorageExports(dateParams));
+  }, [dispatch, dateParams, activeTab]);
 
   const handleCreateImport = useCallback(() => { setEditingImport(null); setIsImportModalOpen(true); }, []);
   const handleCreateExport = useCallback(() => { setEditingExport(null); setIsExportModalOpen(true); }, []);
+
+  const handleTabChange = useCallback((tab) => {
+    setActiveTab(tab);
+    if (tab === "imports" || tab === "exports") setShowDateFilter(true);
+  }, []);
 
   const handleDateFilterChange = useCallback((value) => {
     setDateFilter(value);
@@ -367,7 +338,7 @@ const Storage = () => {
       const result = await dispatch(cancelStorageImportAction(id));
       if (cancelStorageImportAction.fulfilled.match(result)) {
         enqueueSnackbar("Import cancelled successfully!", { variant: "success" });
-        dispatch(fetchStorageImports(dateParams));
+        if (dateParams) dispatch(fetchStorageImports(dateParams));
       } else {
         enqueueSnackbar(result.payload || "Failed to cancel import", { variant: "error" });
       }
@@ -383,7 +354,7 @@ const Storage = () => {
       const result = await dispatch(cancelStorageExportAction(id));
       if (cancelStorageExportAction.fulfilled.match(result)) {
         enqueueSnackbar("Export cancelled successfully!", { variant: "success" });
-        dispatch(fetchStorageExports(dateParams));
+        if (dateParams) dispatch(fetchStorageExports(dateParams));
       } else {
         enqueueSnackbar(result.payload || "Failed to cancel export", { variant: "error" });
       }
@@ -394,8 +365,9 @@ const Storage = () => {
   }, [dispatch, dateParams]);
 
   const handleModalSuccess = useCallback(() => {
+    if (!dateParams) return;
     if (activeTab === "imports") dispatch(fetchStorageImports(dateParams));
-    else dispatch(fetchStorageExports(dateParams));
+    else if (activeTab === "exports") dispatch(fetchStorageExports(dateParams));
   }, [dispatch, activeTab, dateParams]);
 
   if (storageItemsLoading && storageItems.length === 0 && activeTab === "stock") return <FullScreenLoader />;
@@ -413,53 +385,69 @@ const Storage = () => {
           { id: "exports", label: "Exports", icon: MdOutput },
         ]}
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={handleTabChange}
         actions={
           <>
+            {activeTab !== "stock" ? (
+              <FilterToggleButton
+                active={showDateFilter}
+                onClick={() => setShowDateFilter((prev) => !prev)}
+                icon={<MdFilterList size={16} />}
+                label="Date"
+                hideLabelOnMobile
+              />
+            ) : null}
             {isAdmin ? (
               <>
-                <button
-                  type="button"
+                <HeaderActionButton
+                  variant="secondary"
+                  icon={<MdSettings size={16} />}
                   onClick={() => navigate("/storage/items")}
-                  className={headerActionClass}
                 >
-                  <MdSettings size={16} />
                   Items
-                </button>
-                <button
-                  type="button"
+                </HeaderActionButton>
+                <HeaderActionButton
+                  variant="secondary"
+                  icon={<MdBusiness size={16} />}
                   onClick={() => navigate("/storage/suppliers")}
-                  className={headerActionClass}
                 >
-                  <MdBusiness size={16} />
                   Suppliers
-                </button>
+                </HeaderActionButton>
               </>
             ) : null}
             {activeTab !== "stock" ? (
-              <button
-                type="button"
+              <HeaderActionButton
+                variant="primary"
+                icon={<IoMdAdd size={18} />}
                 onClick={activeTab === "imports" ? handleCreateImport : handleCreateExport}
-                className={headerPrimaryClass}
               >
-                <IoMdAdd size={18} />
                 New {activeTab === "imports" ? "Import" : "Export"}
-              </button>
+              </HeaderActionButton>
             ) : null}
           </>
         }
-      />
+      >
+        {activeTab !== "stock" && showDateFilter ? (
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-[#ababab]">
+              Showing {activeTab === "imports" ? "imports" : "exports"} for{" "}
+              <span className="font-medium text-[#f5f5f5]">{activeDateLabel}</span>
+            </p>
+            <DateFilterBar
+              compact
+              title=""
+              description=""
+              dateFilter={dateFilter}
+              customDateRange={customDateRange}
+              dateFilterOptions={dateFilterOptions}
+              onFilterChange={handleDateFilterChange}
+              onCustomDateChange={handleCustomDateChange}
+            />
+          </div>
+        ) : null}
+      </FeaturePageHeader>
 
       <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
-        {activeTab !== "stock" && (
-          <DateFilterBar
-            dateFilter={dateFilter}
-            customDateRange={customDateRange}
-            dateFilterOptions={dateFilterOptions}
-            onFilterChange={handleDateFilterChange}
-            onCustomDateChange={handleCustomDateChange}
-          />
-        )}
 
         {storageItemsError && activeTab === "stock" && <ErrorBanner message={storageItemsError} />}
         {importsError && activeTab === "imports" && <ErrorBanner message={importsError} />}
@@ -478,8 +466,18 @@ const Storage = () => {
         {activeTab === "stock" && !v2UiEnabled ? (
           <StockList items={storageItems} loading={storageItemsLoading} />
         ) : null}
-        {activeTab === "imports" && <ImportList imports={imports} loading={importsLoading} onCancel={handleCancelImport} />}
-        {activeTab === "exports" && <ExportList exports={exports} loading={exportsLoading} onCancel={handleCancelExport} />}
+        {activeTab === "imports" && dateParams && (
+          <ImportList imports={imports} loading={importsLoading} onCancel={handleCancelImport} />
+        )}
+        {activeTab === "imports" && !dateParams && (
+          <EmptyState icon={MdInput} message="Select both start and end dates to view imports" />
+        )}
+        {activeTab === "exports" && dateParams && (
+          <ExportList exports={exports} loading={exportsLoading} onCancel={handleCancelExport} />
+        )}
+        {activeTab === "exports" && !dateParams && (
+          <EmptyState icon={MdOutput} message="Select both start and end dates to view exports" />
+        )}
 
         {v2UiEnabled ? (
           <StorageMobileFab

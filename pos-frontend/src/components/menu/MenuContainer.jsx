@@ -6,6 +6,7 @@ import { fetchDishes } from "../../redux/slices/dishSlice";
 import defaultDishImage from "../../assets/images/hyderabadibiryani.jpg";
 import DishBottomSheet from "./DishBottomSheet";
 import { formatPriceK } from "../../utils";
+import LoadingState from "../shared/LoadingState";
 
 const CATEGORY_EMOJIS = {
   matcha: "🍵",
@@ -103,14 +104,7 @@ const MenuContainer = () => {
   const activeCategories = [...categories.filter((cat) => cat.isActive)].reverse();
 
   if (categoriesLoading || dishesLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
-          <p className="text-[#ababab] text-lg">Loading menu...</p>
-        </div>
-      </div>
-    );
+    return <LoadingState message="Loading menu..." />;
   }
 
   return (

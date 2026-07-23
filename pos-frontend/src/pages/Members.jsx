@@ -7,6 +7,7 @@ import PropTypes from "prop-types";
 import { fetchMembers, removeMember, toggleActiveStatus, clearError, updateMemberInList } from "../redux/slices/memberSlice";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import FeaturePageHeader from "../components/shared/FeaturePageHeader";
+import HeaderActionButton from "../components/shared/HeaderActionButton";
 import MemberModal from "../components/members/MemberModal";
 import DeleteConfirmationModal from "../components/shared/DeleteConfirmationModal";
 import StoreAssignmentModal from "../components/members/StoreAssignmentModal";
@@ -147,23 +148,21 @@ const Members = () => {
         }
         actions={
           <>
-            <button
-              type="button"
+            <HeaderActionButton
+              variant="primary"
+              icon={<MdAdd size={16} />}
               onClick={handleCreateMember}
-              className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-[#f5f5f5] transition-colors hover:bg-brand-hover sm:px-4 sm:text-sm"
             >
-              <MdAdd size={16} />
               Add Member
-            </button>
-            <button
-              type="button"
+            </HeaderActionButton>
+            <HeaderActionButton
+              variant="secondary"
+              icon={<MdRefresh size={16} className={loading ? "animate-spin" : ""} />}
               onClick={handleRefresh}
               disabled={loading}
-              className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg border border-[#343434] bg-[#262626] px-3 py-2 text-xs font-medium text-[#f5f5f5] transition-colors hover:bg-[#343434] disabled:opacity-50 sm:px-4 sm:text-sm"
             >
-              <MdRefresh size={16} className={loading ? "animate-spin" : ""} />
               Refresh
-            </button>
+            </HeaderActionButton>
           </>
         }
       >

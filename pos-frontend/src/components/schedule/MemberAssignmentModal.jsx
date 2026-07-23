@@ -175,32 +175,46 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, store
   );
 
   const footer = (
-    <div className="flex items-center justify-between">
-      <div className="text-sm text-[#ababab]">
-        {selectedMembers.length} member(s) selected
-        {hasChanges() && (
-          <span className="ml-2 text-brand">&bull; unsaved changes</span>
-        )}
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-2 text-sm">
+        <span className="text-[#ababab]">
+          {selectedMembers.length} member{selectedMembers.length === 1 ? "" : "s"} selected
+        </span>
+        {hasChanges() ? (
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-brand">
+            <span className="h-1.5 w-1.5 rounded-full bg-brand" aria-hidden="true" />
+            Unsaved changes
+          </span>
+        ) : null}
       </div>
-      <div className="flex items-center gap-3">
-        {onLogExtraWork && schedule && selectedMembers.length > 0 && (
-          <button
-            onClick={() => { handleClose(); onLogExtraWork(schedule.date, selectedMembers[0]); }}
-            className="flex items-center gap-2 rounded-lg bg-brand px-4 py-2 font-medium text-[#f5f5f5] transition-colors hover:bg-brand-hover"
-          >
-            <MdAccessTime size={16} /> Log Extra Work
-          </button>
-        )}
+
+      {onLogExtraWork && schedule && selectedMembers.length > 0 ? (
         <button
+          type="button"
+          onClick={() => {
+            handleClose();
+            onLogExtraWork(schedule.date, selectedMembers[0]);
+          }}
+          className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border border-brand/40 bg-brand/10 px-4 py-2.5 text-sm font-medium text-brand transition-colors hover:bg-brand/20"
+        >
+          <MdAccessTime size={18} />
+          Log Extra Work
+        </button>
+      ) : null}
+
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end">
+        <button
+          type="button"
           onClick={handleClose}
-          className="rounded-lg bg-[#3a3a3a] px-6 py-2 text-[#f5f5f5] transition-colors hover:bg-[#4a4a4a]"
+          className="min-h-[44px] rounded-lg border border-[#343434] bg-[#262626] px-4 py-2.5 text-sm font-medium text-[#f5f5f5] transition-colors hover:bg-[#343434] sm:order-1 sm:min-w-[7rem]"
         >
           Cancel
         </button>
         <button
+          type="button"
           onClick={handleSave}
           disabled={assignLoading || shiftEnded}
-          className="rounded-lg bg-[#4ECDC4] px-6 py-2 font-medium text-[#1e1e1e] transition-colors hover:bg-[#4ECDC4]/90 disabled:cursor-not-allowed disabled:opacity-50"
+          className="min-h-[44px] rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-[#f5f5f5] transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50 sm:order-2 sm:min-w-[7rem]"
         >
           {assignLoading ? "Saving..." : "Save"}
         </button>

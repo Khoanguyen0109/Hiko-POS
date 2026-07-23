@@ -4,6 +4,7 @@ import { fetchStorageAnalytics } from "../../redux/slices/storageAnalyticsSlice"
 import { MdStorage, MdWarning, MdTrendingUp, MdTrendingDown } from "react-icons/md";
 import { formatVND } from "../../utils";
 import { getTodayDateVietnam, getDateRangeByPeriodVietnam } from "../../utils/dateUtils";
+import LoadingState from "../shared/LoadingState";
 
 const StorageAnalytics = ({ dateFilter, customDateRange }) => {
     const dispatch = useDispatch();
@@ -43,12 +44,7 @@ const StorageAnalytics = ({ dateFilter, customDateRange }) => {
     }, [dispatch, dateFilter, customDateRange]);
 
     if (loading) {
-        return (
-            <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
-                <p className="text-[#ababab] text-lg">Loading storage analytics...</p>
-            </div>
-        );
+        return <LoadingState message="Loading storage analytics..." />;
     }
 
     if (error) {

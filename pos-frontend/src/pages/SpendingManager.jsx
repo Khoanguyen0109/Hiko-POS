@@ -34,6 +34,9 @@ import SpendingModal from "../components/spending/SpendingModal";
 import CategoryModal from "../components/spending/CategoryModal";
 import VendorModal from "../components/spending/VendorModal";
 import FeaturePageHeader from "../components/shared/FeaturePageHeader";
+import LoadingState from "../components/shared/LoadingState";
+import EmptyState from "../components/shared/EmptyState";
+import HeaderActionButton from "../components/shared/HeaderActionButton";
 
 const SpendingManager = () => {
   const dispatch = useDispatch();
@@ -227,11 +230,8 @@ const SpendingManager = () => {
 
   if (loading && !spending.length && !categories.length) {
     return (
-      <div className="bg-[#1f1f1f] min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
-          <p className="text-[#ababab] text-lg">Loading spending management...</p>
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-[#1f1f1f]">
+        <LoadingState message="Loading spending management..." />
       </div>
     );
   }
@@ -246,30 +246,27 @@ const SpendingManager = () => {
         onTabChange={setActiveTab}
         actions={
           <>
-            <button
-              type="button"
+            <HeaderActionButton
+              variant="primary"
+              icon={<MdAdd size={16} />}
               onClick={() => openModal("create", null, "spending")}
-              className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-[#f5f5f5] transition-colors hover:bg-brand-hover sm:text-sm"
             >
-              <MdAdd size={16} />
               Expense
-            </button>
-            <button
-              type="button"
+            </HeaderActionButton>
+            <HeaderActionButton
+              variant="secondary"
+              icon={<MdCategory size={16} />}
               onClick={() => openModal("create", null, "category")}
-              className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg border border-[#343434] bg-[#262626] px-3 py-2 text-xs font-medium text-[#f5f5f5] transition-colors hover:bg-[#343434] sm:text-sm"
             >
-              <MdCategory size={16} />
               Category
-            </button>
-            <button
-              type="button"
+            </HeaderActionButton>
+            <HeaderActionButton
+              variant="secondary"
+              icon={<MdBusiness size={16} />}
               onClick={() => openModal("create", null, "vendor")}
-              className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg border border-[#343434] bg-[#262626] px-3 py-2 text-xs font-medium text-[#f5f5f5] transition-colors hover:bg-[#343434] sm:text-sm"
             >
-              <MdBusiness size={16} />
               Vendor
-            </button>
+            </HeaderActionButton>
           </>
         }
       />
@@ -482,16 +479,14 @@ const SpendingRecords = ({
       {/* Spending List */}
       <div className="bg-[#262626] rounded-lg border border-[#343434] overflow-hidden">
         {loading ? (
-          <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand mx-auto mb-4"></div>
-            <p className="text-[#ababab]">Loading spending records...</p>
-          </div>
+          <LoadingState message="Loading spending records..." size="sm" />
         ) : spending.length === 0 ? (
-          <div className="p-8 text-center">
-            <MdAccountBalanceWallet className="mx-auto text-6xl text-[#ababab] mb-4" />
-            <p className="text-[#ababab] text-lg">No spending records found</p>
-            <p className="text-[#ababab] text-sm">Add your first expense to get started</p>
-          </div>
+          <EmptyState
+            icon={MdAccountBalanceWallet}
+            variant="rich"
+            title="No spending records found"
+            message="Add your first expense to get started"
+          />
         ) : (
           <>
             {/* Desktop Table */}
@@ -840,12 +835,7 @@ VendorsTab.propTypes = {
 // Analytics Tab Component
 const AnalyticsTab = ({ dashboardData, loading }) => {
   if (loading) {
-    return (
-      <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
-        <p className="text-[#ababab] text-lg">Loading analytics...</p>
-      </div>
-    );
+    return <LoadingState message="Loading analytics..." />;
   }
 
   if (!dashboardData) {

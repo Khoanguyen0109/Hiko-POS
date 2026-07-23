@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import { MdSettings, MdCalendarToday, MdAccessTime, MdFilterList, MdAttachMoney, MdCheckCircle, MdCancel, MdPeople, MdPerson, MdStore, MdDelete } from "react-icons/md";
+import { MdSettings, MdCalendarToday, MdAccessTime, MdFilterList, MdPeople, MdPerson, MdStore, MdDelete } from "react-icons/md";
 import { enqueueSnackbar } from "notistack";
 import FeaturePageHeader from "../components/shared/FeaturePageHeader";
 import WeekNavigator from "../components/schedule/WeekNavigator";
@@ -11,7 +11,11 @@ import ByMemberView from "../components/schedule/ByMemberView";
 import MyScheduleView from "../components/schedule/MyScheduleView";
 import AllStoresWeekGrid from "../components/schedule/AllStoresWeekGrid";
 import ExtraWorkModal from "../components/extrawork/ExtraWorkModal";
+import ExtraWorkEntryCard from "../components/extrawork/ExtraWorkEntryCard";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
+import LoadingState from "../components/shared/LoadingState";
+import EmptyState from "../components/shared/EmptyState";
+import HeaderActionButton from "../components/shared/HeaderActionButton";
 import ScheduleViewSwitcher from "../components/v2/ScheduleViewSwitcher";
 import { useV2Ui } from "../hooks/useV2Ui";
 import { getCurrentWeekInfo, getWeekDates, formatDate, getDayName, getWeekNumber, getLocalDateString, isShiftOver } from "../utils/dateUtils";
@@ -758,12 +762,14 @@ const WeeklySchedule = () => {
                             View and filter logged extra work hours
                           </p>
                         </div>
-                        <button
+                        <HeaderActionButton
+                          variant="primary"
+                          icon={<MdAccessTime size={16} />}
                           onClick={() => handleOpenExtraWorkModal()}
-                          className="w-full sm:w-auto px-4 py-2 bg-brand text-[#f5f5f5] rounded-lg font-medium hover:bg-brand-hover transition-colors flex items-center justify-center gap-2 text-sm whitespace-nowrap"
+                          className="w-full sm:w-auto"
                         >
-                          <MdAccessTime size={16} /> Log New Entry
-                        </button>
+                          Log New Entry
+                        </HeaderActionButton>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -822,16 +828,21 @@ const WeeklySchedule = () => {
 
                     <div className="overflow-x-auto">
                       {extraWorkLoading ? (
-                        <div className="flex items-center justify-center py-12">
-                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4ECDC4]"></div>
-                        </div>
+                        <LoadingState />
                       ) : extraWorkEntries.length === 0 ? (
-                        <div className="text-center py-12">
-                          <MdAccessTime size={48} className="mx-auto text-[#6a6a6a] mb-4" />
-                          <p className="text-[#ababab]">No extra work entries found.</p>
-                        </div>
+                        <EmptyState icon={MdAccessTime} message="No extra work entries found." />
                       ) : (
-                        <table className="w-full">
+                        <>
+                          <div className="flex flex-col gap-2 p-3 md:hidden">
+                            {extraWorkEntries.map((entry) => (
+                              <ExtraWorkEntryCard
+                                key={entry._id}
+                                entry={entry}
+                                onDelete={handleDeleteExtraWork}
+                              />
+                            ))}
+                          </div>
+                          <table className="hidden w-full md:table">
                           <thead>
                             <tr className="border-b border-[#343434] bg-[#262626]">
                               <th className="px-4 py-3 text-left text-[#ababab] text-xs font-medium">Date</th>
@@ -839,7 +850,6 @@ const WeeklySchedule = () => {
                               <th className="px-4 py-3 text-left text-[#ababab] text-xs font-medium">Duration</th>
                               <th className="px-4 py-3 text-left text-[#ababab] text-xs font-medium">Type</th>
                               <th className="px-4 py-3 text-left text-[#ababab] text-xs font-medium">Payment</th>
-                              <th className="px-4 py-3 text-left text-[#ababab] text-xs font-medium">Status</th>
                               <th className="px-4 py-3 text-left text-[#ababab] text-xs font-medium">Description</th>
                               <th className="px-4 py-3 text-center text-[#ababab] text-xs font-medium">Actions</th>
                             </tr>
@@ -860,22 +870,6 @@ const WeeklySchedule = () => {
                                 <td className={`px-4 py-3 text-sm font-medium ${entry.paymentAmount < 0 ? "text-red-400" : "text-brand"}`}>
                                   ${entry.paymentAmount.toFixed(2)}
                                 </td>
-                                <td className="px-4 py-3">
-                                  <div className="flex flex-col gap-1">
-                                    <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${
-                                      entry.isApproved ? 'bg-green-900/30 text-green-400' : 'bg-yellow-900/30 text-yellow-400'
-                                    }`}>
-                                      {entry.isApproved ? (<><MdCheckCircle size={12} className="mr-1" /> Approved</>) : (<><MdCancel size={12} className="mr-1" /> Pending</>)}
-                                    </span>
-                                    {entry.isApproved && (
-                                      <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${
-                                        entry.isPaid ? 'bg-blue-900/30 text-blue-400' : 'bg-orange-900/30 text-orange-400'
-                                      }`}>
-                                        {entry.isPaid ? (<><MdAttachMoney size={12} className="mr-1" /> Paid</>) : "Unpaid"}
-                                      </span>
-                                    )}
-                                  </div>
-                                </td>
                                 <td className="px-4 py-3 text-[#ababab] text-sm max-w-xs truncate">{entry.description || "-"}</td>
                                 <td className="px-4 py-3 text-center">
                                   <button
@@ -890,6 +884,7 @@ const WeeklySchedule = () => {
                             ))}
                           </tbody>
                         </table>
+                        </>
                       )}
                     </div>
                   </div>

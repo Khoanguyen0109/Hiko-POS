@@ -24,6 +24,7 @@ import {
 } from "../redux/slices/storeSlice";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import FeaturePageHeader from "../components/shared/FeaturePageHeader";
+import HeaderActionButton from "../components/shared/HeaderActionButton";
 import StoreModal from "../components/stores/StoreModal";
 import DeleteConfirmationModal from "../components/shared/DeleteConfirmationModal";
 
@@ -167,23 +168,21 @@ const Stores = () => {
         }
         actions={
           <>
-            <button
-              type="button"
+            <HeaderActionButton
+              variant="primary"
+              icon={<MdAdd size={16} />}
               onClick={handleCreateStore}
-              className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-[#f5f5f5] transition-colors hover:bg-brand-hover sm:px-4 sm:text-sm"
             >
-              <MdAdd size={16} />
               Add Store
-            </button>
-            <button
-              type="button"
+            </HeaderActionButton>
+            <HeaderActionButton
+              variant="secondary"
+              icon={<MdRefresh size={16} className={loading ? "animate-spin" : ""} />}
               onClick={handleRefresh}
               disabled={loading}
-              className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg border border-[#343434] bg-[#262626] px-3 py-2 text-xs font-medium text-[#f5f5f5] transition-colors hover:bg-[#343434] disabled:opacity-50 sm:px-4 sm:text-sm"
             >
-              <MdRefresh size={16} className={loading ? "animate-spin" : ""} />
               Refresh
-            </button>
+            </HeaderActionButton>
           </>
         }
       >

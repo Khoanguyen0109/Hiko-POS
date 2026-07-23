@@ -12,6 +12,9 @@ import { enqueueSnackbar } from "notistack";
 import StorageItemModal from "../components/storage/StorageItemModal";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import FeaturePageHeader from "../components/shared/FeaturePageHeader";
+import ErrorBanner from "../components/shared/ErrorBanner";
+import EmptyState from "../components/shared/EmptyState";
+import HeaderActionButton from "../components/shared/HeaderActionButton";
 
 const thClass = "px-4 py-3 text-left text-xs font-medium text-[#ababab] uppercase tracking-wider";
 const tdClass = "px-4 py-3 text-sm text-[#f5f5f5] whitespace-nowrap";
@@ -135,14 +138,13 @@ const StorageItems = () => {
         title="Storage Items"
         subtitle="Manage your storage inventory items"
         actions={
-          <button
-            type="button"
+          <HeaderActionButton
+            variant="primary"
+            icon={<IoMdAdd size={18} />}
             onClick={handleAddItem}
-            className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-[#f5f5f5] transition-colors hover:bg-brand-hover sm:px-4 sm:text-sm"
           >
-            <IoMdAdd size={18} />
             Add Item
-          </button>
+          </HeaderActionButton>
         }
       />
 
@@ -160,26 +162,19 @@ const StorageItems = () => {
           <FilterGroup options={STOCK_OPTIONS} value={filterStock} onChange={setFilterStock} />
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-500/20 border border-red-500 text-red-400 rounded-lg text-sm">{error}</div>
-        )}
+        {error ? <ErrorBanner message={error} /> : null}
 
         {/* Items Table */}
         {filteredItems.length === 0 ? (
-          <div className="text-center py-12">
-            <MdInventory size={48} className="text-[#343434] mx-auto mb-3" />
-            <p className="text-[#ababab]">
-              {searchQuery ? "No items match your search" : "No storage items found"}
-            </p>
-            {!searchQuery && (
-              <button
-                onClick={handleAddItem}
-                className="mt-4 px-6 py-2 bg-brand text-[#f5f5f5] rounded-lg font-semibold hover:bg-brand-hover transition-colors text-sm"
-              >
-                Add Your First Item
-              </button>
-            )}
-          </div>
+          <EmptyState
+            icon={MdInventory}
+            message={searchQuery ? "No items match your search" : "No storage items found"}
+            action={
+              !searchQuery
+                ? { label: "Add Your First Item", onClick: handleAddItem }
+                : undefined
+            }
+          />
         ) : (
           <div className="overflow-x-auto rounded-lg border border-[#343434]">
             <table className="w-full min-w-[600px]">

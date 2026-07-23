@@ -3,6 +3,8 @@ import { MdFilterList, MdPerson, MdPayment, MdStore, MdChevronLeft, MdChevronRig
 import OrderCard from "../components/orders/OrderCard";
 import FeaturePageHeader from "../components/shared/FeaturePageHeader";
 import DateFilter from "../components/shared/DateFilter";
+import FilterToggleButton from "../components/shared/FilterToggleButton";
+import EmptyState from "../components/shared/EmptyState";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import { enqueueSnackbar } from "notistack";
 import { getTodayDate } from "../utils";
@@ -172,20 +174,23 @@ const Orders = () => {
 
   // Calculate status counts (backend already filtered by createdBy)
   const statusButtons = [
-    { key: "all", label: "All", count: orders?.length || 0 },
+    { key: "all", label: "All", shortLabel: "ALL", count: orders?.length || 0 },
     {
       key: "progress",
       label: "In Progress",
+      shortLabel: "INP",
       count: orders?.filter((o) => o.orderStatus === "progress").length || 0,
     },
     {
       key: "completed",
       label: "Completed",
+      shortLabel: "COM",
       count: orders?.filter((o) => o.orderStatus === "completed").length || 0,
     },
     {
       key: "cancelled",
       label: "Cancelled",
+      shortLabel: "CAN",
       count: orders?.filter((o) => o.orderStatus === "cancelled").length || 0,
     },
   ];
@@ -230,54 +235,30 @@ const Orders = () => {
         actions={
           isAdmin ? (
             <>
-              <button
-                type="button"
+              <FilterToggleButton
+                active={showDateFilter}
                 onClick={() => setShowDateFilter(!showDateFilter)}
-                className={`flex min-h-[40px] items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all sm:text-sm ${
-                  showDateFilter
-                    ? "bg-brand text-[#f5f5f5]"
-                    : "border border-[#343434] bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5]"
-                }`}
-              >
-                <MdFilterList size={16} />
-                Date
-              </button>
-              <button
-                type="button"
+                icon={<MdFilterList size={16} />}
+                label="Date"
+              />
+              <FilterToggleButton
+                active={showCreatedByFilter}
                 onClick={() => setShowCreatedByFilter(!showCreatedByFilter)}
-                className={`flex min-h-[40px] items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all sm:text-sm ${
-                  showCreatedByFilter
-                    ? "bg-brand text-[#f5f5f5]"
-                    : "border border-[#343434] bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5]"
-                }`}
-              >
-                <MdPerson size={16} />
-                Staff
-              </button>
-              <button
-                type="button"
+                icon={<MdPerson size={16} />}
+                label="Staff"
+              />
+              <FilterToggleButton
+                active={showPaymentFilter}
                 onClick={() => setShowPaymentFilter(!showPaymentFilter)}
-                className={`flex min-h-[40px] items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all sm:text-sm ${
-                  showPaymentFilter
-                    ? "bg-brand text-[#f5f5f5]"
-                    : "border border-[#343434] bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5]"
-                }`}
-              >
-                <MdPayment size={16} />
-                Payment
-              </button>
-              <button
-                type="button"
+                icon={<MdPayment size={16} />}
+                label="Payment"
+              />
+              <FilterToggleButton
+                active={showVendorFilter}
                 onClick={() => setShowVendorFilter(!showVendorFilter)}
-                className={`flex min-h-[40px] items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all sm:text-sm ${
-                  showVendorFilter
-                    ? "bg-brand text-[#f5f5f5]"
-                    : "border border-[#343434] bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5]"
-                }`}
-              >
-                <MdStore size={16} />
-                Vendor
-              </button>
+                icon={<MdStore size={16} />}
+                label="Vendor"
+              />
             </>
           ) : null
         }
@@ -433,12 +414,13 @@ const Orders = () => {
       {/* Status Filter Section */}
       <div className="px-4 sm:px-10 py-4 border-b border-[#343434]">
      
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          {statusButtons.map(({ key, label, count }) => (
+        <div className="flex items-center gap-2">
+          {statusButtons.map(({ key, label, shortLabel, count }) => (
             <button
               key={key}
+              type="button"
               onClick={() => setStatus(key)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`flex min-h-[40px] min-w-0 flex-1 items-center justify-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold transition-all duration-200 sm:flex-none sm:justify-start sm:gap-1.5 sm:px-4 sm:text-sm sm:font-medium ${
                 status === key
                   ? key === "cancelled"
                     ? "bg-red-600 text-white"
@@ -448,7 +430,8 @@ const Orders = () => {
                   : "bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434]"
               }`}
             >
-              <span>{label}</span>
+              <span className="sm:hidden">{shortLabel}</span>
+              <span className="hidden sm:inline">{label}</span>
               <span
                 className={`px-2 py-0.5 rounded-full text-xs ${
                   status === key
@@ -479,24 +462,22 @@ const Orders = () => {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="w-16 h-16 bg-[#262626] rounded-full flex items-center justify-center mb-4">
-              <MdFilterList size={32} className="text-[#ababab]" />
-            </div>
-            <h3 className="text-[#f5f5f5] text-lg font-semibold mb-2">
-              No Orders Found
-            </h3>
-            <p className="text-[#ababab] text-sm max-w-md">
-              {status === "all"
+          <EmptyState
+            icon={MdFilterList}
+            variant="rich"
+            title="No Orders Found"
+            message={
+              status === "all"
                 ? isAdmin
                   ? "No orders found for the selected date range. Try selecting a different date or check if there are any orders in the system."
                   : "No orders found in the system. Orders will appear here once customers start placing them."
                 : isAdmin
-                ? `No orders with status "${status}" found for the selected date range. Try changing the status filter or date range.`
-                : `No orders with status "${status}" found. Try changing the status filter.`}
-            </p>
-            <button
-              onClick={() => {
+                  ? `No orders with status "${status}" found for the selected date range. Try changing the status filter or date range.`
+                  : `No orders with status "${status}" found. Try changing the status filter.`
+            }
+            action={{
+              label: "Reset Filters",
+              onClick: () => {
                 setStatus("all");
                 if (isAdmin) {
                   setStartDate(getTodayDate());
@@ -505,12 +486,9 @@ const Orders = () => {
                   setPaymentMethod("all");
                   setThirdPartyVendor("all");
                 }
-              }}
-              className="mt-4 px-4 py-2 bg-brand text-[#f5f5f5] rounded-lg text-sm font-medium hover:bg-brand-hover transition-colors"
-            >
-              Reset Filters
-            </button>
-          </div>
+              },
+            }}
+          />
         )}
       </div>
 

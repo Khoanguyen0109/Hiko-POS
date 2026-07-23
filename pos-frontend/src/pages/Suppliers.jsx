@@ -12,6 +12,8 @@ import { enqueueSnackbar } from "notistack";
 import SupplierModal from "../components/storage/SupplierModal";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import FeaturePageHeader from "../components/shared/FeaturePageHeader";
+import ErrorBanner from "../components/shared/ErrorBanner";
+import HeaderActionButton from "../components/shared/HeaderActionButton";
 import PropTypes from "prop-types";
 
 const SupplierCard = ({ supplier, onEdit, onDelete, onToggleStatus }) => {
@@ -257,14 +259,13 @@ const Suppliers = () => {
         title="Supplier Management"
         subtitle="Manage your suppliers and vendors"
         actions={
-          <button
-            type="button"
+          <HeaderActionButton
+            variant="primary"
+            icon={<IoMdAdd size={18} />}
             onClick={handleAddSupplier}
-            className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-[#f5f5f5] transition-colors hover:bg-brand-hover sm:px-4 sm:text-sm"
           >
-            <IoMdAdd size={18} />
             Add Supplier
-          </button>
+          </HeaderActionButton>
         }
       />
 
@@ -318,11 +319,7 @@ const Suppliers = () => {
         </div>
 
         {/* Error Message */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-500/20 border border-red-500 text-red-400 rounded-lg">
-            {error}
-          </div>
-        )}
+        {error ? <ErrorBanner message={error} /> : null}
 
         {/* Suppliers Grid */}
         {filteredSuppliers.length === 0 ? (

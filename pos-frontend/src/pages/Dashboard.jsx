@@ -17,35 +17,35 @@ import DishModal from "../components/dashboard/DishModal";
 import { getStoredUser } from "../utils/auth";
 import { formatVND } from "../utils";
 import { fetchSpendingDashboard } from "../redux/slices/spendingSlice";
+import DateFilterBar from "../components/shared/DateFilterBar";
+import LoadingState from "../components/shared/LoadingState";
+import EmptyState from "../components/shared/EmptyState";
 
 // Spending Analytics Component
 const SpendingAnalytics = ({ dashboardData, loading, error }) => {
   if (loading) {
-    return (
-      <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
-        <p className="text-[#ababab] text-lg">Loading analytics...</p>
-      </div>
-    );
+    return <LoadingState message="Loading analytics..." />;
   }
 
   if (error) {
     return (
-      <div className="text-center py-12">
-        <MdAnalytics className="mx-auto text-6xl text-red-500 mb-4" />
-        <p className="text-red-400 text-lg mb-2">Error loading analytics</p>
-        <p className="text-[#ababab] text-sm">{error}</p>
-      </div>
+      <EmptyState
+        icon={MdAnalytics}
+        variant="rich"
+        title="Error loading analytics"
+        message={error}
+      />
     );
   }
 
   if (!dashboardData) {
     return (
-      <div className="text-center py-12">
-        <MdAnalytics className="mx-auto text-6xl text-[#ababab] mb-4" />
-        <p className="text-[#ababab] text-lg">No analytics data available</p>
-        <p className="text-[#ababab] text-sm mt-2">Try creating some spending records first</p>
-      </div>
+      <EmptyState
+        icon={MdAnalytics}
+        variant="rich"
+        title="No analytics data available"
+        message="Try creating some spending records first"
+      />
     );
   }
 
@@ -356,63 +356,15 @@ const Dashboard = () => {
       </div>
 
       {/* Date Filter Section */}
-      <div className="container mx-auto px-4 md:px-6 mb-4 sm:mb-6">
-        <div className="bg-[#1a1a1a] rounded-lg p-3 sm:p-4 border border-[#343434]">
-          <div className="flex flex-col gap-3 sm:gap-4">
-            {/* Title */}
-            <div>
-              <h3 className="text-[#f5f5f5] font-semibold text-base sm:text-lg mb-0.5 sm:mb-1">Date Filter</h3>
-              <p className="text-[#ababab] text-xs sm:text-sm">Filter data by time period</p>
-            </div>
-            
-            {/* Date Filter Buttons - Mobile: 2x2 Grid, Tablet+: Horizontal */}
-            <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2">
-              {dateFilterOptions.map(({ value, label, icon }) => (
-                <button
-                  key={value}
-                  onClick={() => handleDateFilterChange(value)}
-                  className={`
-                    flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors
-                    ${dateFilter === value
-                      ? "bg-brand text-[#f5f5f5]"
-                      : "bg-[#262626] text-[#f5f5f5] hover:bg-[#343434]"
-                    }
-                  `}
-                >
-                  <span className="text-base sm:text-lg">{icon}</span>
-                  <span className="hidden xs:inline sm:inline">{label}</span>
-                  <span className="xs:hidden">{label.split(' ').pop()}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Custom Date Range Inputs */}
-            {dateFilter === "custom" && (
-              <div className="flex flex-col gap-2 pt-2 border-t border-[#343434]">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                  <div className="flex flex-col">
-                    <label className="text-[#ababab] text-xs mb-1.5">From Date</label>
-                    <input
-                      type="date"
-                      value={customDateRange.startDate}
-                      onChange={(e) => handleCustomDateChange("startDate", e.target.value)}
-                      className="bg-[#262626] text-[#f5f5f5] border border-[#343434] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand w-full"
-                    />
-                  </div>
-                  <div className="flex flex-col">
-                    <label className="text-[#ababab] text-xs mb-1.5">To Date</label>
-                    <input
-                      type="date"
-                      value={customDateRange.endDate}
-                      onChange={(e) => handleCustomDateChange("endDate", e.target.value)}
-                      className="bg-[#262626] text-[#f5f5f5] border border-[#343434] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand w-full"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+      <div className="container mx-auto mb-4 px-4 sm:mb-6 md:px-6">
+        <DateFilterBar
+          className="mb-0"
+          dateFilter={dateFilter}
+          customDateRange={customDateRange}
+          dateFilterOptions={dateFilterOptions}
+          onFilterChange={handleDateFilterChange}
+          onCustomDateChange={handleCustomDateChange}
+        />
       </div>
 
       {activeTab === "Metrics" && (

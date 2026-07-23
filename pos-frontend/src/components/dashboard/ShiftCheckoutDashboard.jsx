@@ -18,6 +18,7 @@ import {
 import { fetchMembers } from "../../redux/slices/memberSlice";
 import { formatVND, getTodayDate } from "../../utils";
 import { getDateRangeByPeriodVietnam, getLocalDateString } from "../../utils/dateUtils";
+import LoadingState from "../shared/LoadingState";
 
 const statusBadge = (status) => {
   if (status === "balanced") {
@@ -125,9 +126,8 @@ const ShiftCheckoutDashboard = ({ dateFilter, customDateRange }) => {
 
   if (listLoading || deleteLoading) {
     return (
-      <div className="container mx-auto px-4 md:px-6 text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4" />
-        <p className="text-[#ababab] text-lg">Loading shift checkouts...</p>
+      <div className="container mx-auto px-4 py-12 md:px-6">
+        <LoadingState message="Loading shift checkouts..." />
       </div>
     );
   }
