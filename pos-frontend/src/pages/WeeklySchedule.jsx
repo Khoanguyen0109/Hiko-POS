@@ -613,12 +613,9 @@ const WeeklySchedule = () => {
   ].filter(t => t.show);
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] pb-20 overflow-x-hidden">
+    <div className="min-h-screen bg-[#0f0f0f] pb-24 overflow-x-hidden">
       <FeaturePageHeader
         title="Weekly Schedule"
-        subtitle={
-          isAdmin ? "Manage shift assignments for your team" : "View your team's schedule"
-        }
         actions={
           isAdmin ? (
             <>
