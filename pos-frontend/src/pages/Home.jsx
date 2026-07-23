@@ -1,16 +1,22 @@
 import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import HomeHeader from "../components/v2/HomeHeader";
 import { BsCashCoin } from "react-icons/bs";
 import { GrInProgress } from "react-icons/gr";
 import { MdRestaurantMenu, MdAccountBalance, MdMoney, MdStore, MdStorefront, MdAccessTime, MdWarning } from "react-icons/md";
 import MiniCard from "../components/home/MiniCard";
 import RecentOrders from "../components/home/RecentOrders";
+import { useV2Ui } from "../hooks/useV2Ui";
+import { ROUTES } from "../constants";
 import { fetchOrders } from "../redux/slices/orderSlice";
 import { fetchLowStockItems } from "../redux/slices/storageItemSlice";
 import { getTodayDate, formatVND } from "../utils";
 
 const Home = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { v2UiEnabled } = useV2Ui();
   const { items: orders, loading } = useSelector((state) => state.orders);
   const { lowStockItems } = useSelector((state) => state.storageItems);
 
@@ -129,7 +135,8 @@ const Home = () => {
     <section className="bg-[#1f1f1f] pb-20 flex flex-col h-auto lg:flex-row gap-3">
       {/* Left Div */}
       <div className="flex-1 lg:flex-[3]">
-        <div className="flex flex-col sm:flex-row items-center w-full gap-3 px-4 sm:px-8 mt-8">
+        <HomeHeader />
+        <div className="flex flex-col sm:flex-row items-center w-full gap-3 px-4 sm:px-8 mt-4">
           <MiniCard
             title="Total Earnings"
             icon={<BsCashCoin />}
@@ -302,7 +309,26 @@ const Home = () => {
         {/* Low Stock Alert */}
         {sortedLowStock.length > 0 && (
           <div className="px-4 sm:px-8 mt-6">
-            <div className="bg-[#262626] rounded-lg p-6 border border-red-900/40">
+            <div
+              role={v2UiEnabled ? "button" : undefined}
+              tabIndex={v2UiEnabled ? 0 : undefined}
+              onClick={v2UiEnabled ? () => navigate(ROUTES.STORAGE) : undefined}
+              onKeyDown={
+                v2UiEnabled
+                  ? (event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        navigate(ROUTES.STORAGE);
+                      }
+                    }
+                  : undefined
+              }
+              className={`bg-[#262626] rounded-lg p-6 border border-red-900/40 ${
+                v2UiEnabled
+                  ? "cursor-pointer transition-colors hover:border-red-700/60 hover:bg-[#2a2a2a] active:scale-[0.99]"
+                  : ""
+              }`}
+            >
               <div className="flex items-center gap-2 mb-4">
                 <MdWarning className="text-red-400" size={20} />
                 <h2 className="text-[#f5f5f5] text-lg font-semibold">
@@ -312,6 +338,9 @@ const Home = () => {
                   {lowStockItems.length} item{lowStockItems.length > 1 ? "s" : ""} below minimum
                 </span>
               </div>
+              {v2UiEnabled ? (
+                <p className="mb-4 text-xs text-[#ababab]">Tap to open storage</p>
+              ) : null}
 
               <div className="space-y-3 max-h-[400px] overflow-y-auto scrollbar-hide">
                 {sortedLowStock.map((item) => {

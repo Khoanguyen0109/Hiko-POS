@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { IoMdClose, IoMdArrowDown, IoMdArrowUp } from "react-icons/io";
+import { IoMdArrowDown, IoMdArrowUp } from "react-icons/io";
 import { MdAdd, MdRemove } from "react-icons/md";
 import { FaShoppingCart } from "react-icons/fa";
+import BottomSheet from "../shared/BottomSheet";
 import { useDispatch, useSelector } from "react-redux";
 import { addItems } from "../../redux/slices/cartSlice";
 import { fetchToppingsByCategory } from "../../redux/slices/toppingSlice";
@@ -167,28 +167,49 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose, onAddToOrder }) =
 
   const totalPrice = (getCurrentPrice() + getToppingsPrice()) * quantity;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="bg-[#1f1f1f] rounded-lg shadow-lg w-full max-w-lg max-h-[90vh] flex flex-col"
-      >
-        {/* Modal Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#343434] flex-shrink-0">
-          <h2 className="text-[#f5f5f5] text-xl font-semibold">Select Options</h2>
-          <button
-            onClick={onClose}
-            className="text-[#ababab] hover:text-[#f5f5f5] transition-colors"
-          >
-            <IoMdClose size={24} />
-          </button>
+  const footer = (
+    <>
+      <div className="mb-4 space-y-2">
+        {getToppingsPrice() > 0 && (
+          <div className="flex items-center justify-between">
+            <span className="text-[#ababab]">Toppings:</span>
+            <span className="text-[#f5f5f5]">{formatVND(getToppingsPrice())}</span>
+          </div>
+        )}
+
+        <div className="flex items-center justify-between">
+          <span className="text-[#ababab]">Quantity:</span>
+          <span className="text-[#f5f5f5]">×{quantity}</span>
         </div>
 
-        {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex items-center justify-between border-t border-[#343434] pt-2">
+          <span className="text-lg font-medium text-[#ababab]">Total:</span>
+          <span className="text-2xl font-bold text-[#f6b100]">
+            {formatVND(totalPrice)}
+          </span>
+        </div>
+      </div>
+
+      <button
+        onClick={handleAddToCart}
+        disabled={!dish.isAvailable}
+        className="flex h-10 w-full items-center justify-center gap-3 rounded-lg bg-[#f6b100] px-6 text-sm font-bold text-[#1f1f1f] transition-colors hover:bg-[#e09900] disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <FaShoppingCart size={16} />
+        {dish.isAvailable ? 'Add to Cart' : 'Not Available'}
+      </button>
+    </>
+  );
+
+  return (
+    <BottomSheet
+      isOpen
+      onClose={onClose}
+      title="Select Options"
+      footer={footer}
+      size="lg"
+      bodyClassName="p-0"
+    >
         {/* Dish Image */}
         <div className="p-6 pb-4">
           <div className="w-full h-48 rounded-lg  bg-[#2a2a2a] relative mb-4">
@@ -409,44 +430,7 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose, onAddToOrder }) =
             {note.length}/200 characters
           </p>
         </div>
-        </div>
-
-        {/* Sticky Footer - Total and Add to Cart */}
-        <div className="p-6 border-t border-[#343434] flex-shrink-0 bg-[#1f1f1f] rounded-b-lg">
-          {/* Price Breakdown */}
-          <div className="space-y-2 mb-4">
-          
-            {getToppingsPrice() > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-[#ababab]">Toppings:</span>
-                <span className="text-[#f5f5f5]">{formatVND(getToppingsPrice())}</span>
-              </div>
-            )}
-            
-            <div className="flex items-center justify-between">
-              <span className="text-[#ababab]">Quantity:</span>
-              <span className="text-[#f5f5f5]">×{quantity}</span>
-            </div>
-            
-            <div className="border-t border-[#343434] pt-2 flex items-center justify-between">
-              <span className="text-[#ababab] text-lg font-medium">Total:</span>
-              <span className="text-[#f6b100] text-2xl font-bold">
-                {formatVND(totalPrice)}
-              </span>
-            </div>
-          </div>
-          
-          <button
-            onClick={handleAddToCart}
-            disabled={!dish.isAvailable}
-            className="w-full h-10 flex items-center justify-center gap-3 px-6 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-bold text-sm hover:bg-[#e09900] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <FaShoppingCart size={16} />
-            {dish.isAvailable ? 'Add to Cart' : 'Not Available'}
-          </button>
-        </div>
-      </motion.div>
-    </div>
+    </BottomSheet>
   );
 };
 

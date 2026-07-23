@@ -443,7 +443,6 @@ export const ROUTES = {
   MENU: "/menu",
   DASHBOARD: "/dashboard",
   MENU_ORDER: "/menu-order",
-  MOBILE_CART: "/mobile-cart",
   DISHES: "/dishes",
   CATEGORIES: "/categories",
   MEMBERS: "/members",
@@ -462,7 +461,8 @@ export const ROUTES = {
   TICKETS: "/tickets",
   REWARD_PROGRAMS: "/reward-programs",
   CUSTOMERS: "/customers",
-  DOCS: "/docs"
+  DOCS: "/docs",
+  FEATURE_TOGGLES: "/feature-toggles"
 };
 
 // Route configurations for optimized rendering
@@ -499,10 +499,6 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.MENU_ORDER,
     componentName: "MenuOrder"
-  },
-  {
-    path: ROUTES.MOBILE_CART,
-    componentName: "MobileCart"
   },
   {
     path: ROUTES.DASHBOARD,
@@ -595,6 +591,10 @@ export const PROTECTED_ROUTES = [
   {
     path: `${ROUTES.DOCS}/:docId`,
     componentName: "Docs"
+  },
+  {
+    path: ROUTES.FEATURE_TOGGLES,
+    componentName: "FeatureToggles"
   }
 ];
 

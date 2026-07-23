@@ -5,6 +5,13 @@ import { removeOrder } from "../../redux/slices/orderSlice";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
 import { Card, StatusBadge } from "../ui";
+import { useV2Ui } from "../../hooks/useV2Ui";
+import {
+  getStatusTheme,
+  getPaymentTheme,
+  getVendorTheme,
+  getItemCategoryTheme,
+} from "../v2/orderCardTheme";
 import {
   MdPayment,
   MdCreditCard,
@@ -20,7 +27,11 @@ const OrderCard = ({ order }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { role } = useSelector((state) => state.user);
+  const { v2UiEnabled } = useV2Ui();
   const isAdmin = role === "Admin";
+  const statusTheme = getStatusTheme(order.orderStatus);
+  const paymentTheme = getPaymentTheme(order.paymentMethod);
+  const vendorTheme = getVendorTheme(order.thirdPartyVendor);
 
   const handleCardClick = () => {
     navigate(`/orders/${order._id}`);
@@ -103,36 +114,61 @@ const OrderCard = ({ order }) => {
       hover
       clickable
       onClick={handleCardClick}
-      className="w-full max-w-[500px] mb-4"
+      className={`relative w-full max-w-[500px] mb-4 overflow-hidden ${
+        v2UiEnabled ? "pl-1" : ""
+      }`}
     >
+      {v2UiEnabled ? (
+        <div
+          className={`absolute left-0 top-0 bottom-0 w-1 ${statusTheme.stripe}`}
+          aria-hidden="true"
+        />
+      ) : null}
       <div className="flex items-center gap-3 sm:gap-5">
         <div className="flex items-center justify-between w-full min-w-0">
           <div className="flex flex-col items-start gap-1 min-w-0 flex-1">
-            {/* Payment Method Display */}
-            {(() => {
-              const paymentInfo = getPaymentMethodInfo(order.paymentMethod);
-              const PaymentIcon = paymentInfo.icon;
-              return (
-                <div className="flex items-center gap-1 text-xs sm:text-sm">
-                  <PaymentIcon className={`${paymentInfo.color} text-sm`} />
-                  <span className={paymentInfo.color}>{paymentInfo.text}</span>
-                </div>
-              );
-            })()}
+            {v2UiEnabled ? (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${paymentTheme.pill}`}
+                >
+                  {paymentTheme.label}
+                </span>
+                <span
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${vendorTheme.pill}`}
+                >
+                  {vendorTheme.label}
+                </span>
+              </div>
+            ) : (
+              <>
+                {/* Payment Method Display */}
+                {(() => {
+                  const paymentInfo = getPaymentMethodInfo(order.paymentMethod);
+                  const PaymentIcon = paymentInfo.icon;
+                  return (
+                    <div className="flex items-center gap-1 text-xs sm:text-sm">
+                      <PaymentIcon className={`${paymentInfo.color} text-sm`} />
+                      <span className={paymentInfo.color}>{paymentInfo.text}</span>
+                    </div>
+                  );
+                })()}
 
-            {/* Third Party Vendor Display */}
-            {(() => {
-              const vendorInfo = getVendorInfo(order.thirdPartyVendor);
-              if (!vendorInfo) return null;
+                {/* Third Party Vendor Display */}
+                {(() => {
+                  const vendorInfo = getVendorInfo(order.thirdPartyVendor);
+                  if (!vendorInfo) return null;
 
-              const VendorIcon = vendorInfo.icon;
-              return (
-                <div className="flex items-center gap-1 text-xs sm:text-sm">
-                  <VendorIcon className={`${vendorInfo.color} text-sm`} />
-                  <span className={vendorInfo.color}>{vendorInfo.text}</span>
-                </div>
-              );
-            })()}
+                  const VendorIcon = vendorInfo.icon;
+                  return (
+                    <div className="flex items-center gap-1 text-xs sm:text-sm">
+                      <VendorIcon className={`${vendorInfo.color} text-sm`} />
+                      <span className={vendorInfo.color}>{vendorInfo.text}</span>
+                    </div>
+                  );
+                })()}
+              </>
+            )}
 
             {/* Customer Display */}
             {order.customer && (
@@ -195,12 +231,29 @@ const OrderCard = ({ order }) => {
             Items
           </p>
           <div className="text-right space-y-0.5">
-            {order.items?.slice(0, 3).map((item, index) => (
-              <p key={index} className="text-[#ababab] text-xs truncate">
-                {item.quantity}×{" "}
-                {item.name?.replace(/\s*\([^)]*\)/, "") || "Unknown Item"}
-              </p>
-            ))}
+            {order.items?.slice(0, 3).map((item, index) => {
+              const itemName =
+                item.name?.replace(/\s*\([^)]*\)/, "") || "Unknown Item";
+              const categoryTheme = getItemCategoryTheme(item);
+
+              return (
+                <div
+                  key={index}
+                  className="flex items-center justify-end gap-1.5 text-xs"
+                >
+                  {v2UiEnabled ? (
+                    <span
+                      className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide ${categoryTheme.chip}`}
+                    >
+                      {categoryTheme.label}
+                    </span>
+                  ) : null}
+                  <p className="truncate text-[#ababab]">
+                    {item.quantity}× {itemName}
+                  </p>
+                </div>
+              );
+            })}
             {order.items?.length > 3 && (
               <p className="text-[#ababab] text-xs font-medium">
                 +{order.items.length - 3} more...
@@ -226,6 +279,10 @@ OrderCard.propTypes = {
   order: PropTypes.shape({
     _id: PropTypes.string.isRequired,
     customerDetails: PropTypes.shape({
+      name: PropTypes.string,
+      phone: PropTypes.string,
+    }),
+    customer: PropTypes.shape({
       name: PropTypes.string,
       phone: PropTypes.string,
     }),

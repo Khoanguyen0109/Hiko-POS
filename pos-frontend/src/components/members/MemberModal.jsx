@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  MdClose,
   MdSave,
   MdPerson,
   MdEmail,
@@ -9,7 +8,8 @@ import {
   MdLock,
   MdAttachMoney,
 } from "react-icons/md";
-import { FormField, FormSelect, Modal, Button } from "../ui";
+import { FormField, FormSelect, Button } from "../ui";
+import BottomSheet from "../shared/BottomSheet";
 import { enqueueSnackbar } from "notistack";
 import {
   createNewMember,
@@ -186,26 +186,15 @@ const MemberModal = ({ isOpen, onClose, mode, member }) => {
     },
   ];
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#1f1f1f] rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#343434]">
-          <h2 className="text-[#f5f5f5] text-xl font-semibold">
-            {isEditMode ? "Edit Member" : "Add New Member"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-[#262626] rounded-lg transition-colors"
-          >
-            <MdClose size={20} className="text-[#ababab]" />
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+    <BottomSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEditMode ? "Edit Member" : "Add New Member"}
+      size="md"
+      bodyClassName="p-4 sm:p-6"
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
           {/* Name Field */}
           <FormField
             label="Full Name"
@@ -313,8 +302,7 @@ const MemberModal = ({ isOpen, onClose, mode, member }) => {
             </Button>
           </div>
         </form>
-      </div>
-    </div>
+    </BottomSheet>
   );
 };
 

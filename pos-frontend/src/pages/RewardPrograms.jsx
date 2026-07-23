@@ -4,7 +4,6 @@ import {
   MdAdd,
   MdEdit,
   MdDelete,
-  MdClose,
   MdCardGiftcard,
 } from "react-icons/md";
 import { enqueueSnackbar } from "notistack";
@@ -16,6 +15,7 @@ import {
   toggleProgramStatus,
 } from "../redux/slices/rewardSlice";
 import { fetchCategories } from "../redux/slices/categorySlice";
+import BottomSheet from "../components/shared/BottomSheet";
 
 const EMPTY_FORM = {
   name: "",
@@ -329,21 +329,14 @@ const RewardPrograms = () => {
 
       {/* Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#262626] rounded-xl border border-[#343434] w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-[#343434]">
-              <h2 className="text-[#f5f5f5] font-semibold text-lg">
-                {editingId ? "Edit Program" : "New Reward Program"}
-              </h2>
-              <button
-                onClick={closeModal}
-                className="p-1 rounded-lg hover:bg-[#343434] transition-colors"
-              >
-                <MdClose size={20} className="text-[#ababab]" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        <BottomSheet
+          isOpen={modalOpen}
+          onClose={closeModal}
+          title={editingId ? "Edit Program" : "New Reward Program"}
+          size="lg"
+          bodyClassName="p-4 sm:p-6"
+        >
+          <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-[#ababab] text-xs mb-1.5">
                   Name
@@ -545,8 +538,7 @@ const RewardPrograms = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+        </BottomSheet>
       )}
     </div>
   );

@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
-import { MdClose, MdPerson, MdCheck, MdAccessTime, MdWarning, MdBlock, MdStore } from "react-icons/md";
+import { MdPerson, MdCheck, MdAccessTime, MdWarning, MdBlock, MdStore } from "react-icons/md";
+import BottomSheet from "../shared/BottomSheet";
 import { fetchMembers } from "../../redux/slices/memberSlice";
 import { batchAssignMembers } from "../../redux/slices/scheduleSlice";
 import { checkScheduleConflicts } from "../../https/scheduleApi";
@@ -146,8 +147,6 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, store
     onClose();
   };
 
-  if (!isOpen) return null;
-
   const formatDate = (date) => {
     const d = new Date(date);
     return d.toLocaleDateString("en-US", {
@@ -155,60 +154,91 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, store
     });
   };
 
+  const title = (
+    <div>
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="text-xl font-bold text-[#f5f5f5]">
+          Assign Members to Shift
+        </h2>
+        {targetStore && (
+          <span className="flex items-center gap-1 rounded bg-[#f6b100]/10 px-2 py-1 text-xs font-medium text-[#f6b100]">
+            <MdStore size={13} /> {targetStore.name}
+          </span>
+        )}
+      </div>
+      {schedule && shiftTemplate && (
+        <p className="mt-1 text-sm text-[#ababab]">
+          {shiftTemplate.name} &bull; {formatDate(schedule.date)} &bull; {shiftTemplate.startTime} - {shiftTemplate.endTime}
+        </p>
+      )}
+    </div>
+  );
+
+  const footer = (
+    <div className="flex items-center justify-between">
+      <div className="text-sm text-[#ababab]">
+        {selectedMembers.length} member(s) selected
+        {hasChanges() && (
+          <span className="ml-2 text-[#f6b100]">&bull; unsaved changes</span>
+        )}
+      </div>
+      <div className="flex items-center gap-3">
+        {onLogExtraWork && schedule && selectedMembers.length > 0 && (
+          <button
+            onClick={() => { handleClose(); onLogExtraWork(schedule.date, selectedMembers[0]); }}
+            className="flex items-center gap-2 rounded-lg bg-[#f6b100] px-4 py-2 font-medium text-[#1f1f1f] transition-colors hover:bg-[#f6b100]/90"
+          >
+            <MdAccessTime size={16} /> Log Extra Work
+          </button>
+        )}
+        <button
+          onClick={handleClose}
+          className="rounded-lg bg-[#3a3a3a] px-6 py-2 text-[#f5f5f5] transition-colors hover:bg-[#4a4a4a]"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={assignLoading || shiftEnded}
+          className="rounded-lg bg-[#4ECDC4] px-6 py-2 font-medium text-[#1e1e1e] transition-colors hover:bg-[#4ECDC4]/90 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {assignLoading ? "Saving..." : "Save"}
+        </button>
+      </div>
+    </div>
+  );
+
   return (
     <>
       {assignLoading && <FullScreenLoader />}
 
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-[#2a2a2a] rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-[#3a3a3a]">
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-xl font-bold text-[#f5f5f5]">
-                  Assign Members to Shift
-                </h2>
-                {targetStore && (
-                  <span className="flex items-center gap-1 text-xs font-medium text-[#f6b100] bg-[#f6b100]/10 px-2 py-1 rounded">
-                    <MdStore size={13} /> {targetStore.name}
-                  </span>
-                )}
-              </div>
-              {schedule && shiftTemplate && (
-                <p className="text-sm text-[#ababab] mt-1">
-                  {shiftTemplate.name} &bull; {formatDate(schedule.date)} &bull; {shiftTemplate.startTime} - {shiftTemplate.endTime}
-                </p>
-              )}
-            </div>
-            <button
-              onClick={handleClose}
-              className="text-[#ababab] hover:text-[#f5f5f5] transition-colors"
-            >
-              <MdClose size={24} />
-            </button>
+      <BottomSheet
+        isOpen={isOpen}
+        onClose={handleClose}
+        title={title}
+        footer={footer}
+        size="lg"
+        bodyClassName="flex min-h-0 flex-1 flex-col p-0"
+      >
+        {shiftEnded && (
+          <div className="mx-6 mt-4 flex items-center gap-2 rounded-lg border border-[#4a4a4a] bg-[#3a3a3a]/50 px-4 py-3 text-sm text-[#ababab]">
+            <MdBlock size={16} className="shrink-0 text-[#f6b100]" />
+            This shift has ended. Assignments can no longer be changed.
           </div>
+        )}
 
-          {shiftEnded && (
-            <div className="mx-6 mt-6 px-4 py-3 bg-[#3a3a3a]/50 border border-[#4a4a4a] rounded-lg flex items-center gap-2 text-sm text-[#ababab]">
-              <MdBlock size={16} className="text-[#f6b100] shrink-0" />
-              This shift has ended. Assignments can no longer be changed.
-            </div>
-          )}
+        <div className="border-b border-[#3a3a3a] p-6">
+          <input
+            type="text"
+            placeholder="Search members by name or email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            disabled={shiftEnded}
+            className="w-full rounded-lg border border-[#3a3a3a] bg-[#1e1e1e] px-4 py-2 text-[#f5f5f5] placeholder-[#6a6a6a] focus:border-[#4ECDC4] focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+          />
+        </div>
 
-          {/* Search */}
-          <div className="p-6 border-b border-[#3a3a3a]">
-            <input
-              type="text"
-              placeholder="Search members by name or email..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              disabled={shiftEnded}
-              className="w-full px-4 py-2 bg-[#1e1e1e] border border-[#3a3a3a] rounded-lg text-[#f5f5f5] placeholder-[#6a6a6a] focus:outline-none focus:border-[#4ECDC4] disabled:opacity-50 disabled:cursor-not-allowed"
-            />
-          </div>
-
-          {/* Members List */}
-          <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6">
             {membersLoading || conflictsLoading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4ECDC4]"></div>
@@ -293,42 +323,8 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, store
                 })}
               </div>
             )}
-          </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-between p-6 border-t border-[#3a3a3a]">
-            <div className="text-sm text-[#ababab]">
-              {selectedMembers.length} member(s) selected
-              {hasChanges() && (
-                <span className="ml-2 text-[#f6b100]">&bull; unsaved changes</span>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              {onLogExtraWork && schedule && selectedMembers.length > 0 && (
-                <button
-                  onClick={() => { handleClose(); onLogExtraWork(schedule.date, selectedMembers[0]); }}
-                  className="px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#f6b100]/90 transition-colors flex items-center gap-2"
-                >
-                  <MdAccessTime size={16} /> Log Extra Work
-                </button>
-              )}
-              <button
-                onClick={handleClose}
-                className="px-6 py-2 bg-[#3a3a3a] hover:bg-[#4a4a4a] text-[#f5f5f5] rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={assignLoading || shiftEnded}
-                className="px-6 py-2 bg-[#4ECDC4] hover:bg-[#4ECDC4]/90 text-[#1e1e1e] font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {assignLoading ? "Saving..." : "Save"}
-              </button>
-            </div>
-          </div>
         </div>
-      </div>
+      </BottomSheet>
     </>
   );
 };

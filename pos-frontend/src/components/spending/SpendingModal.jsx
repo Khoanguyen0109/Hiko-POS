@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { useDispatch } from "react-redux";
-import { MdClose, MdSave, MdCancel } from "react-icons/md";
+import { MdSave, MdCancel } from "react-icons/md";
 import { createSpending, editSpending } from "../../redux/slices/spendingSlice";
 import { formatVND } from "../../utils";
 import PropTypes from "prop-types";
+import BottomSheet from "../shared/BottomSheet";
 
 const SpendingModal = ({ 
   isOpen, 
@@ -119,33 +120,25 @@ const SpendingModal = ({
   if (!isOpen) return null;
 
   const isViewMode = mode === "view";
+  const titleText =
+    mode === "create"
+      ? "Add New Expense"
+      : mode === "edit"
+        ? "Edit Expense"
+        : "View Expense";
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#262626] rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#343434]">
-          <h2 className="text-xl font-semibold text-[#f5f5f5]">
-            {mode === "create" ? "Add New Expense" : 
-             mode === "edit" ? "Edit Expense" : "View Expense"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-[#ababab] hover:text-[#f5f5f5] transition-colors"
-          >
-            <MdClose size={24} />
-          </button>
-        </div>
+    <BottomSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      title={titleText}
+      size="xl"
+    >
+      {error && (
+        <div className="mx-6 mt-4 rounded-lg bg-red-500 p-4 text-white">{error}</div>
+      )}
 
-        {/* Error Message */}
-        {error && (
-          <div className="mx-6 mt-4 p-4 bg-red-500 text-white rounded-lg">
-            {error}
-          </div>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6 p-6">
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-[#f5f5f5] border-b border-[#343434] pb-2">
@@ -367,8 +360,7 @@ const SpendingModal = ({
             </div>
           )}
         </form>
-      </div>
-    </div>
+    </BottomSheet>
   );
 };
 

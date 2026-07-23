@@ -6,7 +6,6 @@ export { default as Tables } from './Tables.jsx'
 export { default as Menu } from './Menu.jsx'
 export { default as Dashboard } from "./Dashboard.jsx"
 export { default as MenuOrder } from "./MenuOrder.jsx"
-export { default as MobileCart } from "./MobileCart.jsx"
 export { default as Dishes } from "./dishes"
 export { default as Categories } from "./Categories"
 export { default as Members } from "./Members"
@@ -27,3 +26,4 @@ export { default as Tickets } from "./Tickets.jsx"
 export { default as RewardPrograms } from "./RewardPrograms"
 export { default as Customers } from "./Customers"
 export { default as Docs } from "./Docs.jsx"
+export { default as FeatureToggles } from "./FeatureToggles.jsx"

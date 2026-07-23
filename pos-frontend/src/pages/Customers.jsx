@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { MdPeople, MdSearch, MdClose, MdEdit } from "react-icons/md";
+import { MdPeople, MdSearch, MdEdit } from "react-icons/md";
 import { enqueueSnackbar } from "notistack";
 import { fetchCustomers, editCustomer } from "../redux/slices/customersSlice";
+import BottomSheet from "../components/shared/BottomSheet";
 
 const Customers = () => {
   const dispatch = useDispatch();
@@ -184,21 +185,32 @@ const Customers = () => {
 
       {/* Detail modal */}
       {selectedCustomer && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-[#262626] rounded-xl border border-[#343434] w-full max-w-sm">
-            <div className="flex items-center justify-between p-4 border-b border-[#343434]">
-              <h2 className="text-[#f5f5f5] font-semibold text-lg">
-                Customer Details
-              </h2>
+        <BottomSheet
+          isOpen={Boolean(selectedCustomer)}
+          onClose={closeDetail}
+          title="Customer Details"
+          size="sm"
+          bodyClassName="p-4 sm:p-6"
+          footer={
+            <div className="flex justify-end gap-3">
               <button
                 onClick={closeDetail}
-                className="p-1 rounded-lg hover:bg-[#343434] transition-colors"
+                className="rounded-lg px-4 py-2 text-sm font-medium text-[#ababab] transition-colors hover:bg-[#343434]"
               >
-                <MdClose size={20} className="text-[#ababab]" />
+                Close
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center gap-1.5 rounded-lg bg-[#f6b100] px-4 py-2 text-sm font-semibold text-[#1a1a1a] transition-colors hover:bg-[#e5a200] disabled:opacity-50"
+              >
+                <MdEdit size={14} />
+                {saving ? "Saving…" : "Save"}
               </button>
             </div>
-
-            <div className="p-4 space-y-4">
+          }
+        >
+          <div className="space-y-4">
               {/* Info card */}
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-full bg-[#f6b100]/20 text-[#f6b100] flex items-center justify-center text-lg font-bold">
@@ -241,26 +253,8 @@ const Customers = () => {
                   />
                 </div>
               </div>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  onClick={closeDetail}
-                  className="px-4 py-2 rounded-lg text-sm font-medium text-[#ababab] hover:bg-[#343434] transition-colors"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold bg-[#f6b100] text-[#1a1a1a] hover:bg-[#e5a200] transition-colors disabled:opacity-50"
-                >
-                  <MdEdit size={14} />
-                  {saving ? "Saving…" : "Save"}
-                </button>
-              </div>
-            </div>
           </div>
-        </div>
+        </BottomSheet>
       )}
     </div>
   );

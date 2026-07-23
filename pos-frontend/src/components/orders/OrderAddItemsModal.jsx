@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { IoMdClose } from "react-icons/io";
 import { MdRestaurantMenu } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchCategories } from "../../redux/slices/categorySlice";
 import { fetchDishes } from "../../redux/slices/dishSlice";
 import DishSelectionModal from "../menu/DishSelectionModal";
+import BottomSheet from "../shared/BottomSheet";
 import defaultDishImage from "../../assets/images/hyderabadibiryani.jpg";
 import PropTypes from "prop-types";
 
@@ -42,25 +42,24 @@ const OrderAddItemsModal = ({ onClose, onAddItem }) => {
     setSelectedDish(null);
   };
 
-  return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#1f1f1f] rounded-xl overflow-hidden flex flex-col w-full max-w-2xl max-h-[85vh] shadow-xl">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[#343434] flex-shrink-0">
-          <h2 className="text-[#f5f5f5] text-base font-semibold flex items-center gap-2">
-            <MdRestaurantMenu size={20} />
-            Add items to order
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg text-[#ababab] hover:text-[#f5f5f5] hover:bg-[#343434] transition-colors"
-            aria-label="Close"
-          >
-            <IoMdClose size={22} />
-          </button>
-        </div>
+  const title = (
+    <h2 className="flex items-center gap-2 text-base font-semibold text-[#f5f5f5]">
+      <MdRestaurantMenu size={20} />
+      Add items to order
+    </h2>
+  );
 
-        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-          <div className="flex gap-1.5 px-3 py-2 border-b border-[#343434] overflow-x-auto flex-shrink-0">
+  return (
+    <>
+      <BottomSheet
+        isOpen
+        onClose={onClose}
+        title={title}
+        size="lg"
+        bodyClassName="flex min-h-0 flex-1 flex-col p-0"
+      >
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <div className="flex shrink-0 gap-1.5 overflow-x-auto border-b border-[#343434] px-3 py-2">
             <button
               onClick={() => setSelectedCategory("all")}
               className={`px-2.5 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
@@ -121,7 +120,7 @@ const OrderAddItemsModal = ({ onClose, onAddItem }) => {
             )}
           </div>
         </div>
-      </div>
+      </BottomSheet>
 
       {selectedDish && (
         <DishSelectionModal
@@ -131,7 +130,7 @@ const OrderAddItemsModal = ({ onClose, onAddItem }) => {
           onAddToOrder={handleAddToOrder}
         />
       )}
-    </div>
+    </>
   );
 };
 

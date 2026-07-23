@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchDishes } from '../../redux/slices/dishSlice';
 import { fetchCategories } from '../../redux/slices/categorySlice';
-import { MdClose as XMarkIcon } from 'react-icons/md';
 import PropTypes from 'prop-types';
 import { FormField, FormSelect, FormTextarea, Button } from '../ui';
+import BottomSheet from '../shared/BottomSheet';
 
 const PromotionForm = ({ promotion, onSubmit, onClose }) => {
   const dispatch = useDispatch();
@@ -335,23 +335,14 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#1a1a1a] border border-[#343434] rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#343434]">
-          <h2 className="text-xl font-semibold text-[#f5f5f5]">
-            {promotion ? 'Edit Promotion' : 'Create New Promotion'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-[#ababab] hover:text-[#f5f5f5] transition-colors"
-          >
-            <XMarkIcon size={24} />
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+    <BottomSheet
+      isOpen
+      onClose={onClose}
+      title={promotion ? 'Edit Promotion' : 'Create New Promotion'}
+      size="xl"
+      bodyClassName="p-4 sm:p-6"
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
@@ -797,8 +788,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </BottomSheet>
   );
 };
 

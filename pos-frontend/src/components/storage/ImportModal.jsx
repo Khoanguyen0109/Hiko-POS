@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { MdClose, MdSave, MdCancel, MdInventory, MdAttachMoney, MdBusiness } from "react-icons/md";
+import { MdSave, MdCancel, MdInventory, MdAttachMoney, MdBusiness } from "react-icons/md";
 import { createStorageImportAction, editStorageImport } from "../../redux/slices/storageImportSlice";
 import { fetchStorageItems } from "../../redux/slices/storageItemSlice";
 import { fetchActiveSuppliers } from "../../redux/slices/supplierSlice";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
+import BottomSheet from "../shared/BottomSheet";
 
 const ImportModal = ({ 
   isOpen, 
@@ -147,30 +148,19 @@ const ImportModal = ({
   const activeStorageItems = storageItems.filter(item => item.isActive);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#262626] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#343434]">
-          <h2 className="text-xl font-semibold text-[#f5f5f5]">
-            {mode === "create" ? "Create Import" : "Edit Import"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-[#ababab] hover:text-[#f5f5f5] transition-colors"
-          >
-            <MdClose size={24} />
-          </button>
+    <BottomSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      title={mode === "create" ? "Create Import" : "Edit Import"}
+      size="lg"
+    >
+      {error && (
+        <div className="mx-6 mt-4 rounded-lg border border-red-500 bg-red-500/20 p-4 text-red-400">
+          {error}
         </div>
+      )}
 
-        {/* Error Message */}
-        {error && (
-          <div className="mx-6 mt-4 p-4 bg-red-500/20 border border-red-500 text-red-400 rounded-lg">
-            {error}
-          </div>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6 p-6">
           {/* Storage Item Selection */}
           <div>
             <label className="block text-[#ababab] text-sm mb-2">
@@ -341,8 +331,7 @@ const ImportModal = ({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </BottomSheet>
   );
 };
 

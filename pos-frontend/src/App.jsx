@@ -14,7 +14,6 @@ import {
   Menu,
   Dashboard,
   MenuOrder,
-  MobileCart,
   Dishes,
   Categories,
   Members,
@@ -35,6 +34,7 @@ import {
   RewardPrograms,
   Customers,
   Docs,
+  FeatureToggles,
 } from "./pages";
 import Header from "./components/shared/Header";
 import { useSelector, useDispatch } from "react-redux";
@@ -53,6 +53,8 @@ import {
   HEADER_HIDDEN_ROUTES,
 } from "./constants";
 import Sidebar from "./components/shared/Sidebar";
+import V2Shell from "./components/v2/V2Shell";
+import { useV2Ui } from "./hooks/useV2Ui";
 
 const COMPONENT_MAP = {
   Home,
@@ -63,7 +65,6 @@ const COMPONENT_MAP = {
   Menu,
   Dashboard,
   MenuOrder,
-  MobileCart,
   Dishes,
   Categories,
   Members,
@@ -84,12 +85,14 @@ const COMPONENT_MAP = {
   RewardPrograms,
   Customers,
   Docs,
+  FeatureToggles,
 };
 
 function Layout() {
   const dispatch = useDispatch();
   const location = useLocation();
   const { isAuth } = useSelector((state) => state.user);
+  const { v2UiEnabled } = useV2Ui();
   const [isValidatingToken, setIsValidatingToken] = useState(true);
 
   useEffect(() => {
@@ -147,13 +150,10 @@ function Layout() {
 
   if (isValidatingToken) return <FullScreenLoader />;
 
-  return (
+  const showHeader = !HEADER_HIDDEN_ROUTES.includes(location.pathname);
+  const routes = (
     <>
-      {isAuth && <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} onOpen={openSidebar} />}
-      <div className={isAuth ? "ml-[56px] transition-[margin] duration-300" : ""}>
-      {!HEADER_HIDDEN_ROUTES.includes(location.pathname) && (
-        <Header />
-      )}
+      {showHeader && <Header />}
       <Routes>
         {/* Public Routes */}
         {PUBLIC_ROUTES.map((route) => (
@@ -211,7 +211,23 @@ function Layout() {
         {/* Fallback Route */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-      </div>
+    </>
+  );
+
+  return (
+    <>
+      {isAuth && (
+        <div className={v2UiEnabled ? "hidden lg:contents" : "contents"}>
+          <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} onOpen={openSidebar} />
+        </div>
+      )}
+      {isAuth && v2UiEnabled ? (
+        <V2Shell>{routes}</V2Shell>
+      ) : (
+        <div className={isAuth ? "ml-[56px] transition-[margin] duration-300" : ""}>
+          {routes}
+        </div>
+      )}
     </>
   );
 }

@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
-import { MdClose, MdWarning, MdCheckCircle } from "react-icons/md";
+import { MdWarning, MdCheckCircle } from "react-icons/md";
+import BottomSheet from "../shared/BottomSheet";
 import {
   fetchShiftCheckoutPreview,
   submitShiftCheckout,
@@ -11,7 +12,6 @@ import {
   clearPreview,
 } from "../../redux/slices/shiftCheckoutSlice";
 import { formatVND } from "../../utils";
-import { getTodayDate } from "../../utils";
 import FullScreenLoader from "../shared/FullScreenLoader";
 
 const TOLERANCE = 0;
@@ -116,37 +116,32 @@ const ShiftCheckoutModal = ({
     }
   };
 
-  if (!isOpen) return null;
-
   const shift = expected.schedule?.shiftTemplate;
+  const title = (
+    <div>
+      <h2 className="text-lg font-semibold text-[#f5f5f5]">Shift checkout</h2>
+      {shift && (
+        <p className="text-sm text-[#ababab]">
+          {shift.name} · {shift.startTime} – {shift.endTime}
+          {expected.member?.name && (
+            <span className="mt-0.5 block text-[#f5f5f5]">
+              Staff: {expected.member.name}
+            </span>
+          )}
+        </p>
+      )}
+    </div>
+  );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="bg-[#262626] rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto border border-[#383838]">
-        <div className="flex items-center justify-between p-4 border-b border-[#383838]">
-          <div>
-            <h2 className="text-lg font-semibold text-[#f5f5f5]">Shift checkout</h2>
-            {shift && (
-              <p className="text-sm text-[#ababab]">
-                {shift.name} · {shift.startTime} – {shift.endTime}
-                {expected.member?.name && (
-                  <span className="block text-[#f5f5f5] mt-0.5">
-                    Staff: {expected.member.name}
-                  </span>
-                )}
-              </p>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-[#ababab] hover:text-white p-1"
-            aria-label="Close"
-          >
-            <MdClose size={22} />
-          </button>
-        </div>
-
+    <>
+      <BottomSheet
+        isOpen={isOpen}
+        onClose={onClose}
+        title={title}
+        size="md"
+        bodyClassName="p-4 sm:p-6"
+      >
         {(previewLoading || submitLoading) && <FullScreenLoader />}
 
         {existing ? (
@@ -329,8 +324,8 @@ const ShiftCheckoutModal = ({
             </button>
           </form>
         )}
-      </div>
-    </div>
+      </BottomSheet>
+    </>
   );
 };
 

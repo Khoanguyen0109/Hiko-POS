@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useDispatch } from "react-redux";
-import { MdClose, MdSave, MdCancel, MdColorLens } from "react-icons/md";
+import { MdSave, MdCancel, MdColorLens } from "react-icons/md";
+import BottomSheet from "../shared/BottomSheet";
 import { createSpendingCategory, editSpendingCategory } from "../../redux/slices/spendingSlice";
 import PropTypes from "prop-types";
 
@@ -100,36 +101,27 @@ const CategoryModal = ({
     }
   };
 
-  if (!isOpen) return null;
-
   const isViewMode = mode === "view";
+  const titleText =
+    mode === "create"
+      ? "Add New Category"
+      : mode === "edit"
+        ? "Edit Category"
+        : "View Category";
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#262626] rounded-lg max-w-md w-full">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#343434]">
-          <h2 className="text-xl font-semibold text-[#f5f5f5]">
-            {mode === "create" ? "Add New Category" : 
-             mode === "edit" ? "Edit Category" : "View Category"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-[#ababab] hover:text-[#f5f5f5] transition-colors"
-          >
-            <MdClose size={24} />
-          </button>
-        </div>
+    <BottomSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      title={titleText}
+      size="md"
+      bodyClassName="p-4 sm:p-6"
+    >
+      {error && (
+        <div className="mb-4 rounded-lg bg-red-500 p-4 text-white">{error}</div>
+      )}
 
-        {/* Error Message */}
-        {error && (
-          <div className="mx-6 mt-4 p-4 bg-red-500 text-white rounded-lg">
-            {error}
-          </div>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-[#ababab] text-sm mb-2">
               Category Name <span className="text-red-500">*</span>
@@ -268,8 +260,7 @@ const CategoryModal = ({
             </div>
           )}
         </form>
-      </div>
-    </div>
+    </BottomSheet>
   );
 };
 

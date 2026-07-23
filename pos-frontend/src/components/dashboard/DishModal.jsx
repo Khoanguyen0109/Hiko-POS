@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
-import { IoMdClose, IoMdAdd, IoMdRemove } from "react-icons/io";
+import { IoMdAdd, IoMdRemove } from "react-icons/io";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchCategories } from "../../redux/slices/categorySlice";
 import { createDish, editDish } from "../../redux/slices/dishSlice";
 import { enqueueSnackbar } from "notistack"
 import PropTypes from "prop-types";
+import BottomSheet from "../shared/BottomSheet";
 
 const SIZE_OPTIONS = ['Small', 'Medium', 'Large', 'Extra Large', 'Regular'];
 
@@ -230,33 +230,14 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
   };
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      onClick={handleCloseModal}
+    <BottomSheet
+      isOpen
+      onClose={handleCloseModal}
+      title={editingDish ? "Edit Dish" : "Add Dish"}
+      size="md"
+      bodyClassName="p-4 sm:p-6"
     >
-      <motion.div
-        onClick={(e) => e.stopPropagation()}
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="bg-[#262626] p-6 rounded-lg shadow-lg w-[480px] max-h-[90vh] overflow-y-auto"
-      >
-        {/* Modal Header */}
-        <div className="flex justify-between item-center mb-4">
-          <h2 className="text-[#f5f5f5] text-xl font-semibold">
-            {editingDish ? "Edit Dish" : "Add Dish"}
-          </h2>
-          <button
-            onClick={handleCloseModal}
-            className="text-[#f5f5f5] hover:text-red-500"
-          >
-            <IoMdClose size={24} />
-          </button>
-        </div>
-
-        {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+      <form onSubmit={handleSubmit} className="mt-2 space-y-4">
           {/* Dish Name */}
           <div>
             <label className="block text-[#ababab] mb-2 text-sm font-medium">
@@ -460,8 +441,7 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
             }
           </button>
         </form>
-      </motion.div>
-    </div>
+    </BottomSheet>
   );
 };
 

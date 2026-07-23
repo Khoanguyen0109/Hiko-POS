@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { MdSettings, MdCalendarToday, MdAccessTime, MdFilterList, MdAttachMoney, MdCheckCircle, MdCancel, MdPeople, MdPerson, MdStore, MdDelete } from "react-icons/md";
@@ -12,6 +12,8 @@ import MyScheduleView from "../components/schedule/MyScheduleView";
 import AllStoresWeekGrid from "../components/schedule/AllStoresWeekGrid";
 import ExtraWorkModal from "../components/extrawork/ExtraWorkModal";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
+import ScheduleViewSwitcher from "../components/v2/ScheduleViewSwitcher";
+import { useV2Ui } from "../hooks/useV2Ui";
 import { getCurrentWeekInfo, getWeekDates, formatDate, getDayName, getWeekNumber, getLocalDateString, isShiftOver } from "../utils/dateUtils";
 import {
   fetchSchedulesByWeek,
@@ -35,8 +37,43 @@ const TABS = {
   MY_SCHEDULE: "my_schedule"
 };
 
+const SCHEDULE_VIEW_MODES = {
+  COMPACT: "compact",
+  FULL_WEEK: "fullWeek",
+  CALENDAR: "calendar",
+};
+
+function getMonthGridDays(year, month) {
+  const firstOfMonth = new Date(year, month, 1);
+  const lastOfMonth = new Date(year, month + 1, 0);
+  const startOffset = (firstOfMonth.getDay() + 6) % 7;
+  const days = [];
+
+  for (let i = 0; i < startOffset; i += 1) {
+    days.push({
+      date: new Date(year, month, i - startOffset + 1, 12),
+      inMonth: false,
+    });
+  }
+
+  for (let day = 1; day <= lastOfMonth.getDate(); day += 1) {
+    days.push({ date: new Date(year, month, day, 12), inMonth: true });
+  }
+
+  while (days.length % 7 !== 0) {
+    const trailingDay = days.length - startOffset - lastOfMonth.getDate() + 1;
+    days.push({
+      date: new Date(year, month + 1, trailingDay, 12),
+      inMonth: false,
+    });
+  }
+
+  return days;
+}
+
 const WeeklySchedule = () => {
   const dispatch = useDispatch();
+  const { v2UiEnabled } = useV2Ui();
   const { schedules, loading, error, createLoading, allMembersSchedules, allMembersLoading } = useSelector((state) => state.schedules);
   const { activeShiftTemplates, loading: templatesLoading } = useSelector(
     (state) => state.shiftTemplates
@@ -61,6 +98,8 @@ const WeeklySchedule = () => {
     startDate: "",
     endDate: ""
   });
+  const [scheduleViewMode, setScheduleViewMode] = useState(SCHEDULE_VIEW_MODES.COMPACT);
+  const [selectedCalendarDay, setSelectedCalendarDay] = useState(null);
 
   useEffect(() => {
     document.title = "POS | Weekly Schedule";
@@ -92,6 +131,10 @@ const WeeklySchedule = () => {
       dispatch(fetchExtraWork(filters));
     }
   }, [dispatch, isAdmin, extraWorkFilters]);
+
+  useEffect(() => {
+    setSelectedCalendarDay(null);
+  }, [currentWeek.year, currentWeek.week]);
 
   useEffect(() => {
     if (error) {
@@ -271,6 +314,297 @@ const WeeklySchedule = () => {
 
   const weekDates = getWeekDates(currentWeek.year, currentWeek.week);
 
+  const calendarMonth = useMemo(() => {
+    const anchor = weekDates[0] || new Date();
+    return { year: anchor.getFullYear(), month: anchor.getMonth() };
+  }, [weekDates]);
+
+  const calendarDays = useMemo(
+    () => getMonthGridDays(calendarMonth.year, calendarMonth.month),
+    [calendarMonth.month, calendarMonth.year]
+  );
+
+  const getSchedulesForDate = (date) => {
+    const targetDateStr = getLocalDateString(date);
+    const sourceSchedules = isAdmin ? allMembersSchedules : schedules;
+
+    return (sourceSchedules || []).filter((schedule) => {
+      return getLocalDateString(new Date(schedule.date)) === targetDateStr;
+    });
+  };
+
+  const renderMemberWeekGrid = (layoutClassName = "") => (
+    <div className={`bg-[#1f1f1f] rounded-lg border border-[#343434] overflow-hidden ${layoutClassName}`}>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[1000px]">
+          <thead>
+            <tr className="border-b border-[#343434]">
+              <th className="px-4 py-3 text-left text-[#ababab] text-sm font-medium w-32">
+                Shift
+              </th>
+              {weekDates.map((date, index) => (
+                <th
+                  key={index}
+                  className="px-4 py-3 text-center text-[#ababab] text-sm font-medium"
+                >
+                  <div>{getDayName(date, "short")}</div>
+                  <div className="text-[#f5f5f5] font-semibold mt-1">
+                    {formatDate(date, "short")}
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {activeShiftTemplates.map((template) => (
+              <tr
+                key={template._id}
+                className="border-b border-[#343434] last:border-0"
+              >
+                <td className="px-4 py-6 align-top">
+                  <div className="flex items-start gap-2">
+                    <div
+                      className="w-3 h-3 rounded-full mt-1"
+                      style={{ backgroundColor: template.color }}
+                    />
+                    <div>
+                      <div className="text-[#f5f5f5] font-medium text-sm">
+                        {template.name}
+                      </div>
+                      <div className="text-[#ababab] text-xs mt-1">
+                        {template.startTime} - {template.endTime}
+                      </div>
+                      <div className="text-[#6a6a6a] text-xs mt-0.5">
+                        {template.durationHours}h
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                {weekDates.map((date, dateIndex) => {
+                  const schedule = findSchedule(date, template._id);
+                  const shiftEnded = isShiftOver(date, template.endTime);
+                  return (
+                    <td
+                      key={dateIndex}
+                      className="px-2 py-3 align-top bg-[#262626]/30"
+                    >
+                      <ScheduleCell
+                        schedule={schedule}
+                        shiftTemplate={template}
+                        members={members}
+                        onClick={() => handleCellClick(date, template)}
+                        disabled
+                        disabledTitle={shiftEnded ? "Shift ended" : "View only"}
+                      />
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
+  const renderFullWeekView = () => (
+    <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
+      {weekDates.map((date) => {
+        const dateStr = getLocalDateString(date);
+        const daySchedules = getSchedulesForDate(date);
+
+        return (
+          <div
+            key={dateStr}
+            className="w-[280px] shrink-0 snap-start rounded-xl border border-[#343434] bg-[#1f1f1f] p-4"
+          >
+            <div className="mb-3 border-b border-[#343434] pb-3">
+              <p className="text-xs uppercase tracking-wide text-[#ababab]">
+                {getDayName(date, "short")}
+              </p>
+              <p className="text-lg font-semibold text-[#f5f5f5]">
+                {formatDate(date, "short")}
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              {daySchedules.length === 0 ? (
+                <p className="text-sm text-[#6a6a6a]">No shifts scheduled</p>
+              ) : (
+                daySchedules.map((schedule) => {
+                  const shift = schedule.shiftTemplate;
+                  const shiftName =
+                    typeof shift === "object"
+                      ? shift?.name || shift?.shortName || "Shift"
+                      : "Shift";
+                  const assignedCount = schedule.assignedMembers?.length || 0;
+
+                  return (
+                    <div
+                      key={schedule._id}
+                      className="rounded-lg border border-[#343434] bg-[#262626] p-3"
+                    >
+                      <p className="text-sm font-medium text-[#f5f5f5]">{shiftName}</p>
+                      <p className="mt-1 text-xs text-[#ababab]">
+                        {assignedCount} member{assignedCount === 1 ? "" : "s"} assigned
+                      </p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  const renderCalendarView = () => {
+    const monthLabel = new Date(calendarMonth.year, calendarMonth.month, 1).toLocaleDateString(
+      "en-US",
+      { month: "long", year: "numeric" }
+    );
+    const selectedDaySchedules = selectedCalendarDay
+      ? getSchedulesForDate(selectedCalendarDay)
+      : [];
+
+    return (
+      <div className="space-y-4">
+        <div className="rounded-xl border border-[#343434] bg-[#1f1f1f] p-4">
+          <h3 className="mb-4 text-lg font-semibold text-[#f5f5f5]">{monthLabel}</h3>
+          <div className="mb-2 grid grid-cols-7 gap-1">
+            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((label) => (
+              <div key={label} className="text-center text-[10px] font-medium uppercase text-[#6a6a6a]">
+                {label}
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {calendarDays.map(({ date, inMonth }) => {
+              const dateStr = getLocalDateString(date);
+              const daySchedules = getSchedulesForDate(date);
+              const isSelected =
+                selectedCalendarDay &&
+                getLocalDateString(selectedCalendarDay) === dateStr;
+              const isToday = getLocalDateString(new Date()) === dateStr;
+
+              return (
+                <button
+                  key={dateStr}
+                  type="button"
+                  onClick={() => setSelectedCalendarDay(date)}
+                  className={`min-h-[72px] rounded-lg border p-2 text-left transition-colors ${
+                    isSelected
+                      ? "border-[#f6b100] bg-[#f6b100]/10"
+                      : "border-[#343434] bg-[#262626] hover:border-[#4a4a4a]"
+                  } ${inMonth ? "" : "opacity-40"}`}
+                >
+                  <span
+                    className={`text-sm font-semibold ${
+                      isToday ? "text-[#f6b100]" : "text-[#f5f5f5]"
+                    }`}
+                  >
+                    {date.getDate()}
+                  </span>
+                  {daySchedules.length > 0 ? (
+                    <span className="mt-2 block text-[10px] font-medium text-[#4ECDC4]">
+                      {daySchedules.length} shift{daySchedules.length === 1 ? "" : "s"}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {selectedCalendarDay ? (
+          <div className="rounded-xl border border-[#343434] bg-[#1f1f1f] p-4">
+            <h4 className="mb-3 text-base font-semibold text-[#f5f5f5]">
+              {formatDate(selectedCalendarDay, "full")}
+            </h4>
+            {selectedDaySchedules.length === 0 ? (
+              <p className="text-sm text-[#ababab]">No shifts scheduled for this day.</p>
+            ) : (
+              <div className="space-y-2">
+                {selectedDaySchedules.map((schedule) => {
+                  const shift = schedule.shiftTemplate;
+                  const shiftName =
+                    typeof shift === "object"
+                      ? shift?.name || shift?.shortName || "Shift"
+                      : "Shift";
+                  const startTime =
+                    typeof shift === "object" ? shift?.startTime : null;
+                  const endTime = typeof shift === "object" ? shift?.endTime : null;
+                  const assignedCount = schedule.assignedMembers?.length || 0;
+
+                  return (
+                    <div
+                      key={schedule._id}
+                      className="rounded-lg border border-[#343434] bg-[#262626] p-3"
+                    >
+                      <p className="text-sm font-medium text-[#f5f5f5]">{shiftName}</p>
+                      {startTime && endTime ? (
+                        <p className="mt-1 text-xs text-[#ababab]">
+                          {startTime} - {endTime}
+                        </p>
+                      ) : null}
+                      <p className="mt-1 text-xs text-[#4ECDC4]">
+                        {assignedCount} member{assignedCount === 1 ? "" : "s"} assigned
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-[#ababab]">Tap a day to view shift details.</p>
+        )}
+      </div>
+    );
+  };
+
+  const renderByStoreSchedule = () => {
+    if (v2UiEnabled && scheduleViewMode === SCHEDULE_VIEW_MODES.FULL_WEEK) {
+      if (isAdmin) {
+        return (
+          <div className="overflow-x-auto">
+            <AllStoresWeekGrid
+              stores={allStores.filter((s) => s.isActive !== false)}
+              schedules={allMembersSchedules}
+              shiftTemplates={activeShiftTemplates}
+              members={members}
+              weekDates={weekDates}
+              activeStoreId={activeStore?._id}
+              onCellClick={handleCombinedCellClick}
+            />
+          </div>
+        );
+      }
+      return renderFullWeekView();
+    }
+
+    if (v2UiEnabled && scheduleViewMode === SCHEDULE_VIEW_MODES.CALENDAR) {
+      return renderCalendarView();
+    }
+
+    if (isAdmin) {
+      return (
+        <AllStoresWeekGrid
+          stores={allStores.filter((s) => s.isActive !== false)}
+          schedules={allMembersSchedules}
+          shiftTemplates={activeShiftTemplates}
+          members={members}
+          weekDates={weekDates}
+          activeStoreId={activeStore?._id}
+          onCellClick={handleCombinedCellClick}
+        />
+      );
+    }
+
+    return renderMemberWeekGrid();
+  };
+
   // Tab definitions
   const tabs = [
     { key: TABS.BY_STORE, label: "By Store", icon: MdStore, show: true },
@@ -318,6 +652,10 @@ const WeeklySchedule = () => {
           week={currentWeek.week}
           onWeekChange={handleWeekChange}
         />
+
+        {v2UiEnabled && activeTab === TABS.BY_STORE ? (
+          <ScheduleViewSwitcher value={scheduleViewMode} onChange={setScheduleViewMode} />
+        ) : null}
 
         {/* Tab Switcher */}
         {tabs.length > 1 && (
@@ -373,90 +711,7 @@ const WeeklySchedule = () => {
               </div>
             ) : (
               <div className="space-y-6">
-                {/* Weekly Grid — admin sees every store at once; members see their active store */}
-                {isAdmin ? (
-                  <AllStoresWeekGrid
-                    stores={allStores.filter((s) => s.isActive !== false)}
-                    schedules={allMembersSchedules}
-                    shiftTemplates={activeShiftTemplates}
-                    members={members}
-                    weekDates={weekDates}
-                    activeStoreId={activeStore?._id}
-                    onCellClick={handleCombinedCellClick}
-                  />
-                ) : (
-                  <div className="bg-[#1f1f1f] rounded-lg border border-[#343434] overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <table className="w-full min-w-[1000px]">
-                        <thead>
-                          <tr className="border-b border-[#343434]">
-                            <th className="px-4 py-3 text-left text-[#ababab] text-sm font-medium w-32">
-                              Shift
-                            </th>
-                            {weekDates.map((date, index) => (
-                              <th
-                                key={index}
-                                className="px-4 py-3 text-center text-[#ababab] text-sm font-medium"
-                              >
-                                <div>{getDayName(date, "short")}</div>
-                                <div className="text-[#f5f5f5] font-semibold mt-1">
-                                  {formatDate(date, "short")}
-                                </div>
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {activeShiftTemplates.map((template) => (
-                            <tr
-                              key={template._id}
-                              className="border-b border-[#343434] last:border-0"
-                            >
-                              <td className="px-4 py-6 align-top">
-                                <div className="flex items-start gap-2">
-                                  <div
-                                    className="w-3 h-3 rounded-full mt-1"
-                                    style={{ backgroundColor: template.color }}
-                                  />
-                                  <div>
-                                    <div className="text-[#f5f5f5] font-medium text-sm">
-                                      {template.name}
-                                    </div>
-                                    <div className="text-[#ababab] text-xs mt-1">
-                                      {template.startTime} - {template.endTime}
-                                    </div>
-                                    <div className="text-[#6a6a6a] text-xs mt-0.5">
-                                      {template.durationHours}h
-                                    </div>
-                                  </div>
-                                </div>
-                              </td>
-                              {weekDates.map((date, dateIndex) => {
-                                const schedule = findSchedule(date, template._id);
-                                const shiftEnded = isShiftOver(date, template.endTime);
-                                return (
-                                  <td
-                                    key={dateIndex}
-                                    className="px-2 py-3 align-top bg-[#262626]/30"
-                                  >
-                                    <ScheduleCell
-                                      schedule={schedule}
-                                      shiftTemplate={template}
-                                      members={members}
-                                      onClick={() => handleCellClick(date, template)}
-                                      disabled
-                                      disabledTitle={shiftEnded ? "Shift ended" : "View only"}
-                                    />
-                                  </td>
-                                );
-                              })}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
+                {renderByStoreSchedule()}
 
                 {/* Summary Stats (member single-store view) */}
                 {!isAdmin && schedules && schedules.length > 0 && (

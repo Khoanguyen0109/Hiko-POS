@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
-import { MdClose, MdAdd, MdRemove } from "react-icons/md";
+import { MdAdd, MdRemove } from "react-icons/md";
+import BottomSheet from "../shared/BottomSheet";
 import { fetchToppingsByCategory, addToppingToItem, removeToppingFromItem } from "../../redux/slices/toppingSlice";
 import { formatVND } from "../../utils";
 
@@ -104,27 +105,51 @@ const ToppingSelectionModal = ({ isOpen, onClose, dish, onConfirm }) => {
     onClose();
   };
 
-  if (!isOpen) return null;
+  const footer = (
+    <>
+      <div className="mb-4 flex items-center justify-between">
+        <div className="text-[#f5f5f5]">
+          <span className="text-sm">Toppings Total:</span>
+          <span className="ml-2 text-lg font-bold text-[#f6b100]">
+            {formatVND(totalToppingsPrice)}
+          </span>
+        </div>
+        <div className="text-xs text-[#ababab]">
+          {Object.values(localToppings).reduce((sum, qty) => sum + qty, 0)} items selected
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <button
+          onClick={handleCancel}
+          className="flex-1 rounded-lg border border-[#343434] bg-[#262626] px-4 py-3 font-medium text-[#ababab] transition-colors hover:bg-[#343434] hover:text-[#f5f5f5]"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleConfirm}
+          className="flex-1 rounded-lg bg-[#f6b100] px-4 py-3 font-bold text-[#1f1f1f] transition-colors hover:bg-[#e09900]"
+        >
+          Confirm Toppings
+        </button>
+      </div>
+    </>
+  );
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#1a1a1a] rounded-lg w-full max-w-2xl max-h-[90vh] border border-[#343434] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#343434]">
-          <div>
-            <h2 className="text-[#f5f5f5] text-xl font-bold">Select Toppings</h2>
-            <p className="text-[#ababab] text-sm mt-1">for {dish?.name}</p>
-          </div>
-          <button
-            onClick={handleCancel}
-            className="text-[#ababab] hover:text-[#f5f5f5] transition-colors"
-          >
-            <MdClose size={24} />
-          </button>
+    <BottomSheet
+      isOpen={isOpen}
+      onClose={handleCancel}
+      title={
+        <div>
+          <h2 className="text-xl font-bold text-[#f5f5f5]">Select Toppings</h2>
+          <p className="mt-1 text-sm text-[#ababab]">for {dish?.name}</p>
         </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+      }
+      footer={footer}
+      size="lg"
+      bodyClassName="p-4 sm:p-6"
+    >
           {loading && (
             <div className="text-center py-8">
               <div className="text-[#ababab]">Loading toppings...</div>
@@ -208,39 +233,7 @@ const ToppingSelectionModal = ({ isOpen, onClose, dish, onConfirm }) => {
               ))}
             </div>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className="p-6 border-t border-[#343434]">
-          <div className="flex items-center justify-between mb-4">
-            <div className="text-[#f5f5f5]">
-              <span className="text-sm">Toppings Total:</span>
-              <span className="ml-2 text-lg font-bold text-[#f6b100]">
-                {formatVND(totalToppingsPrice)}
-              </span>
-            </div>
-            <div className="text-[#ababab] text-xs">
-              {Object.values(localToppings).reduce((sum, qty) => sum + qty, 0)} items selected
-            </div>
-          </div>
-          
-          <div className="flex gap-3">
-            <button
-              onClick={handleCancel}
-              className="flex-1 px-4 py-3 bg-[#262626] border border-[#343434] rounded-lg text-[#ababab] font-medium hover:bg-[#343434] hover:text-[#f5f5f5] transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleConfirm}
-              className="flex-1 px-4 py-3 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-bold hover:bg-[#e09900] transition-colors"
-            >
-              Confirm Toppings
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+    </BottomSheet>
   );
 };
 

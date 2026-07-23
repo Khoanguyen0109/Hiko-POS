@@ -19,6 +19,8 @@ import DateFilterBar from "../components/storage/DateFilterBar";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import BackButton from "../components/shared/BackButton";
 import { useNavigate } from "react-router-dom";
+import StorageStockCard from "../components/v2/StorageStockCard";
+import { useV2Ui } from "../hooks/useV2Ui";
 import { getStoredUser } from "../utils/auth";
 import { logger } from "../utils/logger";
 import { getTodayDate } from "../utils";
@@ -239,9 +241,74 @@ StockList.propTypes = {
   loading: PropTypes.bool.isRequired,
 };
 
+const StockCardList = memo(({ items, loading }) => {
+  if (loading) return <TableLoader message="Loading stock..." />;
+
+  const activeItems = items.filter((item) => item.isActive);
+  if (activeItems.length === 0) {
+    return <TableEmpty icon={MdInventory} message="No items in storage" />;
+  }
+
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      {activeItems.map((item) => (
+        <StorageStockCard key={item._id} item={item} />
+      ))}
+    </div>
+  );
+});
+StockCardList.displayName = "StockCardList";
+StockCardList.propTypes = {
+  items: PropTypes.arrayOf(PropTypes.object).isRequired,
+  loading: PropTypes.bool.isRequired,
+};
+
+const StorageMobileFab = ({ activeTab, onImport, onExport }) => (
+  <div
+    className="fixed bottom-24 right-4 z-30 flex flex-col items-end gap-2 md:hidden"
+    style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+  >
+    {activeTab === "stock" ? (
+      <>
+        <button
+          type="button"
+          onClick={onImport}
+          className="flex min-h-[48px] items-center gap-2 rounded-full bg-[#262626] px-4 py-2 text-sm font-semibold text-[#f5f5f5] shadow-lg border border-[#343434]"
+        >
+          <MdInput size={18} />
+          Import
+        </button>
+        <button
+          type="button"
+          onClick={onExport}
+          className="flex min-h-[48px] items-center gap-2 rounded-full bg-[#f6b100] px-4 py-2 text-sm font-semibold text-[#1f1f1f] shadow-lg"
+        >
+          <MdOutput size={18} />
+          Export
+        </button>
+      </>
+    ) : (
+      <button
+        type="button"
+        onClick={activeTab === "imports" ? onImport : onExport}
+        className="flex min-h-[48px] items-center gap-2 rounded-full bg-[#f6b100] px-5 py-3 text-sm font-semibold text-[#1f1f1f] shadow-lg"
+      >
+        <IoMdAdd size={20} />
+        New {activeTab === "imports" ? "Import" : "Export"}
+      </button>
+    )}
+  </div>
+);
+StorageMobileFab.propTypes = {
+  activeTab: PropTypes.string.isRequired,
+  onImport: PropTypes.func.isRequired,
+  onExport: PropTypes.func.isRequired,
+};
+
 const Storage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { v2UiEnabled } = useV2Ui();
   const user = getStoredUser();
   const isAdmin = user?.role === "Admin";
 
@@ -415,9 +482,29 @@ const Storage = () => {
         {importsError && activeTab === "imports" && <ErrorBanner message={importsError} />}
         {exportsError && activeTab === "exports" && <ErrorBanner message={exportsError} />}
 
-        {activeTab === "stock" && <StockList items={storageItems} loading={storageItemsLoading} />}
+        {activeTab === "stock" && v2UiEnabled ? (
+          <>
+            <div className="md:hidden">
+              <StockCardList items={storageItems} loading={storageItemsLoading} />
+            </div>
+            <div className="hidden md:block">
+              <StockList items={storageItems} loading={storageItemsLoading} />
+            </div>
+          </>
+        ) : null}
+        {activeTab === "stock" && !v2UiEnabled ? (
+          <StockList items={storageItems} loading={storageItemsLoading} />
+        ) : null}
         {activeTab === "imports" && <ImportList imports={imports} loading={importsLoading} onCancel={handleCancelImport} />}
         {activeTab === "exports" && <ExportList exports={exports} loading={exportsLoading} onCancel={handleCancelExport} />}
+
+        {v2UiEnabled ? (
+          <StorageMobileFab
+            activeTab={activeTab}
+            onImport={handleCreateImport}
+            onExport={handleCreateExport}
+          />
+        ) : null}
 
         <ImportModal
           isOpen={isImportModalOpen}

@@ -162,25 +162,25 @@
   box-shadow: 0 0 0 3px var(--color-error-alpha-20);
 }
 
-/* === MODAL COMPONENTS === */
+/* === MODAL / BOTTOM SHEET COMPONENTS === */
 .modal-overlay {
   position: fixed;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   z-index: var(--z-modal-backdrop);
-  padding: var(--spacing-lg);
 }
 
 .modal-content {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  margin-inline: auto;
   background-color: var(--color-bg-modal);
-  border-radius: var(--radius-xl);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   box-shadow: var(--shadow-xl);
   border: 1px solid var(--color-border-primary);
   width: 100%;
-  max-height: 90vh;
+  max-height: 90dvh;
   overflow-y: auto;
   z-index: var(--z-modal);
 }

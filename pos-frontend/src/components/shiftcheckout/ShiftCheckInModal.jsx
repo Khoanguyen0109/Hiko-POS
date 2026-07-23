@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
-import { MdClose, MdLogin } from "react-icons/md";
+import { MdLogin } from "react-icons/md";
+import BottomSheet from "../shared/BottomSheet";
 import {
   submitShiftCheckIn,
   fetchMyShiftCheckouts,
@@ -72,37 +73,33 @@ const ShiftCheckInModal = ({
     }
   };
 
-  if (!isOpen) return null;
+  const title = (
+    <div className="flex items-center gap-2">
+      <MdLogin className="text-[#10B981]" size={22} />
+      <div>
+        <h2 className="text-lg font-semibold text-[#f5f5f5]">Check in</h2>
+        {shiftName && (
+          <p className="text-sm text-[#ababab]">
+            {shiftName}
+            {memberName && ` · ${memberName}`}
+          </p>
+        )}
+      </div>
+    </div>
+  );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="bg-[#262626] rounded-xl w-full max-w-md border border-[#383838]">
-        <div className="flex items-center justify-between p-4 border-b border-[#383838]">
-          <div className="flex items-center gap-2">
-            <MdLogin className="text-[#10B981]" size={22} />
-            <div>
-              <h2 className="text-lg font-semibold text-[#f5f5f5]">Check in</h2>
-              {shiftName && (
-                <p className="text-sm text-[#ababab]">
-                  {shiftName}
-                  {memberName && ` · ${memberName}`}
-                </p>
-              )}
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-[#ababab] hover:text-white p-1"
-            aria-label="Close"
-          >
-            <MdClose size={22} />
-          </button>
-        </div>
+    <>
+      {checkInLoading && <FullScreenLoader />}
 
-        {checkInLoading && <FullScreenLoader />}
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+      <BottomSheet
+        isOpen={isOpen}
+        onClose={onClose}
+        title={title}
+        size="md"
+        bodyClassName="p-4 sm:p-6"
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
           <p className="text-sm text-[#ababab]">
             Count the cash in the drawer before your shift starts and enter the
             total below.
@@ -150,8 +147,8 @@ const ShiftCheckInModal = ({
             Confirm check-in
           </button>
         </form>
-      </div>
-    </div>
+      </BottomSheet>
+    </>
   );
 };
 

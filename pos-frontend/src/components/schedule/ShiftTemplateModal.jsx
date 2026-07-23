@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { MdClose, MdSave, MdAccessTime, MdColorLens } from "react-icons/md";
+import { MdSave, MdAccessTime, MdColorLens } from "react-icons/md";
+import BottomSheet from "../shared/BottomSheet";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
 import {
@@ -141,26 +142,15 @@ const ShiftTemplateModal = ({ isOpen, onClose, mode, template }) => {
     { name: "Orange", value: "#FB923C" }
   ];
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#1f1f1f] rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#343434]">
-          <h2 className="text-[#f5f5f5] text-xl font-semibold">
-            {isEditMode ? "Edit Shift Template" : "Create Shift Template"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-[#262626] rounded-lg transition-colors"
-          >
-            <MdClose size={20} className="text-[#ababab]" />
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+    <BottomSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEditMode ? "Edit Shift Template" : "Create Shift Template"}
+      size="md"
+      bodyClassName="p-4 sm:p-6"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name */}
           <div>
             <label className="block text-[#ababab] text-sm font-medium mb-2">
@@ -303,8 +293,7 @@ const ShiftTemplateModal = ({ isOpen, onClose, mode, template }) => {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </BottomSheet>
   );
 };
 

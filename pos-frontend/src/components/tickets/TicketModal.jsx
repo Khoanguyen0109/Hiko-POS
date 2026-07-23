@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { MdClose, MdStar, MdPerson } from "react-icons/md";
+import { MdStar, MdPerson } from "react-icons/md";
+import BottomSheet from "../shared/BottomSheet";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
 import { addTicket, editTicket, clearTicketError } from "../../redux/slices/ticketSlice";
@@ -76,25 +77,23 @@ const TicketModal = ({ isOpen, onClose, ticket, members }) => {
     }
   };
 
-  if (!isOpen) return null;
-
   const loading = createLoading || updateLoading;
+  const title = (
+    <h2 className="flex items-center gap-2 text-lg font-semibold text-[#f5f5f5]">
+      <MdStar className="text-[#f6b100]" />
+      {isEdit ? "Edit Ticket" : "New Ticket"}
+    </h2>
+  );
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="bg-[#1f1f1f] rounded-xl border border-[#343434] w-full max-w-md shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-[#343434]">
-          <h2 className="text-[#f5f5f5] text-lg font-semibold flex items-center gap-2">
-            <MdStar className="text-[#f6b100]" />
-            {isEdit ? "Edit Ticket" : "New Ticket"}
-          </h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[#262626] text-[#ababab]">
-            <MdClose size={20} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+    <BottomSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      size="md"
+      bodyClassName="p-4 sm:p-6"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
           {/* Member select — only on create */}
           {!isEdit && (
             <div>
@@ -186,8 +185,7 @@ const TicketModal = ({ isOpen, onClose, ticket, members }) => {
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </BottomSheet>
   );
 };
 

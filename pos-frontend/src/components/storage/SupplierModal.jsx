@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useDispatch } from "react-redux";
-import { MdClose, MdSave, MdCancel, MdBusiness, MdEmail, MdPhone, MdLocationOn, MdDescription } from "react-icons/md";
+import { MdSave, MdCancel, MdBusiness, MdEmail, MdPhone, MdLocationOn, MdDescription } from "react-icons/md";
+import BottomSheet from "../shared/BottomSheet";
 import { createSupplierAction, editSupplier } from "../../redux/slices/supplierSlice";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
@@ -110,36 +111,29 @@ const SupplierModal = ({
     }
   };
 
-  if (!isOpen) return null;
-
   const isViewMode = mode === "view";
+  const titleText =
+    mode === "create"
+      ? "Add New Supplier"
+      : mode === "edit"
+        ? "Edit Supplier"
+        : "View Supplier";
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#262626] rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#343434]">
-          <h2 className="text-xl font-semibold text-[#f5f5f5]">
-            {mode === "create" ? "Add New Supplier" : 
-             mode === "edit" ? "Edit Supplier" : "View Supplier"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-[#ababab] hover:text-[#f5f5f5] transition-colors"
-          >
-            <MdClose size={24} />
-          </button>
+    <BottomSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      title={titleText}
+      size="lg"
+      bodyClassName="p-4 sm:p-6"
+    >
+      {error && (
+        <div className="mb-4 rounded-lg border border-red-500 bg-red-500/20 p-4 text-red-400">
+          {error}
         </div>
+      )}
 
-        {/* Error Message */}
-        {error && (
-          <div className="mx-6 mt-4 p-4 bg-red-500/20 border border-red-500 text-red-400 rounded-lg">
-            {error}
-          </div>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6">
           {/* Basic Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-[#f5f5f5] border-b border-[#343434] pb-2 flex items-center gap-2">
@@ -349,8 +343,7 @@ const SupplierModal = ({
             </div>
           )}
         </form>
-      </div>
-    </div>
+    </BottomSheet>
   );
 };
 

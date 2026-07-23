@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { FaHome, FaUsers, FaCalendarAlt } from "react-icons/fa";
 import {
   MdOutlineReorder,
-  MdTableBar,
   MdReceipt,
   MdAccountBalanceWallet,
   MdStorage,
@@ -24,10 +23,12 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import PropTypes from "prop-types";
 import { ROUTES } from "../../constants";
+import { useV2Ui } from "../../hooks/useV2Ui";
 
 const Sidebar = ({ isOpen, onClose, onOpen }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { v2UiEnabled } = useV2Ui();
   const { role } = useSelector((state) => state.user);
   const activeStore = useSelector((state) => state.store.activeStore);
   const isAdmin = role === "Admin";
@@ -246,7 +247,9 @@ const Sidebar = ({ isOpen, onClose, onOpen }) => {
             navigate(ROUTES.MENU_ORDER);
             onClose();
           }}
-          className="fixed bottom-4 right-4 z-30 bg-[#f6b100] text-[#f5f5f5] rounded-full p-3 md:p-4 shadow-lg"
+          className={`fixed bottom-4 right-4 z-30 bg-[#f6b100] text-[#f5f5f5] rounded-full p-3 md:p-4 shadow-lg ${
+            v2UiEnabled ? "hidden lg:flex" : ""
+          }`}
         >
           <BiSolidDish size={28} />
         </button>

@@ -4,6 +4,7 @@ import { FaCheck } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import { formatVND } from "../../utils";
+import BottomSheet from "../shared/BottomSheet";
 const Invoice = ({ orderInfo, setShowInvoice }) => {
   console.log('orderInfo', orderInfo)
   const invoiceRef = useRef(null);
@@ -17,21 +18,14 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-      <div className="bg-white rounded-lg shadow-lg w-[400px]">
-        {/* Modal Header with Close Button */}
-        <div className="flex justify-between items-center p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800">Order Receipt</h2>
-          <button
-            onClick={() => setShowInvoice(false)}
-            className="text-gray-500 hover:text-gray-700 text-xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-          >
-            ×
-          </button>
-        </div>
-
-        {/* Receipt Content for Printing */}
-
+    <BottomSheet
+      isOpen
+      onClose={() => setShowInvoice(false)}
+      title="Order Receipt"
+      size="md"
+      bodyClassName="p-0"
+    >
+      <div className="rounded-lg bg-white shadow-lg">
         <div ref={invoiceRef} className="p-4">
           {/* Receipt Header */}
           <div className="flex justify-center mb-4">
@@ -159,17 +153,16 @@ const Invoice = ({ orderInfo, setShowInvoice }) => {
           </div>
         </div>
 
-        {/* Order Detail Button */}
-        <div className="flex justify-center p-4 border-t border-gray-200">
+        <div className="flex justify-center border-t border-gray-200 p-4">
           <button
             onClick={handleViewOrderDetail}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors font-medium"
+            className="rounded-lg bg-blue-500 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-600"
           >
             Order Detail
           </button>
         </div>
       </div>
-    </div>
+    </BottomSheet>
   );
 };
 

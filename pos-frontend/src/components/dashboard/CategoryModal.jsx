@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { IoMdClose } from "react-icons/io";
 import { MdCategory, MdColorLens } from "react-icons/md";
 import { useSelector, useDispatch } from "react-redux";
 import { createCategory, editCategory } from "../../redux/slices/categorySlice";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
+import BottomSheet from "../shared/BottomSheet";
 
 // Predefined color options for categories
 const COLOR_OPTIONS = [
@@ -136,35 +135,26 @@ const CategoryModal = ({ setIsCategoryModalOpen, editingCategory }) => {
     return selectedColor ? selectedColor.name : "Custom";
   };
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="bg-[#262626] p-6 rounded-lg shadow-lg w-[420px] max-h-[90vh] overflow-y-auto"
-      >
-        {/* Modal Header */}
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-[#f6b100] rounded-lg">
-              <MdCategory size={24} className="text-[#1f1f1f]" />
-            </div>
-            <h2 className="text-[#f5f5f5] text-xl font-semibold">
-              {editingCategory ? "Edit Category" : "Add Category"}
-            </h2>
-          </div>
-          <button
-            onClick={handleCloseModal}
-            className="text-[#f5f5f5] hover:text-red-500 transition-colors"
-          >
-            <IoMdClose size={24} />
-          </button>
-        </div>
+  const title = (
+    <div className="flex items-center gap-3">
+      <div className="rounded-lg bg-[#f6b100] p-2">
+        <MdCategory size={24} className="text-[#1f1f1f]" />
+      </div>
+      <h2 className="text-xl font-semibold text-[#f5f5f5]">
+        {editingCategory ? "Edit Category" : "Add Category"}
+      </h2>
+    </div>
+  );
 
-        {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="space-y-5">
+  return (
+    <BottomSheet
+      isOpen
+      onClose={handleCloseModal}
+      title={title}
+      size="md"
+      bodyClassName="p-4 sm:p-6"
+    >
+      <form onSubmit={handleSubmit} className="space-y-5">
           {/* Category Name */}
           <div>
             <label className="block text-[#ababab] mb-2 text-sm font-medium">
@@ -309,8 +299,7 @@ const CategoryModal = ({ setIsCategoryModalOpen, editingCategory }) => {
               : (editingCategory ? "Update Category" : "Create Category")}
           </button>
         </form>
-      </motion.div>
-    </div>
+    </BottomSheet>
   );
 };
 

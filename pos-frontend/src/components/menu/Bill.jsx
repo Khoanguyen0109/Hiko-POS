@@ -14,14 +14,19 @@ import { removeAppliedReward, clearCustomerRewards } from "../../redux/slices/re
 import { enqueueSnackbar } from "notistack";
 import Invoice from "../invoice/Invoice";
 import CouponSelector from "./CouponInput";
+import OrderTypePicker from "../v2/OrderTypePicker";
+import PaymentButtons from "../v2/PaymentButtons";
 import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import { useReactToPrint } from "react-to-print";
 import ThermalReceiptTemplate from "../print/ThermalReceiptTemplate";
 import { formatVND } from "../../utils";
 import { logger } from "../../utils/logger";
+import { useV2Ui } from "../../hooks/useV2Ui";
+import PropTypes from "prop-types";
 
-const Bill = forwardRef((props, ref) => {
+const Bill = forwardRef(({ onOrderComplete, inDrawer = false }, ref) => {
   const dispatch = useDispatch();
+  const { v2UiEnabled } = useV2Ui();
   const thermalReceiptRef = useRef();
 
   const customerData = useSelector((state) => state.customer);
@@ -31,7 +36,7 @@ const Bill = forwardRef((props, ref) => {
   const total = useSelector(getTotalPrice);
   const appliedCoupon = useSelector(getAppliedCoupon);
   const { loading } = useSelector((state) => state.orders);
-  const { items: promotions, loading: promotionsLoading } = useSelector(
+  const { items: promotions } = useSelector(
     (state) => state.promotions
   );
   const appliedReward = useSelector((state) => state.rewards.appliedReward);
@@ -90,7 +95,11 @@ const Bill = forwardRef((props, ref) => {
   // Expose handlers to parent component via ref
   useImperativeHandle(ref, () => ({
     handlePlaceOrder,
-    handlePrintReceipt
+    handlePrintReceipt,
+    handlePayWithMethod: (method) =>
+      handlePlaceOrder({ paymentMethod: method, orderStatus: "completed" }),
+    loading,
+    cartEmpty: !cartData.items?.length,
   }));
 
   const handleThermalPrint = useReactToPrint({
@@ -115,7 +124,8 @@ const Bill = forwardRef((props, ref) => {
     handleThermalPrint();
   };
 
-  const handlePlaceOrder = async () => {
+  const handlePlaceOrder = async (options = {}) => {
+    const { paymentMethod, orderStatus = "progress" } = options;
     // Enhanced order data with Happy Hour support
     const enhancedItems = cartData.items.map((item) => ({
       ...item,
@@ -172,7 +182,8 @@ const Bill = forwardRef((props, ref) => {
           customerRewards?.customer?.phone || customerData.customerPhone || "",
         guests: customerData.guests,
       },
-      orderStatus: "progress",
+      orderStatus,
+      ...(paymentMethod ? { paymentMethod } : {}),
       bills: {
         subtotal: subtotal,
         promotionDiscount: discount,
@@ -213,10 +224,18 @@ const Bill = forwardRef((props, ref) => {
         logger.debug("Order created:", data);
         setOrderInfo(data);
 
-        enqueueSnackbar("Order Placed Successfully!", {
+        const successMessage = v2UiEnabled && paymentMethod
+          ? `Order paid with ${paymentMethod}`
+          : "Order Placed Successfully!";
+        enqueueSnackbar(successMessage, {
           variant: "success",
         });
-        setShowInvoice(true);
+
+        if (!v2UiEnabled) {
+          setShowInvoice(true);
+        } else if (onOrderComplete) {
+          onOrderComplete();
+        }
 
         setTimeout(() => {
           dispatch(removeCustomer());
@@ -347,30 +366,58 @@ const Bill = forwardRef((props, ref) => {
         return null;
       })()} */}
 
-      {/* Action Buttons - Hidden on mobile, shown on desktop */}
-      <div className="hidden md:flex items-center gap-3 px-5 mt-6">
-        <button
-          onClick={handlePrintReceipt}
-          className="bg-[#025cca] px-4 py-3 w-full rounded-lg text-[#f5f5f5] font-semibold text-lg hover:bg-[#0248a3] transition-colors"
-        >
-          Print Receipt
-        </button>
-        <button
-          onClick={handlePlaceOrder}
-          disabled={cartData.items?.length === 0 || loading}
-          className="bg-[#f6b100] px-4 py-3 w-full rounded-lg text-[#1f1f1f] font-semibold text-lg hover:bg-[#e09900] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {loading ? "Placing Order..." : "Place Order"}
-        </button>
-      </div>
+      {!inDrawer && v2UiEnabled ? (
+        <div className="px-5 mt-4 pb-5">
+          <OrderTypePicker />
+          <PaymentButtons
+            onPay={(method) =>
+              handlePlaceOrder({ paymentMethod: method, orderStatus: "completed" })
+            }
+            disabled={cartData.items?.length === 0}
+            loading={loading}
+          />
+          <button
+            type="button"
+            onClick={handlePrintReceipt}
+            className="mt-3 hidden min-h-[48px] w-full rounded-lg bg-[#262626] px-4 py-3 text-sm font-semibold text-[#f5f5f5] transition-colors hover:bg-[#343434] md:block"
+          >
+            Print Receipt
+          </button>
+        </div>
+      ) : null}
 
-      {showInvoice && (
+      {!inDrawer && !v2UiEnabled ? (
+        <div className="flex flex-col gap-3 px-5 mt-4 pb-5">
+          <button
+            type="button"
+            onClick={handlePrintReceipt}
+            className="bg-[#025cca] px-4 py-3 w-full rounded-lg text-[#f5f5f5] font-semibold text-lg hover:bg-[#0248a3] transition-colors min-h-[48px]"
+          >
+            Print Receipt
+          </button>
+          <button
+            type="button"
+            onClick={() => handlePlaceOrder()}
+            disabled={cartData.items?.length === 0 || loading}
+            className="bg-[#f6b100] px-4 py-3 w-full rounded-lg text-[#1f1f1f] font-semibold text-lg hover:bg-[#e09900] disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px]"
+          >
+            {loading ? "Placing Order..." : "Place Order"}
+          </button>
+        </div>
+      ) : null}
+
+      {!v2UiEnabled && showInvoice && (
         <Invoice orderInfo={orderInfo} setShowInvoice={setShowInvoice} />
       )}
     </>
   );
 });
 
-Bill.displayName = 'Bill';
+Bill.displayName = "Bill";
+
+Bill.propTypes = {
+  onOrderComplete: PropTypes.func,
+  inDrawer: PropTypes.bool,
+};
 
 export default Bill;

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { enqueueSnackbar } from "notistack";
-import { MdClose, MdAccessTime, MdAttachMoney, MdStore } from "react-icons/md";
+import { MdAccessTime, MdAttachMoney, MdStore } from "react-icons/md";
+import BottomSheet from "../shared/BottomSheet";
 import { createExtraWork, clearError } from "../../redux/slices/extraWorkSlice";
 import { fetchMembers } from "../../redux/slices/memberSlice";
 import { fetchAllStores } from "../../redux/slices/storeSlice";
@@ -143,8 +144,6 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
     onClose();
   };
 
-  if (!isOpen) return null;
-
   const activeMembers = members?.filter(m => m.isActive && m.role !== "Admin") || [];
   const activeStores = allStores?.filter(s => s.isActive) || [];
   const workTypes = [
@@ -160,33 +159,46 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
   const payment = parseFloat(calculatePayment()) || 0;
   const isNegative = duration < 0;
 
+  const footer = (
+    <div className="flex items-center justify-end gap-4">
+      <button
+        type="button"
+        onClick={handleClose}
+        className="rounded-lg bg-[#3a3a3a] px-6 py-2 text-[#f5f5f5] transition-colors hover:bg-[#4a4a4a]"
+      >
+        Cancel
+      </button>
+      <button
+        type="submit"
+        form="extra-work-form"
+        disabled={createLoading}
+        className="rounded-lg bg-[#f6b100] px-6 py-2 font-medium text-[#1f1f1f] transition-colors hover:bg-[#f6b100]/90 disabled:opacity-50"
+      >
+        {createLoading ? "Creating..." : "Create Entry"}
+      </button>
+    </div>
+  );
+
   return (
     <>
       {createLoading && <FullScreenLoader />}
-      
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-[#2a2a2a] rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-[#3a3a3a]">
-            <div>
-              <h2 className="text-xl font-bold text-[#f5f5f5]">
-                Log Extra Work
-              </h2>
-              <p className="text-sm text-[#ababab] mt-1">
-                Enter duration in hours (positive or negative)
-              </p>
-            </div>
-            <button
-              onClick={handleClose}
-              className="text-[#ababab] hover:text-[#f5f5f5] transition-colors"
-            >
-              <MdClose size={24} />
-            </button>
-          </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6">
-            <div className="space-y-4">
+      <BottomSheet
+        isOpen={isOpen}
+        onClose={handleClose}
+        title={
+          <div>
+            <h2 className="text-xl font-bold text-[#f5f5f5]">Log Extra Work</h2>
+            <p className="mt-1 text-sm text-[#ababab]">
+              Enter duration in hours (positive or negative)
+            </p>
+          </div>
+        }
+        footer={footer}
+        size="lg"
+        bodyClassName="p-4 sm:p-6"
+      >
+        <form id="extra-work-form" onSubmit={handleSubmit} className="space-y-4">
               {/* Member Selection */}
               <div>
                 <label className="block text-sm font-medium text-[#f5f5f5] mb-2">
@@ -380,29 +392,8 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
                   className="w-full px-4 py-2 bg-[#1e1e1e] border border-[#3a3a3a] rounded-lg text-[#f5f5f5] placeholder-[#6a6a6a] focus:outline-none focus:border-[#4ECDC4] resize-none"
                 />
               </div>
-            </div>
-          </form>
-
-          {/* Footer */}
-          <div className="flex items-center justify-end gap-4 p-6 border-t border-[#3a3a3a]">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="px-6 py-2 bg-[#3a3a3a] hover:bg-[#4a4a4a] text-[#f5f5f5] rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              onClick={handleSubmit}
-              disabled={createLoading}
-              className="px-6 py-2 bg-[#f6b100] hover:bg-[#f6b100]/90 text-[#1f1f1f] rounded-lg font-medium transition-colors disabled:opacity-50"
-            >
-              {createLoading ? "Creating..." : "Create Entry"}
-            </button>
-          </div>
-        </div>
-      </div>
+        </form>
+      </BottomSheet>
     </>
   );
 };
