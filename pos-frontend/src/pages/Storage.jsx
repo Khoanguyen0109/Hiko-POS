@@ -43,7 +43,7 @@ StatusBadge.propTypes = { status: PropTypes.string.isRequired };
 
 const TableLoader = ({ message }) => (
   <div className="text-center py-12">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f6b100] mx-auto mb-4" />
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4" />
     <p className="text-[#ababab]">{message}</p>
   </div>
 );
@@ -81,7 +81,7 @@ const headerActionClass =
   "flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg border border-[#343434] bg-[#1f1f1f] px-3 py-2 text-xs font-medium text-[#f5f5f5] transition-colors hover:bg-[#262626] sm:text-sm";
 
 const headerPrimaryClass =
-  "flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-[#f6b100] px-3 py-2 text-xs font-semibold text-[#1f1f1f] transition-colors hover:bg-[#e5a000] sm:px-4 sm:text-sm";
+  "flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-[#f5f5f5] transition-colors hover:bg-brand-hover sm:px-4 sm:text-sm";
 
 const ImportList = memo(({ imports, loading, onCancel }) => {
   if (loading) return <TableLoader message="Loading imports..." />;
@@ -110,7 +110,7 @@ const ImportList = memo(({ imports, loading, onCancel }) => {
               </td>
               <td className={tdClass}>{r.quantity} {r.unit}</td>
               <td className={tdClass}>{r.unitCost?.toLocaleString("vi-VN")}</td>
-              <td className={`${tdClass} text-[#f6b100] font-semibold`}>{r.totalCost?.toLocaleString("vi-VN")}</td>
+              <td className={`${tdClass} text-brand font-semibold`}>{r.totalCost?.toLocaleString("vi-VN")}</td>
               <td className={tdClass}>{r.supplierName || "—"}</td>
               <td className={tdClass}>{new Date(r.importDate).toLocaleDateString("vi-VN")}</td>
               <td className={tdClass}><StatusBadge status={r.status} /></td>
@@ -269,7 +269,7 @@ const StorageMobileFab = ({ activeTab, onImport, onExport }) => (
         <button
           type="button"
           onClick={onExport}
-          className="flex min-h-[48px] items-center gap-2 rounded-full bg-[#f6b100] px-4 py-2 text-sm font-semibold text-[#1f1f1f] shadow-lg"
+          className="flex min-h-[48px] items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-[#f5f5f5] shadow-lg"
         >
           <MdOutput size={18} />
           Export
@@ -279,7 +279,7 @@ const StorageMobileFab = ({ activeTab, onImport, onExport }) => (
       <button
         type="button"
         onClick={activeTab === "imports" ? onImport : onExport}
-        className="flex min-h-[48px] items-center gap-2 rounded-full bg-[#f6b100] px-5 py-3 text-sm font-semibold text-[#1f1f1f] shadow-lg"
+        className="flex min-h-[48px] items-center gap-2 rounded-full bg-brand px-5 py-3 text-sm font-semibold text-[#f5f5f5] shadow-lg"
       >
         <IoMdAdd size={20} />
         New {activeTab === "imports" ? "Import" : "Export"}

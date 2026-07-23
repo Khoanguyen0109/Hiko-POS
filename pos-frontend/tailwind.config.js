@@ -7,6 +7,19 @@ export default {
   ],
   theme: {
     extend: {
+      colors: {
+        brand: {
+          DEFAULT: 'var(--color-primary)',
+          hover: 'var(--color-primary-hover)',
+          dark: 'var(--color-primary-dark)',
+          light: 'var(--color-primary-light)',
+          foreground: 'var(--color-text-on-primary)',
+          10: 'var(--color-primary-alpha-10)',
+          20: 'var(--color-primary-alpha-20)',
+          30: 'var(--color-primary-alpha-30)',
+          50: 'var(--color-primary-alpha-50)',
+        },
+      },
       screens: {
         'xs': '475px',
         'sm': '640px',

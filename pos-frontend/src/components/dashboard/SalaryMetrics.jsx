@@ -58,7 +58,7 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
     return (
       <div className="bg-[#1a1a1a] rounded-lg border border-[#343434] p-6">
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#f6b100]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
           <span className="ml-2 text-[#ababab]">Loading salary summary...</span>
         </div>
       </div>
@@ -96,7 +96,7 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <MoneyIcon size={24} className="text-[#f6b100]" />
+          <MoneyIcon size={24} className="text-brand" />
           <div>
             <h2 className="text-xl font-semibold text-[#f5f5f5]">Salary Summary</h2>
             <p className="text-sm text-[#ababab]">
@@ -140,10 +140,10 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
         {/* Total Salary */}
         <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <MoneyIcon className="text-xl sm:text-2xl text-[#f6b100]" />
+            <MoneyIcon className="text-xl sm:text-2xl text-brand" />
             <span className="text-[#ababab] text-xs sm:text-sm">Total</span>
           </div>
-          <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#f6b100] mb-1">
+          <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-brand mb-1">
             {formatCurrency(overallSummary?.totalSalary || 0)}
           </h3>
           <p className="text-[#ababab] text-xs sm:text-sm">Total Salary</p>
@@ -184,7 +184,7 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
         {/* Extra Work Hours */}
         <div className="bg-[#262626] rounded-lg p-4 sm:p-5 border border-[#343434]">
           <div className="flex items-center gap-2 mb-2">
-            <TimeIcon className="text-lg text-[#f6b100]" />
+            <TimeIcon className="text-lg text-brand" />
             <h4 className="text-sm font-medium text-[#f5f5f5]">Extra Work Hours</h4>
           </div>
           <p className="text-xl sm:text-2xl font-bold text-[#f5f5f5] mb-1">
@@ -281,7 +281,7 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
                         </p>
                       </td>
                       <td className="px-4 py-3 sm:py-4 text-right">
-                        <p className="text-sm sm:text-base font-bold text-[#f6b100]">
+                        <p className="text-sm sm:text-base font-bold text-brand">
                           {formatCurrency(member.summary?.totalSalary || 0)}
                         </p>
                         <p className="text-xs text-[#ababab] sm:hidden mt-0.5">

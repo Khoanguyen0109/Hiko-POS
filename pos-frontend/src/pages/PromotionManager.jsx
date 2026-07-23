@@ -182,7 +182,7 @@ const PromotionManager = () => {
                     setEditingPromotion(null);
                     setShowForm(true);
                   }}
-                  className="flex items-center justify-center px-4 py-2 bg-[#f6b100] hover:bg-[#e6a000] text-[#1f1f1f] rounded-lg font-semibold transition-colors text-sm whitespace-nowrap"
+                  className="flex items-center justify-center px-4 py-2 bg-brand hover:bg-brand-hover text-[#f5f5f5] rounded-lg font-semibold transition-colors text-sm whitespace-nowrap"
                 >
                   <PlusIcon size={20} className="mr-2" />
                   New Promotion
@@ -195,10 +195,10 @@ const PromotionManager = () => {
             <div className="bg-[#262626] p-4 rounded-lg border border-[#343434]">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[#f6b100] text-sm font-medium">Total Promotions</p>
+                  <p className="text-brand text-sm font-medium">Total Promotions</p>
                   <p className="text-2xl font-bold text-[#f5f5f5]">{promotions.length}</p>
                 </div>
-                <TagIcon size={32} className="text-[#f6b100]" />
+                <TagIcon size={32} className="text-brand" />
               </div>
             </div>
 
@@ -225,12 +225,12 @@ const PromotionManager = () => {
             <div className="bg-[#262626] p-4 rounded-lg border border-[#343434]">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[#f6b100] text-sm font-medium">Total Usage</p>
+                  <p className="text-brand text-sm font-medium">Total Usage</p>
                   <p className="text-2xl font-bold text-[#f5f5f5]">
                     {promotions.reduce((sum, p) => sum + p.usageCount, 0)}
                   </p>
                 </div>
-                <ClockIcon size={32} className="text-[#f6b100]" />
+                <ClockIcon size={32} className="text-brand" />
               </div>
             </div>
           </div>
@@ -260,7 +260,7 @@ const PromotionManager = () => {
                   placeholder="Search promotions..."
                   value={filters.search}
                   onChange={(e) => handleFilterChange('search', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100]"
+                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-brand"
                 />
               </div>
 
@@ -271,7 +271,7 @@ const PromotionManager = () => {
                 <select
                   value={filters.isActive}
                   onChange={(e) => handleFilterChange('isActive', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] focus:outline-none focus:border-[#f6b100]"
+                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] focus:outline-none focus:border-brand"
                 >
                   <option value="">All Status</option>
                   <option value="true">Active</option>
@@ -286,7 +286,7 @@ const PromotionManager = () => {
                 <select
                   value={filters.type}
                   onChange={(e) => handleFilterChange('type', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] focus:outline-none focus:border-[#f6b100]"
+                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] focus:outline-none focus:border-brand"
                 >
                   <option value="">All Types</option>
                   <option value="order_percentage">Order Percentage</option>
@@ -304,7 +304,7 @@ const PromotionManager = () => {
                 <select
                   value={filters.limit}
                   onChange={(e) => handleFilterChange('limit', e.target.value)}
-                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] focus:outline-none focus:border-[#f6b100]"
+                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] focus:outline-none focus:border-brand"
                 >
                   <option value="5">5</option>
                   <option value="10">10</option>

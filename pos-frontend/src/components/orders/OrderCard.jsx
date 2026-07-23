@@ -173,8 +173,8 @@ const OrderCard = ({ order }) => {
             {/* Customer Display */}
             {order.customer && (
               <div className="flex items-center gap-1 text-xs sm:text-sm">
-                <MdPerson className="text-[#f6b100] text-sm" />
-                <span className="text-[#f6b100] truncate max-w-[120px]">
+                <MdPerson className="text-brand text-sm" />
+                <span className="text-brand truncate max-w-[120px]">
                   {order.customer.name || order.customer.phone}
                 </span>
               </div>

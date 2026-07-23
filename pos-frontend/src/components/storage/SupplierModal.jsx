@@ -145,7 +145,7 @@ const SupplierModal = ({
                 <label className="block text-[#ababab] text-sm mb-2">
                   Supplier Name <span className="text-red-500">*</span>
                 </label>
-                <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-[#f6b100]">
+                <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
                   <MdBusiness className="text-[#ababab] mr-2" size={18} />
                   <input
                     type="text"
@@ -164,7 +164,7 @@ const SupplierModal = ({
                 <label className="block text-[#ababab] text-sm mb-2">
                   Supplier Code <span className="text-xs text-[#ababab]">(Optional)</span>
                 </label>
-                <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-[#f6b100]">
+                <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
                   <input
                     type="text"
                     name="code"
@@ -184,7 +184,7 @@ const SupplierModal = ({
                   <MdEmail className="inline mr-1" size={16} />
                   Email
                 </label>
-                <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-[#f6b100]">
+                <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
                   <input
                     type="email"
                     name="email"
@@ -202,7 +202,7 @@ const SupplierModal = ({
                   <MdPhone className="inline mr-1" size={16} />
                   Phone
                 </label>
-                <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-[#f6b100]">
+                <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
                   <input
                     type="tel"
                     name="phone"
@@ -221,7 +221,7 @@ const SupplierModal = ({
                 <MdLocationOn className="inline mr-1" size={16} />
                 Address
               </label>
-              <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-[#f6b100]">
+              <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
                 <input
                   type="text"
                   name="address"
@@ -238,7 +238,7 @@ const SupplierModal = ({
               <label className="block text-[#ababab] text-sm mb-2">
                 Tax ID
               </label>
-              <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-[#f6b100]">
+              <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
                 <input
                   type="text"
                   name="taxId"
@@ -256,7 +256,7 @@ const SupplierModal = ({
                 <MdDescription className="inline mr-1" size={16} />
                 Notes
               </label>
-              <div className="rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-[#f6b100]">
+              <div className="rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
                 <textarea
                   name="notes"
                   value={formData.notes}
@@ -277,7 +277,7 @@ const SupplierModal = ({
                   checked={formData.isActive}
                   onChange={handleInputChange}
                   disabled={isViewMode}
-                  className="mr-2 rounded focus:ring-[#f6b100] focus:ring-2"
+                  className="mr-2 rounded focus:ring-brand focus:ring-2"
                 />
                 Active Supplier
               </label>
@@ -335,7 +335,7 @@ const SupplierModal = ({
               <button
                 type="submit"
                 disabled={loading || !formData.name.trim()}
-                className="px-6 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg hover:bg-[#e5a000] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                className="px-6 py-2 bg-brand text-[#f5f5f5] rounded-lg hover:bg-brand-hover transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
               >
                 <MdSave />
                 {loading ? "Saving..." : mode === "create" ? "Create Supplier" : "Update Supplier"}

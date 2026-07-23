@@ -3,12 +3,15 @@
 
 :root {
   /* === PRIMARY BRAND COLORS === */
-  --color-primary: #f6b100;
-  --color-primary-hover: #e09900;
-  --color-primary-light: #f6b100;
-  --color-primary-dark: #d49900;
-  --color-primary-alpha-10: rgba(246, 177, 0, 0.1);
-  --color-primary-alpha-20: rgba(246, 177, 0, 0.2);
+  --color-primary: #006E3A;
+  --color-primary-hover: #008847;
+  --color-primary-light: #00A050;
+  --color-primary-dark: #005A30;
+  --color-primary-alpha-10: rgba(0, 110, 58, 0.1);
+  --color-primary-alpha-20: rgba(0, 110, 58, 0.2);
+  --color-primary-alpha-30: rgba(0, 110, 58, 0.3);
+  --color-primary-alpha-50: rgba(0, 110, 58, 0.5);
+  --color-text-on-primary: #f5f5f5;
 
   /* === BACKGROUND COLORS === */
   --color-bg-primary: #1a1a1a;      /* Main background */
@@ -33,9 +36,9 @@
   --color-success-light: #22c55e;
   --color-success-alpha-20: rgba(2, 202, 58, 0.2);
   
-  --color-warning: #f6b100;
-  --color-warning-light: #fbbf24;
-  --color-warning-alpha-20: rgba(246, 177, 0, 0.2);
+  --color-warning: var(--color-primary);
+  --color-warning-light: var(--color-primary-light);
+  --color-warning-alpha-20: var(--color-primary-alpha-20);
   
   --color-error: #ef4444;
   --color-error-light: #f87171;

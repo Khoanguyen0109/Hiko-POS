@@ -232,7 +232,7 @@ const Categories = () => {
           <p className="text-red-400 text-lg mb-4">Error loading categories</p>
           <button
             onClick={() => dispatch(fetchCategories())}
-            className="px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-semibold hover:bg-[#e09900] transition-colors"
+            className="px-4 py-2 bg-brand text-[#f5f5f5] rounded-lg font-semibold hover:bg-brand-hover transition-colors"
           >
             Retry
           </button>
@@ -260,7 +260,7 @@ const Categories = () => {
 
           <button
             onClick={handleAddCategory}
-            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-semibold hover:bg-[#e09900] transition-colors whitespace-nowrap"
+            className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 bg-brand text-[#f5f5f5] rounded-lg font-semibold hover:bg-brand-hover transition-colors whitespace-nowrap"
           >
             <IoMdAdd size={20} />
             Add Category
@@ -295,7 +295,7 @@ const Categories = () => {
           </div>
           <div className="bg-[#1f1f1f] p-4 rounded-lg border border-[#343434]">
             <h3 className="text-[#ababab] text-sm font-medium">Success Rate</h3>
-            <p className="text-[#f6b100] text-2xl font-bold">
+            <p className="text-brand text-2xl font-bold">
               {statusCounts.total > 0
                 ? Math.round((statusCounts.active / statusCounts.total) * 100)
                 : 0}
@@ -313,7 +313,7 @@ const Categories = () => {
               onClick={() => setFilterStatus(status)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 filterStatus === status
-                  ? "bg-[#f6b100] text-[#1f1f1f]"
+                  ? "bg-brand text-[#f5f5f5]"
                   : "bg-[#1f1f1f] text-[#ababab] hover:bg-[#252525] hover:text-[#f5f5f5] border border-[#343434]"
               }`}
             >
@@ -350,7 +350,7 @@ const Categories = () => {
             {filterStatus === "all" && (
               <button
                 onClick={handleAddCategory}
-                className="px-6 py-3 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-semibold hover:bg-[#e09900] transition-colors"
+                className="px-6 py-3 bg-brand text-[#f5f5f5] rounded-lg font-semibold hover:bg-brand-hover transition-colors"
               >
                 Create First Category
               </button>
@@ -375,7 +375,7 @@ const Categories = () => {
       {loading && categories.length > 0 && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-40">
           <div className="bg-[#1f1f1f] p-4 rounded-lg">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#f6b100] mx-auto"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand mx-auto"></div>
             <p className="text-[#f5f5f5] text-sm mt-2">Loading...</p>
           </div>
         </div>

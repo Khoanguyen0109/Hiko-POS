@@ -157,7 +157,7 @@ const SpendingModal = ({
                   onChange={handleInputChange}
                   disabled={isViewMode}
                   required
-                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-[#f6b100] disabled:opacity-50"
+                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-brand disabled:opacity-50"
                   placeholder="Enter expense title"
                 />
               </div>
@@ -175,7 +175,7 @@ const SpendingModal = ({
                   required
                   min="0"
                   step="0.01"
-                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-[#f6b100] disabled:opacity-50"
+                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-brand disabled:opacity-50"
                   placeholder="0.00"
                 />
               </div>
@@ -199,7 +199,7 @@ const SpendingModal = ({
                   onChange={handleInputChange}
                   disabled={isViewMode}
                   required
-                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-[#f6b100] disabled:opacity-50"
+                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-brand disabled:opacity-50"
                 >
                   <option value="">Select Category</option>
                   {categories.map((cat) => (
@@ -217,7 +217,7 @@ const SpendingModal = ({
                   value={formData.vendor}
                   onChange={handleInputChange}
                   disabled={isViewMode}
-                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-[#f6b100] disabled:opacity-50"
+                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-brand disabled:opacity-50"
                 >
                   <option value="">Select Vendor</option>
                   {vendors.map((vendor) => (
@@ -234,7 +234,7 @@ const SpendingModal = ({
                   value={formData.vendorName}
                   onChange={handleInputChange}
                   disabled={isViewMode}
-                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-[#f6b100] disabled:opacity-50"
+                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-brand disabled:opacity-50"
                   placeholder="Enter vendor name"
                 />
               </div>
@@ -255,7 +255,7 @@ const SpendingModal = ({
                   value={formData.paymentStatus}
                   onChange={handleInputChange}
                   disabled={isViewMode}
-                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-[#f6b100] disabled:opacity-50"
+                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-brand disabled:opacity-50"
                 >
                   <option value="pending">Pending</option>
                   <option value="paid">Paid</option>
@@ -271,7 +271,7 @@ const SpendingModal = ({
                   value={formData.paymentMethod}
                   onChange={handleInputChange}
                   disabled={isViewMode}
-                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-[#f6b100] disabled:opacity-50"
+                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-brand disabled:opacity-50"
                 >
                   <option value="cash">Cash</option>
                   <option value="bank_transfer">Bank Transfer</option>
@@ -290,7 +290,7 @@ const SpendingModal = ({
                   value={formData.paymentDate}
                   onChange={handleInputChange}
                   disabled={isViewMode}
-                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-[#f6b100] disabled:opacity-50"
+                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-brand disabled:opacity-50"
                 />
               </div>
             </div>
@@ -304,7 +304,7 @@ const SpendingModal = ({
                   value={formData.paymentReference}
                   onChange={handleInputChange}
                   disabled={isViewMode}
-                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-[#f6b100] disabled:opacity-50"
+                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-brand disabled:opacity-50"
                   placeholder="Transaction ID, Check number, etc."
                 />
               </div>
@@ -317,7 +317,7 @@ const SpendingModal = ({
                   value={formData.receiptNumber}
                   onChange={handleInputChange}
                   disabled={isViewMode}
-                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-[#f6b100] disabled:opacity-50"
+                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-brand disabled:opacity-50"
                   placeholder="Receipt or invoice number"
                 />
               </div>
@@ -331,7 +331,7 @@ const SpendingModal = ({
               <div className="text-sm">
                 <div className="pt-2 border-t border-[#343434]">
                   <span className="text-[#ababab]">Total Amount:</span>
-                  <span className="text-[#f6b100] ml-2 font-semibold text-lg">
+                  <span className="text-brand ml-2 font-semibold text-lg">
                     {formatVND(parseFloat(formData.amount))}
                   </span>
                 </div>
@@ -352,7 +352,7 @@ const SpendingModal = ({
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg hover:bg-[#e5a000] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2 bg-brand text-[#f5f5f5] rounded-lg hover:bg-brand-hover transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <MdSave />
                 {loading ? "Saving..." : mode === "create" ? "Create Expense" : "Update Expense"}

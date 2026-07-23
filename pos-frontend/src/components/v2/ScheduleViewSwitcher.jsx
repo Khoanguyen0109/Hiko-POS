@@ -29,7 +29,7 @@ const ScheduleViewSwitcher = ({ value, onChange }) => (
           onClick={() => onChange(option.value)}
           className={`whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-all ${
             isActive
-              ? "bg-[#f6b100] text-[#1f1f1f]"
+              ? "bg-brand text-[#f5f5f5]"
               : "text-[#ababab] hover:bg-[#262626] hover:text-[#f5f5f5]"
           }`}
         >

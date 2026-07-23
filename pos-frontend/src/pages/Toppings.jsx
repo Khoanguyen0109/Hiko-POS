@@ -142,7 +142,7 @@ const Toppings = () => {
         </h1>
         <button
           onClick={() => handleOpenModal()}
-          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#f6b100] text-[#1f1f1f] px-4 py-2 rounded-lg font-semibold hover:bg-[#e09900] transition-colors whitespace-nowrap"
+          className="w-full sm:w-auto flex items-center justify-center gap-2 bg-brand text-[#f5f5f5] px-4 py-2 rounded-lg font-semibold hover:bg-brand-hover transition-colors whitespace-nowrap"
         >
           <MdAdd size={20} />
           Add Topping
@@ -154,7 +154,7 @@ const Toppings = () => {
         <select
           value={filterCategory}
           onChange={(e) => setFilterCategory(e.target.value)}
-          className="px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-[#f6b100]"
+          className="px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-brand"
         >
           <option value="">All Categories</option>
           {categories.map(category => (
@@ -165,7 +165,7 @@ const Toppings = () => {
         <select
           value={filterAvailable}
           onChange={(e) => setFilterAvailable(e.target.value)}
-          className="px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-[#f6b100]"
+          className="px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-brand"
         >
           <option value="">All Status</option>
           <option value="true">Available</option>
@@ -194,7 +194,7 @@ const Toppings = () => {
                   <h3 className="text-[#f5f5f5] font-semibold">{topping.name}</h3>
                   <p className="text-[#ababab] text-sm">{topping.description}</p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[#f6b100] font-bold">{formatVND(topping.price)}</span>
+                    <span className="text-brand font-bold">{formatVND(topping.price)}</span>
                     <span className="text-xs text-[#ababab] bg-[#343434] px-2 py-1 rounded">
                       {topping.category}
                     </span>
@@ -215,7 +215,7 @@ const Toppings = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => handleOpenModal(topping)}
-                    className="text-[#f6b100] hover:text-[#e09900] transition-colors"
+                    className="text-brand hover:text-[#e09900] transition-colors"
                   >
                     <MdEdit size={18} />
                   </button>
@@ -249,7 +249,7 @@ const Toppings = () => {
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-[#f6b100]"
+                className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-brand"
                 required
               />
             </div>
@@ -259,7 +259,7 @@ const Toppings = () => {
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-[#f6b100]"
+                className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-brand"
                 rows="2"
               />
             </div>
@@ -272,7 +272,7 @@ const Toppings = () => {
                 min="0"
                 value={formData.price}
                 onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
-                className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-[#f6b100]"
+                className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-brand"
                 required
               />
             </div>
@@ -282,7 +282,7 @@ const Toppings = () => {
               <select
                 value={formData.category}
                 onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
-                className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-[#f6b100]"
+                className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-brand"
                 required
               >
                 {categories.map(category => (
@@ -302,7 +302,7 @@ const Toppings = () => {
               </button>
               <button
                 type="submit"
-                className="flex-1 px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-semibold hover:bg-[#e09900] transition-colors"
+                className="flex-1 px-4 py-2 bg-brand text-[#f5f5f5] rounded-lg font-semibold hover:bg-brand-hover transition-colors"
               >
                 {isEditing ? "Update" : "Create"}
               </button>

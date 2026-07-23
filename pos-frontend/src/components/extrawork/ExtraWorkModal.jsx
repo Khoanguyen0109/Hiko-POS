@@ -172,7 +172,7 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
         type="submit"
         form="extra-work-form"
         disabled={createLoading}
-        className="rounded-lg bg-[#f6b100] px-6 py-2 font-medium text-[#1f1f1f] transition-colors hover:bg-[#f6b100]/90 disabled:opacity-50"
+        className="rounded-lg bg-brand px-6 py-2 font-medium text-[#f5f5f5] transition-colors hover:bg-brand-hover disabled:opacity-50"
       >
         {createLoading ? "Creating..." : "Create Entry"}
       </button>
@@ -297,7 +297,7 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <MdAttachMoney className="text-[#f6b100]" size={20} />
+                  <MdAttachMoney className="text-brand" size={20} />
                   <div>
                     <div className="text-xs text-[#ababab]">Payment</div>
                     <div className={`font-semibold ${

@@ -110,7 +110,7 @@ const ToppingSelectionModal = ({ isOpen, onClose, dish, onConfirm }) => {
       <div className="mb-4 flex items-center justify-between">
         <div className="text-[#f5f5f5]">
           <span className="text-sm">Toppings Total:</span>
-          <span className="ml-2 text-lg font-bold text-[#f6b100]">
+          <span className="ml-2 text-lg font-bold text-brand">
             {formatVND(totalToppingsPrice)}
           </span>
         </div>
@@ -128,7 +128,7 @@ const ToppingSelectionModal = ({ isOpen, onClose, dish, onConfirm }) => {
         </button>
         <button
           onClick={handleConfirm}
-          className="flex-1 rounded-lg bg-[#f6b100] px-4 py-3 font-bold text-[#1f1f1f] transition-colors hover:bg-[#e09900]"
+          className="flex-1 rounded-lg bg-brand px-4 py-3 font-bold text-[#f5f5f5] transition-colors hover:bg-brand-hover"
         >
           Confirm Toppings
         </button>
@@ -172,7 +172,7 @@ const ToppingSelectionModal = ({ isOpen, onClose, dish, onConfirm }) => {
             <div className="space-y-6">
               {Object.entries(toppingsByCategory).map(([category, toppings]) => (
                 <div key={category}>
-                  <h3 className="text-[#f6b100] text-lg font-semibold mb-3 border-b border-[#343434] pb-2">
+                  <h3 className="text-brand text-lg font-semibold mb-3 border-b border-[#343434] pb-2">
                     {category}
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -183,15 +183,15 @@ const ToppingSelectionModal = ({ isOpen, onClose, dish, onConfirm }) => {
                           key={topping._id}
                           className={`p-4 rounded-lg border transition-colors ${
                             quantity > 0
-                              ? 'bg-[#f6b100]/10 border-[#f6b100]'
-                              : 'bg-[#262626] border-[#343434] hover:border-[#f6b100]/50'
+                              ? 'bg-brand-10 border-brand'
+                              : 'bg-[#262626] border-[#343434] hover:border-brand/50'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex-1">
                               <h4 className="text-[#f5f5f5] font-medium">{topping.name}</h4>
                               <p className="text-[#ababab] text-sm">{topping.description}</p>
-                              <p className="text-[#f6b100] font-semibold">{formatVND(topping.price)}</p>
+                              <p className="text-brand font-semibold">{formatVND(topping.price)}</p>
                             </div>
                           </div>
                           
@@ -200,7 +200,7 @@ const ToppingSelectionModal = ({ isOpen, onClose, dish, onConfirm }) => {
                               <button
                                 onClick={() => handleToppingQuantityChange(topping._id, -1)}
                                 disabled={quantity === 0}
-                                className="w-8 h-8 rounded-full bg-[#343434] flex items-center justify-center text-[#f5f5f5] hover:bg-[#f6b100] hover:text-[#1f1f1f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="w-8 h-8 rounded-full bg-[#343434] flex items-center justify-center text-[#f5f5f5] hover:bg-brand hover:text-[#f5f5f5] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                               >
                                 <MdRemove size={16} />
                               </button>
@@ -212,14 +212,14 @@ const ToppingSelectionModal = ({ isOpen, onClose, dish, onConfirm }) => {
                               <button
                                 onClick={() => handleToppingQuantityChange(topping._id, 1)}
                                 disabled={quantity >= 5}
-                                className="w-8 h-8 rounded-full bg-[#343434] flex items-center justify-center text-[#f5f5f5] hover:bg-[#f6b100] hover:text-[#1f1f1f] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                className="w-8 h-8 rounded-full bg-[#343434] flex items-center justify-center text-[#f5f5f5] hover:bg-brand hover:text-[#f5f5f5] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                               >
                                 <MdAdd size={16} />
                               </button>
                             </div>
                             
                             {quantity > 0 && (
-                              <div className="text-[#f6b100] font-semibold">
+                              <div className="text-brand font-semibold">
                                 {formatVND(topping.price * quantity)}
                               </div>
                             )}

@@ -256,7 +256,7 @@ const StoreModal = ({ isOpen, onClose, mode, store }) => {
                   name="currency"
                   value={formData.currency}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-[#f6b100] transition-colors text-sm"
+                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-brand transition-colors text-sm"
                 >
                   <option value="VND">VND</option>
                   <option value="USD">USD</option>
@@ -271,7 +271,7 @@ const StoreModal = ({ isOpen, onClose, mode, store }) => {
                   name="timezone"
                   value={formData.timezone}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-[#f6b100] transition-colors text-sm"
+                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-brand transition-colors text-sm"
                 >
                   <option value="Asia/Ho_Chi_Minh">Asia/Ho Chi Minh</option>
                   <option value="Asia/Kolkata">Asia/Kolkata</option>

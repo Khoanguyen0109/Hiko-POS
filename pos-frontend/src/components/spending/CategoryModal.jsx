@@ -133,7 +133,7 @@ const CategoryModal = ({
               onChange={handleInputChange}
               disabled={isViewMode}
               required
-              className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-[#f6b100] disabled:opacity-50"
+              className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-brand disabled:opacity-50"
               placeholder="Enter category name"
             />
           </div>
@@ -146,7 +146,7 @@ const CategoryModal = ({
               onChange={handleInputChange}
               disabled={isViewMode}
               rows={3}
-              className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-[#f6b100] disabled:opacity-50"
+              className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-brand disabled:opacity-50"
               placeholder="Enter category description"
             />
           </div>
@@ -176,7 +176,7 @@ const CategoryModal = ({
                       onClick={() => handleColorSelect(color)}
                       className={`w-8 h-8 rounded-full border-2 transition-all ${
                         formData.color === color 
-                          ? "border-[#f6b100] scale-110" 
+                          ? "border-brand scale-110" 
                           : "border-[#343434] hover:border-[#ababab]"
                       }`}
                       style={{ backgroundColor: color }}
@@ -209,7 +209,7 @@ const CategoryModal = ({
                 checked={formData.isActive}
                 onChange={handleInputChange}
                 disabled={isViewMode}
-                className="mr-2 rounded focus:ring-[#f6b100] focus:ring-2"
+                className="mr-2 rounded focus:ring-brand focus:ring-2"
               />
               Active Category
             </label>
@@ -252,7 +252,7 @@ const CategoryModal = ({
               <button
                 type="submit"
                 disabled={loading}
-                className="px-6 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg hover:bg-[#e5a000] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2 bg-brand text-[#f5f5f5] rounded-lg hover:bg-brand-hover transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <MdSave />
                 {loading ? "Saving..." : mode === "create" ? "Create Category" : "Update Category"}

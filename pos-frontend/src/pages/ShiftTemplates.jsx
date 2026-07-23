@@ -154,7 +154,7 @@ const ShiftTemplates = () => {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto shrink-0">
           <button
             onClick={handleCreateClick}
-            className="px-3 sm:px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#f6b100]/90 transition-colors flex items-center justify-center gap-2 text-sm whitespace-nowrap"
+            className="px-3 sm:px-4 py-2 bg-brand text-[#f5f5f5] rounded-lg font-medium hover:bg-brand-hover transition-colors flex items-center justify-center gap-2 text-sm whitespace-nowrap"
           >
             <MdAdd size={16} /> Add Template
           </button>
@@ -201,7 +201,7 @@ const ShiftTemplates = () => {
             </p>
             <button
               onClick={handleCreateClick}
-              className="px-6 py-3 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#f6b100]/90 transition-colors"
+              className="px-6 py-3 bg-brand text-[#f5f5f5] rounded-lg font-medium hover:bg-brand-hover transition-colors"
             >
               Create First Template
             </button>
@@ -250,7 +250,7 @@ const ShiftTemplateCard = ({ template, onEdit, onDelete, onToggleStatus }) => {
     <div
       className={`bg-[#1f1f1f] rounded-lg p-6 border transition-all ${
         isActive
-          ? "border-[#343434] hover:border-[#f6b100]/30"
+          ? "border-[#343434] hover:border-brand-30"
           : "border-red-900/50 opacity-75"
       }`}
     >
@@ -278,7 +278,7 @@ const ShiftTemplateCard = ({ template, onEdit, onDelete, onToggleStatus }) => {
           </button>
           <button
             onClick={() => onEdit(template)}
-            className="p-2 bg-[#262626] text-[#f6b100] rounded-lg hover:bg-[#343434] transition-colors"
+            className="p-2 bg-[#262626] text-brand rounded-lg hover:bg-[#343434] transition-colors"
             title="Edit"
           >
             <MdEdit size={16} />
@@ -302,7 +302,7 @@ const ShiftTemplateCard = ({ template, onEdit, onDelete, onToggleStatus }) => {
           <p className="text-[#ababab] text-sm">{template.shortName}</p>
         </div>
 
-        <div className="flex items-center gap-2 text-[#f6b100]">
+        <div className="flex items-center gap-2 text-brand">
           <MdAccessTime size={16} />
           <span className="text-sm font-medium">
             {template.startTime} - {template.endTime}

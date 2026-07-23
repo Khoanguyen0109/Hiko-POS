@@ -1,3 +1,4 @@
+import { BRAND_PRIMARY } from "../../constants/colors.js";
 import { useMemo } from 'react';
 import { toVietnamTime, formatVietnamTime } from '../../utils/dateUtils';
 import {
@@ -33,7 +34,7 @@ const RevenueByDayOfWeekChart = ({ orders, dateRange }) => {
             label: 'Revenue',
             data: [0, 0, 0, 0, 0, 0, 0],
             backgroundColor: Array(7).fill('rgba(246, 177, 0, 0.7)'),
-            borderColor: Array(7).fill('#f6b100'),
+            borderColor: Array(7).fill(BRAND_PRIMARY),
             borderWidth: 2,
             borderRadius: 8,
             borderSkipped: false,
@@ -118,7 +119,7 @@ const RevenueByDayOfWeekChart = ({ orders, dateRange }) => {
       if (revenue === 0) return '#ababab';
       if (revenue >= averagePerDay * 1.1) return '#10B981'; // Green
       if (revenue <= averagePerDay * 0.9) return '#EF4444'; // Red
-      return '#f6b100'; // Yellow
+      return BRAND_PRIMARY; // Yellow
     });
 
     const chartData = {
@@ -183,7 +184,7 @@ const RevenueByDayOfWeekChart = ({ orders, dateRange }) => {
         backgroundColor: 'rgba(31, 31, 31, 0.95)',
         titleColor: '#f5f5f5',
         bodyColor: '#f5f5f5',
-        borderColor: '#f6b100',
+        borderColor: BRAND_PRIMARY,
         borderWidth: 1,
         padding: 12,
         callbacks: {
@@ -279,13 +280,13 @@ const RevenueByDayOfWeekChart = ({ orders, dateRange }) => {
         </div>
 
         {/* Average per Day */}
-        <div className="bg-[#1a1a1a] rounded-lg p-3 border border-[#f6b100]/30">
+        <div className="bg-[#1a1a1a] rounded-lg p-3 border border-brand-30">
           <div className="flex items-center gap-2 mb-1">
-            <MdRemove className="text-[#f6b100] text-lg" />
+            <MdRemove className="text-brand text-lg" />
             <span className="text-[#ababab] text-xs">Daily Average</span>
           </div>
           <p className="text-[#f5f5f5] font-bold text-sm mb-0.5">Per Day</p>
-          <p className="text-[#f6b100] font-semibold text-xs">{formatVND(stats.averagePerDay)}</p>
+          <p className="text-brand font-semibold text-xs">{formatVND(stats.averagePerDay)}</p>
           <p className="text-[#ababab] text-xs">Across all days</p>
         </div>
 
@@ -314,7 +315,7 @@ const RevenueByDayOfWeekChart = ({ orders, dateRange }) => {
             <span className="text-[#ababab] text-xs">Above Average (+10%)</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded bg-[#f6b100] border-2 border-[#f6b100]"></div>
+            <div className="w-4 h-4 rounded bg-brand border-2 border-brand"></div>
             <span className="text-[#ababab] text-xs">Average (±10%)</span>
           </div>
           <div className="flex items-center gap-2">

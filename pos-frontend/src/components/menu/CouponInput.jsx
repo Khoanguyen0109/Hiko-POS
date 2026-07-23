@@ -109,7 +109,7 @@ const CouponSelector = () => {
             className="w-full flex items-center justify-between p-3 hover:bg-[#2a2a2a] transition-colors rounded-lg focus:outline-none"
           >
             <div className="flex items-center space-x-2">
-              <TagIcon size={16} className="text-[#f6b100]" />
+              <TagIcon size={16} className="text-brand" />
               <span className="text-[#f5f5f5] text-sm font-medium">
                 {loading ? 'Loading...' : `Coupons (${activeCoupons.length})`}
               </span>
@@ -134,19 +134,19 @@ const CouponSelector = () => {
                     <div
                       key={coupon._id}
                       onClick={() => handleSelectCoupon(coupon)}
-                      className="p-2.5 bg-[#1a1a1a] border border-[#343434] rounded-md hover:border-[#f6b100] hover:bg-[#222] cursor-pointer transition-all"
+                      className="p-2.5 bg-[#1a1a1a] border border-[#343434] rounded-md hover:border-brand hover:bg-[#222] cursor-pointer transition-all"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-start space-x-2 flex-1 min-w-0">
                           <div className={`flex items-center justify-center w-7 h-7 rounded-full flex-shrink-0 ${
                             coupon.type === 'happy_hour' 
                               ? 'bg-orange-500/20' 
-                              : 'bg-[#f6b100]/20'
+                              : 'bg-brand-20'
                           }`}>
                             {coupon.type === 'happy_hour' ? (
                               <ClockIcon size={12} className="text-orange-400" />
                             ) : (
-                              <PercentIcon size={12} className="text-[#f6b100]" />
+                              <PercentIcon size={12} className="text-brand" />
                             )}
                           </div>
                           <div className="flex-1 min-w-0">

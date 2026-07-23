@@ -23,7 +23,7 @@ const DocsCreateMenu = ({ onCreateFolder, onCreateDoc }) => {
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="p-2 rounded-full bg-[#f6b100] text-[#1f1f1f] shadow-lg"
+        className="p-2 rounded-full bg-brand text-[#f5f5f5] shadow-lg"
         aria-label="Create new"
       >
         <MdAdd size={22} />
@@ -39,7 +39,7 @@ const DocsCreateMenu = ({ onCreateFolder, onCreateDoc }) => {
             }}
             className="w-full flex items-center gap-3 px-4 py-3 text-sm text-[#f5f5f5] hover:bg-[#2a2a2a] text-left"
           >
-            <MdCreateNewFolder size={18} className="text-[#f6b100]" />
+            <MdCreateNewFolder size={18} className="text-brand" />
             New folder
           </button>
           <button
@@ -50,7 +50,7 @@ const DocsCreateMenu = ({ onCreateFolder, onCreateDoc }) => {
             }}
             className="w-full flex items-center gap-3 px-4 py-3 text-sm text-[#f5f5f5] hover:bg-[#2a2a2a] text-left border-t border-[#343434]"
           >
-            <MdDescription size={18} className="text-[#f6b100]" />
+            <MdDescription size={18} className="text-brand" />
             New document
           </button>
         </div>

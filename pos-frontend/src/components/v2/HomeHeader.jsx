@@ -43,7 +43,7 @@ const HomeHeader = () => {
       </button>
 
       {v2UiEnabled ? (
-        <span className="shrink-0 rounded-full bg-[#f6b100]/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[#f6b100]">
+        <span className="shrink-0 rounded-full bg-brand/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand">
           V2
         </span>
       ) : null}

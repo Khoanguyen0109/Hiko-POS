@@ -1,3 +1,4 @@
+import { BRAND_PRIMARY } from "../../constants/colors.js";
 import { useMemo } from 'react';
 import {
   Chart as ChartJS,
@@ -31,7 +32,7 @@ const SalesHeatmapChart = ({ orders }) => {
           label: 'Orders',
           data: new Array(24).fill(0),
           backgroundColor: new Array(24).fill('rgba(246, 177, 0, 0.3)'),
-          borderColor: new Array(24).fill('#f6b100'),
+          borderColor: new Array(24).fill(BRAND_PRIMARY),
           borderWidth: 1,
         }]
       };
@@ -64,9 +65,9 @@ const SalesHeatmapChart = ({ orders }) => {
     });
 
     const borderColors = hourlySales.map(sales => {
-      if (maxSales === 0) return '#f6b100';
+      if (maxSales === 0) return BRAND_PRIMARY;
       const intensity = sales / maxSales;
-      return intensity > 0.5 ? '#ff8c00' : '#f6b100';
+      return intensity > 0.5 ? '#ff8c00' : BRAND_PRIMARY;
     });
 
     return {
@@ -108,7 +109,7 @@ const SalesHeatmapChart = ({ orders }) => {
         backgroundColor: 'rgba(31, 31, 31, 0.9)',
         titleColor: '#f5f5f5',
         bodyColor: '#f5f5f5',
-        borderColor: '#f6b100',
+        borderColor: BRAND_PRIMARY,
         borderWidth: 1,
         callbacks: {
           title: function(context) {

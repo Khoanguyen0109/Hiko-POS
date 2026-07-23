@@ -8,7 +8,7 @@ const PaymentButtons = ({ onPay, disabled, loading }) => {
         type="button"
         onClick={() => onPay("Cash")}
         disabled={disabled || loading}
-        className="flex min-h-[48px] items-center justify-center gap-2 rounded-lg bg-[#f6b100] px-4 text-sm font-semibold text-[#1f1f1f] transition-colors hover:bg-[#e09900] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
+        className="flex min-h-[48px] items-center justify-center gap-2 rounded-lg bg-brand px-4 text-sm font-semibold text-[#f5f5f5] transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]"
       >
         <MdPayments size={20} />
         {loading ? "Processing..." : "Cash"}

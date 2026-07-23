@@ -161,7 +161,7 @@ const PromotionList = ({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#f6b100]"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
         <span className="ml-2 text-[#ababab]">Loading promotions...</span>
       </div>
     );
@@ -360,7 +360,7 @@ const PromotionList = ({
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => onEdit(promotion)}
-                  className="flex items-center px-3 py-1 text-sm text-[#f6b100] border border-[#f6b100] rounded-md hover:bg-[#262626] transition-colors"
+                  className="flex items-center px-3 py-1 text-sm text-brand border border-brand rounded-md hover:bg-[#262626] transition-colors"
                 >
                   <PencilIcon size={16} className="mr-1" />
                   Edit

@@ -113,8 +113,8 @@ const Dish = ({ dish, onEdit }) => {
       <div className="flex items-start gap-3 sm:gap-4 pr-16 sm:pr-24">
         {/* Dish Number */}
         {/* <div className="flex-shrink-0">
-          <div className="w-12 h-12 bg-gradient-to-br from-[#f6b100] to-[#e09900] rounded-full flex items-center justify-center">
-            <span className="text-[#1f1f1f] font-bold text-lg">
+          <div className="w-12 h-12 bg-gradient-to-br from-brand to-brand-hover rounded-full flex items-center justify-center">
+            <span className="text-[#f5f5f5] font-bold text-lg">
               {dish.id ? (dish.id < 10 ? `0${dish.id}` : dish.id) : "00"}
             </span>
           </div>
@@ -174,16 +174,16 @@ const Dish = ({ dish, onEdit }) => {
               {dish.hasSizeVariants ? (
                 <div>
                   <p className="text-[#ababab] text-xs mb-1">Price Range</p>
-                  <p className="text-[#f6b100] font-bold text-lg">
+                  <p className="text-brand font-bold text-lg">
                     {getPriceRange()}
                   </p>
-                  <p className="text-[#f6b100] font-bold text-xl mt-1">
+                  <p className="text-brand font-bold text-xl mt-1">
                     {formatVND(getCurrentPrice())}
                   </p>
                 </div>
               ) : (
                 <div>
-                  <p className="text-[#f6b100] font-bold text-2xl">
+                  <p className="text-brand font-bold text-2xl">
                     {formatVND(getCurrentPrice())}
                   </p>
                 </div>
@@ -222,8 +222,8 @@ const Dish = ({ dish, onEdit }) => {
                   onClick={() => handleVariantChange(variant)}
                   className={`relative p-3 rounded-lg text-sm font-medium transition-all duration-200 border-2 ${
                     isSelected
-                      ? "bg-[#f6b100] text-[#1f1f1f] border-[#f6b100] shadow-lg transform scale-105"
-                      : "bg-[#262626] text-[#f5f5f5] border-[#343434] hover:border-[#f6b100] hover:bg-[#343434]"
+                      ? "bg-brand text-[#f5f5f5] border-brand shadow-lg transform scale-105"
+                      : "bg-[#262626] text-[#f5f5f5] border-[#343434] hover:border-brand hover:bg-[#343434]"
                   }`}
                 >
                   {/* Default Badge */}
@@ -235,7 +235,7 @@ const Dish = ({ dish, onEdit }) => {
                     <span className="font-bold mb-1">{variant.size}</span>
                     <span
                       className={`text-xs ${
-                        isSelected ? "text-[#1f1f1f]" : "text-[#f6b100]"
+                        isSelected ? "text-[#f5f5f5]" : "text-brand"
                       } font-bold`}
                     >
                       {formatVND(variant.price)}
@@ -243,7 +243,7 @@ const Dish = ({ dish, onEdit }) => {
                     {variant.cost > 0 && (
                       <span
                         className={`text-xs mt-1 ${
-                          isSelected ? "text-[#1f1f1f]/70" : "text-[#ababab]"
+                          isSelected ? "text-[#f5f5f5]/70" : "text-[#ababab]"
                         }`}
                       >
                         Cost: {formatVND(variant.cost)}
@@ -264,7 +264,7 @@ const Dish = ({ dish, onEdit }) => {
                   <span className="text-[#f5f5f5] font-semibold">
                     {selectedVariant.size}
                   </span>
-                  <span className="text-[#f6b100] font-bold ml-2">
+                  <span className="text-brand font-bold ml-2">
                     {formatVND(selectedVariant.price)}
                   </span>
                 </div>

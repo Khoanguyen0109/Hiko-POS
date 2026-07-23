@@ -22,7 +22,7 @@ const RewardsDashboard = () => {
   if (analyticsLoading) {
     return (
       <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f6b100] mx-auto mb-4" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4" />
         <p className="text-[#ababab] text-lg">Loading rewards analytics…</p>
       </div>
     );
@@ -59,7 +59,7 @@ const RewardsDashboard = () => {
             onClick={() => setPeriod(p.value)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               period === p.value
-                ? "bg-[#f6b100] text-[#1f1f1f]"
+                ? "bg-brand text-[#f5f5f5]"
                 : "bg-[#262626] text-[#ababab] hover:bg-[#343434]"
             }`}
           >
@@ -72,7 +72,7 @@ const RewardsDashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <MdPeople className="text-xl sm:text-2xl text-[#f6b100]" />
+            <MdPeople className="text-xl sm:text-2xl text-brand" />
             <span className="text-[#ababab] text-xs sm:text-sm">Total</span>
           </div>
           <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#f5f5f5] mb-1">
@@ -142,7 +142,7 @@ const RewardsDashboard = () => {
                       <p className="text-[#f5f5f5] font-medium text-sm truncate">
                         {pp.name}
                       </p>
-                      <span className="text-[#f6b100] font-bold text-sm ml-2">
+                      <span className="text-brand font-bold text-sm ml-2">
                         {rate}%
                       </span>
                     </div>
@@ -159,7 +159,7 @@ const RewardsDashboard = () => {
                     {/* Mini bar */}
                     <div className="w-full h-1.5 bg-[#343434] rounded-full mt-2 overflow-hidden">
                       <div
-                        className="h-full bg-[#f6b100] rounded-full transition-all"
+                        className="h-full bg-brand rounded-full transition-all"
                         style={{ width: `${Math.min(rate, 100)}%` }}
                       />
                     </div>
@@ -189,9 +189,9 @@ const RewardsDashboard = () => {
                   <span
                     className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                       idx === 0
-                        ? "bg-[#f6b100] text-[#1a1a1a]"
+                        ? "bg-brand text-[#f5f5f5]"
                         : idx === 1
-                          ? "bg-[#9ca3af] text-[#1a1a1a]"
+                          ? "bg-[#9ca3af] text-[#f5f5f5]"
                           : idx === 2
                             ? "bg-[#cd7f32] text-white"
                             : "bg-[#1f1f1f] text-[#ababab]"
@@ -207,7 +207,7 @@ const RewardsDashboard = () => {
                       <p className="text-[#6a6a6a] text-xs">{c.phone}</p>
                     )}
                   </div>
-                  <p className="text-[#f6b100] font-bold text-sm flex-shrink-0">
+                  <p className="text-brand font-bold text-sm flex-shrink-0">
                     {c.totalDishCount ?? 0}
                   </p>
                 </div>

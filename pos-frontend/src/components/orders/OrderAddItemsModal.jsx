@@ -64,7 +64,7 @@ const OrderAddItemsModal = ({ onClose, onAddItem }) => {
               onClick={() => setSelectedCategory("all")}
               className={`px-2.5 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
                 selectedCategory === "all"
-                  ? "bg-[#f6b100] text-[#1f1f1f]"
+                  ? "bg-brand text-[#f5f5f5]"
                   : "bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5]"
               }`}
             >
@@ -76,7 +76,7 @@ const OrderAddItemsModal = ({ onClose, onAddItem }) => {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-2.5 py-1.5 rounded-md text-xs font-medium whitespace-nowrap transition-colors ${
                   selectedCategory?._id === cat._id
-                    ? "bg-[#f6b100] text-[#1f1f1f]"
+                    ? "bg-brand text-[#f5f5f5]"
                     : "bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5]"
                 }`}
               >
@@ -99,7 +99,7 @@ const OrderAddItemsModal = ({ onClose, onAddItem }) => {
                     type="button"
                     onClick={() => handleDishClick(dish)}
                     disabled={!dish.isAvailable}
-                    className="flex flex-col p-2 rounded-lg bg-[#262626] border border-[#343434] hover:border-[#f6b100] hover:bg-[#2a2a2a] transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex flex-col p-2 rounded-lg bg-[#262626] border border-[#343434] hover:border-brand hover:bg-[#2a2a2a] transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className="w-full aspect-square rounded-md bg-[#343434] mb-1.5 overflow-hidden">
                       <img

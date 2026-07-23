@@ -229,7 +229,7 @@ const SpendingManager = () => {
     return (
       <div className="bg-[#1f1f1f] min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f6b100] mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
           <p className="text-[#ababab] text-lg">Loading spending management...</p>
         </div>
       </div>
@@ -249,7 +249,7 @@ const SpendingManager = () => {
             <button
               type="button"
               onClick={() => openModal("create", null, "spending")}
-              className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-[#f6b100] px-3 py-2 text-xs font-semibold text-[#1f1f1f] transition-colors hover:bg-[#e5a000] sm:text-sm"
+              className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-[#f5f5f5] transition-colors hover:bg-brand-hover sm:text-sm"
             >
               <MdAdd size={16} />
               Expense
@@ -398,7 +398,7 @@ const SpendingRecords = ({
                 placeholder="Search expenses..."
                 value={filters.search}
                 onChange={(e) => onFilterChange("search", e.target.value)}
-                className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:border-[#f6b100]"
+                className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:border-brand"
               />
             </div>
           </div>
@@ -408,7 +408,7 @@ const SpendingRecords = ({
             <select
               value={filters.category}
               onChange={(e) => onFilterChange("category", e.target.value)}
-              className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-[#f6b100]"
+              className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-brand"
             >
               <option value="all">All Categories</option>
               {categories.map((cat) => (
@@ -422,7 +422,7 @@ const SpendingRecords = ({
             <select
               value={filters.vendor}
               onChange={(e) => onFilterChange("vendor", e.target.value)}
-              className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-[#f6b100]"
+              className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-brand"
             >
               <option value="all">All Vendors</option>
               {vendors.map((vendor) => (
@@ -436,7 +436,7 @@ const SpendingRecords = ({
             <select
               value={filters.paymentStatus}
               onChange={(e) => onFilterChange("paymentStatus", e.target.value)}
-              className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-[#f6b100]"
+              className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-brand"
             >
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
@@ -454,7 +454,7 @@ const SpendingRecords = ({
               type="date"
               value={filters.startDate}
               onChange={(e) => onFilterChange("startDate", e.target.value)}
-              className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-[#f6b100]"
+              className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-brand"
             />
           </div>
           <div>
@@ -463,7 +463,7 @@ const SpendingRecords = ({
               type="date"
               value={filters.endDate}
               onChange={(e) => onFilterChange("endDate", e.target.value)}
-              className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-[#f6b100]"
+              className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-brand"
             />
           </div>
         </div>
@@ -471,7 +471,7 @@ const SpendingRecords = ({
         <div className="mt-4 flex justify-end">
           <button
             onClick={onApplyFilters}
-            className="bg-[#f6b100] hover:bg-[#e5a000] text-[#1f1f1f] px-6 py-2 rounded-lg font-semibold transition-colors"
+            className="bg-brand hover:bg-brand-hover text-[#f5f5f5] px-6 py-2 rounded-lg font-semibold transition-colors"
           >
             Apply Filters
           </button>
@@ -483,7 +483,7 @@ const SpendingRecords = ({
       <div className="bg-[#262626] rounded-lg border border-[#343434] overflow-hidden">
         {loading ? (
           <div className="p-8 text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#f6b100] mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand mx-auto mb-4"></div>
             <p className="text-[#ababab]">Loading spending records...</p>
           </div>
         ) : spending.length === 0 ? (
@@ -566,14 +566,14 @@ const SpendingRecords = ({
                           </button>
                           <button
                             onClick={() => onView(item)}
-                            className="text-[#ababab] hover:text-[#f6b100] transition-colors"
+                            className="text-[#ababab] hover:text-brand transition-colors"
                             title="View"
                           >
                             <MdVisibility />
                           </button>
                           <button
                             onClick={() => onEdit(item)}
-                            className="text-[#ababab] hover:text-[#f6b100] transition-colors"
+                            className="text-[#ababab] hover:text-brand transition-colors"
                             title="Edit"
                           >
                             <MdEdit />
@@ -655,13 +655,13 @@ const SpendingRecords = ({
                       </button>
                       <button
                         onClick={() => onView(item)}
-                        className="text-[#ababab] hover:text-[#f6b100] transition-colors p-1"
+                        className="text-[#ababab] hover:text-brand transition-colors p-1"
                       >
                         <MdVisibility />
                       </button>
                       <button
                         onClick={() => onEdit(item)}
-                        className="text-[#ababab] hover:text-[#f6b100] transition-colors p-1"
+                        className="text-[#ababab] hover:text-brand transition-colors p-1"
                       >
                         <MdEdit />
                       </button>
@@ -743,7 +743,7 @@ const CategoriesTab = ({ categories, onEdit, onDelete }) => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onEdit(category)}
-                className="text-[#ababab] hover:text-[#f6b100] transition-colors"
+                className="text-[#ababab] hover:text-brand transition-colors"
               >
                 <MdEdit />
               </button>
@@ -792,13 +792,13 @@ const VendorsTab = ({ vendors, onEdit, onView, onDelete }) => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => onView(vendor)}
-                className="text-[#ababab] hover:text-[#f6b100] transition-colors"
+                className="text-[#ababab] hover:text-brand transition-colors"
               >
                 <MdVisibility />
               </button>
               <button
                 onClick={() => onEdit(vendor)}
-                className="text-[#ababab] hover:text-[#f6b100] transition-colors"
+                className="text-[#ababab] hover:text-brand transition-colors"
               >
                 <MdEdit />
               </button>
@@ -842,7 +842,7 @@ const AnalyticsTab = ({ dashboardData, loading }) => {
   if (loading) {
     return (
       <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f6b100] mx-auto mb-4"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
         <p className="text-[#ababab] text-lg">Loading analytics...</p>
       </div>
     );
@@ -865,7 +865,7 @@ const AnalyticsTab = ({ dashboardData, loading }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
           <div className="flex items-center justify-between mb-4">
-            <MdAccountBalanceWallet className="text-2xl text-[#f6b100]" />
+            <MdAccountBalanceWallet className="text-2xl text-brand" />
             <span className="text-[#ababab] text-sm">This Month</span>
           </div>
           <h3 className="text-2xl font-bold text-[#f5f5f5] mb-1">

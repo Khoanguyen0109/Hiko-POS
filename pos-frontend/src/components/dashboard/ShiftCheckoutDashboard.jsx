@@ -126,7 +126,7 @@ const ShiftCheckoutDashboard = ({ dateFilter, customDateRange }) => {
   if (listLoading || deleteLoading) {
     return (
       <div className="container mx-auto px-4 md:px-6 text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f6b100] mx-auto mb-4" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4" />
         <p className="text-[#ababab] text-lg">Loading shift checkouts...</p>
       </div>
     );
@@ -156,7 +156,7 @@ const ShiftCheckoutDashboard = ({ dateFilter, customDateRange }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div className="bg-[#262626] rounded-lg p-4 sm:p-5 border border-[#343434]">
             <div className="flex items-center justify-between mb-2">
-              <MdAccountBalanceWallet className="text-xl text-[#f6b100]" />
+              <MdAccountBalanceWallet className="text-xl text-brand" />
             </div>
             <h3 className="text-xl font-bold text-[#f5f5f5]">{summary.totalCount}</h3>
             <p className="text-[#ababab] text-sm">Total checkouts</p>

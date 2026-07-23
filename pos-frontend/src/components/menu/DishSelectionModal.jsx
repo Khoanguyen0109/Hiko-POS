@@ -184,7 +184,7 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose, onAddToOrder }) =
 
         <div className="flex items-center justify-between border-t border-[#343434] pt-2">
           <span className="text-lg font-medium text-[#ababab]">Total:</span>
-          <span className="text-2xl font-bold text-[#f6b100]">
+          <span className="text-2xl font-bold text-brand">
             {formatVND(totalPrice)}
           </span>
         </div>
@@ -193,7 +193,7 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose, onAddToOrder }) =
       <button
         onClick={handleAddToCart}
         disabled={!dish.isAvailable}
-        className="flex h-10 w-full items-center justify-center gap-3 rounded-lg bg-[#f6b100] px-6 text-sm font-bold text-[#1f1f1f] transition-colors hover:bg-[#e09900] disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex h-10 w-full items-center justify-center gap-3 rounded-lg bg-brand px-6 text-sm font-bold text-[#f5f5f5] transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
       >
         <FaShoppingCart size={16} />
         {dish.isAvailable ? 'Add to Cart' : 'Not Available'}
@@ -244,7 +244,7 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose, onAddToOrder }) =
               </p>
             )}
             <div className="flex items-center gap-2">
-              <span className="text-[#f6b100] text-xl font-bold">
+              <span className="text-brand text-xl font-bold">
                 {formatVND(getCurrentPrice())}
               </span>
             </div>
@@ -266,8 +266,8 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose, onAddToOrder }) =
                     onClick={() => handleVariantChange(variant)}
                     className={`relative h-10 px-4 rounded-lg text-left transition-all duration-200 border-2 ${
                       isSelected 
-                        ? 'bg-[#f6b100] text-[#1f1f1f] border-[#f6b100] shadow-lg' 
-                        : 'bg-[#262626] text-[#f5f5f5] border-[#343434] hover:border-[#f6b100] hover:bg-[#343434]'
+                        ? 'bg-brand text-[#f5f5f5] border-brand shadow-lg' 
+                        : 'bg-[#262626] text-[#f5f5f5] border-[#343434] hover:border-brand hover:bg-[#343434]'
                     }`}
                   >
                     {isDefault && (
@@ -277,7 +277,7 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose, onAddToOrder }) =
                       <div className="flex flex-1">
                         <span className="font-bold text-lg">{variant.size}</span>
                         {isDefault && (
-                          <span className={`ml-2 text-xs ${isSelected ? 'text-[#1f1f1f]/70' : 'text-[#ababab]'}`}>
+                          <span className={`ml-2 text-xs ${isSelected ? 'text-[#f5f5f5]/70' : 'text-[#ababab]'}`}>
                             (Default)
                           </span>
                         )}
@@ -310,7 +310,7 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose, onAddToOrder }) =
                       <div className="flex items-center gap-3">
                         <span className="text-[#f5f5f5] font-medium">{categoryName}</span>
                         {categoryToppingsCount > 0 && (
-                          <span className="bg-[#f6b100] text-[#1f1f1f] text-xs px-2 py-1 rounded-full font-medium">
+                          <span className="bg-brand text-[#f5f5f5] text-xs px-2 py-1 rounded-full font-medium">
                             {categoryToppingsCount} selected
                           </span>
                         )}
@@ -335,14 +335,14 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose, onAddToOrder }) =
                                   {topping.description && (
                                     <p className="text-[#ababab] text-sm">{topping.description}</p>
                                   )}
-                                  <p className="text-[#f6b100] font-bold">{formatVND(topping.price)}</p>
+                                  <p className="text-brand font-bold">{formatVND(topping.price)}</p>
                                 </div>
                                 
                                 <div className="flex items-center gap-3">
                                   <button
                                     onClick={() => handleToppingQuantityChange(topping._id, -1)}
                                     disabled={quantity <= 0}
-                                    className="h-10 w-10 rounded-lg bg-[#262626] text-[#f6b100] hover:bg-[#343434] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                                    className="h-10 w-10 rounded-lg bg-[#262626] text-brand hover:bg-[#343434] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
                                   >
                                     <MdRemove size={16} />
                                   </button>
@@ -353,7 +353,7 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose, onAddToOrder }) =
                                   
                                   <button
                                     onClick={() => handleToppingQuantityChange(topping._id, 1)}
-                                    className="h-10 w-10 rounded-lg bg-[#262626] text-[#f6b100] hover:bg-[#343434] transition-colors flex items-center justify-center"
+                                    className="h-10 w-10 rounded-lg bg-[#262626] text-brand hover:bg-[#343434] transition-colors flex items-center justify-center"
                                   >
                                     <MdAdd size={16} />
                                   </button>
@@ -362,7 +362,7 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose, onAddToOrder }) =
                               
                               {quantity > 0 && (
                                 <div className="text-right">
-                                  <span className="text-[#f6b100] text-sm font-medium">
+                                  <span className="text-brand text-sm font-medium">
                                     Subtotal: {formatVND(topping.price * quantity)}
                                   </span>
                                 </div>
@@ -385,7 +385,7 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose, onAddToOrder }) =
             
             {toppingsLoading && (
               <div className="text-center py-4">
-                <div className="inline-block w-6 h-6 border-2 border-[#f6b100] border-t-transparent rounded-full animate-spin"></div>
+                <div className="inline-block w-6 h-6 border-2 border-brand border-t-transparent rounded-full animate-spin"></div>
                 <p className="text-[#ababab] text-sm mt-2">Loading toppings...</p>
               </div>
             )}
@@ -399,7 +399,7 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose, onAddToOrder }) =
             <button
               onClick={() => handleQuantityChange(-1)}
               disabled={quantity <= 1}
-              className="h-10 w-10 rounded-lg bg-[#262626] text-[#f6b100] hover:bg-[#343434] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+              className="h-10 w-10 rounded-lg bg-[#262626] text-brand hover:bg-[#343434] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
             >
               <MdRemove size={16} />
             </button>
@@ -408,7 +408,7 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose, onAddToOrder }) =
             </span>
             <button
               onClick={() => handleQuantityChange(1)}
-              className="h-10 w-10 rounded-lg bg-[#262626] text-[#f6b100] hover:bg-[#343434] transition-colors flex items-center justify-center"
+              className="h-10 w-10 rounded-lg bg-[#262626] text-brand hover:bg-[#343434] transition-colors flex items-center justify-center"
             >
               <MdAdd size={16} />
             </button>
@@ -422,7 +422,7 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose, onAddToOrder }) =
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Any special requests or modifications..."
-            className="w-full p-3 rounded-lg bg-[#262626] text-[#f5f5f5] border border-[#343434] focus:border-[#f6b100] focus:outline-none resize-none"
+            className="w-full p-3 rounded-lg bg-[#262626] text-[#f5f5f5] border border-[#343434] focus:border-brand focus:outline-none resize-none"
             rows="3"
             maxLength={200}
           />

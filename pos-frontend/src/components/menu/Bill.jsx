@@ -318,7 +318,7 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false }, ref) => {
                   {cartData.items?.length || 0} items
                 </p>
               </div>
-              <h1 className="text-[#f6b100] text-lg font-bold">
+              <h1 className="text-brand text-lg font-bold">
                 {formatVND(totalWithReward)}
               </h1>
             </div>
@@ -399,7 +399,7 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false }, ref) => {
             type="button"
             onClick={() => handlePlaceOrder()}
             disabled={cartData.items?.length === 0 || loading}
-            className="bg-[#f6b100] px-4 py-3 w-full rounded-lg text-[#1f1f1f] font-semibold text-lg hover:bg-[#e09900] disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px]"
+            className="bg-brand px-4 py-3 w-full rounded-lg text-[#f5f5f5] font-semibold text-lg hover:bg-brand-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px]"
           >
             {loading ? "Placing Order..." : "Place Order"}
           </button>

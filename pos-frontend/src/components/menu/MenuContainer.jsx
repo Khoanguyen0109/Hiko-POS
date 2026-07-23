@@ -106,7 +106,7 @@ const MenuContainer = () => {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f6b100] mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
           <p className="text-[#ababab] text-lg">Loading menu...</p>
         </div>
       </div>
@@ -131,7 +131,7 @@ const MenuContainer = () => {
                 }
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
                   isSelected
-                    ? "bg-[#f6b100] text-[#1f1f1f]"
+                    ? "bg-brand text-[#f5f5f5]"
                     : "bg-[#2a2a2a] text-[#ababab] hover:bg-[#343434]"
                 }`}
               >
@@ -155,7 +155,7 @@ const MenuContainer = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Tìm món..."
-            className="w-full bg-[#2a2a2a] text-[#f5f5f5] pl-10 pr-10 py-2.5 rounded-xl border-none focus:outline-none focus:ring-1 focus:ring-[#f6b100] transition-colors text-sm"
+            className="w-full bg-[#2a2a2a] text-[#f5f5f5] pl-10 pr-10 py-2.5 rounded-xl border-none focus:outline-none focus:ring-1 focus:ring-brand transition-colors text-sm"
           />
           {searchTerm && (
             <button
@@ -198,7 +198,7 @@ const MenuContainer = () => {
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm("")}
-                className="mt-4 px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#e09900] transition-colors text-sm"
+                className="mt-4 px-4 py-2 bg-brand text-[#f5f5f5] rounded-lg font-medium hover:bg-brand-hover transition-colors text-sm"
               >
                 Clear Search
               </button>
@@ -259,7 +259,7 @@ const MenuContainer = () => {
                             <span className="text-[#ababab] text-[10px] leading-none">
                               {variant.size}
                             </span>
-                            <span className="text-[#f6b100] text-sm font-bold leading-tight">
+                            <span className="text-brand text-sm font-bold leading-tight">
                               {formatPriceK(variant.price)}
                             </span>
                           </div>
@@ -268,7 +268,7 @@ const MenuContainer = () => {
                     ) : (
                       <div className="flex">
                         <div className="flex-1 flex flex-col items-center bg-[#2a2a2a] rounded-lg py-1.5">
-                          <span className="text-[#f6b100] text-sm font-bold leading-tight">
+                          <span className="text-brand text-sm font-bold leading-tight">
                             {formatPriceK(dish.price)}
                           </span>
                         </div>

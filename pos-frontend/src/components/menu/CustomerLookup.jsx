@@ -100,7 +100,7 @@ const CustomerLookup = () => {
     return (
       <div className="px-3 py-2">
         <div className="flex items-center gap-3 bg-[#2a2a2a] rounded-lg p-3">
-          <div className="w-9 h-9 rounded-full bg-[#f6b100] flex items-center justify-center text-[#1a1a1a] font-bold text-sm shrink-0">
+          <div className="w-9 h-9 rounded-full bg-brand flex items-center justify-center text-[#f5f5f5] font-bold text-sm shrink-0">
             {getAvatarName(selectedCustomer.name || selectedCustomer.phone)}
           </div>
           <div className="flex-1 min-w-0">
@@ -168,7 +168,7 @@ const CustomerLookup = () => {
                 onClick={() => handleSelect(c)}
                 className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#343434] transition-colors text-left"
               >
-                <div className="w-8 h-8 rounded-full bg-[#f6b100] flex items-center justify-center text-[#1a1a1a] font-bold text-xs shrink-0">
+                <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-[#f5f5f5] font-bold text-xs shrink-0">
                   {getAvatarName(c.name || c.phone)}
                 </div>
                 <div className="flex-1 min-w-0">

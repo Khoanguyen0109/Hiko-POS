@@ -208,7 +208,7 @@ const MoreMenuSheet = ({ isOpen, onClose }) => {
                     onClick={() => handleNavigate(item.path)}
                     className={`flex min-h-[48px] w-full items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors ${
                       isActive(item.path)
-                        ? "bg-[#f6b100]/15 text-[#f6b100]"
+                        ? "bg-brand/15 text-brand"
                         : "text-[#ababab] hover:bg-[#262626] hover:text-[#f5f5f5]"
                     }`}
                   >

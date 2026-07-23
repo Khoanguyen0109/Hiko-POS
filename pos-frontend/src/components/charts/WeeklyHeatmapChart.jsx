@@ -1,3 +1,4 @@
+import { BRAND_PRIMARY } from "../../constants/colors.js";
 import { useMemo } from 'react';
 import { toVietnamTime } from '../../utils/dateUtils';
 import {
@@ -187,7 +188,7 @@ const WeeklyHeatmapChart = ({ orders }) => {
         backgroundColor: 'rgba(31, 31, 31, 0.95)',
         titleColor: '#f5f5f5',
         bodyColor: '#f5f5f5',
-        borderColor: '#f6b100',
+        borderColor: BRAND_PRIMARY,
         borderWidth: 1,
         padding: 12,
         callbacks: {

@@ -1,3 +1,4 @@
+import { BRAND_PRIMARY } from "../../constants/colors.js";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { MdSave, MdAccessTime, MdColorLens } from "react-icons/md";
@@ -21,7 +22,7 @@ const ShiftTemplateModal = ({ isOpen, onClose, mode, template }) => {
     shortName: "",
     startTime: "",
     endTime: "",
-    color: "#f6b100",
+    color: BRAND_PRIMARY,
     description: ""
   });
 
@@ -37,7 +38,7 @@ const ShiftTemplateModal = ({ isOpen, onClose, mode, template }) => {
         shortName: template.shortName || "",
         startTime: template.startTime || "",
         endTime: template.endTime || "",
-        color: template.color || "#f6b100",
+        color: template.color || BRAND_PRIMARY,
         description: template.description || ""
       });
     } else {
@@ -46,7 +47,7 @@ const ShiftTemplateModal = ({ isOpen, onClose, mode, template }) => {
         shortName: "",
         startTime: "",
         endTime: "",
-        color: "#f6b100",
+        color: BRAND_PRIMARY,
         description: ""
       });
     }
@@ -134,7 +135,7 @@ const ShiftTemplateModal = ({ isOpen, onClose, mode, template }) => {
   };
 
   const colors = [
-    { name: "Gold", value: "#f6b100" },
+    { name: "Gold", value: BRAND_PRIMARY },
     { name: "Red", value: "#FF6B6B" },
     { name: "Blue", value: "#4ECDC4" },
     { name: "Green", value: "#95E1D3" },
@@ -164,7 +165,7 @@ const ShiftTemplateModal = ({ isOpen, onClose, mode, template }) => {
               placeholder="e.g., Morning Shift"
               className={`w-full px-4 py-2 bg-[#262626] border ${
                 errors.name ? 'border-red-500' : 'border-[#343434]'
-              } rounded-lg text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] transition-colors`}
+              } rounded-lg text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-brand transition-colors`}
             />
             {errors.name && (
               <p className="text-red-400 text-sm mt-1">{errors.name}</p>
@@ -184,7 +185,7 @@ const ShiftTemplateModal = ({ isOpen, onClose, mode, template }) => {
               placeholder="e.g., MORNING"
               className={`w-full px-4 py-2 bg-[#262626] border ${
                 errors.shortName ? 'border-red-500' : 'border-[#343434]'
-              } rounded-lg text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] transition-colors uppercase`}
+              } rounded-lg text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-brand transition-colors uppercase`}
             />
             {errors.shortName && (
               <p className="text-red-400 text-sm mt-1">{errors.shortName}</p>
@@ -205,7 +206,7 @@ const ShiftTemplateModal = ({ isOpen, onClose, mode, template }) => {
                 onChange={handleInputChange}
                 className={`w-full px-4 py-2 bg-[#262626] border ${
                   errors.startTime ? 'border-red-500' : 'border-[#343434]'
-                } rounded-lg text-[#f5f5f5] focus:outline-none focus:border-[#f6b100] transition-colors`}
+                } rounded-lg text-[#f5f5f5] focus:outline-none focus:border-brand transition-colors`}
               />
               {errors.startTime && (
                 <p className="text-red-400 text-sm mt-1">{errors.startTime}</p>
@@ -223,7 +224,7 @@ const ShiftTemplateModal = ({ isOpen, onClose, mode, template }) => {
                 onChange={handleInputChange}
                 className={`w-full px-4 py-2 bg-[#262626] border ${
                   errors.endTime ? 'border-red-500' : 'border-[#343434]'
-                } rounded-lg text-[#f5f5f5] focus:outline-none focus:border-[#f6b100] transition-colors`}
+                } rounded-lg text-[#f5f5f5] focus:outline-none focus:border-brand transition-colors`}
               />
               {errors.endTime && (
                 <p className="text-red-400 text-sm mt-1">{errors.endTime}</p>
@@ -266,7 +267,7 @@ const ShiftTemplateModal = ({ isOpen, onClose, mode, template }) => {
               onChange={handleInputChange}
               placeholder="e.g., Early morning operations"
               rows={3}
-              className="w-full px-4 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] transition-colors resize-none"
+              className="w-full px-4 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-brand transition-colors resize-none"
             />
           </div>
 
@@ -283,7 +284,7 @@ const ShiftTemplateModal = ({ isOpen, onClose, mode, template }) => {
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#f6b100]/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              className="flex-1 px-4 py-2 bg-brand text-[#f5f5f5] rounded-lg font-medium hover:bg-brand-hover transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <MdSave size={16} />
               {isLoading 

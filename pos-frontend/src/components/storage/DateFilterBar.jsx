@@ -24,7 +24,7 @@ const DateFilterBar = ({
               onClick={() => onFilterChange(value)}
               className={`flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                 dateFilter === value
-                  ? "bg-[#f6b100] text-[#1f1f1f]"
+                  ? "bg-brand text-[#f5f5f5]"
                   : "bg-[#262626] text-[#f5f5f5] hover:bg-[#343434]"
               }`}
             >
@@ -44,7 +44,7 @@ const DateFilterBar = ({
                   type="date"
                   value={customDateRange.startDate}
                   onChange={(e) => onCustomDateChange("startDate", e.target.value)}
-                  className="bg-[#262626] text-[#f5f5f5] border border-[#343434] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#f6b100] w-full"
+                  className="bg-[#262626] text-[#f5f5f5] border border-[#343434] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand w-full"
                 />
               </div>
               <div className="flex flex-col">
@@ -53,7 +53,7 @@ const DateFilterBar = ({
                   type="date"
                   value={customDateRange.endDate}
                   onChange={(e) => onCustomDateChange("endDate", e.target.value)}
-                  className="bg-[#262626] text-[#f5f5f5] border border-[#343434] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#f6b100] w-full"
+                  className="bg-[#262626] text-[#f5f5f5] border border-[#343434] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand w-full"
                 />
               </div>
             </div>

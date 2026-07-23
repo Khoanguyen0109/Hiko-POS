@@ -473,7 +473,7 @@ const OrderDetail = () => {
           <p className="text-[#ababab] mb-4">{error || "Order not found"}</p>
           <button
             onClick={() => navigate("/orders")}
-            className="px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#e09900] transition-colors"
+            className="px-4 py-2 bg-brand text-[#f5f5f5] rounded-lg font-medium hover:bg-brand-hover transition-colors"
           >
             Back to Orders
           </button>
@@ -574,7 +574,7 @@ const OrderDetail = () => {
                 <button
                   onClick={() => handleStatusUpdate(null, null)}
                   disabled={loading}
-                  className="px-3 py-2 rounded-md font-medium transition-all text-xs flex items-center gap-1.5 bg-[#f6b100] text-[#1f1f1f] hover:bg-[#e09900] border-2 border-[#f6b100] shadow-lg"
+                  className="px-3 py-2 rounded-md font-medium transition-all text-xs flex items-center gap-1.5 bg-brand text-[#f5f5f5] hover:bg-brand-hover border-2 border-brand shadow-lg"
                 >
                   Update Vendor
                 </button>
@@ -634,7 +634,7 @@ const OrderDetail = () => {
                   className="w-full flex items-center justify-between p-3 hover:bg-[#2a2a2a] transition-colors rounded-lg focus:outline-none"
                 >
                   <div className="flex items-center space-x-2">
-                    <MdLocalOffer size={18} className="text-[#f6b100]" />
+                    <MdLocalOffer size={18} className="text-brand" />
                     <span className="text-[#f5f5f5] text-sm font-medium">
                       {promotionsLoading ? 'Loading...' : `Available Coupons (${activeCoupons.length})`}
                     </span>
@@ -659,19 +659,19 @@ const OrderDetail = () => {
                           <div
                             key={coupon._id}
                             onClick={() => handleApplyCoupon(coupon)}
-                            className="p-3 bg-[#1a1a1a] border border-[#343434] rounded-md hover:border-[#f6b100] hover:bg-[#222] cursor-pointer transition-all"
+                            className="p-3 bg-[#1a1a1a] border border-[#343434] rounded-md hover:border-brand hover:bg-[#222] cursor-pointer transition-all"
                           >
                             <div className="flex items-start justify-between">
                               <div className="flex items-start space-x-2 flex-1 min-w-0">
                                 <div className={`flex items-center justify-center w-8 h-8 rounded-full flex-shrink-0 ${
                                   coupon.type === 'happy_hour' 
                                     ? 'bg-orange-500/20' 
-                                    : 'bg-[#f6b100]/20'
+                                    : 'bg-brand-20'
                                 }`}>
                                   {coupon.type === 'happy_hour' ? (
                                     <MdAccessTime size={14} className="text-orange-400" />
                                   ) : (
-                                    <MdPercent size={14} className="text-[#f6b100]" />
+                                    <MdPercent size={14} className="text-brand" />
                                   )}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -685,7 +685,7 @@ const OrderDetail = () => {
                                     }
                                   </div>
                                   {coupon.code && (
-                                    <div className="text-xs text-[#f6b100] mt-1">
+                                    <div className="text-xs text-brand mt-1">
                                       Code: {coupon.code}
                                     </div>
                                   )}
@@ -710,7 +710,7 @@ const OrderDetail = () => {
 
             {order.customer ? (
               <div className="flex items-center gap-3 bg-[#262626] rounded-lg p-3 border border-[#343434]">
-                <div className="w-9 h-9 rounded-full bg-[#f6b100] flex items-center justify-center text-[#1a1a1a] font-bold text-sm shrink-0">
+                <div className="w-9 h-9 rounded-full bg-brand flex items-center justify-center text-[#f5f5f5] font-bold text-sm shrink-0">
                   {getAvatarName(order.customer.name || order.customer.phone)}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -772,7 +772,7 @@ const OrderDetail = () => {
                         onClick={() => handleAssignCustomer(c)}
                         className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-[#343434] transition-colors text-left"
                       >
-                        <div className="w-8 h-8 rounded-full bg-[#f6b100] flex items-center justify-center text-[#1a1a1a] font-bold text-xs shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-[#f5f5f5] font-bold text-xs shrink-0">
                           {getAvatarName(c.name || c.phone)}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -993,7 +993,7 @@ const OrderDetail = () => {
                   <button
                     onClick={handleEnterEditMode}
                     disabled={loading}
-                    className="p-2 rounded-lg text-[#ababab] hover:text-[#f6b100] hover:bg-[#262626] disabled:opacity-50 transition-colors"
+                    className="p-2 rounded-lg text-[#ababab] hover:text-brand hover:bg-[#262626] disabled:opacity-50 transition-colors"
                     title="Edit Order"
                   >
                     <MdEdit size={18} />
@@ -1057,12 +1057,12 @@ const OrderDetail = () => {
           {order.customer && (
             <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
               <h2 className="text-[#f5f5f5] text-lg font-semibold mb-4 flex items-center gap-2">
-                <MdPerson size={20} className="text-[#f6b100]" />
+                <MdPerson size={20} className="text-brand" />
                 Customer
               </h2>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#f6b100] rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-[#1f1f1f] font-bold text-sm">
+                <div className="w-10 h-10 bg-brand rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-[#f5f5f5] font-bold text-sm">
                     {(order.customer.name || order.customer.phone || "?").charAt(0).toUpperCase()}
                   </span>
                 </div>
@@ -1076,7 +1076,7 @@ const OrderDetail = () => {
                   )}
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-[#f6b100] font-semibold text-lg">{order.customer.totalDishCount || 0}</p>
+                  <p className="text-brand font-semibold text-lg">{order.customer.totalDishCount || 0}</p>
                   <p className="text-[#ababab] text-xs">dishes</p>
                 </div>
               </div>
@@ -1225,7 +1225,7 @@ const OrderDetail = () => {
               {/* Final Total */}
               <div className="flex justify-between text-lg font-semibold">
                 <span className="text-[#f5f5f5]">Total</span>
-                <span className="text-[#f6b100]">
+                <span className="text-brand">
                   {formatVND(getOrderDisplayTotal(order))}
                 </span>
               </div>
@@ -1239,8 +1239,8 @@ const OrderDetail = () => {
                 Created By
               </h2>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#f6b100] rounded-full flex items-center justify-center">
-                  <span className="text-[#1f1f1f] font-bold text-sm">
+                <div className="w-10 h-10 bg-brand rounded-full flex items-center justify-center">
+                  <span className="text-[#f5f5f5] font-bold text-sm">
                     {order.createdBy.userName.charAt(0).toUpperCase()}
                   </span>
                 </div>
@@ -1258,7 +1258,7 @@ const OrderDetail = () => {
           {order.orderHistory && order.orderHistory.length > 0 && (
             <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
               <h2 className="text-[#f5f5f5] text-lg font-semibold mb-4 flex items-center gap-2">
-                <MdHistory size={20} className="text-[#f6b100]" />
+                <MdHistory size={20} className="text-brand" />
                 Change History
               </h2>
               <div className="space-y-3 max-h-80 overflow-y-auto">
@@ -1308,7 +1308,7 @@ const OrderDetail = () => {
                           )}
                           {(entry.details.totalChange || (entry.details.previousValue?.total != null && entry.details.newValue?.total != null)) && (
                             <div className="pt-2 mt-2 border-t border-[#343434]">
-                              <span className="text-[#f6b100] font-medium">Total:</span>
+                              <span className="text-brand font-medium">Total:</span>
                               <span className="text-[#f5f5f5] ml-1">
                                 {entry.details.totalChange
                                   ? `${formatVND(entry.details.totalChange.from)} → ${formatVND(entry.details.totalChange.to)}`
@@ -1417,7 +1417,7 @@ const OrderItem = ({ item, onRemove }) => {
       </div>
 
       {/* Price */}
-      <span className="text-[#f6b100] font-bold text-base whitespace-nowrap">
+      <span className="text-brand font-bold text-base whitespace-nowrap">
         {formatCompactPrice(item.price)}
       </span>
 

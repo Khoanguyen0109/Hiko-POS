@@ -1,3 +1,4 @@
+import { BRAND_PRIMARY } from "../../constants/colors.js";
 import { useMemo } from 'react';
 import {
   Chart as ChartJS,
@@ -143,7 +144,7 @@ const VendorTrendChart = ({ orders }) => {
         backgroundColor: 'rgba(31, 31, 31, 0.9)',
         titleColor: '#f5f5f5',
         bodyColor: '#f5f5f5',
-        borderColor: '#f6b100',
+        borderColor: BRAND_PRIMARY,
         borderWidth: 1,
         callbacks: {
           label: function(context) {

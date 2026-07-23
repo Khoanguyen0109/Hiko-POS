@@ -82,7 +82,7 @@ const PromotionMetrics = ({ dateFilter, customDateRange }) => {
     return (
       <div className="bg-[#1a1a1a] rounded-lg border border-[#343434] p-6">
         <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#f6b100]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
           <span className="ml-2 text-[#ababab]">Loading promotion metrics...</span>
         </div>
       </div>
@@ -107,7 +107,7 @@ const PromotionMetrics = ({ dateFilter, customDateRange }) => {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center space-x-3 mb-6">
-        <TagIcon size={24} className="text-[#f6b100]" />
+        <TagIcon size={24} className="text-brand" />
         <h2 className="text-xl font-semibold text-[#f5f5f5]">Promotion Metrics</h2>
       </div>
 
@@ -118,15 +118,15 @@ const PromotionMetrics = ({ dateFilter, customDateRange }) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-[#ababab] text-sm font-medium mb-1">Total Discount Given</p>
-              <p className="text-2xl font-bold text-[#f6b100]">
+              <p className="text-2xl font-bold text-brand">
                 {formatVND(summary.totalDiscountAmount || 0)}
               </p>
               <p className="text-xs text-[#ababab] mt-1">
                 From {summary.totalOrdersWithPromotions || 0} orders
               </p>
             </div>
-            <div className="flex items-center justify-center w-12 h-12 bg-[#f6b100]/20 rounded-full">
-              <MoneyIcon size={24} className="text-[#f6b100]" />
+            <div className="flex items-center justify-center w-12 h-12 bg-brand-20 rounded-full">
+              <MoneyIcon size={24} className="text-brand" />
             </div>
           </div>
         </div>
@@ -208,7 +208,7 @@ const PromotionMetrics = ({ dateFilter, customDateRange }) => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-[#f6b100]">{formatVND(type.totalDiscount || 0)}</p>
+                    <p className="text-sm font-bold text-brand">{formatVND(type.totalDiscount || 0)}</p>
                     <p className="text-xs text-[#ababab]">total saved</p>
                   </div>
                 </div>
@@ -231,9 +231,9 @@ const PromotionMetrics = ({ dateFilter, customDateRange }) => {
                 <div key={promotion._id} className="flex items-center justify-between p-4 bg-[#262626] rounded-lg border border-[#343434]">
                   <div className="flex items-center space-x-3">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                      index === 0 ? 'bg-yellow-400 text-[#1f1f1f]' : 
-                      index === 1 ? 'bg-gray-400 text-[#1f1f1f]' : 
-                      index === 2 ? 'bg-orange-400 text-[#1f1f1f]' : 'bg-[#343434] text-[#ababab]'
+                      index === 0 ? 'bg-yellow-400 text-[#f5f5f5]' : 
+                      index === 1 ? 'bg-gray-400 text-[#f5f5f5]' : 
+                      index === 2 ? 'bg-orange-400 text-[#f5f5f5]' : 'bg-[#343434] text-[#ababab]'
                     }`}>
                       {index + 1}
                     </div>
@@ -250,7 +250,7 @@ const PromotionMetrics = ({ dateFilter, customDateRange }) => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold text-[#f6b100]">{formatVND(promotion.totalDiscount || 0)}</p>
+                    <p className="text-sm font-bold text-brand">{formatVND(promotion.totalDiscount || 0)}</p>
                     <p className="text-xs text-[#ababab]">total saved</p>
                   </div>
                 </div>
@@ -267,15 +267,15 @@ const PromotionMetrics = ({ dateFilter, customDateRange }) => {
 
       {/* Insights */}
       {summary.totalDiscountAmount > 0 && (
-        <div className="bg-[#f6b100]/10 rounded-lg border border-[#f6b100]/30 p-6">
-          <h4 className="text-sm font-medium text-[#f6b100] mb-3 flex items-center gap-2">
+        <div className="bg-brand-10 rounded-lg border border-brand-30 p-6">
+          <h4 className="text-sm font-medium text-brand mb-3 flex items-center gap-2">
             <TrendingUpIcon size={16} />
             💡 Promotion Insights
           </h4>
           <div className="text-sm text-[#f5f5f5] space-y-2">
             {summary.totalDiscountAmount > 0 && (
               <p>
-                • Total savings provided to customers: <span className="font-semibold text-[#f6b100]">{formatVND(summary.totalDiscountAmount)}</span>
+                • Total savings provided to customers: <span className="font-semibold text-brand">{formatVND(summary.totalDiscountAmount)}</span>
               </p>
             )}
             {summary.totalOrdersWithPromotions > 0 && (
@@ -285,12 +285,12 @@ const PromotionMetrics = ({ dateFilter, customDateRange }) => {
             )}
             {summary.averageDiscountPerOrder > 0 && (
               <p>
-                • Average savings per promoted order: <span className="font-semibold text-[#f6b100]">{formatVND(summary.averageDiscountPerOrder)}</span>
+                • Average savings per promoted order: <span className="font-semibold text-brand">{formatVND(summary.averageDiscountPerOrder)}</span>
               </p>
             )}
             {discountByType && discountByType.length > 0 && (
               <p>
-                • Most effective promotion type: <span className="font-semibold text-[#f6b100]">{getTypeDisplayName(discountByType[0]._id)}</span>
+                • Most effective promotion type: <span className="font-semibold text-brand">{getTypeDisplayName(discountByType[0]._id)}</span>
               </p>
             )}
           </div>

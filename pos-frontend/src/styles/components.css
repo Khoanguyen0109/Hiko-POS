@@ -50,7 +50,7 @@
 /* Button Variants */
 .btn-primary {
   background-color: var(--color-primary);
-  color: var(--color-text-inverse);
+  color: var(--color-text-on-primary);
 }
 
 .btn-primary:hover:not(:disabled) {

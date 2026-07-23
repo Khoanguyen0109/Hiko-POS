@@ -114,12 +114,12 @@ const Tickets = () => {
       {/* Page header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-[#f5f5f5] text-2xl font-bold flex items-center gap-2">
-          <MdStar className="text-[#f6b100]" size={28} />
+          <MdStar className="text-brand" size={28} />
           Tickets
         </h1>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 bg-[#f6b100] text-[#1a1a1a] px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#e5a200] transition-colors"
+          className="flex items-center gap-2 bg-brand text-[#f5f5f5] px-4 py-2 rounded-lg text-sm font-semibold hover:bg-brand-hover transition-colors"
         >
           <MdAdd size={18} />
           New Ticket
@@ -132,7 +132,7 @@ const Tickets = () => {
         <select
           value={month}
           onChange={(e) => setMonth(Number(e.target.value))}
-          className="bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100]"
+          className="bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
         >
           {MONTHS.map((m, i) => (
             <option key={i} value={i + 1}>{m}</option>
@@ -141,7 +141,7 @@ const Tickets = () => {
         <select
           value={year}
           onChange={(e) => setYear(Number(e.target.value))}
-          className="bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100]"
+          className="bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
         >
           {YEARS.map((y) => (
             <option key={y} value={y}>{y}</option>
@@ -164,13 +164,13 @@ const Tickets = () => {
           </div>
           <div className="bg-[#1f1f1f] rounded-xl border border-[#343434] p-4">
             <p className="text-[#ababab] text-xs font-medium uppercase tracking-wide">Monthly Score</p>
-            <p className="text-[#f6b100] text-2xl font-bold mt-1">
+            <p className="text-brand text-2xl font-bold mt-1">
               {summary.members?.reduce((s, m) => s + m.monthlyScore, 0) ?? 0}
             </p>
           </div>
           <div className="bg-[#1f1f1f] rounded-xl border border-[#343434] p-4">
             <p className="text-[#ababab] text-xs font-medium uppercase tracking-wide">All-Time Score</p>
-            <p className="text-[#f6b100] text-2xl font-bold mt-1">
+            <p className="text-brand text-2xl font-bold mt-1">
               {summary.members?.reduce((s, m) => s + m.allTimeScore, 0) ?? 0}
             </p>
           </div>
@@ -191,7 +191,7 @@ const Tickets = () => {
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
               activeTab === tab.key
-                ? "bg-[#f6b100] text-[#1a1a1a]"
+                ? "bg-brand text-[#f5f5f5]"
                 : "text-[#ababab] hover:text-[#f5f5f5]"
             }`}
           >
@@ -217,8 +217,8 @@ const Tickets = () => {
               {summary.members.map((m, idx) => (
                 <div key={m.memberId} className="flex items-center gap-4 px-4 py-3">
                   <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
-                    idx === 0 ? "bg-[#f6b100] text-[#1a1a1a]" :
-                    idx === 1 ? "bg-[#9ca3af] text-[#1a1a1a]" :
+                    idx === 0 ? "bg-brand text-[#f5f5f5]" :
+                    idx === 1 ? "bg-[#9ca3af] text-[#f5f5f5]" :
                     idx === 2 ? "bg-[#cd7f32] text-white" : "bg-[#262626] text-[#ababab]"
                   }`}>{idx + 1}</span>
                   <MdPerson size={20} className="text-[#6a6a6a] flex-shrink-0" />
@@ -227,7 +227,7 @@ const Tickets = () => {
                     <p className="text-[#6a6a6a] text-xs">{m.memberRole}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-[#f6b100] font-bold">{m.monthlyScore} pts</p>
+                    <p className="text-brand font-bold">{m.monthlyScore} pts</p>
                     <p className="text-[#6a6a6a] text-xs">all-time: {m.allTimeScore}</p>
                   </div>
                 </div>
@@ -253,7 +253,7 @@ const Tickets = () => {
             <div className="divide-y divide-[#343434]">
               {tickets.map((t) => (
                 <div key={t._id} className="flex items-start gap-3 px-4 py-3">
-                  <MdStar size={18} className="text-[#f6b100] mt-0.5 flex-shrink-0" />
+                  <MdStar size={18} className="text-brand mt-0.5 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-[#f5f5f5] text-sm font-medium truncate">{t.title}</p>
                     <p className="text-[#ababab] text-xs mt-0.5">
@@ -262,7 +262,7 @@ const Tickets = () => {
                     {t.note && <p className="text-[#6a6a6a] text-xs mt-0.5 truncate">{t.note}</p>}
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-[#f6b100] font-bold text-sm">+{t.score}</span>
+                    <span className="text-brand font-bold text-sm">+{t.score}</span>
                     <button
                       onClick={() => openEdit(t)}
                       className="p-1.5 rounded-lg text-[#ababab] hover:bg-[#262626] hover:text-[#f5f5f5] transition-colors"

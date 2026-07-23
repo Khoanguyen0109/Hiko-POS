@@ -247,7 +247,7 @@ const Sidebar = ({ isOpen, onClose, onOpen }) => {
             navigate(ROUTES.MENU_ORDER);
             onClose();
           }}
-          className={`fixed bottom-4 right-4 z-30 bg-[#f6b100] text-[#f5f5f5] rounded-full p-3 md:p-4 shadow-lg ${
+          className={`fixed bottom-4 right-4 z-30 bg-brand text-[#f5f5f5] rounded-full p-3 md:p-4 shadow-lg ${
             v2UiEnabled ? "hidden lg:flex" : ""
           }`}
         >
@@ -319,7 +319,7 @@ const Sidebar = ({ isOpen, onClose, onOpen }) => {
                       isOpen ? "px-3 py-2.5" : "px-0 py-2.5 justify-center"
                     } ${
                       isActive(item.path)
-                        ? "bg-[#f6b100]/15 text-[#f6b100]"
+                        ? "bg-brand/15 text-brand"
                         : "text-[#ababab] hover:bg-[#262626] hover:text-[#f5f5f5]"
                     }`}
                   >

@@ -155,7 +155,7 @@ const AllStoresWeekGrid = ({
                 onClick={() => jumpToStore(store._id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
                   isActive
-                    ? "bg-[#f6b100]/15 border-[#f6b100]/40 text-[#f6b100]"
+                    ? "bg-brand/15 border-brand/40 text-brand"
                     : "bg-[#262626] border-[#343434] text-[#ababab] hover:text-[#f5f5f5] hover:border-[#4a4a4a]"
                 }`}
                 title={`Go to ${store.name}`}
@@ -191,7 +191,7 @@ const AllStoresWeekGrid = ({
             key={store._id}
             ref={(el) => { sectionRefs.current[store._id] = el; }}
             className={`bg-[#1f1f1f] rounded-lg border overflow-hidden scroll-mt-4 ${
-              isActive ? "border-[#f6b100]/40" : "border-[#343434]"
+              isActive ? "border-brand/40" : "border-[#343434]"
             }`}
           >
             {/* Store header */}
@@ -201,15 +201,15 @@ const AllStoresWeekGrid = ({
             >
               <div className="flex items-center gap-3 min-w-0">
                 <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                  isActive ? "bg-[#f6b100]/20" : "bg-[#262626]"
+                  isActive ? "bg-brand-20" : "bg-[#262626]"
                 }`}>
-                  <MdStore className={isActive ? "text-[#f6b100]" : "text-[#ababab]"} size={20} />
+                  <MdStore className={isActive ? "text-brand" : "text-[#ababab]"} size={20} />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <h4 className="text-[#f5f5f5] font-semibold truncate">{store.name}</h4>
                     {isActive && (
-                      <span className="flex items-center gap-1 text-[10px] font-medium text-[#f6b100] bg-[#f6b100]/10 px-1.5 py-0.5 rounded">
+                      <span className="flex items-center gap-1 text-[10px] font-medium text-brand bg-brand-10 px-1.5 py-0.5 rounded">
                         <MdCheckCircle size={11} /> Current
                       </span>
                     )}
@@ -229,7 +229,7 @@ const AllStoresWeekGrid = ({
                     <div className="text-[#6a6a6a]">staff</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-[#f6b100] font-bold">{st.hours.toFixed(0)}h</div>
+                    <div className="text-brand font-bold">{st.hours.toFixed(0)}h</div>
                     <div className="text-[#6a6a6a]">hours</div>
                   </div>
                 </div>

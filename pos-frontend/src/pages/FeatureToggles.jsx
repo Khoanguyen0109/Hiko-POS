@@ -42,7 +42,7 @@ const FeatureToggles = () => {
               aria-checked={v2UiEnabled}
               onClick={() => setV2UiEnabled(!v2UiEnabled)}
               className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors ${
-                v2UiEnabled ? "bg-[#f6b100]" : "bg-[#343434]"
+                v2UiEnabled ? "bg-brand" : "bg-[#343434]"
               }`}
             >
               <span
@@ -58,7 +58,7 @@ const FeatureToggles = () => {
             <ul className="space-y-2">
               {V2_FEATURES.map((feature) => (
                 <li key={feature} className="flex items-start gap-2 text-sm text-[#ababab]">
-                  <span className="text-[#f6b100] mt-0.5">•</span>
+                  <span className="text-brand mt-0.5">•</span>
                   <span>{feature}</span>
                 </li>
               ))}
@@ -67,7 +67,7 @@ const FeatureToggles = () => {
 
           <p className="mt-6 text-xs text-[#ababab]">
             Storage key:{" "}
-            <code className="text-[#f6b100] bg-[#1f1f1f] px-1.5 py-0.5 rounded">
+            <code className="text-brand bg-[#1f1f1f] px-1.5 py-0.5 rounded">
               {V2_UI_STORAGE_KEY}
             </code>
           </p>

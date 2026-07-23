@@ -45,7 +45,7 @@ const StorageAnalytics = ({ dateFilter, customDateRange }) => {
     if (loading) {
         return (
             <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f6b100] mx-auto mb-4"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
                 <p className="text-[#ababab] text-lg">Loading storage analytics...</p>
             </div>
         );
@@ -78,7 +78,7 @@ const StorageAnalytics = ({ dateFilter, customDateRange }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                     <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
                         <div className="flex items-center justify-between mb-3 sm:mb-4">
-                            <MdStorage className="text-xl sm:text-2xl text-[#f6b100]" />
+                            <MdStorage className="text-xl sm:text-2xl text-brand" />
                             <span className="text-[#ababab] text-xs sm:text-sm">Total</span>
                         </div>
                         <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#f5f5f5] mb-1">
@@ -124,7 +124,7 @@ const StorageAnalytics = ({ dateFilter, customDateRange }) => {
                 {/* Storage Items Table */}
                 <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
                     <div className="flex items-center gap-3 mb-4 sm:mb-6">
-                        <MdStorage className="text-[#f6b100]" size={24} />
+                        <MdStorage className="text-brand" size={24} />
                         <h2 className="text-xl font-semibold text-[#f5f5f5]">Storage Items Overview</h2>
                     </div>
                     

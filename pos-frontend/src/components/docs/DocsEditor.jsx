@@ -20,7 +20,7 @@ const ToolbarButton = ({ onClick, active, children, title }) => (
     title={title}
     className={`p-2 md:p-1.5 rounded transition-colors shrink-0 ${
       active
-        ? "bg-[#f6b100]/20 text-[#f6b100]"
+        ? "bg-brand-20 text-brand"
         : "text-[#ababab] hover:bg-[#2a2a2a] hover:text-[#f5f5f5]"
     }`}
   >

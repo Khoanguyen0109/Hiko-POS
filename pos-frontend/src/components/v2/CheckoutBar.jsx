@@ -40,14 +40,14 @@ const CheckoutBar = ({ onOpenCart, hidden }) => {
           <p className="text-xs text-[#ababab]">
             {itemCount} {itemCount === 1 ? "item" : "items"}
           </p>
-          <p className="text-lg font-bold text-[#f6b100]">
+          <p className="text-lg font-bold text-brand">
             {formatVND(totalWithReward)}
           </p>
         </div>
         <button
           type="button"
           onClick={onOpenCart}
-          className="min-h-[48px] rounded-lg bg-[#f6b100] px-5 text-sm font-semibold text-[#1f1f1f] transition-colors hover:bg-[#e09900] active:scale-[0.98]"
+          className="min-h-[48px] rounded-lg bg-brand px-5 text-sm font-semibold text-[#f5f5f5] transition-colors hover:bg-brand-hover active:scale-[0.98]"
         >
           View cart
         </button>

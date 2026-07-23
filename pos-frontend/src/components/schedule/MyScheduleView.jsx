@@ -1,3 +1,4 @@
+import { BRAND_PRIMARY } from "../../constants/colors.js";
 import { useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -43,7 +44,7 @@ const MyScheduleView = ({ year, week }) => {
         startTime: shift.startTime,
         endTime: shift.endTime,
         durationHours: shift.durationHours || 0,
-        color: shift.color || "#f6b100",
+        color: shift.color || BRAND_PRIMARY,
       });
     }
 
@@ -64,7 +65,7 @@ const MyScheduleView = ({ year, week }) => {
   if (myAllStoresLoading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f6b100]"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand"></div>
       </div>
     );
   }
@@ -78,12 +79,12 @@ const MyScheduleView = ({ year, week }) => {
 
         return (
           <div key={dateStr}>
-            <div className={`flex items-center gap-2 mb-2 ${isToday ? "text-[#f6b100]" : "text-[#ababab]"}`}>
+            <div className={`flex items-center gap-2 mb-2 ${isToday ? "text-brand" : "text-[#ababab]"}`}>
               <MdCalendarToday size={14} />
               <span className="text-xs font-bold uppercase tracking-wider">
                 {getDayName(date, "long")} {formatDate(date, "short")}
                 {isToday && (
-                  <span className="ml-2 text-[10px] bg-[#f6b100]/20 px-1.5 py-0.5 rounded">
+                  <span className="ml-2 text-[10px] bg-brand-20 px-1.5 py-0.5 rounded">
                     Today
                   </span>
                 )}
@@ -120,7 +121,7 @@ const MyScheduleView = ({ year, week }) => {
                         <button
                           type="button"
                           onClick={() => handleCheckout(shift)}
-                          className="flex items-center gap-1 text-xs px-3 py-1.5 bg-[#f6b100] text-[#1f1f1f] font-medium rounded-lg hover:bg-[#e5a600]"
+                          className="flex items-center gap-1 text-xs px-3 py-1.5 bg-brand text-[#f5f5f5] font-medium rounded-lg hover:bg-brand-hover"
                         >
                           <MdAccountBalanceWallet size={14} />
                           Check out

@@ -53,7 +53,7 @@ const DateFilter = ({ onDateChange, initialStartDate, initialEndDate }) => {
         </h3>
         <button
           onClick={() => setShowCustomRange(!showCustomRange)}
-          className="text-[#f6b100] text-xs font-medium hover:text-[#f6b100]/80 transition-colors"
+          className="text-brand text-xs font-medium hover:text-brand/80 transition-colors"
         >
           {showCustomRange ? 'Quick Select' : 'Custom Range'}
         </button>
@@ -66,7 +66,7 @@ const DateFilter = ({ onDateChange, initialStartDate, initialEndDate }) => {
             <button
               key={key}
               onClick={() => handlePresetClick(key)}
-              className="flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-xs font-medium bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] transition-all duration-200 border border-[#343434] hover:border-[#f6b100]"
+              className="flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-xs font-medium bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] transition-all duration-200 border border-[#343434] hover:border-brand"
             >
               <Icon size={14} />
               {label}
@@ -85,7 +85,7 @@ const DateFilter = ({ onDateChange, initialStartDate, initialEndDate }) => {
                 type="date"
                 value={startDate}
                 onChange={handleStartDateChange}
-                className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100] transition-colors"
+                className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-brand transition-colors"
               />
             </div>
             <div>
@@ -97,13 +97,13 @@ const DateFilter = ({ onDateChange, initialStartDate, initialEndDate }) => {
                 value={endDate}
                 min={startDate}
                 onChange={handleEndDateChange}
-                className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100] transition-colors"
+                className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-brand transition-colors"
               />
             </div>
           </div>
           <button
             onClick={handleCustomDateChange}
-            className="w-full px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg text-sm font-semibold hover:bg-[#f6b100]/90 transition-colors"
+            className="w-full px-4 py-2 bg-brand text-[#f5f5f5] rounded-lg text-sm font-semibold hover:bg-brand-hover transition-colors"
           >
             Apply Date Range
           </button>

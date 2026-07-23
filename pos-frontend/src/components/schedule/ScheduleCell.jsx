@@ -1,3 +1,4 @@
+import { BRAND_PRIMARY } from "../../constants/colors.js";
 import PropTypes from "prop-types";
 import { useSelector } from "react-redux";
 import { MdAdd as MdAddIcon } from "react-icons/md";
@@ -99,7 +100,7 @@ const ScheduleCell = ({ schedule, shiftTemplate, onClick, members, disabled = fa
             const memberName = getMemberName(assignedMember);
             const status = assignedMember?.status || "scheduled";
             const isMe = memberId === currentUserId;
-            const memberColor = isMe ? '#f6b100' : getMemberColor(memberId);
+            const memberColor = isMe ? BRAND_PRIMARY : getMemberColor(memberId);
             const opacityClass = status === 'absent' || status === 'cancelled' ? 'opacity-50' : 'opacity-100';
 
             return (

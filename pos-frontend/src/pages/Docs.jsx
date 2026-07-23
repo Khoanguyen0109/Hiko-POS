@@ -487,7 +487,7 @@ const Docs = () => {
         <div className="flex items-center gap-3 min-w-0">
           <BackButton onClick={handleLeaveDocs} />
           <div className="flex items-center gap-2 min-w-0">
-            <MdMenuBook size={22} className="text-[#f6b100] shrink-0" />
+            <MdMenuBook size={22} className="text-brand shrink-0" />
             <h1 className="text-xl lg:text-2xl font-semibold text-[#f5f5f5] truncate">
               Documentation
             </h1>
@@ -528,7 +528,7 @@ const Docs = () => {
           <button
             type="button"
             onClick={handleBackToBrowse}
-            className="flex items-center gap-1 text-[#f6b100] text-sm font-medium shrink-0"
+            className="flex items-center gap-1 text-brand text-sm font-medium shrink-0"
           >
             <MdChevronLeft size={22} />
             Browse
@@ -580,7 +580,7 @@ const Docs = () => {
                     aria-label="Rename folder"
                     onClick={handleRenameSelectedFolder}
                     disabled={renameLoading}
-                    className="p-2 rounded-lg text-[#888] hover:text-[#f6b100] hover:bg-[#f6b100]/10 transition-colors disabled:opacity-40"
+                    className="p-2 rounded-lg text-[#888] hover:text-brand hover:bg-brand-10 transition-colors disabled:opacity-40"
                   >
                     <MdEdit size={18} />
                   </button>
@@ -647,7 +647,7 @@ const Docs = () => {
               <button
                 type="button"
                 onClick={handleBackToBrowse}
-                className="mt-4 text-sm text-[#f6b100] lg:hidden"
+                className="mt-4 text-sm text-brand lg:hidden"
               >
                 Back to browse
               </button>
@@ -665,7 +665,7 @@ const Docs = () => {
                       setEditTitle(e.target.value);
                       setIsDirty(true);
                     }}
-                    className="flex-1 min-w-0 w-full lg:min-w-[200px] text-lg lg:text-xl font-semibold bg-transparent border-b border-[#343434] pb-2 text-[#f5f5f5] focus:outline-none focus:border-[#f6b100]"
+                    className="flex-1 min-w-0 w-full lg:min-w-[200px] text-lg lg:text-xl font-semibold bg-transparent border-b border-[#343434] pb-2 text-[#f5f5f5] focus:outline-none focus:border-brand"
                   />
                 ) : (
                   <h2 className="hidden lg:block text-xl font-semibold text-[#f5f5f5]">

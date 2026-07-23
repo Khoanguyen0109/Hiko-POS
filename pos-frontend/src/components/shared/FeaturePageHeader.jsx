@@ -4,7 +4,7 @@ import BackButton from "./BackButton";
 const tabButtonClass = (active) =>
   `flex min-h-[36px] min-w-[5rem] flex-1 items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium whitespace-nowrap transition-colors sm:text-sm ${
     active
-      ? "bg-[#262626] text-[#f6b100] shadow-sm"
+      ? "bg-[#262626] text-brand shadow-sm"
       : "text-[#ababab] hover:bg-[#262626]/60 hover:text-[#f5f5f5]"
   }`;
 

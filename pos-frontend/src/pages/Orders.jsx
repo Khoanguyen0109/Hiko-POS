@@ -235,7 +235,7 @@ const Orders = () => {
                 onClick={() => setShowDateFilter(!showDateFilter)}
                 className={`flex min-h-[40px] items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all sm:text-sm ${
                   showDateFilter
-                    ? "bg-[#f6b100] text-[#1f1f1f]"
+                    ? "bg-brand text-[#f5f5f5]"
                     : "border border-[#343434] bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5]"
                 }`}
               >
@@ -247,7 +247,7 @@ const Orders = () => {
                 onClick={() => setShowCreatedByFilter(!showCreatedByFilter)}
                 className={`flex min-h-[40px] items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all sm:text-sm ${
                   showCreatedByFilter
-                    ? "bg-[#f6b100] text-[#1f1f1f]"
+                    ? "bg-brand text-[#f5f5f5]"
                     : "border border-[#343434] bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5]"
                 }`}
               >
@@ -259,7 +259,7 @@ const Orders = () => {
                 onClick={() => setShowPaymentFilter(!showPaymentFilter)}
                 className={`flex min-h-[40px] items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all sm:text-sm ${
                   showPaymentFilter
-                    ? "bg-[#f6b100] text-[#1f1f1f]"
+                    ? "bg-brand text-[#f5f5f5]"
                     : "border border-[#343434] bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5]"
                 }`}
               >
@@ -271,7 +271,7 @@ const Orders = () => {
                 onClick={() => setShowVendorFilter(!showVendorFilter)}
                 className={`flex min-h-[40px] items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all sm:text-sm ${
                   showVendorFilter
-                    ? "bg-[#f6b100] text-[#1f1f1f]"
+                    ? "bg-brand text-[#f5f5f5]"
                     : "border border-[#343434] bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5]"
                 }`}
               >
@@ -313,7 +313,7 @@ const Orders = () => {
                 <select
                   value={createdBy}
                   onChange={(e) => setCreatedBy(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100] transition-colors"
+                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-brand transition-colors"
                 >
                   <option value="all">All Staff Members</option>
                   {members.map((member) => (
@@ -360,7 +360,7 @@ const Orders = () => {
                 <select
                   value={paymentMethod}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100] transition-colors"
+                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-brand transition-colors"
                 >
                   <option value="all">All Payment Methods</option>
                   <option value="Cash">Cash</option>
@@ -402,7 +402,7 @@ const Orders = () => {
                 <select
                   value={thirdPartyVendor}
                   onChange={(e) => setThirdPartyVendor(e.target.value)}
-                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100] transition-colors"
+                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-brand transition-colors"
                 >
                   <option value="all">All Vendors</option>
                   <option value="None">Direct Orders (No Vendor)</option>
@@ -442,7 +442,7 @@ const Orders = () => {
                 status === key
                   ? key === "cancelled"
                     ? "bg-red-600 text-white"
-                    : "bg-[#f6b100] text-[#1f1f1f]"
+                    : "bg-brand text-[#f5f5f5]"
                   : key === "cancelled"
                   ? "bg-[#262626] text-red-400 hover:bg-red-900/30 hover:text-red-300 border border-red-800/50"
                   : "bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434]"
@@ -454,7 +454,7 @@ const Orders = () => {
                   status === key
                     ? key === "cancelled"
                       ? "bg-white/20 text-white"
-                      : "bg-[#1f1f1f]/20 text-[#1f1f1f]"
+                      : "bg-[#1f1f1f]/20 text-[#f5f5f5]"
                     : key === "cancelled"
                     ? "bg-red-800/50 text-red-300"
                     : "bg-[#343434] text-[#ababab]"
@@ -506,7 +506,7 @@ const Orders = () => {
                   setThirdPartyVendor("all");
                 }
               }}
-              className="mt-4 px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg text-sm font-medium hover:bg-[#f6b100]/90 transition-colors"
+              className="mt-4 px-4 py-2 bg-brand text-[#f5f5f5] rounded-lg text-sm font-medium hover:bg-brand-hover transition-colors"
             >
               Reset Filters
             </button>
@@ -546,7 +546,7 @@ const Orders = () => {
                     disabled={loading}
                     className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
                       item === pagination.page
-                        ? 'bg-[#f6b100] text-[#1f1f1f]'
+                        ? 'bg-brand text-[#f5f5f5]'
                         : 'bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434]'
                     }`}
                   >

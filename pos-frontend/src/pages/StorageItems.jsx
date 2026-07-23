@@ -24,7 +24,7 @@ const FilterGroup = memo(({ options, value, onChange }) => (
         onClick={() => onChange(opt.value)}
         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
           value === opt.value
-            ? "bg-[#f6b100] text-[#1f1f1f]"
+            ? "bg-brand text-[#f5f5f5]"
             : "bg-[#1f1f1f] text-[#ababab] border border-[#343434] hover:bg-[#262626]"
         }`}
       >
@@ -138,7 +138,7 @@ const StorageItems = () => {
           <button
             type="button"
             onClick={handleAddItem}
-            className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-[#f6b100] px-3 py-2 text-xs font-semibold text-[#1f1f1f] transition-colors hover:bg-[#e5a000] sm:px-4 sm:text-sm"
+            className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-[#f5f5f5] transition-colors hover:bg-brand-hover sm:px-4 sm:text-sm"
           >
             <IoMdAdd size={18} />
             Add Item
@@ -154,7 +154,7 @@ const StorageItems = () => {
             placeholder="Search by name or code..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1 px-4 py-2 bg-[#1f1f1f] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100]"
+            className="flex-1 px-4 py-2 bg-[#1f1f1f] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
           />
           <FilterGroup options={STATUS_OPTIONS} value={filterStatus} onChange={setFilterStatus} />
           <FilterGroup options={STOCK_OPTIONS} value={filterStock} onChange={setFilterStock} />
@@ -174,7 +174,7 @@ const StorageItems = () => {
             {!searchQuery && (
               <button
                 onClick={handleAddItem}
-                className="mt-4 px-6 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-semibold hover:bg-[#e5a000] transition-colors text-sm"
+                className="mt-4 px-6 py-2 bg-brand text-[#f5f5f5] rounded-lg font-semibold hover:bg-brand-hover transition-colors text-sm"
               >
                 Add Your First Item
               </button>
@@ -205,8 +205,8 @@ const StorageItems = () => {
                     <tr key={item._id} className={`${rowBg} transition-colors`}>
                       <td className={`${tdClass} sticky left-0 ${stickyBg} z-[1] shadow-[2px_0_4px_-1px_rgba(0,0,0,0.3)]`}>
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-[#f6b100]/20 flex items-center justify-center flex-shrink-0">
-                            <MdInventory size={16} className="text-[#f6b100]" />
+                          <div className="w-8 h-8 rounded-full bg-brand-20 flex items-center justify-center flex-shrink-0">
+                            <MdInventory size={16} className="text-brand" />
                           </div>
                           <div>
                             <p className="font-medium">{item.name}</p>

@@ -90,12 +90,12 @@ const CartInfo = () => {
                         <p className="text-[#ababab] text-xs line-through">
                           {formatVND(item.originalPrice)}
                         </p>
-                        <p className="text-[#f6b100] text-base font-bold">
+                        <p className="text-brand text-base font-bold">
                           {formatVND(item.price)}
                         </p>
                       </div>
                     ) : (
-                      <p className="text-[#f6b100] text-base font-bold">
+                      <p className="text-brand text-base font-bold">
                         {formatVND(item.price)}
                       </p>
                     )}
@@ -144,7 +144,7 @@ const CartInfo = () => {
                     <button
                       onClick={() => handleDecrement(item)}
                       disabled={item.quantity <= 1}
-                      className="p-1.5 rounded-md bg-[#262626] text-[#f6b100] hover:bg-[#343434] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="p-1.5 rounded-md bg-[#262626] text-brand hover:bg-[#343434] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       title="Decrease quantity"
                     >
                       <MdRemove size={14} />
@@ -158,7 +158,7 @@ const CartInfo = () => {
                     
                     <button
                       onClick={() => handleIncrement(item)}
-                      className="p-1.5 rounded-md bg-[#262626] text-[#f6b100] hover:bg-[#343434] transition-colors"
+                      className="p-1.5 rounded-md bg-[#262626] text-brand hover:bg-[#343434] transition-colors"
                       title="Increase quantity"
                     >
                       <MdAdd size={14} />
@@ -191,7 +191,7 @@ const CartInfo = () => {
                           {item.toppings.map((topping, index) => (
                             <div key={index} className="flex items-center justify-between">
                               <div className="flex items-center gap-1.5">
-                                <div className="w-1 h-1 bg-[#f6b100] rounded-full"></div>
+                                <div className="w-1 h-1 bg-brand rounded-full"></div>
                                 <span className="text-[#f5f5f5] text-xs">
                                   {topping.name}
                                 </span>
@@ -199,7 +199,7 @@ const CartInfo = () => {
                                   ×{topping.quantity}
                                 </span>
                               </div>
-                              <span className="text-[#f6b100] text-xs font-medium">
+                              <span className="text-brand text-xs font-medium">
                                 {formatVND(topping.totalPrice)}
                               </span>
                             </div>
@@ -211,7 +211,7 @@ const CartInfo = () => {
                               <span className="text-[#ababab] text-xs font-medium">
                                 Toppings Total:
                               </span>
-                              <span className="text-[#f6b100] text-xs font-bold">
+                              <span className="text-brand text-xs font-bold">
                                 {formatVND(item.toppings.reduce((sum, t) => sum + t.totalPrice, 0))}
                               </span>
                             </div>

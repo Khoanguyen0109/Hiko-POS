@@ -116,10 +116,10 @@ const PromotionAnalytics = ({ analytics, loading }) => {
           <div className="bg-[#262626] p-4 rounded-lg border border-[#343434]">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[#f6b100] text-sm font-medium">Total Promotions</p>
+                <p className="text-brand text-sm font-medium">Total Promotions</p>
                 <p className="text-2xl font-bold text-[#f5f5f5]">{summary.totalPromotions || 0}</p>
               </div>
-              <TagIcon size={32} className="text-[#f6b100]" />
+              <TagIcon size={32} className="text-brand" />
             </div>
           </div>
 
@@ -146,7 +146,7 @@ const PromotionAnalytics = ({ analytics, loading }) => {
           <div className="bg-[#262626] p-4 rounded-lg border border-[#343434]">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-[#f6b100] text-sm font-medium">Avg Usage</p>
+                <p className="text-brand text-sm font-medium">Avg Usage</p>
                 <p className="text-2xl font-bold text-[#f5f5f5]">
                   {summary.averageUsage ? Math.round(summary.averageUsage * 10) / 10 : 0}
                 </p>

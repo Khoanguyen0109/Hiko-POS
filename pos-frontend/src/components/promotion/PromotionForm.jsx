@@ -417,7 +417,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                         max="100"
                         value={formData.discount.percentage}
                         onChange={(e) => handleInputChange('discount.percentage', parseFloat(e.target.value) || '')}
-                        className={`w-full px-3 py-2 pr-8 bg-[#262626] border rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] ${
+                        className={`w-full px-3 py-2 pr-8 bg-[#262626] border rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-brand ${
                           errors['discount.percentage'] ? 'border-red-500' : 'border-[#343434]'
                         }`}
                         placeholder="25"
@@ -434,7 +434,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                         step="0.01"
                         value={formData.discount.fixedAmount}
                         onChange={(e) => handleInputChange('discount.fixedAmount', parseFloat(e.target.value) || '')}
-                        className={`w-full px-3 py-2 pl-8 bg-[#262626] border rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] ${
+                        className={`w-full px-3 py-2 pl-8 bg-[#262626] border rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-brand ${
                           errors['discount.fixedAmount'] ? 'border-red-500' : 'border-[#343434]'
                         }`}
                         placeholder="10000"
@@ -451,7 +451,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                         step="0.01"
                         value={formData.discount.uniformPrice}
                         onChange={(e) => handleInputChange('discount.uniformPrice', parseFloat(e.target.value) || '')}
-                        className={`w-full px-3 py-2 pl-8 bg-[#262626] border rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] ${
+                        className={`w-full px-3 py-2 pl-8 bg-[#262626] border rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-brand ${
                           errors['discount.uniformPrice'] ? 'border-red-500' : 'border-[#343434]'
                         }`}
                         placeholder="35000"
@@ -474,7 +474,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                         max="100"
                         value={formData.discount.percentage}
                         onChange={(e) => handleInputChange('discount.percentage', parseFloat(e.target.value) || '')}
-                        className={`w-full px-3 py-2 pr-8 bg-[#262626] border rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] ${
+                        className={`w-full px-3 py-2 pr-8 bg-[#262626] border rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-brand ${
                           errors['discount.percentage'] ? 'border-red-500' : 'border-[#343434]'
                         }`}
                         placeholder="10"
@@ -489,7 +489,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                         step="0.01"
                         value={formData.discount.fixedAmount}
                         onChange={(e) => handleInputChange('discount.fixedAmount', parseFloat(e.target.value) || '')}
-                        className={`w-full px-3 py-2 pl-8 bg-[#262626] border rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] ${
+                        className={`w-full px-3 py-2 pl-8 bg-[#262626] border rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-brand ${
                           errors['discount.fixedAmount'] ? 'border-red-500' : 'border-[#343434]'
                         }`}
                         placeholder="5.00"
@@ -514,7 +514,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
             <select
               value={formData.applicableItems}
               onChange={(e) => handleInputChange('applicableItems', e.target.value)}
-              className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] focus:outline-none focus:border-[#f6b100]"
+              className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] focus:outline-none focus:border-brand"
             >
               <option value="all_order">Entire Order</option>
               <option value="specific_dishes">Specific Dishes</option>
@@ -595,7 +595,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                   step="0.01"
                   value={formData.conditions.minOrderAmount}
                   onChange={(e) => handleInputChange('conditions.minOrderAmount', parseFloat(e.target.value) || '')}
-                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100]"
+                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-brand"
                   placeholder="0"
                 />
               </div>
@@ -610,7 +610,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                   step="0.01"
                   value={formData.conditions.maxOrderAmount}
                   onChange={(e) => handleInputChange('conditions.maxOrderAmount', parseFloat(e.target.value) || '')}
-                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100]"
+                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-brand"
                   placeholder="No limit"
                 />
               </div>
@@ -624,7 +624,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                   min="1"
                   value={formData.conditions.usageLimit}
                   onChange={(e) => handleInputChange('conditions.usageLimit', parseInt(e.target.value) || '')}
-                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100]"
+                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-brand"
                   placeholder="Unlimited"
                 />
               </div>
@@ -638,7 +638,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                   min="1"
                   value={formData.conditions.perCustomerLimit}
                   onChange={(e) => handleInputChange('conditions.perCustomerLimit', parseInt(e.target.value) || '')}
-                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100]"
+                  className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-brand"
                   placeholder="Unlimited"
                 />
               </div>
@@ -657,7 +657,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                     type="checkbox"
                     checked={formData.conditions.daysOfWeek.includes(day)}
                     onChange={(e) => handleArrayChange('conditions.daysOfWeek', day, e.target.checked)}
-                    className="rounded border-[#343434] bg-[#262626] text-[#f6b100] focus:ring-[#f6b100] focus:ring-2"
+                    className="rounded border-[#343434] bg-[#262626] text-brand focus:ring-brand focus:ring-2"
                   />
                   <span className="text-sm capitalize text-[#f5f5f5]">{day.slice(0, 3)}</span>
                 </label>
@@ -674,7 +674,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
               <button
                 type="button"
                 onClick={addTimeSlot}
-                className="text-[#f6b100] text-sm hover:text-[#f6b100]/80 font-medium"
+                className="text-brand text-sm hover:text-brand/80 font-medium"
               >
                 + Add Time Slot
               </button>
@@ -686,14 +686,14 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                   type="time"
                   value={slot.start}
                   onChange={(e) => handleTimeSlotChange(index, 'start', e.target.value)}
-                  className="px-3 py-2 bg-[#1a1a1a] border border-[#343434] rounded-md text-[#f5f5f5] focus:outline-none focus:border-[#f6b100]"
+                  className="px-3 py-2 bg-[#1a1a1a] border border-[#343434] rounded-md text-[#f5f5f5] focus:outline-none focus:border-brand"
                 />
                 <span className="text-[#ababab]">to</span>
                 <input
                   type="time"
                   value={slot.end}
                   onChange={(e) => handleTimeSlotChange(index, 'end', e.target.value)}
-                  className="px-3 py-2 bg-[#1a1a1a] border border-[#343434] rounded-md text-[#f5f5f5] focus:outline-none focus:border-[#f6b100]"
+                  className="px-3 py-2 bg-[#1a1a1a] border border-[#343434] rounded-md text-[#f5f5f5] focus:outline-none focus:border-brand"
                 />
                 <button
                   type="button"
@@ -719,7 +719,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                 type="date"
                 value={formData.startDate}
                 onChange={(e) => handleInputChange('startDate', e.target.value)}
-                className={`w-full px-3 py-2 bg-[#262626] border rounded-md text-[#f5f5f5] focus:outline-none focus:border-[#f6b100] ${
+                className={`w-full px-3 py-2 bg-[#262626] border rounded-md text-[#f5f5f5] focus:outline-none focus:border-brand ${
                   errors.startDate ? 'border-red-500' : 'border-[#343434]'
                 }`}
               />
@@ -734,7 +734,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                 type="date"
                 value={formData.endDate}
                 onChange={(e) => handleInputChange('endDate', e.target.value)}
-                className={`w-full px-3 py-2 bg-[#262626] border rounded-md text-[#f5f5f5] focus:outline-none focus:border-[#f6b100] ${
+                className={`w-full px-3 py-2 bg-[#262626] border rounded-md text-[#f5f5f5] focus:outline-none focus:border-brand ${
                   errors.endDate ? 'border-red-500' : 'border-[#343434]'
                 }`}
               />
@@ -750,7 +750,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                   type="checkbox"
                   checked={formData.isActive}
                   onChange={(e) => handleInputChange('isActive', e.target.checked)}
-                  className="rounded border-[#343434] bg-[#262626] text-[#f6b100] focus:ring-[#f6b100] focus:ring-2"
+                  className="rounded border-[#343434] bg-[#262626] text-brand focus:ring-brand focus:ring-2"
                 />
                 <span className="text-sm font-medium text-[#f5f5f5]">Active</span>
               </label>
@@ -764,7 +764,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                 type="number"
                 value={formData.priority}
                 onChange={(e) => handleInputChange('priority', parseInt(e.target.value) || 0)}
-                className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100]"
+                className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-md text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-brand"
                 placeholder="0"
               />
             </div>
@@ -782,7 +782,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-md hover:bg-[#f6b100]/90 disabled:bg-[#f6b100]/50 disabled:cursor-not-allowed transition-colors font-medium"
+              className="px-6 py-2 bg-brand text-[#f5f5f5] rounded-md hover:bg-brand-hover disabled:bg-brand-50 disabled:cursor-not-allowed transition-colors font-medium"
             >
               {loading ? 'Saving...' : (promotion ? 'Update' : 'Create')} Promotion
             </button>

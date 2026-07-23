@@ -99,7 +99,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
                 type="button"
                 onClick={() => billRef.current?.handlePlaceOrder()}
                 disabled={cartEmpty || loading}
-                className="min-h-[48px] rounded-lg bg-[#f6b100] px-4 py-3 text-base font-semibold text-[#1f1f1f] transition-colors hover:bg-[#e09900] disabled:cursor-not-allowed disabled:opacity-50"
+                className="min-h-[48px] rounded-lg bg-brand px-4 py-3 text-base font-semibold text-[#f5f5f5] transition-colors hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading ? "Placing Order..." : "Place Order"}
               </button>

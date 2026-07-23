@@ -57,7 +57,7 @@ const MenuOrder = () => {
               <FiShoppingCart size={18} />
               <span className="text-sm font-medium">Cart</span>
               {itemCount > 0 && (
-                <span className="flex min-w-[1.125rem] h-[18px] items-center justify-center rounded-full bg-[#f6b100] px-1 text-[10px] font-bold text-[#1f1f1f]">
+                <span className="flex min-w-[1.125rem] h-[18px] items-center justify-center rounded-full bg-brand px-1 text-[10px] font-bold text-[#f5f5f5]">
                   {itemCount > 99 ? "99+" : itemCount}
                 </span>
               )}

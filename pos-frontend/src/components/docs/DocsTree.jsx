@@ -55,7 +55,7 @@ const DocsTreeNode = ({
     <div>
       <div
         className={`w-full flex items-center gap-1 min-h-11 rounded-lg transition-colors ${
-          isSelected ? "bg-[#f6b100]/15" : "hover:bg-[#2a2a2a]"
+          isSelected ? "bg-brand/15" : "hover:bg-[#2a2a2a]"
         }`}
         style={{ paddingLeft: `${depth * 12 + 4}px` }}
       >
@@ -63,7 +63,7 @@ const DocsTreeNode = ({
           type="button"
           onClick={handleClick}
           className={`flex-1 flex items-center gap-1.5 py-2.5 px-2 rounded-lg text-left text-sm min-w-0 ${
-            isSelected ? "text-[#f6b100]" : "text-[#d4d4d4]"
+            isSelected ? "text-brand" : "text-[#d4d4d4]"
           }`}
         >
           {isFolder && hasChildren ? (
@@ -78,9 +78,9 @@ const DocsTreeNode = ({
 
           {isFolder ? (
             expanded ? (
-              <MdFolderOpen size={16} className="shrink-0 text-[#f6b100]" />
+              <MdFolderOpen size={16} className="shrink-0 text-brand" />
             ) : (
-              <MdFolder size={16} className="shrink-0 text-[#f6b100]" />
+              <MdFolder size={16} className="shrink-0 text-brand" />
             )
           ) : (
             <MdDescription
@@ -112,7 +112,7 @@ const DocsTreeNode = ({
             type="button"
             onClick={handleRename}
             title={`Rename ${isFolder ? "folder" : "document"}`}
-            className="p-2 rounded-lg text-[#888] hover:text-[#f6b100] hover:bg-[#f6b100]/10 shrink-0 transition-colors"
+            className="p-2 rounded-lg text-[#888] hover:text-brand hover:bg-brand-10 shrink-0 transition-colors"
           >
             <MdEdit size={16} />
           </button>
@@ -194,7 +194,7 @@ const DocsTree = ({
         onClick={onSelectRoot}
         className={`w-full flex items-center gap-2 min-h-11 py-2.5 px-3 mx-1 rounded-lg text-left text-sm transition-colors ${
           isRootSelected
-            ? "bg-[#f6b100]/15 text-[#f6b100]"
+            ? "bg-brand/15 text-brand"
             : "text-[#d4d4d4] hover:bg-[#2a2a2a]"
         }`}
       >

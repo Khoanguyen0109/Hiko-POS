@@ -200,7 +200,7 @@ const ShiftCheckout = () => {
       <div className="flex items-center gap-3 py-4 sm:py-6">
         <BackButton />
         <div className="flex items-center gap-2 min-w-0">
-          <MdAccountBalanceWallet className="text-[#f6b100] shrink-0" size={24} />
+          <MdAccountBalanceWallet className="text-brand shrink-0" size={24} />
           <h1 className="text-xl sm:text-2xl font-bold text-[#f5f5f5] truncate">Shift checkout</h1>
         </div>
       </div>
@@ -211,7 +211,7 @@ const ShiftCheckout = () => {
           onClick={() => setActiveTab(TABS.MY_SHIFT)}
           className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
             activeTab === TABS.MY_SHIFT
-              ? "border-[#f6b100] text-[#f6b100]"
+              ? "border-brand text-brand"
               : "border-transparent text-[#ababab]"
           }`}
         >
@@ -223,7 +223,7 @@ const ShiftCheckout = () => {
             onClick={() => setActiveTab(TABS.DAY)}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
               activeTab === TABS.DAY
-                ? "border-[#f6b100] text-[#f6b100]"
+                ? "border-brand text-brand"
                 : "border-transparent text-[#ababab]"
             }`}
           >
@@ -269,7 +269,7 @@ const ShiftCheckout = () => {
               <div
                 key={rowKey}
                 className={`bg-[#262626] border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${
-                  isOwnShift ? "border-[#f6b100]/40" : "border-[#383838]"
+                  isOwnShift ? "border-brand/40" : "border-[#383838]"
                 }`}
               >
                 <div>
@@ -283,7 +283,7 @@ const ShiftCheckout = () => {
                       )}
                     </p>
                     {isOwnShift && (
-                      <span className="text-xs px-2 py-0.5 rounded bg-[#f6b100]/20 text-[#f6b100]">
+                      <span className="text-xs px-2 py-0.5 rounded bg-brand-20 text-brand">
                         Your shift
                       </span>
                     )}
@@ -335,7 +335,7 @@ const ShiftCheckout = () => {
                           ? "Check in before checking out"
                           : undefined
                       }
-                      className="px-4 py-2 text-sm font-medium bg-[#f6b100] text-[#1f1f1f] rounded-lg hover:bg-[#e5a600] disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="px-4 py-2 text-sm font-medium bg-brand text-[#f5f5f5] rounded-lg hover:bg-brand-hover disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       {isOwnShift && !checkout ? "Check out" : "View"}
                     </button>

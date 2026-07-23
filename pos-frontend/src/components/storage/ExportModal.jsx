@@ -149,7 +149,7 @@ const ExportModal = ({
               <MdInventory className="inline mr-1" size={16} />
               Storage Item <span className="text-red-500">*</span>
             </label>
-            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-[#f6b100]">
+            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
               <select
                 name="storageItemId"
                 value={formData.storageItemId}
@@ -168,7 +168,7 @@ const ExportModal = ({
             {selectedItem && (
               <div className="mt-2 p-3 bg-[#1a1a1a] rounded-lg border border-[#343434]">
                 <div className="flex items-center gap-2 text-sm">
-                  <MdInfo className="text-[#f6b100]" size={16} />
+                  <MdInfo className="text-brand" size={16} />
                   <span className="text-[#ababab]">
                     Current stock: <span className="text-[#f5f5f5] font-semibold">
                       {selectedItem.currentStock} {selectedItem.unit}
@@ -189,7 +189,7 @@ const ExportModal = ({
             <label className="block text-[#ababab] text-sm mb-2">
               Quantity <span className="text-red-500">*</span>
             </label>
-            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-[#f6b100]">
+            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
               <input
                 type="number"
                 name="quantity"
@@ -218,7 +218,7 @@ const ExportModal = ({
             <label className="block text-[#ababab] text-sm mb-2">
               Notes
             </label>
-            <div className="rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-[#f6b100]">
+            <div className="rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
               <textarea
                 name="notes"
                 value={formData.notes}
@@ -242,7 +242,7 @@ const ExportModal = ({
             <button
               type="submit"
               disabled={loading || !formData.storageItemId || !formData.quantity || (selectedItem && formData.quantity > selectedItem.currentStock)}
-              className="px-6 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg hover:bg-[#e5a000] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+              className="px-6 py-2 bg-brand text-[#f5f5f5] rounded-lg hover:bg-brand-hover transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
             >
               <MdSave />
               {loading ? "Saving..." : mode === "create" ? "Create Export" : "Update Export"}

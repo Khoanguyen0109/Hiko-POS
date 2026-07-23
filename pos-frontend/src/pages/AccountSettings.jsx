@@ -272,12 +272,12 @@ const AccountSettings = () => {
         {/* Monthly Salary Calculator */}
         <div className="bg-gradient-to-br from-[#1f1f1f] to-[#1a1a1a] rounded-lg sm:rounded-xl border border-[#343434] shadow-xl overflow-hidden">
           {/* Header with gradient */}
-          <div className="bg-gradient-to-r from-[#4ECDC4]/10 to-[#f6b100]/10 p-3 sm:p-6 border-b border-[#343434]">
+          <div className="bg-gradient-to-r from-[#4ECDC4]/10 to-brand/10 p-3 sm:p-6 border-b border-[#343434]">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-[#f5f5f5] text-lg sm:text-2xl font-bold flex items-center gap-2 sm:gap-3">
-                  <div className="p-1.5 sm:p-2 bg-gradient-to-br from-[#4ECDC4] to-[#f6b100] rounded-lg">
-                    <MdAttachMoney size={18} className="sm:w-6 sm:h-6 text-[#1f1f1f]" />
+                  <div className="p-1.5 sm:p-2 bg-gradient-to-br from-[#4ECDC4] to-brand rounded-lg">
+                    <MdAttachMoney size={18} className="sm:w-6 sm:h-6 text-[#f5f5f5]" />
                   </div>
                   Monthly Salary
                 </h2>
@@ -353,12 +353,12 @@ const AccountSettings = () => {
                   </div>
 
                   {/* Total Hours Card */}
-                  <div className="bg-gradient-to-br from-[#262626] to-[#1f1f1f] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[#3a3a3a] hover:border-[#f6b100]/50 transition-all">
+                  <div className="bg-gradient-to-br from-[#262626] to-[#1f1f1f] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[#3a3a3a] hover:border-brand/50 transition-all">
                     <div className="flex items-center justify-between mb-2 sm:mb-3">
                       <p className="text-[#ababab] text-[10px] sm:text-xs font-medium uppercase tracking-wide">Total Hours</p>
                       <MdAccessTime className="text-[#6a6a6a] w-3 h-3 sm:w-4 sm:h-4" />
                     </div>
-                    <p className="text-[#f6b100] text-base sm:text-lg font-bold">
+                    <p className="text-brand text-base sm:text-lg font-bold">
                       {salaryData.summary.totalHours}h
                     </p>
                     <p className="text-[#6a6a6a] text-[9px] sm:text-xs mt-1 sm:mt-2 leading-tight">
@@ -385,7 +385,7 @@ const AccountSettings = () => {
                   </div>
 
                   {/* Total Salary Card - Highlighted */}
-                  <div className="bg-gradient-to-br from-[#4ECDC4]/20 via-[#4ECDC4]/10 to-[#f6b100]/10 rounded-lg sm:rounded-xl p-3 sm:p-5 border-2 border-[#4ECDC4]/50 shadow-lg shadow-[#4ECDC4]/10 hover:shadow-[#4ECDC4]/20 transition-all relative overflow-hidden">
+                  <div className="bg-gradient-to-br from-[#4ECDC4]/20 via-[#4ECDC4]/10 to-brand/10 rounded-lg sm:rounded-xl p-3 sm:p-5 border-2 border-[#4ECDC4]/50 shadow-lg shadow-[#4ECDC4]/10 hover:shadow-[#4ECDC4]/20 transition-all relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-20 h-20 bg-[#4ECDC4]/10 rounded-full blur-2xl"></div>
                     <div className="relative z-10">
                       <div className="flex items-center justify-between mb-2 sm:mb-3">
@@ -477,7 +477,7 @@ const AccountSettings = () => {
                               </div>
                               <div className="text-center sm:text-right">
                                 <p className="text-[#6a6a6a] text-[9px] sm:text-xs uppercase tracking-wide mb-0.5 sm:mb-1">Hours</p>
-                                <p className="text-[#f6b100] text-sm sm:text-base font-bold">{shift.hours}h</p>
+                                <p className="text-brand text-sm sm:text-base font-bold">{shift.hours}h</p>
                               </div>
                               <div className="text-center sm:text-right">
                                 <p className="text-[#6a6a6a] text-[9px] sm:text-xs uppercase tracking-wide mb-0.5 sm:mb-1">Earned</p>
@@ -514,8 +514,8 @@ const AccountSettings = () => {
                       className="w-full flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4 bg-[#262626]/50 hover:bg-[#2a2a2a] transition-all group"
                     >
                       <div className="flex items-center gap-2 sm:gap-3">
-                        <div className={`p-1.5 sm:p-2 rounded-lg transition-all ${showExtraWorkDetails ? 'bg-[#f6b100]/20' : 'bg-[#3a3a3a]'}`}>
-                          <MdAccessTime size={16} className={`sm:w-4 sm:h-4 ${showExtraWorkDetails ? 'text-[#f6b100]' : 'text-[#ababab]'}`} />
+                        <div className={`p-1.5 sm:p-2 rounded-lg transition-all ${showExtraWorkDetails ? 'bg-brand-20' : 'bg-[#3a3a3a]'}`}>
+                          <MdAccessTime size={16} className={`sm:w-4 sm:h-4 ${showExtraWorkDetails ? 'text-brand' : 'text-[#ababab]'}`} />
                         </div>
                         <div className="text-left">
                           <span className="text-[#f5f5f5] font-semibold text-sm sm:text-base">Extra Work Entries</span>
@@ -526,7 +526,7 @@ const AccountSettings = () => {
                           </p>
                         </div>
                       </div>
-                      <div className={`p-1.5 sm:p-2 rounded-lg transition-all ${showExtraWorkDetails ? 'bg-[#f6b100]/10 rotate-180' : 'bg-[#3a3a3a]'}`}>
+                      <div className={`p-1.5 sm:p-2 rounded-lg transition-all ${showExtraWorkDetails ? 'bg-brand-10 rotate-180' : 'bg-[#3a3a3a]'}`}>
                         <span className="text-[#ababab] font-bold text-xs">▼</span>
                       </div>
                     </button>
@@ -587,7 +587,7 @@ const AccountSettings = () => {
                                       {entry.hourlyRate || 0}
                                     </td>
                                     <td className={`px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium ${
-                                      entry.paymentAmount < 0 ? "text-red-400" : "text-[#f6b100]"
+                                      entry.paymentAmount < 0 ? "text-red-400" : "text-brand"
                                     }`}>
                                       {entry.paymentAmount > 0 ? "+" : ""}{entry.paymentAmount || 0}
                                     </td>
@@ -674,7 +674,7 @@ const AccountSettings = () => {
                   value={profileData.name}
                   onChange={handleProfileChange}
                   disabled={!isEditing}
-                  className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#262626] border rounded-lg text-sm text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#262626] border rounded-lg text-sm text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-brand transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                     errors.name ? "border-red-500" : "border-[#343434]"
                   }`}
                 />
@@ -695,7 +695,7 @@ const AccountSettings = () => {
                   value={profileData.email}
                   onChange={handleProfileChange}
                   disabled={!isEditing}
-                  className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#262626] border rounded-lg text-sm text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#262626] border rounded-lg text-sm text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-brand transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                     errors.email ? "border-red-500" : "border-[#343434]"
                   }`}
                 />
@@ -716,7 +716,7 @@ const AccountSettings = () => {
                   value={profileData.phone}
                   onChange={handleProfileChange}
                   disabled={!isEditing}
-                  className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#262626] border rounded-lg text-sm text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[#262626] border rounded-lg text-sm text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-brand transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                     errors.phone ? "border-red-500" : "border-[#343434]"
                   }`}
                 />
@@ -745,7 +745,7 @@ const AccountSettings = () => {
                 <button
                   type="button"
                   onClick={() => setIsEditing(true)}
-                  className="px-4 sm:px-6 py-2.5 sm:py-3 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#f6b100]/90 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
+                  className="px-4 sm:px-6 py-2.5 sm:py-3 bg-brand text-[#f5f5f5] rounded-lg font-medium hover:bg-brand-hover transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
                 >
                   <MdPerson size={14} className="sm:w-4 sm:h-4" />
                   Edit Profile
@@ -755,7 +755,7 @@ const AccountSettings = () => {
                   <button
                     type="submit"
                     disabled={profileLoading}
-                    className="px-4 sm:px-6 py-2.5 sm:py-3 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#f6b100]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
+                    className="px-4 sm:px-6 py-2.5 sm:py-3 bg-brand text-[#f5f5f5] rounded-lg font-medium hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
                   >
                     {profileLoading ? (
                       <>
@@ -787,7 +787,7 @@ const AccountSettings = () => {
         <div className="bg-[#1f1f1f] rounded-lg border border-[#343434]">
           <div className="p-4 sm:p-6 border-b border-[#343434]">
             <h2 className="text-[#f5f5f5] text-lg sm:text-xl font-semibold flex items-center gap-2">
-              <MdStar size={18} className="sm:w-5 sm:h-5 text-[#f6b100]" />
+              <MdStar size={18} className="sm:w-5 sm:h-5 text-brand" />
               My Tickets
             </h2>
             <p className="text-[#ababab] text-xs sm:text-sm mt-1">Your score tickets by month</p>
@@ -799,7 +799,7 @@ const AccountSettings = () => {
               <select
                 value={ticketMonth}
                 onChange={(e) => setTicketMonth(Number(e.target.value))}
-                className="bg-[#262626] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100]"
+                className="bg-[#262626] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
               >
                 {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m, i) => (
                   <option key={i} value={i + 1}>{m}</option>
@@ -808,7 +808,7 @@ const AccountSettings = () => {
               <select
                 value={ticketYear}
                 onChange={(e) => setTicketYear(Number(e.target.value))}
-                className="bg-[#262626] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100]"
+                className="bg-[#262626] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
               >
                 {Array.from({ length: 3 }, (_, i) => new Date().getFullYear() - i).map((y) => (
                   <option key={y} value={y}>{y}</option>
@@ -824,7 +824,7 @@ const AccountSettings = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <div className="bg-[#262626] rounded-lg p-3">
                     <p className="text-[#ababab] text-xs uppercase tracking-wide">Monthly Score</p>
-                    <p className="text-[#f6b100] text-xl font-bold mt-1">{ticketData.monthlyScore}</p>
+                    <p className="text-brand text-xl font-bold mt-1">{ticketData.monthlyScore}</p>
                   </div>
                   <div className="bg-[#262626] rounded-lg p-3">
                     <p className="text-[#ababab] text-xs uppercase tracking-wide">Monthly Tickets</p>
@@ -832,7 +832,7 @@ const AccountSettings = () => {
                   </div>
                   <div className="bg-[#262626] rounded-lg p-3">
                     <p className="text-[#ababab] text-xs uppercase tracking-wide">All-Time Score</p>
-                    <p className="text-[#f6b100] text-xl font-bold mt-1">{ticketData.allTimeScore}</p>
+                    <p className="text-brand text-xl font-bold mt-1">{ticketData.allTimeScore}</p>
                   </div>
                   <div className="bg-[#262626] rounded-lg p-3">
                     <p className="text-[#ababab] text-xs uppercase tracking-wide">All-Time Tickets</p>
@@ -856,13 +856,13 @@ const AccountSettings = () => {
                       <div className="mt-2 divide-y divide-[#343434] rounded-lg border border-[#343434] overflow-hidden">
                         {ticketData.tickets.map((t) => (
                           <div key={t._id} className="flex items-start gap-3 px-4 py-3 bg-[#1f1f1f]">
-                            <MdStar size={16} className="text-[#f6b100] mt-0.5 flex-shrink-0" />
+                            <MdStar size={16} className="text-brand mt-0.5 flex-shrink-0" />
                             <div className="flex-1 min-w-0">
                               <p className="text-[#f5f5f5] text-sm font-medium truncate">{t.title}</p>
                               {t.note && <p className="text-[#6a6a6a] text-xs mt-0.5 truncate">{t.note}</p>}
                               <p className="text-[#ababab] text-xs mt-0.5">{new Date(t.createdAt).toLocaleDateString()}</p>
                             </div>
-                            <span className="text-[#f6b100] font-bold text-sm flex-shrink-0">+{t.score}</span>
+                            <span className="text-brand font-bold text-sm flex-shrink-0">+{t.score}</span>
                           </div>
                         ))}
                       </div>
@@ -904,7 +904,7 @@ const AccountSettings = () => {
                     value={passwordData.currentPassword}
                     onChange={handlePasswordChange}
                     placeholder="Enter current password"
-                    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 bg-[#262626] border rounded-lg text-sm text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] transition-colors ${
+                    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 bg-[#262626] border rounded-lg text-sm text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-brand transition-colors ${
                       errors.currentPassword ? "border-red-500" : "border-[#343434]"
                     }`}
                   />
@@ -933,7 +933,7 @@ const AccountSettings = () => {
                     value={passwordData.newPassword}
                     onChange={handlePasswordChange}
                     placeholder="Enter new password (min 6 characters)"
-                    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 bg-[#262626] border rounded-lg text-sm text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] transition-colors ${
+                    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 bg-[#262626] border rounded-lg text-sm text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-brand transition-colors ${
                       errors.newPassword ? "border-red-500" : "border-[#343434]"
                     }`}
                   />
@@ -962,7 +962,7 @@ const AccountSettings = () => {
                     value={passwordData.confirmPassword}
                     onChange={handlePasswordChange}
                     placeholder="Confirm new password"
-                    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 bg-[#262626] border rounded-lg text-sm text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] transition-colors ${
+                    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 sm:pr-12 bg-[#262626] border rounded-lg text-sm text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-brand transition-colors ${
                       errors.confirmPassword ? "border-red-500" : "border-[#343434]"
                     }`}
                   />
@@ -985,7 +985,7 @@ const AccountSettings = () => {
               <button
                 type="submit"
                 disabled={passwordLoading}
-                className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#f6b100]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 bg-brand text-[#f5f5f5] rounded-lg font-medium hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
               >
                 {passwordLoading ? (
                   <>

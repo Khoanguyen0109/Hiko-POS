@@ -183,7 +183,7 @@ const ShiftCheckoutModal = ({
             <div className="grid grid-cols-2 gap-4 p-4 bg-[#1f1f1f] rounded-lg">
               <div>
                 <p className="text-xs text-[#ababab] uppercase mb-1">Expected shift cash</p>
-                <p className="text-[#f6b100] font-semibold">
+                <p className="text-brand font-semibold">
                   {formatVND(expected.expectedCash || 0)}
                 </p>
               </div>
@@ -196,7 +196,7 @@ const ShiftCheckoutModal = ({
               {checkInRecord && (
                 <div className="col-span-2">
                   <p className="text-xs text-[#ababab] uppercase mb-1">Expected total cash in drawer</p>
-                  <p className="text-[#f6b100] font-semibold">
+                  <p className="text-brand font-semibold">
                     {formatVND(expectedTotalCash)}
                   </p>
                 </div>
@@ -225,7 +225,7 @@ const ShiftCheckoutModal = ({
             <div className="grid grid-cols-2 gap-4 p-4 bg-[#1f1f1f] rounded-lg">
               <div>
                 <p className="text-xs text-[#ababab] uppercase mb-1">Expected shift cash</p>
-                <p className="text-[#f6b100] font-semibold">
+                <p className="text-brand font-semibold">
                   {formatVND(expected.expectedCash || 0)}
                 </p>
               </div>
@@ -238,7 +238,7 @@ const ShiftCheckoutModal = ({
               {checkInRecord && (
                 <div className="col-span-2">
                   <p className="text-xs text-[#ababab] uppercase mb-1">Expected total cash in drawer</p>
-                  <p className="text-[#f6b100] font-semibold">
+                  <p className="text-brand font-semibold">
                     {formatVND(expectedTotalCash)}
                   </p>
                   <p className="text-xs text-[#ababab] mt-1">
@@ -318,7 +318,7 @@ const ShiftCheckoutModal = ({
             <button
               type="submit"
               disabled={submitLoading || previewLoading}
-              className="w-full py-3 bg-[#f6b100] text-[#1f1f1f] font-semibold rounded-lg hover:bg-[#e5a600] disabled:opacity-50"
+              className="w-full py-3 bg-brand text-[#f5f5f5] font-semibold rounded-lg hover:bg-brand-hover disabled:opacity-50"
             >
               Submit checkout
             </button>

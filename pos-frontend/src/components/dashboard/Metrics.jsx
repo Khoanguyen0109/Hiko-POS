@@ -1,3 +1,4 @@
+import { BRAND_PRIMARY } from "../../constants/colors.js";
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchOrders } from "../../redux/slices/orderSlice";
@@ -191,7 +192,7 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
         title: "Total Orders", 
         value: (orders?.length || 0).toString(), 
         percentage: "16%", 
-        color: "#f6b100", 
+        color: BRAND_PRIMARY, 
         isIncrease: true 
       },
       { 
@@ -293,7 +294,7 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
       <div className="container mx-auto py-2 px-6 md:px-4">
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f6b100] mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
             <p className="text-[#ababab] text-lg">Loading metrics...</p>
           </div>
         </div>
@@ -316,12 +317,12 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
         <div className="hidden sm:block bg-[#262626] px-3 sm:px-4 py-2 rounded-lg border border-[#343434]">
           <div className="flex items-center gap-2">
             <span className="text-[#ababab] text-xs sm:text-sm">Showing data for:</span>
-            <span className="text-[#f6b100] font-semibold text-xs sm:text-sm">{getDateFilterLabel()}</span>
+            <span className="text-brand font-semibold text-xs sm:text-sm">{getDateFilterLabel()}</span>
           </div>
         </div>
         {/* Mobile Date Badge */}
         <div className="sm:hidden">
-          <span className="inline-block bg-[#f6b100] text-[#1f1f1f] px-3 py-1 rounded-full text-xs font-semibold">
+          <span className="inline-block bg-brand text-[#f5f5f5] px-3 py-1 rounded-full text-xs font-semibold">
             {getDateFilterLabel()}
           </span>
         </div>
@@ -510,7 +511,7 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
                 <select
                   value={selectedDishId}
                   onChange={(e) => setSelectedDishId(e.target.value)}
-                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] px-3 py-2 rounded-lg border border-[#343434] focus:outline-none focus:border-[#f6b100] transition-colors text-xs sm:text-sm"
+                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] px-3 py-2 rounded-lg border border-[#343434] focus:outline-none focus:border-brand transition-colors text-xs sm:text-sm"
                 >
                   <option value="all">All Dishes</option>
                   {dishes?.map((dish) => (
@@ -527,7 +528,7 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
                 <select
                   value={selectedCategoryFilter}
                   onChange={(e) => setSelectedCategoryFilter(e.target.value)}
-                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] px-3 py-2 rounded-lg border border-[#343434] focus:outline-none focus:border-[#f6b100] transition-colors text-xs sm:text-sm"
+                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] px-3 py-2 rounded-lg border border-[#343434] focus:outline-none focus:border-brand transition-colors text-xs sm:text-sm"
                 >
                   <option value="all">All Categories</option>
                   {categories?.filter(cat => cat.isActive).map((category) => (
@@ -544,7 +545,7 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
                 <select
                   value={selectedStatusFilter}
                   onChange={(e) => setSelectedStatusFilter(e.target.value)}
-                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] px-3 py-2 rounded-lg border border-[#343434] focus:outline-none focus:border-[#f6b100] transition-colors text-xs sm:text-sm"
+                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] px-3 py-2 rounded-lg border border-[#343434] focus:outline-none focus:border-brand transition-colors text-xs sm:text-sm"
                 >
                   <option value="all">All Statuses</option>
                   <option value="completed">Completed</option>
@@ -561,7 +562,7 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
                 <select
                   value={dishSortBy}
                   onChange={(e) => setDishSortBy(e.target.value)}
-                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] px-3 py-2 rounded-lg border border-[#343434] focus:outline-none focus:border-[#f6b100] transition-colors text-xs sm:text-sm"
+                  className="w-full bg-[#1a1a1a] text-[#f5f5f5] px-3 py-2 rounded-lg border border-[#343434] focus:outline-none focus:border-brand transition-colors text-xs sm:text-sm"
                 >
                   <option value="quantity">Highest Quantity</option>
                   <option value="revenue">Highest Revenue</option>

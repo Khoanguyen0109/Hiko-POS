@@ -80,7 +80,7 @@ const TicketModal = ({ isOpen, onClose, ticket, members }) => {
   const loading = createLoading || updateLoading;
   const title = (
     <h2 className="flex items-center gap-2 text-lg font-semibold text-[#f5f5f5]">
-      <MdStar className="text-[#f6b100]" />
+      <MdStar className="text-brand" />
       {isEdit ? "Edit Ticket" : "New Ticket"}
     </h2>
   );
@@ -105,7 +105,7 @@ const TicketModal = ({ isOpen, onClose, ticket, members }) => {
                 name="memberId"
                 value={form.memberId}
                 onChange={handleChange}
-                className="w-full bg-[#262626] border border-[#343434] rounded-lg px-3 py-2.5 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100]"
+                className="w-full bg-[#262626] border border-[#343434] rounded-lg px-3 py-2.5 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
               >
                 <option value="">Select a member…</option>
                 {members.map((m) => (
@@ -128,7 +128,7 @@ const TicketModal = ({ isOpen, onClose, ticket, members }) => {
               onChange={handleChange}
               maxLength={200}
               placeholder="e.g. Excellent customer service"
-              className="w-full bg-[#262626] border border-[#343434] rounded-lg px-3 py-2.5 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100]"
+              className="w-full bg-[#262626] border border-[#343434] rounded-lg px-3 py-2.5 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
             />
             {errors.title && <p className="text-red-400 text-xs mt-1">{errors.title}</p>}
           </div>
@@ -146,7 +146,7 @@ const TicketModal = ({ isOpen, onClose, ticket, members }) => {
               min={1}
               step={1}
               placeholder="10"
-              className="w-full bg-[#262626] border border-[#343434] rounded-lg px-3 py-2.5 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100]"
+              className="w-full bg-[#262626] border border-[#343434] rounded-lg px-3 py-2.5 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
             />
             {errors.score && <p className="text-red-400 text-xs mt-1">{errors.score}</p>}
           </div>
@@ -162,7 +162,7 @@ const TicketModal = ({ isOpen, onClose, ticket, members }) => {
               onChange={handleChange}
               rows={3}
               placeholder="Additional details…"
-              className="w-full bg-[#262626] border border-[#343434] rounded-lg px-3 py-2.5 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100] resize-none"
+              className="w-full bg-[#262626] border border-[#343434] rounded-lg px-3 py-2.5 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand resize-none"
             />
           </div>
 
@@ -179,7 +179,7 @@ const TicketModal = ({ isOpen, onClose, ticket, members }) => {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 py-2.5 rounded-lg bg-[#f6b100] text-[#1a1a1a] text-sm font-semibold hover:bg-[#e5a200] transition-colors disabled:opacity-50"
+              className="flex-1 py-2.5 rounded-lg bg-brand text-[#f5f5f5] text-sm font-semibold hover:bg-brand-hover transition-colors disabled:opacity-50"
             >
               {loading ? "Saving…" : isEdit ? "Update" : "Create"}
             </button>

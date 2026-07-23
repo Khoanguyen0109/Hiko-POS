@@ -63,7 +63,7 @@ const Dishes = () => {
                 onClick={() => setFilterStatus(status)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   filterStatus === status
-                    ? "bg-[#f6b100] text-[#1f1f1f]"
+                    ? "bg-brand text-[#f5f5f5]"
                     : "bg-[#1a1a1a] text-[#ababab] hover:bg-[#262626] hover:text-[#f5f5f5] border border-[#343434]"
                 }`}
               >

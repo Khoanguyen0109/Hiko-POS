@@ -177,7 +177,7 @@ const Home = () => {
         <div className="px-4 sm:px-8 mt-6">
           <div className="bg-[#262626] rounded-lg p-6 border border-[#343434]">
             <div className="flex items-center gap-2 mb-4">
-              <MdStore className="text-[#f6b100]" size={20} />
+              <MdStore className="text-brand" size={20} />
               <h2 className="text-[#f5f5f5] text-lg font-semibold">
                 Income by Platform
               </h2>

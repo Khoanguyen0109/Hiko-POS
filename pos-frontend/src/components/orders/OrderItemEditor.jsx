@@ -42,7 +42,7 @@ const OrderItemEditor = ({ item, index, onQuantityChange, onRemove }) => {
             )}
           </div>
           <div className="text-right flex-shrink-0">
-            <p className="text-[#f6b100] font-semibold">{formatVND(itemPrice)}</p>
+            <p className="text-brand font-semibold">{formatVND(itemPrice)}</p>
             <p className="text-[#ababab] text-xs">
               {formatVND(pricePerQty)} × {item.quantity}
             </p>
@@ -72,7 +72,7 @@ const OrderItemEditor = ({ item, index, onQuantityChange, onRemove }) => {
               type="button"
               onClick={handleDecrement}
               disabled={item.quantity <= 1}
-              className="h-8 w-8 rounded-md bg-[#262626] text-[#f6b100] hover:bg-[#343434] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+              className="h-8 w-8 rounded-md bg-[#262626] text-brand hover:bg-[#343434] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
               aria-label="Decrease quantity"
             >
               <MdRemove size={16} />
@@ -83,7 +83,7 @@ const OrderItemEditor = ({ item, index, onQuantityChange, onRemove }) => {
             <button
               type="button"
               onClick={handleIncrement}
-              className="h-8 w-8 rounded-md bg-[#262626] text-[#f6b100] hover:bg-[#343434] flex items-center justify-center transition-colors"
+              className="h-8 w-8 rounded-md bg-[#262626] text-brand hover:bg-[#343434] flex items-center justify-center transition-colors"
               aria-label="Increase quantity"
             >
               <MdAdd size={16} />

@@ -1,3 +1,4 @@
+import { BRAND_PRIMARY } from "../../constants/colors.js";
 import { useMemo } from 'react';
 import { getCurrentVietnamTime, toVietnamTime, formatDateForInputVietnam, formatVietnamDateOnly } from '../../utils/dateUtils';
 import {
@@ -37,10 +38,10 @@ const RevenueTrendChart = ({ orders, dateRange }) => {
         datasets: [{
           label: 'Revenue',
           data: [0],
-          borderColor: '#f6b100',
+          borderColor: BRAND_PRIMARY,
           backgroundColor: 'rgba(246, 177, 0, 0.1)',
           borderWidth: 3,
-          pointBackgroundColor: '#f6b100',
+          pointBackgroundColor: BRAND_PRIMARY,
           pointBorderColor: '#ffffff',
           pointBorderWidth: 2,
           pointRadius: 6,
@@ -98,10 +99,10 @@ const RevenueTrendChart = ({ orders, dateRange }) => {
         datasets: [{
           label: 'Revenue',
           data: [0],
-          borderColor: '#f6b100',
+          borderColor: BRAND_PRIMARY,
           backgroundColor: 'rgba(246, 177, 0, 0.1)',
           borderWidth: 3,
-          pointBackgroundColor: '#f6b100',
+          pointBackgroundColor: BRAND_PRIMARY,
           pointBorderColor: '#ffffff',
           pointBorderWidth: 2,
           pointRadius: 6,
@@ -150,10 +151,10 @@ const RevenueTrendChart = ({ orders, dateRange }) => {
         {
           label: 'Revenue',
           data: revenueData,
-          borderColor: '#f6b100',
+          borderColor: BRAND_PRIMARY,
           backgroundColor: 'rgba(246, 177, 0, 0.1)',
           borderWidth: 3,
-          pointBackgroundColor: '#f6b100',
+          pointBackgroundColor: BRAND_PRIMARY,
           pointBorderColor: '#ffffff',
           pointBorderWidth: 2,
           pointRadius: 6,
@@ -190,7 +191,7 @@ const RevenueTrendChart = ({ orders, dateRange }) => {
         backgroundColor: 'rgba(31, 31, 31, 0.9)',
         titleColor: '#f5f5f5',
         bodyColor: '#f5f5f5',
-        borderColor: '#f6b100',
+        borderColor: BRAND_PRIMARY,
         borderWidth: 1,
         callbacks: {
           label: function(context) {

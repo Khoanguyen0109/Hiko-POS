@@ -81,7 +81,7 @@ const Customers = () => {
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <h1 className="text-[#f5f5f5] text-2xl font-bold flex items-center gap-2">
-            <MdPeople className="text-[#f6b100]" size={28} />
+            <MdPeople className="text-brand" size={28} />
             Customers
             {!loading && (
               <span className="text-sm font-normal text-[#ababab] ml-2">
@@ -102,14 +102,14 @@ const Customers = () => {
             placeholder="Search by phone or name…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100] placeholder-[#6a6a6a]"
+            className="w-full pl-10 pr-4 py-2.5 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-brand placeholder-[#6a6a6a]"
           />
         </div>
 
         {/* Loading */}
         {loading && (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#f6b100] mx-auto mb-3" />
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand mx-auto mb-3" />
             <p className="text-[#ababab] text-sm">Loading customers…</p>
           </div>
         )}
@@ -143,7 +143,7 @@ const Customers = () => {
                   className="flex items-center gap-3 px-4 py-3 md:grid md:grid-cols-[48px_1fr_1fr_100px_80px] md:gap-4"
                 >
                   {/* Avatar */}
-                  <div className="w-9 h-9 rounded-full bg-[#f6b100]/20 text-[#f6b100] flex items-center justify-center text-xs font-bold flex-shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-brand-20 text-brand flex items-center justify-center text-xs font-bold flex-shrink-0">
                     {getInitials(c)}
                   </div>
 
@@ -163,7 +163,7 @@ const Customers = () => {
                   </p>
 
                   {/* Dish count */}
-                  <p className="text-[#f6b100] font-bold text-sm text-right flex-shrink-0">
+                  <p className="text-brand font-bold text-sm text-right flex-shrink-0">
                     {c.totalDishCount ?? 0}
                   </p>
 
@@ -202,7 +202,7 @@ const Customers = () => {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex items-center gap-1.5 rounded-lg bg-[#f6b100] px-4 py-2 text-sm font-semibold text-[#1a1a1a] transition-colors hover:bg-[#e5a200] disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-[#f5f5f5] transition-colors hover:bg-brand-hover disabled:opacity-50"
               >
                 <MdEdit size={14} />
                 {saving ? "Saving…" : "Save"}
@@ -213,7 +213,7 @@ const Customers = () => {
           <div className="space-y-4">
               {/* Info card */}
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-[#f6b100]/20 text-[#f6b100] flex items-center justify-center text-lg font-bold">
+                <div className="w-12 h-12 rounded-full bg-brand-20 text-brand flex items-center justify-center text-lg font-bold">
                   {getInitials(selectedCustomer)}
                 </div>
                 <div>
@@ -237,7 +237,7 @@ const Customers = () => {
                     onChange={(e) =>
                       setEditForm((f) => ({ ...f, name: e.target.value }))
                     }
-                    className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100]"
+                    className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
                   />
                 </div>
                 <div>
@@ -249,7 +249,7 @@ const Customers = () => {
                     onChange={(e) =>
                       setEditForm((f) => ({ ...f, nickname: e.target.value }))
                     }
-                    className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100]"
+                    className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
                   />
                 </div>
               </div>

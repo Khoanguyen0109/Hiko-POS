@@ -164,12 +164,12 @@ const RewardPrograms = () => {
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">
           <h1 className="text-[#f5f5f5] text-2xl font-bold flex items-center gap-2">
-            <MdCardGiftcard className="text-[#f6b100]" size={28} />
+            <MdCardGiftcard className="text-brand" size={28} />
             Reward Programs
           </h1>
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 bg-[#f6b100] text-[#1a1a1a] px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#e5a200] transition-colors"
+            className="flex items-center gap-2 bg-brand text-[#f5f5f5] px-4 py-2 rounded-lg text-sm font-semibold hover:bg-brand-hover transition-colors"
           >
             <MdAdd size={18} />
             New Program
@@ -179,7 +179,7 @@ const RewardPrograms = () => {
         {/* Loading */}
         {programsLoading && (
           <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-[#f6b100] mx-auto mb-3" />
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-brand mx-auto mb-3" />
             <p className="text-[#ababab] text-sm">Loading programs…</p>
           </div>
         )}
@@ -252,7 +252,7 @@ const RewardPrograms = () => {
                 {p.type === "percentage_discount" && (
                   <div className="bg-[#1f1f1f] rounded-lg px-3 py-2">
                     <p className="text-[#6a6a6a]">Discount</p>
-                    <p className="text-[#f6b100] font-bold">
+                    <p className="text-brand font-bold">
                       {p.discountPercent}%
                     </p>
                   </div>
@@ -260,7 +260,7 @@ const RewardPrograms = () => {
                 {p.type === "free_dish" && (
                   <div className="bg-[#1f1f1f] rounded-lg px-3 py-2">
                     <p className="text-[#6a6a6a]">Max Value</p>
-                    <p className="text-[#f6b100] font-bold">
+                    <p className="text-brand font-bold">
                       {p.maxFreeDishValue || "—"}
                     </p>
                   </div>
@@ -346,7 +346,7 @@ const RewardPrograms = () => {
                   required
                   value={form.name}
                   onChange={handleChange}
-                  className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100]"
+                  className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
                 />
               </div>
 
@@ -359,7 +359,7 @@ const RewardPrograms = () => {
                   rows={2}
                   value={form.description}
                   onChange={handleChange}
-                  className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100] resize-none"
+                  className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand resize-none"
                 />
               </div>
 
@@ -371,7 +371,7 @@ const RewardPrograms = () => {
                   name="type"
                   value={form.type}
                   onChange={handleChange}
-                  className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100]"
+                  className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
                 >
                   <option value="percentage_discount">
                     Percentage Discount
@@ -409,7 +409,7 @@ const RewardPrograms = () => {
                         }
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                           isSelected
-                            ? "bg-[#f6b100] text-[#1a1a1a]"
+                            ? "bg-brand text-[#f5f5f5]"
                             : "bg-[#262626] text-[#ababab] hover:bg-[#343434]"
                         }`}
                       >
@@ -441,7 +441,7 @@ const RewardPrograms = () => {
                     min={1}
                     value={form.dishThreshold}
                     onChange={handleChange}
-                    className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100]"
+                    className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
                   />
                 </div>
 
@@ -456,7 +456,7 @@ const RewardPrograms = () => {
                     value={form.cycleLength}
                     onChange={handleChange}
                     placeholder="Same as threshold"
-                    className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100] placeholder-[#4a4a4a]"
+                    className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand placeholder-[#4a4a4a]"
                   />
                 </div>
               </div>
@@ -481,7 +481,7 @@ const RewardPrograms = () => {
                       max={100}
                       value={form.discountPercent}
                       onChange={handleChange}
-                      className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100]"
+                      className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
                     />
                   </div>
                 )}
@@ -497,7 +497,7 @@ const RewardPrograms = () => {
                       min={0}
                       value={form.maxFreeDishValue}
                       onChange={handleChange}
-                      className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100]"
+                      className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
                     />
                   </div>
                 )}
@@ -513,7 +513,7 @@ const RewardPrograms = () => {
                   min={0}
                   value={form.priority}
                   onChange={handleChange}
-                  className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-[#f6b100]"
+                  className="w-full bg-[#1f1f1f] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
                 />
               </div>
 
@@ -528,7 +528,7 @@ const RewardPrograms = () => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 rounded-lg text-sm font-semibold bg-[#f6b100] text-[#1a1a1a] hover:bg-[#e5a200] transition-colors disabled:opacity-50"
+                  className="px-4 py-2 rounded-lg text-sm font-semibold bg-brand text-[#f5f5f5] hover:bg-brand-hover transition-colors disabled:opacity-50"
                 >
                   {submitting
                     ? "Saving…"

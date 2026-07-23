@@ -167,7 +167,7 @@ const ImportModal = ({
               <MdInventory className="inline mr-1" size={16} />
               Storage Item <span className="text-red-500">*</span>
             </label>
-            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-[#f6b100]">
+            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
               <select
                 name="storageItemId"
                 value={formData.storageItemId}
@@ -197,7 +197,7 @@ const ImportModal = ({
               <label className="block text-[#ababab] text-sm mb-2">
                 Quantity <span className="text-red-500">*</span>
               </label>
-              <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-[#f6b100]">
+              <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
                 <input
                   type="number"
                   name="quantity"
@@ -219,7 +219,7 @@ const ImportModal = ({
               <label className="block text-[#ababab] text-sm mb-2">
                 Unit Cost (VND) <span className="text-red-500">*</span>
               </label>
-              <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-[#f6b100]">
+              <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
                 <MdAttachMoney className="text-[#ababab] mr-2" size={18} />
                 <input
                   type="number"
@@ -240,7 +240,7 @@ const ImportModal = ({
           <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#343434]">
             <div className="flex items-center justify-between">
               <span className="text-[#ababab] font-medium">Total Cost:</span>
-              <span className="text-[#f6b100] text-xl font-bold">
+              <span className="text-brand text-xl font-bold">
                 {totalCost.toLocaleString('vi-VN')} VND
               </span>
             </div>
@@ -255,7 +255,7 @@ const ImportModal = ({
               <MdBusiness className="inline mr-1" size={16} />
               Supplier <span className="text-xs text-[#ababab]">(Optional)</span>
             </label>
-            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-[#f6b100]">
+            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
               <select
                 name="supplierId"
                 value={formData.supplierId}
@@ -283,7 +283,7 @@ const ImportModal = ({
             <label className="block text-[#ababab] text-sm mb-2">
               Supplier Invoice Number
             </label>
-            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-[#f6b100]">
+            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
               <input
                 type="text"
                 name="supplierInvoice"
@@ -300,7 +300,7 @@ const ImportModal = ({
             <label className="block text-[#ababab] text-sm mb-2">
               Notes
             </label>
-            <div className="rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-[#f6b100]">
+            <div className="rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
               <textarea
                 name="notes"
                 value={formData.notes}
@@ -324,7 +324,7 @@ const ImportModal = ({
             <button
               type="submit"
               disabled={loading || !formData.storageItemId || !formData.quantity || !formData.unitCost}
-              className="px-6 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg hover:bg-[#e5a000] transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+              className="px-6 py-2 bg-brand text-[#f5f5f5] rounded-lg hover:bg-brand-hover transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
             >
               <MdSave />
               {loading ? "Saving..." : mode === "create" ? "Create Import" : "Update Import"}

@@ -1,3 +1,4 @@
+import { BRAND_PRIMARY } from "../../constants/colors.js";
 import { useState, useEffect } from "react";
 import { MdCategory, MdColorLens } from "react-icons/md";
 import { useSelector, useDispatch } from "react-redux";
@@ -14,7 +15,7 @@ const COLOR_OPTIONS = [
   { name: "Brown", value: "#735f32" },
   { name: "Navy", value: "#1d2569" },
   { name: "Green", value: "#285430" },
-  { name: "Yellow", value: "#f6b100" },
+  { name: "Yellow", value: BRAND_PRIMARY },
   { name: "Blue", value: "#025cca" },
   { name: "Crimson", value: "#be3e3f" },
   { name: "Lime", value: "#02ca3a" },
@@ -137,8 +138,8 @@ const CategoryModal = ({ setIsCategoryModalOpen, editingCategory }) => {
 
   const title = (
     <div className="flex items-center gap-3">
-      <div className="rounded-lg bg-[#f6b100] p-2">
-        <MdCategory size={24} className="text-[#1f1f1f]" />
+      <div className="rounded-lg bg-brand p-2">
+        <MdCategory size={24} className="text-[#f5f5f5]" />
       </div>
       <h2 className="text-xl font-semibold text-[#f5f5f5]">
         {editingCategory ? "Edit Category" : "Add Category"}
@@ -160,7 +161,7 @@ const CategoryModal = ({ setIsCategoryModalOpen, editingCategory }) => {
             <label className="block text-[#ababab] mb-2 text-sm font-medium">
               Category Name *
             </label>
-            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-[#f6b100]">
+            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
               <input
                 type="text"
                 name="name"
@@ -182,7 +183,7 @@ const CategoryModal = ({ setIsCategoryModalOpen, editingCategory }) => {
             <label className="block text-[#ababab] mb-2 text-sm font-medium">
               Description <span className="text-xs">(Optional)</span>
             </label>
-            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-[#f6b100]">
+            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
               <textarea
                 name="description"
                 value={categoryData.description}
@@ -232,8 +233,8 @@ const CategoryModal = ({ setIsCategoryModalOpen, editingCategory }) => {
                   onClick={() => handleColorSelect(color.value)}
                   className={`relative w-12 h-12 rounded-lg border-2 transition-all duration-200 hover:scale-110 ${
                     categoryData.color === color.value
-                      ? "border-[#f6b100] shadow-lg scale-110"
-                      : "border-[#343434] hover:border-[#f6b100]"
+                      ? "border-brand shadow-lg scale-110"
+                      : "border-[#343434] hover:border-brand"
                   }`}
                   style={{ backgroundColor: color.value }}
                   title={color.name}
@@ -266,7 +267,7 @@ const CategoryModal = ({ setIsCategoryModalOpen, editingCategory }) => {
                 onChange={handleInputChange}
                 className="sr-only peer"
               />
-              <div className="w-11 h-6 bg-[#343434] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#f6b100]"></div>
+              <div className="w-11 h-6 bg-[#343434] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
             </label>
           </div>
 

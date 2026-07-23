@@ -161,7 +161,7 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, store
           Assign Members to Shift
         </h2>
         {targetStore && (
-          <span className="flex items-center gap-1 rounded bg-[#f6b100]/10 px-2 py-1 text-xs font-medium text-[#f6b100]">
+          <span className="flex items-center gap-1 rounded bg-brand-10 px-2 py-1 text-xs font-medium text-brand">
             <MdStore size={13} /> {targetStore.name}
           </span>
         )}
@@ -179,14 +179,14 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, store
       <div className="text-sm text-[#ababab]">
         {selectedMembers.length} member(s) selected
         {hasChanges() && (
-          <span className="ml-2 text-[#f6b100]">&bull; unsaved changes</span>
+          <span className="ml-2 text-brand">&bull; unsaved changes</span>
         )}
       </div>
       <div className="flex items-center gap-3">
         {onLogExtraWork && schedule && selectedMembers.length > 0 && (
           <button
             onClick={() => { handleClose(); onLogExtraWork(schedule.date, selectedMembers[0]); }}
-            className="flex items-center gap-2 rounded-lg bg-[#f6b100] px-4 py-2 font-medium text-[#1f1f1f] transition-colors hover:bg-[#f6b100]/90"
+            className="flex items-center gap-2 rounded-lg bg-brand px-4 py-2 font-medium text-[#f5f5f5] transition-colors hover:bg-brand-hover"
           >
             <MdAccessTime size={16} /> Log Extra Work
           </button>
@@ -222,7 +222,7 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, store
       >
         {shiftEnded && (
           <div className="mx-6 mt-4 flex items-center gap-2 rounded-lg border border-[#4a4a4a] bg-[#3a3a3a]/50 px-4 py-3 text-sm text-[#ababab]">
-            <MdBlock size={16} className="shrink-0 text-[#f6b100]" />
+            <MdBlock size={16} className="shrink-0 text-brand" />
             This shift has ended. Assignments can no longer be changed.
           </div>
         )}

@@ -57,7 +57,7 @@ const WeekNavigator = ({ year, week, onWeekChange }) => {
         {!isCurrentWeek && (
           <button
             onClick={handleToday}
-            className="px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#f6b100]/90 transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-brand text-[#f5f5f5] rounded-lg font-medium hover:bg-brand-hover transition-colors flex items-center gap-2"
           >
             <MdToday size={16} />
             <span className="hidden sm:inline">Today</span>

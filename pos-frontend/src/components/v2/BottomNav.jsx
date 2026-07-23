@@ -86,7 +86,7 @@ const BottomNav = ({ moreOpen, onMoreOpen, onMoreClose }) => {
                 onClick={() => handleTabClick(tab)}
                 className={`flex min-h-[48px] flex-col items-center justify-center gap-0.5 px-1 py-2 text-[11px] font-medium transition-colors ${
                   active
-                    ? "text-[#f6b100]"
+                    ? "text-brand"
                     : "text-[#ababab] hover:text-[#f5f5f5]"
                 }`}
                 aria-current={active ? "page" : undefined}
@@ -102,7 +102,7 @@ const BottomNav = ({ moreOpen, onMoreOpen, onMoreClose }) => {
             onClick={() => handleTabClick({ id: "more" })}
             className={`flex min-h-[48px] flex-col items-center justify-center gap-0.5 px-1 py-2 text-[11px] font-medium transition-colors ${
               moreActive
-                ? "text-[#f6b100]"
+                ? "text-brand"
                 : "text-[#ababab] hover:text-[#f5f5f5]"
             }`}
             aria-expanded={moreOpen}

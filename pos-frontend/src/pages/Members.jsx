@@ -142,7 +142,7 @@ const Members = () => {
         subtitle={
           <span className="flex items-center gap-2">
             <span>{filteredMembers.length} members found</span>
-            {loading ? <span className="text-[#f6b100]">• Loading...</span> : null}
+            {loading ? <span className="text-brand">• Loading...</span> : null}
           </span>
         }
         actions={
@@ -150,7 +150,7 @@ const Members = () => {
             <button
               type="button"
               onClick={handleCreateMember}
-              className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-[#f6b100] px-3 py-2 text-xs font-semibold text-[#1f1f1f] transition-colors hover:bg-[#f6b100]/90 sm:px-4 sm:text-sm"
+              className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-[#f5f5f5] transition-colors hover:bg-brand-hover sm:px-4 sm:text-sm"
             >
               <MdAdd size={16} />
               Add Member
@@ -175,14 +175,14 @@ const Members = () => {
               placeholder="Search members by name, email, phone, or role..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-lg border border-[#343434] bg-[#262626] py-2 pl-10 pr-4 text-[#f5f5f5] placeholder-[#ababab] transition-colors focus:border-[#f6b100] focus:outline-none"
+              className="w-full rounded-lg border border-[#343434] bg-[#262626] py-2 pl-10 pr-4 text-[#f5f5f5] placeholder-[#ababab] transition-colors focus:border-brand focus:outline-none"
             />
           </div>
           <div className="relative">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="min-w-[140px] cursor-pointer rounded-lg border border-[#343434] bg-[#262626] px-4 py-2 text-[#f5f5f5] transition-colors focus:border-[#f6b100] focus:outline-none"
+              className="min-w-[140px] cursor-pointer rounded-lg border border-[#343434] bg-[#262626] px-4 py-2 text-[#f5f5f5] transition-colors focus:border-brand focus:outline-none"
             >
               <option value="all">All Members</option>
               <option value="active">Active Only</option>
@@ -224,7 +224,7 @@ const Members = () => {
             {!searchTerm && (
               <button
                 onClick={handleCreateMember}
-                className="mt-4 px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg text-sm font-medium hover:bg-[#f6b100]/90 transition-colors"
+                className="mt-4 px-4 py-2 bg-brand text-[#f5f5f5] rounded-lg text-sm font-medium hover:bg-brand-hover transition-colors"
               >
                 Add First Member
               </button>
@@ -321,15 +321,15 @@ const MemberCard = ({ member, onEdit, onDelete, onToggleActive, onManageStores, 
   return (
     <div className={`bg-[#1f1f1f] rounded-lg p-6 border transition-all duration-200 ${
       isActive 
-        ? 'border-[#343434] hover:border-[#f6b100]/30' 
+        ? 'border-[#343434] hover:border-brand-30' 
         : 'border-red-900/50 opacity-75'
     }`}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-          isActive ? 'bg-[#f6b100]' : 'bg-gray-600'
+          isActive ? 'bg-brand' : 'bg-gray-600'
         }`}>
-          <span className="text-[#1f1f1f] font-bold text-lg">
+          <span className="text-[#f5f5f5] font-bold text-lg">
             {member.name?.charAt(0).toUpperCase()}
           </span>
         </div>
@@ -355,7 +355,7 @@ const MemberCard = ({ member, onEdit, onDelete, onToggleActive, onManageStores, 
           </button>
           <button
             onClick={() => onEdit(member)}
-            className="p-2 bg-[#262626] text-[#f6b100] rounded-lg hover:bg-[#343434] transition-colors"
+            className="p-2 bg-[#262626] text-brand rounded-lg hover:bg-[#343434] transition-colors"
             title="Edit Member"
           >
             <MdEdit size={16} />
@@ -398,7 +398,7 @@ const MemberCard = ({ member, onEdit, onDelete, onToggleActive, onManageStores, 
             <FaPhone size={14} />
             <span className="text-sm">{member.phone}</span>
           </div>
-          <div className="flex items-center gap-3 text-[#f6b100]">
+          <div className="flex items-center gap-3 text-brand">
             <MdAttachMoney size={14} />
             <span className="text-sm font-medium">
               {member.salary ? `${member.salary.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '0.00'}

@@ -1,3 +1,5 @@
+import { BRAND_PRIMARY } from "../constants/colors.js";
+
 export const getBgColor = () => {
   const bgarr = [
     "#b73e3e",
@@ -6,7 +8,7 @@ export const getBgColor = () => {
     "#735f32",
     "#1d2569",
     "#285430",
-    "#f6b100",
+    BRAND_PRIMARY,
     "#025cca",
     "#be3e3f",
     "#02ca3a",

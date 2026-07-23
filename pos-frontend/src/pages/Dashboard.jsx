@@ -23,7 +23,7 @@ const SpendingAnalytics = ({ dashboardData, loading, error }) => {
   if (loading) {
     return (
       <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f6b100] mx-auto mb-4"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand mx-auto mb-4"></div>
         <p className="text-[#ababab] text-lg">Loading analytics...</p>
       </div>
     );
@@ -58,7 +58,7 @@ const SpendingAnalytics = ({ dashboardData, loading, error }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
           <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
-              <MdAccountBalanceWallet className="text-xl sm:text-2xl text-[#f6b100]" />
+              <MdAccountBalanceWallet className="text-xl sm:text-2xl text-brand" />
               <span className="text-[#ababab] text-xs sm:text-sm">This Month</span>
             </div>
             <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#f5f5f5] mb-1">
@@ -342,7 +342,7 @@ const Dashboard = () => {
                   className={`
                     px-4 py-2.5 sm:px-6 sm:py-3 rounded-t-lg text-[#f5f5f5] font-medium text-sm whitespace-nowrap transition-colors flex-shrink-0 ${
                       activeTab === tab
-                        ? "bg-[#262626] border-b-2 border-[#f6b100]"
+                        ? "bg-[#262626] border-b-2 border-brand"
                         : "bg-[#1a1a1a] hover:bg-[#262626]"
                     }`}
                   onClick={() => setActiveTab(tab)}
@@ -374,7 +374,7 @@ const Dashboard = () => {
                   className={`
                     flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors
                     ${dateFilter === value
-                      ? "bg-[#f6b100] text-[#1f1f1f]"
+                      ? "bg-brand text-[#f5f5f5]"
                       : "bg-[#262626] text-[#f5f5f5] hover:bg-[#343434]"
                     }
                   `}
@@ -396,7 +396,7 @@ const Dashboard = () => {
                       type="date"
                       value={customDateRange.startDate}
                       onChange={(e) => handleCustomDateChange("startDate", e.target.value)}
-                      className="bg-[#262626] text-[#f5f5f5] border border-[#343434] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#f6b100] w-full"
+                      className="bg-[#262626] text-[#f5f5f5] border border-[#343434] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand w-full"
                     />
                   </div>
                   <div className="flex flex-col">
@@ -405,7 +405,7 @@ const Dashboard = () => {
                       type="date"
                       value={customDateRange.endDate}
                       onChange={(e) => handleCustomDateChange("endDate", e.target.value)}
-                      className="bg-[#262626] text-[#f5f5f5] border border-[#343434] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#f6b100] w-full"
+                      className="bg-[#262626] text-[#f5f5f5] border border-[#343434] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-brand w-full"
                     />
                   </div>
                 </div>

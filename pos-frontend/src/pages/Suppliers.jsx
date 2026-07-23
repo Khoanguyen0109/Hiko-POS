@@ -67,8 +67,8 @@ const SupplierCard = ({ supplier, onEdit, onDelete, onToggleStatus }) => {
         {/* Supplier Header */}
         <div className="flex items-center gap-4 mb-4">
           {/* Supplier Icon */}
-          <div className="w-12 h-12 rounded-full border-2 border-[#343434] bg-[#f6b100]/20 flex items-center justify-center">
-            <MdBusiness size={20} className="text-[#f6b100]" />
+          <div className="w-12 h-12 rounded-full border-2 border-[#343434] bg-brand-20 flex items-center justify-center">
+            <MdBusiness size={20} className="text-brand" />
           </div>
 
           {/* Supplier Info */}
@@ -260,7 +260,7 @@ const Suppliers = () => {
           <button
             type="button"
             onClick={handleAddSupplier}
-            className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-[#f6b100] px-3 py-2 text-xs font-semibold text-[#1f1f1f] transition-colors hover:bg-[#e5a000] sm:px-4 sm:text-sm"
+            className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-[#f5f5f5] transition-colors hover:bg-brand-hover sm:px-4 sm:text-sm"
           >
             <IoMdAdd size={18} />
             Add Supplier
@@ -278,7 +278,7 @@ const Suppliers = () => {
               placeholder="Search suppliers by name, code, or email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 bg-[#1f1f1f] border border-[#343434] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-[#f6b100]"
+              className="w-full px-4 py-2 bg-[#1f1f1f] border border-[#343434] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-brand"
             />
           </div>
 
@@ -288,7 +288,7 @@ const Suppliers = () => {
               onClick={() => setFilterStatus("all")}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 filterStatus === "all"
-                  ? "bg-[#f6b100] text-[#1f1f1f]"
+                  ? "bg-brand text-[#f5f5f5]"
                   : "bg-[#1f1f1f] text-[#ababab] border border-[#343434]"
               }`}
             >
@@ -298,7 +298,7 @@ const Suppliers = () => {
               onClick={() => setFilterStatus("active")}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 filterStatus === "active"
-                  ? "bg-[#f6b100] text-[#1f1f1f]"
+                  ? "bg-brand text-[#f5f5f5]"
                   : "bg-[#1f1f1f] text-[#ababab] border border-[#343434]"
               }`}
             >
@@ -308,7 +308,7 @@ const Suppliers = () => {
               onClick={() => setFilterStatus("inactive")}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 filterStatus === "inactive"
-                  ? "bg-[#f6b100] text-[#1f1f1f]"
+                  ? "bg-brand text-[#f5f5f5]"
                   : "bg-[#1f1f1f] text-[#ababab] border border-[#343434]"
               }`}
             >
@@ -336,7 +336,7 @@ const Suppliers = () => {
             {!searchQuery && (
               <button
                 onClick={handleAddSupplier}
-                className="mt-4 px-6 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-semibold hover:bg-[#e5a000] transition-colors"
+                className="mt-4 px-6 py-2 bg-brand text-[#f5f5f5] rounded-lg font-semibold hover:bg-brand-hover transition-colors"
               >
                 Add Your First Supplier
               </button>

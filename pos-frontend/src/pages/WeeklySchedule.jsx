@@ -495,13 +495,13 @@ const WeeklySchedule = () => {
                   onClick={() => setSelectedCalendarDay(date)}
                   className={`min-h-[72px] rounded-lg border p-2 text-left transition-colors ${
                     isSelected
-                      ? "border-[#f6b100] bg-[#f6b100]/10"
+                      ? "border-brand bg-brand-10"
                       : "border-[#343434] bg-[#262626] hover:border-[#4a4a4a]"
                   } ${inMonth ? "" : "opacity-40"}`}
                 >
                   <span
                     className={`text-sm font-semibold ${
-                      isToday ? "text-[#f6b100]" : "text-[#f5f5f5]"
+                      isToday ? "text-brand" : "text-[#f5f5f5]"
                     }`}
                   >
                     {date.getDate()}
@@ -625,7 +625,7 @@ const WeeklySchedule = () => {
               <button
                 type="button"
                 onClick={() => handleOpenExtraWorkModal()}
-                className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-[#f6b100] px-3 py-2 text-xs font-semibold text-[#1f1f1f] transition-colors hover:bg-[#f6b100]/90 sm:px-4 sm:text-sm"
+                className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-[#f5f5f5] transition-colors hover:bg-brand-hover sm:px-4 sm:text-sm"
               >
                 <MdAccessTime size={16} />
                 Log Extra Work
@@ -667,7 +667,7 @@ const WeeklySchedule = () => {
                   onClick={() => setActiveTab(tab.key)}
                   className={`flex min-h-[40px] min-w-[5.5rem] flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors sm:flex-none ${
                     isActive
-                      ? "bg-[#262626] text-[#f6b100] shadow-sm"
+                      ? "bg-[#262626] text-brand shadow-sm"
                       : "text-[#ababab] hover:bg-[#262626]/60 hover:text-[#f5f5f5]"
                   }`}
                 >
@@ -701,7 +701,7 @@ const WeeklySchedule = () => {
                 {isAdmin && (
                   <Link
                     to={ROUTES.SHIFT_TEMPLATES}
-                    className="px-6 py-3 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#f6b100]/90 transition-colors"
+                    className="px-6 py-3 bg-brand text-[#f5f5f5] rounded-lg font-medium hover:bg-brand-hover transition-colors"
                   >
                     Create Shift Templates
                   </Link>
@@ -730,7 +730,7 @@ const WeeklySchedule = () => {
                       </div>
                       <div className="bg-[#262626] rounded-lg p-4">
                         <div className="text-[#ababab] text-xs mb-1">Empty</div>
-                        <div className="text-[#f6b100] text-2xl font-bold">
+                        <div className="text-brand text-2xl font-bold">
                           {schedules.filter(s => !s.assignedMembers || s.assignedMembers.length === 0).length}
                         </div>
                       </div>
@@ -754,7 +754,7 @@ const WeeklySchedule = () => {
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                         <div>
                           <h4 className="text-[#f5f5f5] text-lg font-semibold flex items-center gap-2">
-                            <MdAccessTime className="text-[#f6b100]" size={20} />
+                            <MdAccessTime className="text-brand" size={20} />
                             Extra Work Entries
                           </h4>
                           <p className="text-[#ababab] text-sm mt-1">
@@ -763,7 +763,7 @@ const WeeklySchedule = () => {
                         </div>
                         <button
                           onClick={() => handleOpenExtraWorkModal()}
-                          className="w-full sm:w-auto px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#f6b100]/90 transition-colors flex items-center justify-center gap-2 text-sm whitespace-nowrap"
+                          className="w-full sm:w-auto px-4 py-2 bg-brand text-[#f5f5f5] rounded-lg font-medium hover:bg-brand-hover transition-colors flex items-center justify-center gap-2 text-sm whitespace-nowrap"
                         >
                           <MdAccessTime size={16} /> Log New Entry
                         </button>
@@ -815,7 +815,7 @@ const WeeklySchedule = () => {
                           </div>
                           <div className="bg-[#262626] rounded-lg p-3">
                             <div className="text-[#ababab] text-xs mb-1">Total Payment</div>
-                            <div className={`text-xl font-bold ${totalPayment < 0 ? "text-red-400" : "text-[#f6b100]"}`}>
+                            <div className={`text-xl font-bold ${totalPayment < 0 ? "text-red-400" : "text-brand"}`}>
                               ${totalPayment.toFixed(2)}
                             </div>
                           </div>
@@ -860,7 +860,7 @@ const WeeklySchedule = () => {
                                     {entry.workType.replace('_', ' ')}
                                   </span>
                                 </td>
-                                <td className={`px-4 py-3 text-sm font-medium ${entry.paymentAmount < 0 ? "text-red-400" : "text-[#f6b100]"}`}>
+                                <td className={`px-4 py-3 text-sm font-medium ${entry.paymentAmount < 0 ? "text-red-400" : "text-brand"}`}>
                                   ${entry.paymentAmount.toFixed(2)}
                                 </td>
                                 <td className="px-4 py-3">
