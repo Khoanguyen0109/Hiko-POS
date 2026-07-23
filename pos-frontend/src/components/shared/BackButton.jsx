@@ -9,9 +9,10 @@ const BackButton = ({ onClick }) => {
     <button
       type="button"
       onClick={onClick || (() => navigate(-1))}
-      className="bg-[#025cca] p-2 text-xl font-bold rounded-full text-white"
+      aria-label="Go back"
+      className="flex shrink-0 items-center justify-center rounded-md p-0.5 text-[#f5f5f5] transition-colors hover:bg-[#262626] hover:text-white"
     >
-      <IoArrowBackOutline />
+      <IoArrowBackOutline size={18} />
     </button>
   );
 };

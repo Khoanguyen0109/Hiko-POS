@@ -17,7 +17,7 @@ import ImportModal from "../components/storage/ImportModal";
 import ExportModal from "../components/storage/ExportModal";
 import DateFilterBar from "../components/storage/DateFilterBar";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
-import BackButton from "../components/shared/BackButton";
+import FeaturePageHeader from "../components/shared/FeaturePageHeader";
 import { useNavigate } from "react-router-dom";
 import StorageStockCard from "../components/v2/StorageStockCard";
 import { useV2Ui } from "../hooks/useV2Ui";
@@ -77,23 +77,11 @@ const ErrorBanner = ({ message }) => (
 );
 ErrorBanner.propTypes = { message: PropTypes.string.isRequired };
 
-const TabButton = ({ active, onClick, icon: Icon, label }) => (
-  <button
-    onClick={onClick}
-    className={`px-4 py-2.5 sm:px-6 sm:py-3 rounded-t-lg text-[#f5f5f5] font-medium text-sm whitespace-nowrap transition-colors flex-shrink-0 flex items-center gap-2 ${
-      active ? "bg-[#262626] border-b-2 border-[#f6b100]" : "bg-[#1a1a1a] hover:bg-[#262626]"
-    }`}
-  >
-    <Icon size={18} />
-    {label}
-  </button>
-);
-TabButton.propTypes = {
-  active: PropTypes.bool.isRequired,
-  onClick: PropTypes.func.isRequired,
-  icon: PropTypes.elementType.isRequired,
-  label: PropTypes.string.isRequired,
-};
+const headerActionClass =
+  "flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg border border-[#343434] bg-[#1f1f1f] px-3 py-2 text-xs font-medium text-[#f5f5f5] transition-colors hover:bg-[#262626] sm:text-sm";
+
+const headerPrimaryClass =
+  "flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-[#f6b100] px-3 py-2 text-xs font-semibold text-[#1f1f1f] transition-colors hover:bg-[#e5a000] sm:px-4 sm:text-sm";
 
 const ImportList = memo(({ imports, loading, onCancel }) => {
   if (loading) return <TableLoader message="Loading imports..." />;
@@ -415,59 +403,54 @@ const Storage = () => {
   if (exportsLoading && exports.length === 0 && activeTab === "exports") return <FullScreenLoader />;
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a] p-4 sm:p-6 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <BackButton />
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#f5f5f5] mb-1">Storage Management</h1>
-              <p className="text-[#ababab] text-sm sm:text-base">Manage imports and exports</p>
-            </div>
-            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-              {isAdmin && (
-                <>
-                  <button
-                    onClick={() => navigate("/storage/items")}
-                    className="flex items-center justify-center gap-2 p-2 sm:px-4 sm:py-2 bg-[#1f1f1f] text-[#f5f5f5] rounded-lg hover:bg-[#262626] border border-[#343434] transition-colors"
-                    title="Manage Items"
-                  >
-                    <MdSettings size={18} />
-                    <span className="hidden sm:inline text-sm">Manage Items</span>
-                  </button>
-                  <button
-                    onClick={() => navigate("/storage/suppliers")}
-                    className="flex items-center justify-center gap-2 p-2 sm:px-4 sm:py-2 bg-[#1f1f1f] text-[#f5f5f5] rounded-lg hover:bg-[#262626] border border-[#343434] transition-colors"
-                    title="Suppliers"
-                  >
-                    <MdBusiness size={18} />
-                    <span className="hidden sm:inline text-sm">Suppliers</span>
-                  </button>
-                </>
-              )}
-              {activeTab !== "stock" && (
+    <div className="min-h-screen bg-[#1a1a1a] pb-20 overflow-x-hidden">
+      <FeaturePageHeader
+        title="Storage Management"
+        subtitle="Manage imports and exports"
+        tabs={[
+          { id: "stock", label: "Stock", icon: MdInventory },
+          { id: "imports", label: "Imports", icon: MdInput },
+          { id: "exports", label: "Exports", icon: MdOutput },
+        ]}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        actions={
+          <>
+            {isAdmin ? (
+              <>
                 <button
-                  onClick={activeTab === "imports" ? handleCreateImport : handleCreateExport}
-                  className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-semibold hover:bg-[#e5a000] transition-colors text-sm sm:text-base"
+                  type="button"
+                  onClick={() => navigate("/storage/items")}
+                  className={headerActionClass}
                 >
-                  <IoMdAdd size={20} />
-                  New {activeTab === "imports" ? "Import" : "Export"}
+                  <MdSettings size={16} />
+                  Items
                 </button>
-              )}
-            </div>
-          </div>
-        </div>
+                <button
+                  type="button"
+                  onClick={() => navigate("/storage/suppliers")}
+                  className={headerActionClass}
+                >
+                  <MdBusiness size={16} />
+                  Suppliers
+                </button>
+              </>
+            ) : null}
+            {activeTab !== "stock" ? (
+              <button
+                type="button"
+                onClick={activeTab === "imports" ? handleCreateImport : handleCreateExport}
+                className={headerPrimaryClass}
+              >
+                <IoMdAdd size={18} />
+                New {activeTab === "imports" ? "Import" : "Export"}
+              </button>
+            ) : null}
+          </>
+        }
+      />
 
-        {/* Tabs */}
-        <div className="border-b border-[#343434] mb-6">
-          <div className="flex gap-1 overflow-x-auto pb-2 -mb-px scrollbar-hide">
-            <TabButton active={activeTab === "stock"} onClick={() => setActiveTab("stock")} icon={MdInventory} label="Stock" />
-            <TabButton active={activeTab === "imports"} onClick={() => setActiveTab("imports")} icon={MdInput} label="Imports" />
-            <TabButton active={activeTab === "exports"} onClick={() => setActiveTab("exports")} icon={MdOutput} label="Exports" />
-          </div>
-        </div>
-
+      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
         {activeTab !== "stock" && (
           <DateFilterBar
             dateFilter={dateFilter}

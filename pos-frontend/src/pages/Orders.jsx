@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { MdFilterList, MdPerson, MdPayment, MdStore, MdChevronLeft, MdChevronRight } from "react-icons/md";
 import OrderCard from "../components/orders/OrderCard";
-import BackButton from "../components/shared/BackButton";
+import FeaturePageHeader from "../components/shared/FeaturePageHeader";
 import DateFilter from "../components/shared/DateFilter";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import { enqueueSnackbar } from "notistack";
@@ -195,101 +195,93 @@ const Orders = () => {
   }
 
   return (
-    <section className="bg-[#1f1f1f] pb-20 min-h-screen ">
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-10 py-4 border-b border-[#343434] gap-4">
-        <div className="flex items-center gap-4">
-          <BackButton />
-          <div>
-            <h1 className="text-[#f5f5f5] text-xl sm:text-2xl font-bold tracking-wider">
-              Orders
-            </h1>
-            <div className="flex items-center gap-2 text-xs sm:text-sm text-[#ababab] mt-1 sm:mt-0">
-              <span>•</span>
-              <span>
-                {pagination?.total ?? orders.length} orders found
-                {isAdmin && createdBy !== "all" && (
-                  <span className="ml-1 hidden sm:inline">
-                    by {members.find(m => m._id === createdBy)?.name || "Unknown"}
-                  </span>
-                )}
-                {isAdmin && paymentMethod !== "all" && (
-                  <span className="ml-1 hidden sm:inline">
-                    • {paymentMethod} payments
-                  </span>
-                )}
-                {isAdmin && thirdPartyVendor !== "all" && (
-                  <span className="ml-1 hidden sm:inline">
-                    • {thirdPartyVendor === "None" ? "Direct orders" : thirdPartyVendor}
-                  </span>
-                )}
-                {isAdmin && startDate === endDate && (
-                  <span className="ml-1 hidden sm:inline">
-                    for {new Date(startDate).toLocaleDateString("vi-VN")}
-                  </span>
-                )}
-                {isAdmin && startDate !== endDate && (
-                  <span className="ml-1 hidden sm:inline">
-                    from {new Date(startDate).toLocaleDateString("vi-VN")} to{" "}
-                    {new Date(endDate).toLocaleDateString("vi-VN")}
-                  </span>
-                )}
+    <section className="min-h-screen bg-[#1f1f1f] pb-20">
+      <FeaturePageHeader
+        title="Orders"
+        subtitle={
+          <span>
+            {pagination?.total ?? orders.length} orders found
+            {isAdmin && createdBy !== "all" ? (
+              <span className="ml-1 hidden sm:inline">
+                by {members.find((m) => m._id === createdBy)?.name || "Unknown"}
               </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-wrap">
-          {isAdmin && (
+            ) : null}
+            {isAdmin && paymentMethod !== "all" ? (
+              <span className="ml-1 hidden sm:inline">• {paymentMethod} payments</span>
+            ) : null}
+            {isAdmin && thirdPartyVendor !== "all" ? (
+              <span className="ml-1 hidden sm:inline">
+                • {thirdPartyVendor === "None" ? "Direct orders" : thirdPartyVendor}
+              </span>
+            ) : null}
+            {isAdmin && startDate === endDate ? (
+              <span className="ml-1 hidden sm:inline">
+                for {new Date(startDate).toLocaleDateString("vi-VN")}
+              </span>
+            ) : null}
+            {isAdmin && startDate !== endDate ? (
+              <span className="ml-1 hidden sm:inline">
+                from {new Date(startDate).toLocaleDateString("vi-VN")} to{" "}
+                {new Date(endDate).toLocaleDateString("vi-VN")}
+              </span>
+            ) : null}
+          </span>
+        }
+        actions={
+          isAdmin ? (
             <>
               <button
+                type="button"
                 onClick={() => setShowDateFilter(!showDateFilter)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                className={`flex min-h-[40px] items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all sm:text-sm ${
                   showDateFilter
                     ? "bg-[#f6b100] text-[#1f1f1f]"
-                    : "bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434]"
+                    : "border border-[#343434] bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5]"
                 }`}
               >
                 <MdFilterList size={16} />
-                Date Filter
+                Date
               </button>
               <button
+                type="button"
                 onClick={() => setShowCreatedByFilter(!showCreatedByFilter)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                className={`flex min-h-[40px] items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all sm:text-sm ${
                   showCreatedByFilter
                     ? "bg-[#f6b100] text-[#1f1f1f]"
-                    : "bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434]"
+                    : "border border-[#343434] bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5]"
                 }`}
               >
                 <MdPerson size={16} />
-                Created By
+                Staff
               </button>
               <button
+                type="button"
                 onClick={() => setShowPaymentFilter(!showPaymentFilter)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                className={`flex min-h-[40px] items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all sm:text-sm ${
                   showPaymentFilter
                     ? "bg-[#f6b100] text-[#1f1f1f]"
-                    : "bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434]"
+                    : "border border-[#343434] bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5]"
                 }`}
               >
                 <MdPayment size={16} />
                 Payment
               </button>
               <button
+                type="button"
                 onClick={() => setShowVendorFilter(!showVendorFilter)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                className={`flex min-h-[40px] items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium transition-all sm:text-sm ${
                   showVendorFilter
                     ? "bg-[#f6b100] text-[#1f1f1f]"
-                    : "bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5] border border-[#343434]"
+                    : "border border-[#343434] bg-[#262626] text-[#ababab] hover:bg-[#343434] hover:text-[#f5f5f5]"
                 }`}
               >
                 <MdStore size={16} />
                 Vendor
               </button>
             </>
-          )}
-        </div>
-      </div>
+          ) : null
+        }
+      />
 
       {/* Date Filter Section - Admin Only */}
       {isAdmin && showDateFilter && (

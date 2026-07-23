@@ -23,7 +23,7 @@ import {
   clearStoreError,
 } from "../redux/slices/storeSlice";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
-import BackButton from "../components/shared/BackButton";
+import FeaturePageHeader from "../components/shared/FeaturePageHeader";
 import StoreModal from "../components/stores/StoreModal";
 import DeleteConfirmationModal from "../components/shared/DeleteConfirmationModal";
 
@@ -156,45 +156,41 @@ const Stores = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] overflow-x-hidden">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-10 py-4 border-b border-[#343434] gap-4">
-        <div className="flex items-center gap-4 min-w-0">
-          <BackButton />
-          <div className="min-w-0">
-            <h1 className="text-[#f5f5f5] text-xl sm:text-2xl font-bold tracking-wider">
-              Stores
-            </h1>
-            <div className="flex items-center gap-2 text-xs sm:text-sm text-[#ababab] mt-1">
-              <span>{filteredStores.length} stores found</span>
-              {loading && <span className="text-[#f6b100]">• Loading...</span>}
-            </div>
-          </div>
-        </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto shrink-0">
-          <button
-            onClick={handleCreateStore}
-            className="px-3 sm:px-4 py-2 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-medium hover:bg-[#f6b100]/90 transition-colors flex items-center justify-center gap-2 text-sm whitespace-nowrap"
-          >
-            <MdAdd size={16} /> Add Store
-          </button>
-          <button
-            onClick={handleRefresh}
-            disabled={loading}
-            className="px-3 sm:px-4 py-2 bg-[#262626] text-[#f5f5f5] rounded-lg font-medium hover:bg-[#343434] transition-colors flex items-center justify-center gap-2 text-sm whitespace-nowrap"
-          >
-            <MdRefresh size={16} className={loading ? "animate-spin" : ""} />{" "}
-            Refresh
-          </button>
-        </div>
-      </div>
-
-      {/* Search and Filters */}
-      <div className="px-4 sm:px-10 py-4 border-b border-[#343434] bg-[#1a1a1a]">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-          <div className="relative flex-1 max-w-md">
+    <div className="min-h-screen bg-[#0f0f0f] overflow-x-hidden pb-20">
+      <FeaturePageHeader
+        title="Stores"
+        subtitle={
+          <span className="flex items-center gap-2">
+            <span>{filteredStores.length} stores found</span>
+            {loading ? <span className="text-[#f6b100]">• Loading...</span> : null}
+          </span>
+        }
+        actions={
+          <>
+            <button
+              type="button"
+              onClick={handleCreateStore}
+              className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-[#f6b100] px-3 py-2 text-xs font-semibold text-[#1f1f1f] transition-colors hover:bg-[#f6b100]/90 sm:px-4 sm:text-sm"
+            >
+              <MdAdd size={16} />
+              Add Store
+            </button>
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={loading}
+              className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg border border-[#343434] bg-[#262626] px-3 py-2 text-xs font-medium text-[#f5f5f5] transition-colors hover:bg-[#343434] disabled:opacity-50 sm:px-4 sm:text-sm"
+            >
+              <MdRefresh size={16} className={loading ? "animate-spin" : ""} />
+              Refresh
+            </button>
+          </>
+        }
+      >
+        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
+          <div className="relative max-w-md flex-1">
             <MdSearch
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#ababab]"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#ababab]"
               size={20}
             />
             <input
@@ -202,14 +198,14 @@ const Stores = () => {
               placeholder="Search stores by name, code, or address..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] placeholder-[#ababab] focus:outline-none focus:border-[#f6b100] transition-colors"
+              className="w-full rounded-lg border border-[#343434] bg-[#262626] py-2 pl-10 pr-4 text-[#f5f5f5] placeholder-[#ababab] transition-colors focus:border-[#f6b100] focus:outline-none"
             />
           </div>
           <div className="relative">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] focus:outline-none focus:border-[#f6b100] transition-colors cursor-pointer min-w-[140px]"
+              className="min-w-[140px] cursor-pointer rounded-lg border border-[#343434] bg-[#262626] px-4 py-2 text-[#f5f5f5] transition-colors focus:border-[#f6b100] focus:outline-none"
             >
               <option value="all">All Stores</option>
               <option value="active">Active Only</option>
@@ -217,7 +213,7 @@ const Stores = () => {
             </select>
           </div>
         </div>
-      </div>
+      </FeaturePageHeader>
 
       {/* Stores Grid */}
       <div className="px-4 sm:px-10 py-6">

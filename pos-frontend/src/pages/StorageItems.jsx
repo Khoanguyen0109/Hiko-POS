@@ -11,7 +11,7 @@ import {
 import { enqueueSnackbar } from "notistack";
 import StorageItemModal from "../components/storage/StorageItemModal";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
-import BackButton from "../components/shared/BackButton";
+import FeaturePageHeader from "../components/shared/FeaturePageHeader";
 
 const thClass = "px-4 py-3 text-left text-xs font-medium text-[#ababab] uppercase tracking-wider";
 const tdClass = "px-4 py-3 text-sm text-[#f5f5f5] whitespace-nowrap";
@@ -130,26 +130,23 @@ const StorageItems = () => {
   if (loading && storageItems.length === 0) return <FullScreenLoader />;
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a] p-4 sm:p-6 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <BackButton />
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#f5f5f5] mb-1">Storage Items</h1>
-              <p className="text-[#ababab] text-sm">Manage your storage inventory items</p>
-            </div>
-            <button
-              onClick={handleAddItem}
-              className="flex items-center gap-2 px-4 py-2 sm:px-6 sm:py-3 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-semibold hover:bg-[#e5a000] transition-colors text-sm sm:text-base"
-            >
-              <IoMdAdd size={20} />
-              Add Item
-            </button>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#1a1a1a] pb-20 overflow-x-hidden">
+      <FeaturePageHeader
+        title="Storage Items"
+        subtitle="Manage your storage inventory items"
+        actions={
+          <button
+            type="button"
+            onClick={handleAddItem}
+            className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-[#f6b100] px-3 py-2 text-xs font-semibold text-[#1f1f1f] transition-colors hover:bg-[#e5a000] sm:px-4 sm:text-sm"
+          >
+            <IoMdAdd size={18} />
+            Add Item
+          </button>
+        }
+      />
 
+      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
         {/* Filters */}
         <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3">
           <input

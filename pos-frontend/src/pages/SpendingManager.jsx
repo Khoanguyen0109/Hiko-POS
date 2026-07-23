@@ -33,6 +33,7 @@ import { formatVND, getTodayDate } from "../utils";
 import SpendingModal from "../components/spending/SpendingModal";
 import CategoryModal from "../components/spending/CategoryModal";
 import VendorModal from "../components/spending/VendorModal";
+import FeaturePageHeader from "../components/shared/FeaturePageHeader";
 
 const SpendingManager = () => {
   const dispatch = useDispatch();
@@ -218,10 +219,10 @@ const SpendingManager = () => {
   };
 
   const tabs = [
-    { id: "spending", label: "Spending Records", icon: <MdAccountBalanceWallet /> },
-    { id: "categories", label: "Categories", icon: <MdCategory /> },
-    { id: "vendors", label: "Vendors", icon: <MdBusiness /> },
-    { id: "analytics", label: "Analytics", icon: <MdAnalytics /> }
+    { id: "spending", label: "Spending", icon: MdAccountBalanceWallet },
+    { id: "categories", label: "Categories", icon: MdCategory },
+    { id: "vendors", label: "Vendors", icon: MdBusiness },
+    { id: "analytics", label: "Analytics", icon: MdAnalytics },
   ];
 
   if (loading && !spending.length && !categories.length) {
@@ -236,72 +237,50 @@ const SpendingManager = () => {
   }
 
   return (
-    <div className="bg-[#1f1f1f] min-h-screen pb-20">
-      {/* Header */}
-      <div className="container mx-auto px-4 md:px-6 py-8">
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-[#f5f5f5] mb-2">
-              Spending Management
-            </h1>
-            <p className="text-[#ababab]">
-              Track expenses, manage vendors, and analyze spending patterns
-            </p>
-          </div>
-
-          {/* Add Buttons */}
-          <div className="flex flex-wrap gap-3">
+    <div className="min-h-screen bg-[#1f1f1f] pb-20">
+      <FeaturePageHeader
+        title="Spending Management"
+        subtitle="Track expenses, manage vendors, and analyze spending patterns"
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        actions={
+          <>
             <button
+              type="button"
               onClick={() => openModal("create", null, "spending")}
-              className="bg-[#f6b100] hover:bg-[#e5a000] text-[#1f1f1f] px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-colors"
+              className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-[#f6b100] px-3 py-2 text-xs font-semibold text-[#1f1f1f] transition-colors hover:bg-[#e5a000] sm:text-sm"
             >
-              <MdAdd /> Add Expense
+              <MdAdd size={16} />
+              Expense
             </button>
             <button
+              type="button"
               onClick={() => openModal("create", null, "category")}
-              className="bg-[#262626] hover:bg-[#343434] text-[#f5f5f5] px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-colors"
+              className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg border border-[#343434] bg-[#262626] px-3 py-2 text-xs font-medium text-[#f5f5f5] transition-colors hover:bg-[#343434] sm:text-sm"
             >
-              <MdCategory /> Add Category
+              <MdCategory size={16} />
+              Category
             </button>
             <button
+              type="button"
               onClick={() => openModal("create", null, "vendor")}
-              className="bg-[#262626] hover:bg-[#343434] text-[#f5f5f5] px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-colors"
+              className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg border border-[#343434] bg-[#262626] px-3 py-2 text-xs font-medium text-[#f5f5f5] transition-colors hover:bg-[#343434] sm:text-sm"
             >
-              <MdBusiness /> Add Vendor
+              <MdBusiness size={16} />
+              Vendor
             </button>
-          </div>
-        </div>
+          </>
+        }
+      />
 
-        {/* Tabs */}
-        <div className="flex flex-wrap gap-2 mt-8 border-b border-[#343434]">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 rounded-t-lg font-medium transition-colors ${
-                activeTab === tab.id
-                  ? "bg-[#262626] text-[#f6b100] border-b-2 border-[#f6b100]"
-                  : "text-[#ababab] hover:text-[#f5f5f5] hover:bg-[#262626]"
-              }`}
-            >
-              {tab.icon}
-              <span className="hidden sm:inline">{tab.label}</span>
-            </button>
-          ))}
+      {error ? (
+        <div className="container mx-auto px-4 md:px-6 pt-4">
+          <div className="rounded-lg bg-red-500 p-4 text-white">{error}</div>
         </div>
-      </div>
+      ) : null}
 
-      {/* Error Message */}
-      {error && (
-        <div className="container mx-auto px-4 md:px-6 mb-6">
-          <div className="bg-red-500 text-white p-4 rounded-lg">
-            {error}
-          </div>
-        </div>
-      )}
-
-      {/* Tab Content */}
-      <div className="container mx-auto px-4 md:px-6">
+      <div className="container mx-auto px-4 md:px-6 py-6">
         {activeTab === "spending" && (
           <SpendingRecords
             spending={spending}

@@ -11,8 +11,8 @@ import {
 import { enqueueSnackbar } from "notistack";
 import SupplierModal from "../components/storage/SupplierModal";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
+import FeaturePageHeader from "../components/shared/FeaturePageHeader";
 import PropTypes from "prop-types";
-import BackButton from "../components/shared/BackButton";
 
 const SupplierCard = ({ supplier, onEdit, onDelete, onToggleStatus }) => {
   return (
@@ -252,30 +252,23 @@ const Suppliers = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#1a1a1a] p-4 sm:p-6 overflow-x-hidden">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <BackButton />
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-4">
-            <div className="min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-bold text-[#f5f5f5] mb-1 sm:mb-2">
-                Supplier Management
-              </h1>
-              <p className="text-[#ababab] text-sm sm:text-base">
-                Manage your suppliers and vendors
-              </p>
-            </div>
-            <button
-              onClick={handleAddSupplier}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 bg-[#f6b100] text-[#1f1f1f] rounded-lg font-semibold hover:bg-[#e5a000] transition-colors text-sm sm:text-base whitespace-nowrap"
-            >
-              <IoMdAdd size={20} />
-              Add Supplier
-            </button>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#1a1a1a] pb-20 overflow-x-hidden">
+      <FeaturePageHeader
+        title="Supplier Management"
+        subtitle="Manage your suppliers and vendors"
+        actions={
+          <button
+            type="button"
+            onClick={handleAddSupplier}
+            className="flex min-h-[40px] items-center justify-center gap-1.5 rounded-lg bg-[#f6b100] px-3 py-2 text-xs font-semibold text-[#1f1f1f] transition-colors hover:bg-[#e5a000] sm:px-4 sm:text-sm"
+          >
+            <IoMdAdd size={18} />
+            Add Supplier
+          </button>
+        }
+      />
 
+      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
         {/* Filters */}
         <div className="mb-6 flex flex-col sm:flex-row gap-4">
           {/* Search */}
