@@ -82,6 +82,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
               <OrderTypePicker />
               <PaymentButtons
                 onPay={(method) => billRef.current?.handlePayWithMethod(method)}
+                onNotPay={() => billRef.current?.handlePlaceOrder()}
                 disabled={cartEmpty}
                 loading={loading}
               />

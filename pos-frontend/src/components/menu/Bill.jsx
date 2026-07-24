@@ -373,6 +373,7 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false }, ref) => {
             onPay={(method) =>
               handlePlaceOrder({ paymentMethod: method, orderStatus: "completed" })
             }
+            onNotPay={() => handlePlaceOrder()}
             disabled={cartData.items?.length === 0}
             loading={loading}
           />
