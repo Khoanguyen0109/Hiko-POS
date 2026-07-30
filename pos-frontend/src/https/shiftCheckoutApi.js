@@ -25,3 +25,6 @@ export const getShiftCheckoutById = (id) =>
 
 export const deleteShiftCheckout = (id) =>
   axiosWrapper.delete(`/api/shift-checkout/${id}`);
+
+export const updateShiftCheckout = (id, data) =>
+  axiosWrapper.patch(`/api/shift-checkout/${id}`, data);

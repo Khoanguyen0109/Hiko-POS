@@ -11,6 +11,7 @@ import {
   listShiftCheckouts,
   submitShiftCheckout,
   deleteShiftCheckout,
+  updateShiftCheckout,
 } from "../services/shiftCheckoutService.js";
 import { submitShiftCheckIn } from "../services/shiftCheckInService.js";
 
@@ -218,6 +219,34 @@ const deleteCheckout = async (req, res, next) => {
   }
 };
 
+const updateCheckout = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return next(createHttpError(400, "Invalid checkout ID"));
+    }
+
+    const { countedCash, countedBanking, notes } = req.body;
+
+    const checkout = await updateShiftCheckout(id, req.store._id, {
+      countedCash,
+      countedBanking,
+      notes,
+    });
+
+    res.status(200).json({
+      success: true,
+      message:
+        checkout.status === "balanced"
+          ? "Shift checkout updated — totals match"
+          : "Shift checkout updated — totals do not match",
+      data: checkout,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export {
   getPreview,
   submitCheckout,
@@ -227,4 +256,5 @@ export {
   getList,
   getById,
   deleteCheckout,
+  updateCheckout,
 };

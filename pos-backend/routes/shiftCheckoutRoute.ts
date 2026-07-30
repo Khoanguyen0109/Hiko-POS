@@ -8,6 +8,7 @@ import {
   getList,
   getById,
   deleteCheckout,
+  updateCheckout,
 } from "../controllers/shiftCheckoutController.js";
 import { isVerifiedUser, isAdmin } from "../middlewares/tokenVerification.js";
 import { storeContext, isStoreRole } from "../middlewares/storeContext.js";
@@ -44,6 +45,7 @@ router.route("/").post(isVerifiedUser, storeContext, submitCheckout);
 router
   .route("/:id")
   .get(isVerifiedUser, storeContext, getById)
+  .patch(isVerifiedUser, storeContext, isAdmin, updateCheckout)
   .delete(isVerifiedUser, storeContext, isAdmin, deleteCheckout);
 
 export default router;

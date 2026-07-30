@@ -10,6 +10,7 @@ import {
   MdAccessTime,
   MdDelete,
   MdLogin,
+  MdEdit,
 } from "react-icons/md";
 import BackButton from "../components/shared/BackButton";
 import ShiftCheckoutModal from "../components/shiftcheckout/ShiftCheckoutModal";
@@ -177,6 +178,15 @@ const ShiftCheckout = () => {
     [dayCheckouts]
   );
 
+  const openCheckoutFromDay = (checkout) => {
+    const scheduleId =
+      checkout.schedule?._id || checkout.schedule;
+    const memberId = checkout.member?._id || checkout.member;
+    if (scheduleId) {
+      openCheckout(String(scheduleId), memberId ? String(memberId) : null);
+    }
+  };
+
   const handleDeleteCheckout = async (checkout) => {
     const memberName = checkout.member?.name || "this member";
     if (
@@ -305,10 +315,29 @@ const ShiftCheckout = () => {
                     </p>
                   )}
                   {checkout && (
-                    <p className="text-xs text-[#ababab] mt-2">
-                      Total cash: {formatVND(checkout.countedCash)} ·{" "}
-                      {formatVND(checkout.countedBanking)} banking
-                    </p>
+                    <div className="text-xs text-[#ababab] mt-2 space-y-0.5">
+                      <p className="text-[#f5f5f5] font-medium">
+                        Total bill:{" "}
+                        {formatVND(
+                          checkout.totalBill ??
+                            checkout.expectedCash + checkout.expectedBanking
+                        )}
+                        {checkout.orderCount != null && (
+                          <span className="text-[#ababab] font-normal">
+                            {" "}
+                            ({checkout.orderCount} orders)
+                          </span>
+                        )}
+                      </p>
+                      <p>
+                        Expected: {formatVND(checkout.expectedCash)} cash ·{" "}
+                        {formatVND(checkout.expectedBanking)} banking
+                      </p>
+                      <p>
+                        Counted: {formatVND(checkout.countedCash)} cash ·{" "}
+                        {formatVND(checkout.countedBanking)} banking
+                      </p>
+                    </div>
                   )}
                 </div>
                 <div className="flex flex-col items-end gap-2">
@@ -373,12 +402,13 @@ const ShiftCheckout = () => {
                 <tr>
                   <th className="px-4 py-3">Member</th>
                   <th className="px-4 py-3">Shift</th>
+                  <th className="px-4 py-3">Total bill</th>
                   <th className="px-4 py-3">Expected</th>
                   <th className="px-4 py-3">Counted</th>
                   <th className="px-4 py-3">Diff</th>
                   <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Notes</th>
-                  {isAdmin && <th className="px-4 py-3 w-12" />}
+                  {isAdmin && <th className="px-4 py-3 w-24">Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#383838]">
@@ -389,6 +419,14 @@ const ShiftCheckout = () => {
                       {c.shiftTemplate?.name}
                       <span className="block text-xs text-[#ababab]">
                         {c.shiftTemplate?.startTime} – {c.shiftTemplate?.endTime}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {formatVND(
+                        c.totalBill ?? c.expectedCash + c.expectedBanking
+                      )}
+                      <span className="block text-xs text-[#ababab]">
+                        {c.orderCount ?? 0} orders
                       </span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
@@ -412,16 +450,27 @@ const ShiftCheckout = () => {
                     </td>
                     {isAdmin && (
                       <td className="px-4 py-3">
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteCheckout(c)}
-                          disabled={deleteLoading}
-                          className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg"
-                          title="Delete checkout"
-                          aria-label="Delete checkout"
-                        >
-                          <MdDelete size={18} />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openCheckoutFromDay(c)}
+                            className="p-2 text-brand hover:text-brand-hover hover:bg-brand-20 rounded-lg"
+                            title="View / edit checkout"
+                            aria-label="View or edit checkout"
+                          >
+                            <MdEdit size={18} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCheckout(c)}
+                            disabled={deleteLoading}
+                            className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg"
+                            title="Delete checkout"
+                            aria-label="Delete checkout"
+                          >
+                            <MdDelete size={18} />
+                          </button>
+                        </div>
                       </td>
                     )}
                   </tr>
@@ -461,9 +510,13 @@ const ShiftCheckout = () => {
         scheduleId={selectedScheduleId}
         memberId={selectedMemberId}
         refreshDate={selectedDate}
-        onSuccess={() =>
-          dispatch(fetchMyShiftCheckouts({ date: selectedDate }))
-        }
+        isAdmin={isAdmin}
+        onSuccess={() => {
+          dispatch(fetchMyShiftCheckouts({ date: selectedDate }));
+          if (activeTab === TABS.DAY && canViewDay) {
+            dispatch(fetchDayShiftCheckouts(dayDate));
+          }
+        }}
       />
     </section>
   );

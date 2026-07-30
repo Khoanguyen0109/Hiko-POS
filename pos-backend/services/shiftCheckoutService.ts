@@ -195,6 +195,7 @@ export async function submitShiftCheckout(
     periodEnd: expected.periodEnd,
     expectedCash: expected.expectedCash,
     expectedBanking: expected.expectedBanking,
+    totalBill: expected.totalBill,
     countedCash,
     countedBanking,
     cashDifference,
@@ -204,6 +205,92 @@ export async function submitShiftCheckout(
     orderCount: expected.orderCount,
     submittedAt: getCurrentVietnamTime(),
   });
+
+  await checkout.populate([
+    { path: "member", select: "name email" },
+    { path: "shiftTemplate", select: "name shortName startTime endTime color" },
+    { path: "schedule", select: "date" },
+  ]);
+
+  return checkout;
+}
+
+export async function updateShiftCheckout(
+  checkoutId: string,
+  storeId: Types.ObjectId,
+  body: {
+    countedCash: number;
+    countedBanking: number;
+    notes?: string;
+  }
+) {
+  const checkout = await ShiftCheckout.findOne({
+    _id: checkoutId,
+    store: storeId,
+  });
+
+  if (!checkout) {
+    throw createHttpError(404, "Shift checkout not found");
+  }
+
+  const countedCash = Number(body.countedCash);
+  const countedBanking = Number(body.countedBanking);
+  if (
+    Number.isNaN(countedCash) ||
+    Number.isNaN(countedBanking) ||
+    countedCash < 0 ||
+    countedBanking < 0
+  ) {
+    throw createHttpError(400, "Counted cash and banking must be non-negative numbers");
+  }
+
+  const schedule = await Schedule.findById(checkout.schedule).populate("shiftTemplate");
+  if (!schedule?.shiftTemplate) {
+    throw createHttpError(400, "Schedule or shift template not found");
+  }
+
+  const [expected, checkIn] = await Promise.all([
+    getExpectedTotalsForSchedule(storeId, schedule),
+    ShiftCheckIn.findOne({
+      schedule: checkout.schedule,
+      member: checkout.member,
+    }),
+  ]);
+
+  const openingCash = checkIn?.openingCash ?? 0;
+  const shiftCollectedCash = countedCash - openingCash;
+
+  const status = resolveCheckoutStatus(
+    expected.expectedCash,
+    expected.expectedBanking,
+    shiftCollectedCash,
+    countedBanking,
+    SHIFT_CHECKOUT_TOLERANCE_VND
+  );
+
+  const notes = (body.notes ?? checkout.notes ?? "").trim();
+  if (
+    status === "mismatch" &&
+    notes.length < SHIFT_CHECKOUT_MIN_NOTES_LENGTH
+  ) {
+    throw createHttpError(
+      400,
+      `Notes are required when totals do not match (min ${SHIFT_CHECKOUT_MIN_NOTES_LENGTH} characters)`
+    );
+  }
+
+  checkout.expectedCash = expected.expectedCash;
+  checkout.expectedBanking = expected.expectedBanking;
+  checkout.totalBill = expected.totalBill;
+  checkout.orderCount = expected.orderCount;
+  checkout.countedCash = countedCash;
+  checkout.countedBanking = countedBanking;
+  checkout.cashDifference = shiftCollectedCash - expected.expectedCash;
+  checkout.bankingDifference = countedBanking - expected.expectedBanking;
+  checkout.status = status;
+  checkout.notes = notes;
+
+  await checkout.save();
 
   await checkout.populate([
     { path: "member", select: "name email" },
@@ -274,6 +361,7 @@ export async function getMyShiftCheckoutsForDate(
             ? {
                 expectedCash: expected.expectedCash,
                 expectedBanking: expected.expectedBanking,
+                totalBill: expected.totalBill,
                 orderCount: expected.orderCount,
               }
             : null,
@@ -338,6 +426,7 @@ export async function getStoreShiftCheckoutsForDate(
         expectedPreview = {
           expectedCash: expected.expectedCash,
           expectedBanking: expected.expectedBanking,
+          totalBill: expected.totalBill,
           orderCount: expected.orderCount,
         };
       }

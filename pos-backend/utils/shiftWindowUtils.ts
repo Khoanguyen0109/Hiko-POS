@@ -23,6 +23,7 @@ export interface ShiftPaymentTotals {
   expectedCash: number;
   expectedBanking: number;
   expectedCard: number;
+  totalBill: number;
   orderCount: number;
 }
 
@@ -73,11 +74,14 @@ export function aggregateShiftPayments(
   let expectedCard = 0;
   let orderCount = 0;
 
+  let totalBill = 0;
+
   for (const order of orders) {
     if (order.orderStatus !== "completed") continue;
 
     const amount = order.bills?.totalWithTax || 0;
     orderCount += 1;
+    totalBill += amount;
 
     if (order.paymentMethod === "Cash") {
       expectedCash += amount;
@@ -91,7 +95,7 @@ export function aggregateShiftPayments(
     }
   }
 
-  return { expectedCash, expectedBanking, expectedCard, orderCount };
+  return { expectedCash, expectedBanking, expectedCard, totalBill, orderCount };
 }
 
 /**

@@ -88,6 +88,20 @@ export const deleteShiftCheckout = createAsyncThunk(
   }
 );
 
+export const updateShiftCheckout = createAsyncThunk(
+  "shiftCheckout/update",
+  async ({ id, ...payload }, { rejectWithValue }) => {
+    try {
+      const response = await shiftCheckoutApi.updateShiftCheckout(id, payload);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update checkout"
+      );
+    }
+  }
+);
+
 export const fetchShiftCheckoutList = createAsyncThunk(
   "shiftCheckout/fetchList",
   async (params, { rejectWithValue }) => {
@@ -112,6 +126,7 @@ const initialState = {
   listLoading: false,
   listError: null,
   deleteLoading: false,
+  updateLoading: false,
   checkInLoading: false,
   preview: null,
   loading: false,
@@ -277,6 +292,45 @@ const shiftCheckoutSlice = createSlice({
       .addCase(deleteShiftCheckout.rejected, (state, action) => {
         state.deleteLoading = false;
         state.listError = action.payload;
+      })
+      .addCase(updateShiftCheckout.pending, (state) => {
+        state.updateLoading = true;
+        state.error = null;
+      })
+      .addCase(updateShiftCheckout.fulfilled, (state, action) => {
+        state.updateLoading = false;
+        const checkout = action.payload.data;
+        if (!checkout) return;
+
+        const id = checkout._id;
+        state.dayCheckouts = state.dayCheckouts.map((c) =>
+          c._id === id ? checkout : c
+        );
+        state.listCheckouts = state.listCheckouts.map((c) =>
+          c._id === id ? checkout : c
+        );
+
+        const scheduleId = String(checkout.schedule?._id || checkout.schedule);
+        const memberId = String(checkout.member?._id || checkout.member);
+        state.myShifts = state.myShifts.map((row) => {
+          const rowScheduleId = String(row.schedule?._id);
+          const rowMemberId = String(row.member?._id || "");
+          if (
+            rowScheduleId === scheduleId &&
+            (!rowMemberId || rowMemberId === memberId)
+          ) {
+            return {
+              ...row,
+              checkout,
+              checkoutStatus: checkout.status,
+            };
+          }
+          return row;
+        });
+      })
+      .addCase(updateShiftCheckout.rejected, (state, action) => {
+        state.updateLoading = false;
+        state.error = action.payload;
       })
       .addCase(submitShiftCheckIn.pending, (state) => {
         state.checkInLoading = true;

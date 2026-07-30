@@ -2,6 +2,12 @@ import { useState, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { MdSave, MdCancel, MdInventory, MdInfo } from "react-icons/md";
 import BottomSheet from "../shared/BottomSheet";
+import Autocomplete from "../shared/Autocomplete";
+import {
+  buildStorageItemOptions,
+  filterStorageItemOption,
+  renderStorageItemOption,
+} from "./storageItemAutocompleteUtils";
 import { createStorageExportAction, editStorageExport } from "../../redux/slices/storageExportSlice";
 import { fetchStorageItems } from "../../redux/slices/storageItemSlice";
 import { enqueueSnackbar } from "notistack";
@@ -33,6 +39,11 @@ const ExportModal = ({
   const selectedItem = useMemo(() => {
     return storageItems.find(item => item._id === formData.storageItemId);
   }, [storageItems, formData.storageItemId]);
+
+  const storageItemOptions = useMemo(
+    () => buildStorageItemOptions(storageItems.filter((item) => item.isActive)),
+    [storageItems]
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -126,8 +137,6 @@ const ExportModal = ({
     }
   };
 
-  const activeStorageItems = storageItems.filter(item => item.isActive);
-
   return (
     <BottomSheet
       isOpen={isOpen}
@@ -149,22 +158,17 @@ const ExportModal = ({
               <MdInventory className="inline mr-1" size={16} />
               Storage Item <span className="text-red-500">*</span>
             </label>
-            <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
-              <select
-                name="storageItemId"
-                value={formData.storageItemId}
-                onChange={handleInputChange}
-                required
-                className="bg-transparent flex-1 text-white focus:outline-none"
-              >
-                <option value="" className="bg-[#1f1f1f]">Select storage item</option>
-                {activeStorageItems.map(item => (
-                  <option key={item._id} value={item._id} className="bg-[#1f1f1f]">
-                    {item.name} ({item.code}) - Stock: {item.currentStock} {item.unit}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Autocomplete
+              name="storageItemId"
+              value={formData.storageItemId}
+              onChange={handleInputChange}
+              options={storageItemOptions}
+              placeholder="Search storage item by name or code..."
+              filterOption={filterStorageItemOption}
+              renderOption={renderStorageItemOption}
+              required
+              noOptionsText="No storage items found"
+            />
             {selectedItem && (
               <div className="mt-2 p-3 bg-[#1a1a1a] rounded-lg border border-[#343434]">
                 <div className="flex items-center gap-2 text-sm">

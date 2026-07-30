@@ -32,6 +32,7 @@ const shiftCheckoutSchema = new mongoose.Schema(
     periodEnd: { type: Date, required: true },
     expectedCash: { type: Number, required: true, min: 0, default: 0 },
     expectedBanking: { type: Number, required: true, min: 0, default: 0 },
+    totalBill: { type: Number, min: 0, default: 0 },
     countedCash: { type: Number, required: true, min: 0 },
     countedBanking: { type: Number, required: true, min: 0 },
     cashDifference: { type: Number, required: true },
