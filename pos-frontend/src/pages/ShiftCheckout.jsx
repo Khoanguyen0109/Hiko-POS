@@ -1,33 +1,42 @@
 import { useEffect, useMemo, useState } from "react";
+import PropTypes from "prop-types";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
 import {
   MdAccountBalanceWallet,
   MdCalendarToday,
-  MdCheckCircle,
-  MdWarning,
-  MdAccessTime,
   MdDelete,
-  MdLogin,
   MdEdit,
+  MdSchedule,
+  MdViewDay,
 } from "react-icons/md";
-import BackButton from "../components/shared/BackButton";
+import FeaturePageHeader from "../components/shared/FeaturePageHeader";
 import ShiftCheckoutModal from "../components/shiftcheckout/ShiftCheckoutModal";
 import ShiftCheckInModal from "../components/shiftcheckout/ShiftCheckInModal";
-import FullScreenLoader from "../components/shared/FullScreenLoader";
+import ShiftCheckoutCard from "../components/shiftcheckout/ShiftCheckoutCard";
+import LoadingState from "../components/shared/LoadingState";
+import EmptyState from "../components/shared/EmptyState";
 import {
   fetchMyShiftCheckouts,
   fetchDayShiftCheckouts,
   deleteShiftCheckout,
   clearShiftCheckoutError,
 } from "../redux/slices/shiftCheckoutSlice";
+import {
+  CheckoutStatusBadge,
+  getTotalBill,
+} from "../components/shiftcheckout/ShiftCheckoutUi";
 import { formatVND, getTodayDate } from "../utils";
 
 const TABS = {
   MY_SHIFT: "my_shift",
   DAY: "day",
 };
+
+const thClass =
+  "px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[#ababab]";
+const tdClass = "px-4 py-3 text-sm text-[#f5f5f5]";
 
 const shiftStartMinutes = (startTime) => {
   if (!startTime || typeof startTime !== "string") return 0;
@@ -45,26 +54,137 @@ const sortByShiftStartTimeAsc = (rows, getTemplate) =>
     return nameA.localeCompare(nameB);
   });
 
-const statusBadge = (status) => {
-  if (status === "balanced") {
-    return (
-      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-green-900/40 text-green-400">
-        <MdCheckCircle size={14} /> Balanced
-      </span>
-    );
-  }
-  if (status === "mismatch") {
-    return (
-      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-amber-900/40 text-amber-400">
-        <MdWarning size={14} /> Mismatch
-      </span>
-    );
-  }
+const DatePicker = ({ value, onChange }) => (
+  <label className="flex items-center gap-2 rounded-lg border border-[#343434] bg-[#141414] px-3 py-2">
+    <MdCalendarToday className="shrink-0 text-[#6a6a6a]" size={18} />
+    <input
+      type="date"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full bg-transparent text-sm text-[#f5f5f5] outline-none"
+    />
+  </label>
+);
+
+DatePicker.propTypes = {
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
+
+const SummaryStrip = ({ items }) => (
+  <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+    {items.map((item) => (
+      <div
+        key={item.label}
+        className="rounded-xl border border-[#343434] bg-[#262626] px-4 py-3"
+      >
+        <p className="text-[10px] font-medium uppercase tracking-wide text-[#6a6a6a]">
+          {item.label}
+        </p>
+        <p className={`mt-1 text-lg font-semibold ${item.accent || "text-[#f5f5f5]"}`}>
+          {item.value}
+        </p>
+      </div>
+    ))}
+  </div>
+);
+
+SummaryStrip.propTypes = {
+  items: PropTypes.arrayOf(
+    PropTypes.shape({
+      label: PropTypes.string.isRequired,
+      value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      accent: PropTypes.string,
+    })
+  ).isRequired,
+};
+
+const DayCheckoutRow = ({ checkout, isAdmin, onEdit, onDelete, deleteLoading }) => {
+  const cashOk = checkout.cashDifference === 0;
+  const bankingOk = checkout.bankingDifference === 0;
+
   return (
-    <span className="text-xs px-2 py-0.5 rounded bg-[#383838] text-[#ababab]">
-      Not submitted
-    </span>
+    <tr className="bg-[#1f1f1f] transition-colors hover:bg-[#262626]">
+      <td className={`${tdClass} sticky left-0 z-[1] bg-[#1f1f1f] shadow-[2px_0_4px_-1px_rgba(0,0,0,0.3)]`}>
+        <span className="font-medium">{checkout.member?.name || "—"}</span>
+      </td>
+      <td className={tdClass}>
+        <span className="font-medium">{checkout.shiftTemplate?.name}</span>
+        <span className="mt-0.5 block text-xs text-[#6a6a6a]">
+          {checkout.shiftTemplate?.startTime} – {checkout.shiftTemplate?.endTime}
+        </span>
+      </td>
+      <td className={tdClass}>
+        <span className="font-semibold text-[#f5f5f5]">
+          {formatVND(getTotalBill(checkout))}
+        </span>
+        <span className="block text-xs text-[#6a6a6a]">
+          {checkout.orderCount ?? 0} orders
+        </span>
+      </td>
+      <td className={tdClass}>
+        <span className="text-brand">{formatVND(checkout.expectedCash)}</span>
+        <span className="block text-xs text-[#6a6a6a]">
+          {formatVND(checkout.expectedBanking)} banking
+        </span>
+      </td>
+      <td className={tdClass}>
+        <span>{formatVND(checkout.countedCash)}</span>
+        <span className="block text-xs text-[#6a6a6a]">
+          {formatVND(checkout.countedBanking)} banking
+        </span>
+      </td>
+      <td className={tdClass}>
+        <span className={cashOk ? "text-green-400" : "text-amber-400"}>
+          {cashOk ? "Match" : formatVND(checkout.cashDifference)}
+        </span>
+        <span
+          className={`block text-xs ${bankingOk ? "text-green-400/80" : "text-amber-400/80"}`}
+        >
+          {bankingOk ? "Match" : formatVND(checkout.bankingDifference)}
+        </span>
+      </td>
+      <td className={tdClass}>
+        <CheckoutStatusBadge status={checkout.status} />
+      </td>
+      <td className={`${tdClass} max-w-[180px] truncate text-[#ababab]`}>
+        {checkout.notes || "—"}
+      </td>
+      {isAdmin ? (
+        <td className={`${tdClass} text-right`}>
+          <div className="flex items-center justify-end gap-1">
+            <button
+              type="button"
+              onClick={() => onEdit(checkout)}
+              className="rounded-lg p-2 text-brand transition-colors hover:bg-brand-20"
+              title="View / edit"
+              aria-label="View or edit checkout"
+            >
+              <MdEdit size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete(checkout)}
+              disabled={deleteLoading}
+              className="rounded-lg p-2 text-red-400 transition-colors hover:bg-red-900/20 disabled:opacity-50"
+              title="Delete checkout"
+              aria-label="Delete checkout"
+            >
+              <MdDelete size={18} />
+            </button>
+          </div>
+        </td>
+      ) : null}
+    </tr>
   );
+};
+
+DayCheckoutRow.propTypes = {
+  checkout: PropTypes.object.isRequired,
+  isAdmin: PropTypes.bool,
+  onEdit: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired,
+  deleteLoading: PropTypes.bool,
 };
 
 const ShiftCheckout = () => {
@@ -145,42 +265,31 @@ const ShiftCheckout = () => {
     setModalOpen(true);
   };
 
-  const checkInBadge = (status) => {
-    if (status === "checked_in") {
-      return (
-        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded bg-emerald-900/40 text-emerald-400">
-          <MdLogin size={14} /> Checked in
-        </span>
-      );
-    }
-    return (
-      <span className="text-xs px-2 py-0.5 rounded bg-[#383838] text-[#ababab]">
-        Not checked in
-      </span>
-    );
-  };
-
   const sortedMyShifts = useMemo(
     () =>
-      sortByShiftStartTimeAsc(
-        myShifts,
-        (row) => row.schedule?.shiftTemplate
-      ),
+      sortByShiftStartTimeAsc(myShifts, (row) => row.schedule?.shiftTemplate),
     [myShifts]
   );
 
   const sortedDayCheckouts = useMemo(
-    () =>
-      sortByShiftStartTimeAsc(
-        dayCheckouts,
-        (c) => c.shiftTemplate
-      ),
+    () => sortByShiftStartTimeAsc(dayCheckouts, (c) => c.shiftTemplate),
     [dayCheckouts]
   );
 
+  const daySummary = useMemo(() => {
+    let totalBill = 0;
+    let balanced = 0;
+    let mismatch = 0;
+    for (const c of sortedDayCheckouts) {
+      totalBill += getTotalBill(c);
+      if (c.status === "balanced") balanced += 1;
+      else if (c.status === "mismatch") mismatch += 1;
+    }
+    return { totalBill, balanced, mismatch, count: sortedDayCheckouts.length };
+  }, [sortedDayCheckouts]);
+
   const openCheckoutFromDay = (checkout) => {
-    const scheduleId =
-      checkout.schedule?._id || checkout.schedule;
+    const scheduleId = checkout.schedule?._id || checkout.schedule;
     const memberId = checkout.member?._id || checkout.member;
     if (scheduleId) {
       openCheckout(String(scheduleId), memberId ? String(memberId) : null);
@@ -205,281 +314,150 @@ const ShiftCheckout = () => {
     }
   };
 
+  const tabs = [
+    { id: TABS.MY_SHIFT, label: "All shifts", icon: MdSchedule },
+    ...(canViewDay
+      ? [{ id: TABS.DAY, label: "Day overview", icon: MdViewDay }]
+      : []),
+  ];
+
+  const activeDate = activeTab === TABS.DAY ? dayDate : selectedDate;
+  const setActiveDate =
+    activeTab === TABS.DAY ? setDayDate : setSelectedDate;
+  const isListLoading =
+    activeTab === TABS.DAY ? dayLoading : loading || checkInLoading;
+
   return (
-    <section className="bg-[#1f1f1f] min-h-[calc(100vh-80px)] pb-24 px-4 md:px-8 overflow-x-hidden">
-      <div className="flex items-center gap-3 py-4 sm:py-6">
-        <BackButton />
-        <div className="flex items-center gap-2 min-w-0">
-          <MdAccountBalanceWallet className="text-brand shrink-0" size={24} />
-          <h1 className="text-xl sm:text-2xl font-bold text-[#f5f5f5] truncate">Shift checkout</h1>
+    <section className="min-h-[calc(100vh-80px)] bg-[#1f1f1f] pb-24">
+      <FeaturePageHeader
+        title="Shift checkout"
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      >
+        <div className="max-w-xs">
+          <DatePicker value={activeDate} onChange={setActiveDate} />
         </div>
-      </div>
+      </FeaturePageHeader>
 
-      <div className="flex gap-2 mb-6 border-b border-[#383838]">
-        <button
-          type="button"
-          onClick={() => setActiveTab(TABS.MY_SHIFT)}
-          className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
-            activeTab === TABS.MY_SHIFT
-              ? "border-brand text-brand"
-              : "border-transparent text-[#ababab]"
-          }`}
-        >
-          All shifts
-        </button>
-        {canViewDay && (
-          <button
-            type="button"
-            onClick={() => setActiveTab(TABS.DAY)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${
-              activeTab === TABS.DAY
-                ? "border-brand text-brand"
-                : "border-transparent text-[#ababab]"
-            }`}
-          >
-            Day
-          </button>
-        )}
-      </div>
+      <div className="px-4 py-4 sm:px-6">
+        {activeTab === TABS.DAY && canViewDay && sortedDayCheckouts.length > 0 ? (
+          <SummaryStrip
+            items={[
+              { label: "Checkouts", value: daySummary.count },
+              {
+                label: "Total bill",
+                value: formatVND(daySummary.totalBill),
+                accent: "text-brand",
+              },
+              {
+                label: "Balanced",
+                value: daySummary.balanced,
+                accent: "text-green-400",
+              },
+              {
+                label: "Mismatch",
+                value: daySummary.mismatch,
+                accent: "text-amber-400",
+              },
+            ]}
+          />
+        ) : null}
 
-      {activeTab === TABS.MY_SHIFT && (
-        <div className="space-y-4 max-w-2xl">
-          <div className="flex items-center gap-2">
-            <MdCalendarToday className="text-[#ababab]" size={18} />
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-[#262626] border border-[#383838] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm"
+        {isListLoading ? (
+          <LoadingState message="Loading shifts..." />
+        ) : activeTab === TABS.MY_SHIFT ? (
+          sortedMyShifts.length === 0 ? (
+            <EmptyState
+              icon={MdAccountBalanceWallet}
+              variant="rich"
+              title="No shifts today"
+              message="No shifts are scheduled for this date."
             />
-          </div>
+          ) : (
+            <div className="mx-auto max-w-3xl space-y-3">
+              {sortedMyShifts.map((row) => {
+                const tpl = row.schedule?.shiftTemplate;
+                const checkout = row.checkout;
+                const memberId = row.member?._id;
+                const isOwnShift =
+                  row.isOwnShift ?? String(memberId) === String(userId);
+                const isCheckedIn = row.checkInStatus === "checked_in";
+                const rowKey = memberId
+                  ? `${row.schedule._id}-${memberId}`
+                  : row.schedule._id;
 
-          {(loading || checkInLoading) && <FullScreenLoader />}
-
-          {!loading && sortedMyShifts.length === 0 && (
-            <p className="text-[#ababab] py-8 text-center">
-              No shifts scheduled for this date.
-            </p>
-          )}
-
-          {sortedMyShifts.map((row) => {
-            const tpl = row.schedule?.shiftTemplate;
-            const checkout = row.checkout;
-            const checkIn = row.checkIn;
-            const preview = row.expectedPreview;
-            const memberId = row.member?._id;
-            const isOwnShift =
-              row.isOwnShift ?? String(memberId) === String(userId);
-            const isCheckedIn = row.checkInStatus === "checked_in";
-            const rowKey = memberId
-              ? `${row.schedule._id}-${memberId}`
-              : row.schedule._id;
-
-            return (
-              <div
-                key={rowKey}
-                className={`bg-[#262626] border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ${
-                  isOwnShift ? "border-brand/40" : "border-[#383838]"
-                }`}
-              >
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-[#f5f5f5]">
-                      {tpl?.name || tpl?.shortName || "Shift"}
-                      {row.member?.name && (
-                        <span className="text-[#ababab] font-normal text-sm ml-2">
-                          — {row.member.name}
-                        </span>
-                      )}
-                    </p>
-                    {isOwnShift && (
-                      <span className="text-xs px-2 py-0.5 rounded bg-brand-20 text-brand">
-                        Your shift
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-[#ababab] flex items-center gap-1 mt-1">
-                    <MdAccessTime size={14} />
-                    {tpl?.startTime} – {tpl?.endTime}
-                  </p>
-                  {!checkout && preview && (
-                    <p className="text-xs text-[#ababab] mt-2">
-                      Expected: {formatVND(preview.expectedCash)} cash ·{" "}
-                      {formatVND(preview.expectedBanking)} banking (
-                      {preview.orderCount} orders)
-                    </p>
-                  )}
-                  {checkIn && (
-                    <p className="text-xs text-emerald-400/90 mt-2">
-                      Opening cash: {formatVND(checkIn.openingCash)}
-                    </p>
-                  )}
-                  {checkout && (
-                    <div className="text-xs text-[#ababab] mt-2 space-y-0.5">
-                      <p className="text-[#f5f5f5] font-medium">
-                        Total bill:{" "}
-                        {formatVND(
-                          checkout.totalBill ??
-                            checkout.expectedCash + checkout.expectedBanking
-                        )}
-                        {checkout.orderCount != null && (
-                          <span className="text-[#ababab] font-normal">
-                            {" "}
-                            ({checkout.orderCount} orders)
-                          </span>
-                        )}
-                      </p>
-                      <p>
-                        Expected: {formatVND(checkout.expectedCash)} cash ·{" "}
-                        {formatVND(checkout.expectedBanking)} banking
-                      </p>
-                      <p>
-                        Counted: {formatVND(checkout.countedCash)} cash ·{" "}
-                        {formatVND(checkout.countedBanking)} banking
-                      </p>
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-col items-end gap-2">
-                  <div className="flex items-center gap-2 flex-wrap justify-end">
-                    {checkInBadge(row.checkInStatus)}
-                    {statusBadge(row.checkoutStatus)}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {isOwnShift && !isCheckedIn && (
-                      <button
-                        type="button"
-                        onClick={() => openCheckIn(row)}
-                        className="px-4 py-2 text-sm font-medium bg-[#10B981] text-white rounded-lg hover:bg-[#059669]"
-                      >
-                        Check in
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => openCheckout(row.schedule._id, memberId)}
-                      disabled={isOwnShift && !isCheckedIn && !checkout}
-                      title={
-                        isOwnShift && !isCheckedIn && !checkout
-                          ? "Check in before checking out"
-                          : undefined
-                      }
-                      className="px-4 py-2 text-sm font-medium bg-brand text-[#f5f5f5] rounded-lg hover:bg-brand-hover disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      {isOwnShift && !checkout ? "Check out" : "View"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {activeTab === TABS.DAY && canViewDay && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <MdCalendarToday className="text-[#ababab]" size={18} />
-            <input
-              type="date"
-              value={dayDate}
-              onChange={(e) => setDayDate(e.target.value)}
-              className="bg-[#262626] border border-[#383838] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm"
-            />
-          </div>
-
-          {dayLoading && <FullScreenLoader />}
-
-          {!dayLoading && sortedDayCheckouts.length === 0 && (
-            <p className="text-[#ababab] py-8 text-center">
-              No shift checkouts for this date.
-            </p>
-          )}
-
-          <div className="overflow-x-auto rounded-xl border border-[#383838]">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-[#262626] text-[#ababab] uppercase text-xs">
+                return (
+                  <ShiftCheckoutCard
+                    key={rowKey}
+                    shiftName={tpl?.name || tpl?.shortName || "Shift"}
+                    memberName={row.member?.name}
+                    startTime={tpl?.startTime}
+                    endTime={tpl?.endTime}
+                    shiftColor={tpl?.color}
+                    isOwnShift={isOwnShift}
+                    checkInStatus={row.checkInStatus}
+                    checkoutStatus={row.checkoutStatus}
+                    checkIn={row.checkIn}
+                    checkout={checkout}
+                    expectedPreview={row.expectedPreview}
+                    showCheckInButton={isOwnShift && !isCheckedIn}
+                    checkoutDisabled={isOwnShift && !isCheckedIn && !checkout}
+                    checkoutLabel={
+                      isOwnShift && !checkout ? "Check out" : "View details"
+                    }
+                    onCheckIn={() => openCheckIn(row)}
+                    onCheckout={() =>
+                      openCheckout(row.schedule._id, memberId)
+                    }
+                  />
+                );
+              })}
+            </div>
+          )
+        ) : sortedDayCheckouts.length === 0 ? (
+          <EmptyState
+            icon={MdViewDay}
+            variant="rich"
+            title="No checkouts yet"
+            message="No shift checkouts have been submitted for this date."
+          />
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-[#343434]">
+            <table className="w-full min-w-[960px] text-left">
+              <thead className="bg-[#262626]">
                 <tr>
-                  <th className="px-4 py-3">Member</th>
-                  <th className="px-4 py-3">Shift</th>
-                  <th className="px-4 py-3">Total bill</th>
-                  <th className="px-4 py-3">Expected</th>
-                  <th className="px-4 py-3">Counted</th>
-                  <th className="px-4 py-3">Diff</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Notes</th>
-                  {isAdmin && <th className="px-4 py-3 w-24">Actions</th>}
+                  <th className={`${thClass} sticky left-0 z-[2] bg-[#262626]`}>
+                    Member
+                  </th>
+                  <th className={thClass}>Shift</th>
+                  <th className={thClass}>Total bill</th>
+                  <th className={thClass}>Expected</th>
+                  <th className={thClass}>Counted</th>
+                  <th className={thClass}>Diff</th>
+                  <th className={thClass}>Status</th>
+                  <th className={thClass}>Notes</th>
+                  {isAdmin ? (
+                    <th className={`${thClass} text-right`}>Actions</th>
+                  ) : null}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#383838]">
+              <tbody className="divide-y divide-[#343434]">
                 {sortedDayCheckouts.map((c) => (
-                  <tr key={c._id} className="bg-[#262626] text-[#f5f5f5]">
-                    <td className="px-4 py-3">{c.member?.name || "—"}</td>
-                    <td className="px-4 py-3">
-                      {c.shiftTemplate?.name}
-                      <span className="block text-xs text-[#ababab]">
-                        {c.shiftTemplate?.startTime} – {c.shiftTemplate?.endTime}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      {formatVND(
-                        c.totalBill ?? c.expectedCash + c.expectedBanking
-                      )}
-                      <span className="block text-xs text-[#ababab]">
-                        {c.orderCount ?? 0} orders
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="block">{formatVND(c.expectedCash)} cash</span>
-                      <span className="block text-[#ababab]">
-                        {formatVND(c.expectedBanking)} banking
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <span className="block">{formatVND(c.countedCash)} cash</span>
-                      <span className="block text-[#ababab]">
-                        {formatVND(c.countedBanking)} banking
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-amber-400">
-                      {formatVND(c.cashDifference)} / {formatVND(c.bankingDifference)}
-                    </td>
-                    <td className="px-4 py-3">{statusBadge(c.status)}</td>
-                    <td className="px-4 py-3 max-w-[200px] truncate text-[#ababab]">
-                      {c.notes || "—"}
-                    </td>
-                    {isAdmin && (
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={() => openCheckoutFromDay(c)}
-                            className="p-2 text-brand hover:text-brand-hover hover:bg-brand-20 rounded-lg"
-                            title="View / edit checkout"
-                            aria-label="View or edit checkout"
-                          >
-                            <MdEdit size={18} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteCheckout(c)}
-                            disabled={deleteLoading}
-                            className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-lg"
-                            title="Delete checkout"
-                            aria-label="Delete checkout"
-                          >
-                            <MdDelete size={18} />
-                          </button>
-                        </div>
-                      </td>
-                    )}
-                  </tr>
+                  <DayCheckoutRow
+                    key={c._id}
+                    checkout={c}
+                    isAdmin={isAdmin}
+                    onEdit={openCheckoutFromDay}
+                    onDelete={handleDeleteCheckout}
+                    deleteLoading={deleteLoading}
+                  />
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <ShiftCheckInModal
         isOpen={checkInModalOpen}
@@ -509,7 +487,7 @@ const ShiftCheckout = () => {
         }}
         scheduleId={selectedScheduleId}
         memberId={selectedMemberId}
-        refreshDate={selectedDate}
+        refreshDate={activeTab === TABS.DAY ? dayDate : selectedDate}
         isAdmin={isAdmin}
         onSuccess={() => {
           dispatch(fetchMyShiftCheckouts({ date: selectedDate }));
