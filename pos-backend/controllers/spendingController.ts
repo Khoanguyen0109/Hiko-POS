@@ -177,9 +177,18 @@ const getSpending = async (req, res, next) => {
             query.createdAt = createdAt;
         }
 
-        // Category filtering
+        // Category filtering (single id or comma-separated ids)
         if (category && category !== 'all') {
-            query.category = category;
+            const categoryIds = String(category)
+                .split(',')
+                .map((id) => id.trim())
+                .filter((id) => id && mongoose.Types.ObjectId.isValid(id));
+
+            if (categoryIds.length === 1) {
+                query.category = categoryIds[0];
+            } else if (categoryIds.length > 1) {
+                query.category = { $in: categoryIds };
+            }
         }
 
         // Vendor filtering
@@ -473,19 +482,19 @@ const deleteSpendingCategory = async (req, res, next) => {
             return next(createHttpError(404, "Invalid category ID"));
         }
 
-        const spendingCount = await Spending.countDocuments({ category: id });
-        if (spendingCount > 0) {
-            return next(createHttpError(400, `Cannot delete category. It is being used by ${spendingCount} spending records.`));
-        }
-
-        const category = await SpendingCategory.findByIdAndDelete(id);
+        const category = await SpendingCategory.findById(id);
         if (!category) {
             return next(createHttpError(404, "Category not found"));
         }
 
+        const { deletedCount } = await Spending.deleteMany({ category: id });
+        await SpendingCategory.findByIdAndDelete(id);
+
         res.status(200).json({
             success: true,
-            message: "Category deleted successfully"
+            message: deletedCount > 0
+                ? `Category deleted along with ${deletedCount} spending record${deletedCount === 1 ? "" : "s"}`
+                : "Category deleted successfully"
         });
     } catch (error) {
         next(error);

@@ -67,7 +67,7 @@ const SpendingManager = () => {
   const [localFilters, setLocalFilters] = useState({
     startDate: today,
     endDate: today,
-    category: "all",
+    categories: [],
     vendor: "all",
     paymentStatus: "all",
     search: ""
@@ -106,7 +106,13 @@ const SpendingManager = () => {
       
       // Remove empty filters
       Object.keys(params).forEach(key => {
-        if (params[key] === "" || params[key] === "all" || params[key] === null) {
+        const value = params[key];
+        if (
+          value === "" ||
+          value === "all" ||
+          value === null ||
+          (Array.isArray(value) && value.length === 0)
+        ) {
           delete params[key];
         }
       });
@@ -129,12 +135,24 @@ const SpendingManager = () => {
     setLocalFilters(prev => ({ ...prev, [key]: value }));
   };
 
+  const handleCategoryToggle = (categoryId) => {
+    setLocalFilters((prev) => {
+      const isSelected = prev.categories.includes(categoryId);
+      return {
+        ...prev,
+        categories: isSelected
+          ? prev.categories.filter((id) => id !== categoryId)
+          : [...prev.categories, categoryId],
+      };
+    });
+  };
+
   const applyFilters = useCallback(() => {
     // Convert local filters to Redux format
     const reduxFilterFormat = {
       startDate: localFilters.startDate || null,
       endDate: localFilters.endDate || null,
-      category: localFilters.category !== "all" ? localFilters.category : null,
+      category: localFilters.categories.length > 0 ? localFilters.categories.join(",") : null,
       vendor: localFilters.vendor !== "all" ? localFilters.vendor : null,
       paymentStatus: localFilters.paymentStatus !== "all" ? localFilters.paymentStatus : null
     };
@@ -161,13 +179,18 @@ const SpendingManager = () => {
   }, [activeTab, reduxFilters, reduxPagination.currentPage, loadSpending, loadDashboard]);
 
   const handleDelete = async (id, type = "spending") => {
-    if (!window.confirm("Are you sure you want to delete this item?")) return;
+    const confirmMessage =
+      type === "category"
+        ? "Delete this category? All spending records in this category will also be deleted."
+        : "Are you sure you want to delete this item?";
+    if (!window.confirm(confirmMessage)) return;
 
     try {
       if (type === "spending") {
         await dispatch(removeSpending(id));
       } else if (type === "category") {
         await dispatch(removeSpendingCategory(id));
+        await loadSpending();
       } else if (type === "vendor") {
         await dispatch(removeVendor(id));
       }
@@ -288,6 +311,7 @@ const SpendingManager = () => {
             loading={loading}
             isAdmin={isAdmin}
             onFilterChange={handleFilterChange}
+            onCategoryToggle={handleCategoryToggle}
             onApplyFilters={applyFilters}
             onPageChange={(page) => dispatch(setPagination({ currentPage: page }))}
             onEdit={(item) => openModal("edit", item, "spending")}
@@ -372,6 +396,7 @@ const SpendingRecords = ({
   loading,
   isAdmin,
   onFilterChange,
+  onCategoryToggle,
   onApplyFilters, 
   onPageChange, 
   onEdit, 
@@ -400,18 +425,53 @@ const SpendingRecords = ({
             </div>
           </div>
 
-          <div>
-            <label className="block text-[#ababab] text-sm mb-2">Category</label>
-            <select
-              value={filters.category}
-              onChange={(e) => onFilterChange("category", e.target.value)}
-              className="w-full bg-[#1a1a1a] text-[#f5f5f5] border border-[#343434] rounded-lg px-4 py-2 focus:outline-none focus:border-brand"
-            >
-              <option value="all">All Categories</option>
-              {categories.map((cat) => (
-                <option key={cat._id} value={cat._id}>{cat.name}</option>
-              ))}
-            </select>
+          <div className="md:col-span-2 lg:col-span-4">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <label className="block text-[#ababab] text-sm">Categories</label>
+              {filters.categories.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => onFilterChange("categories", [])}
+                  className="text-xs text-brand hover:text-brand-hover transition-colors"
+                >
+                  Clear all
+                </button>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap gap-2 max-h-28 overflow-y-auto rounded-lg border border-[#343434] bg-[#1a1a1a] p-3">
+              {categories.length === 0 ? (
+                <span className="text-sm text-[#6a6a6a]">No categories available</span>
+              ) : (
+                categories.map((cat) => {
+                  const isSelected = filters.categories.includes(cat._id);
+                  return (
+                    <button
+                      key={cat._id}
+                      type="button"
+                      onClick={() => onCategoryToggle(cat._id)}
+                      className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                        isSelected
+                          ? "border-brand bg-brand/20 text-brand"
+                          : "border-[#343434] text-[#ababab] hover:border-[#555555] hover:text-[#f5f5f5]"
+                      }`}
+                    >
+                      <span
+                        className="mr-1.5 inline-block h-2 w-2 rounded-full align-middle"
+                        style={{ backgroundColor: cat.color || "#6B7280" }}
+                      />
+                      {cat.name}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+            {filters.categories.length > 0 ? (
+              <p className="mt-1 text-xs text-[#6a6a6a]">
+                {filters.categories.length} categor{filters.categories.length === 1 ? "y" : "ies"} selected
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-[#6a6a6a]">All categories</p>
+            )}
           </div>
 
           <div>
@@ -715,6 +775,7 @@ SpendingRecords.propTypes = {
   loading: PropTypes.bool.isRequired,
   isAdmin: PropTypes.bool.isRequired,
   onFilterChange: PropTypes.func.isRequired,
+  onCategoryToggle: PropTypes.func.isRequired,
   onApplyFilters: PropTypes.func.isRequired,
   onPageChange: PropTypes.func.isRequired,
   onEdit: PropTypes.func.isRequired,

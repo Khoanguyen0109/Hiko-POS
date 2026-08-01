@@ -11,7 +11,8 @@ export const getSpending = (params = {}) => {
   
   Object.entries(params).forEach(([key, value]) => {
     if (value !== '' && value !== null && value !== undefined) {
-      queryParams.append(key, value);
+      const serialized = Array.isArray(value) ? value.join(',') : value;
+      queryParams.append(key, serialized);
     }
   });
   
