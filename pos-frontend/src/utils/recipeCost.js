@@ -130,6 +130,10 @@ export function calculateRecipeLineCost(quantity, unit, item) {
   return quantity * getCostPerRecipeUnit(item, unit);
 }
 
+export function getRecipeTotalCost(ingredientCost = 0, otherCost = 0) {
+  return (ingredientCost || 0) + (otherCost || 0);
+}
+
 export function formatPackageLabel(item) {
   if (!hasPackageContent(item)) {
     return null;

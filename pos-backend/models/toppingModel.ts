@@ -23,6 +23,11 @@ const toppingSchema = new mongoose.Schema({
         required: true,
         min: 0
     },
+    cost: {
+        type: Number,
+        default: 0,
+        min: 0
+    },
     category: {
         type: String,
         required: true,

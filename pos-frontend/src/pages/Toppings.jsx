@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { enqueueSnackbar } from "notistack";
-import { MdAdd, MdEdit, MdDelete, MdToggleOn, MdToggleOff } from "react-icons/md";
+import { MdAdd, MdEdit, MdDelete, MdToggleOn, MdToggleOff, MdMenuBook } from "react-icons/md";
 import {
   fetchToppings,
   createTopping,
@@ -13,6 +13,7 @@ import {
 import { formatVND } from "../utils";
 import Modal from "../components/shared/Modal";
 import DeleteConfirmationModal from "../components/shared/DeleteConfirmationModal";
+import ToppingRecipeModal from "../components/toppings/ToppingRecipeModal";
 
 const Toppings = () => {
   const dispatch = useDispatch();
@@ -20,6 +21,7 @@ const Toppings = () => {
 
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showRecipeModal, setShowRecipeModal] = useState(false);
   const [selectedTopping, setSelectedTopping] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [filterCategory, setFilterCategory] = useState("");
@@ -195,6 +197,11 @@ const Toppings = () => {
                   <p className="text-[#ababab] text-sm">{topping.description}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-brand font-bold">{formatVND(topping.price)}</span>
+                    {topping.cost > 0 && (
+                      <span className="text-xs text-[#ababab]">
+                        cost {formatVND(topping.cost)}
+                      </span>
+                    )}
                     <span className="text-xs text-[#ababab] bg-[#343434] px-2 py-1 rounded">
                       {topping.category}
                     </span>
@@ -213,6 +220,16 @@ const Toppings = () => {
 
               <div className="flex items-center justify-between mt-3">
                 <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setSelectedTopping(topping);
+                      setShowRecipeModal(true);
+                    }}
+                    className="text-purple-400 hover:text-purple-300 transition-colors"
+                    title="Recipe & cost"
+                  >
+                    <MdMenuBook size={18} />
+                  </button>
                   <button
                     onClick={() => handleOpenModal(topping)}
                     className="text-brand hover:text-[#e09900] transition-colors"
@@ -318,6 +335,19 @@ const Toppings = () => {
         onConfirm={handleDelete}
         itemName={selectedTopping?.name}
         itemType="topping"
+      />
+
+      <ToppingRecipeModal
+        isOpen={showRecipeModal}
+        onClose={() => {
+          setShowRecipeModal(false);
+          setSelectedTopping(null);
+        }}
+        topping={showRecipeModal ? selectedTopping : null}
+        onSuccess={() => dispatch(fetchToppings({
+          category: filterCategory || undefined,
+          available: filterAvailable || undefined,
+        }))}
       />
 
     </section>

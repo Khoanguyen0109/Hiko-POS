@@ -3,6 +3,8 @@ import type { Types } from "mongoose";
 import Dish from "../models/dishModel.js";
 import DishRecipe from "../models/dishRecipeModel.js";
 import StorageItem from "../models/storageItemModel.js";
+import Topping from "../models/toppingModel.js";
+import ToppingRecipe from "../models/toppingRecipeModel.js";
 import { calculateLineCost, getCostPerRecipeUnit } from "../utils/unitConversion.js";
 
 interface RecipeLineInput {
@@ -18,17 +20,26 @@ interface SizeVariantRecipeInput {
     size: string;
     ingredients: RecipeLineInput[];
     totalIngredientCost?: number;
+    otherCost?: number;
 }
 
 type RecipeDocument = {
     ingredients: RecipeLineInput[];
-    sizeVariantRecipes: SizeVariantRecipeInput[];
+    sizeVariantRecipes?: SizeVariantRecipeInput[];
     servings: number;
     totalIngredientCost: number;
+    otherCost?: number;
     costPerServing: number;
     lastCostUpdate: Date;
     save(): Promise<unknown>;
 };
+
+export function getRecipeTotalCost(
+    ingredientCost: number,
+    otherCost = 0
+): number {
+    return ingredientCost + (otherCost || 0);
+}
 
 async function loadStorageItemCosts(
     storeId: Types.ObjectId | string,
@@ -82,17 +93,18 @@ export async function calculateRecipeCost(
 ): Promise<RecipeDocument> {
     const allLines = [
         ...recipe.ingredients,
-        ...recipe.sizeVariantRecipes.flatMap((variant) => variant.ingredients),
+        ...(recipe.sizeVariantRecipes ?? []).flatMap((variant) => variant.ingredients),
     ];
     const costMap = await loadStorageItemCosts(storeId, allLines);
 
     recipe.totalIngredientCost = calculateLinesCost(recipe.ingredients, costMap);
+    const otherCost = recipe.otherCost ?? 0;
     recipe.costPerServing =
         recipe.servings > 0
-            ? recipe.totalIngredientCost / recipe.servings
-            : recipe.totalIngredientCost;
+            ? getRecipeTotalCost(recipe.totalIngredientCost, otherCost) / recipe.servings
+            : getRecipeTotalCost(recipe.totalIngredientCost, otherCost);
 
-    for (const variant of recipe.sizeVariantRecipes) {
+    for (const variant of recipe.sizeVariantRecipes ?? []) {
         variant.totalIngredientCost = calculateLinesCost(variant.ingredients, costMap);
     }
 
@@ -115,10 +127,16 @@ export async function updateDishCostsFromRecipe(
             const recipeVariant = recipe.sizeVariantRecipes.find(
                 (entry) => entry.size === variant.size
             );
-            variant.cost = recipeVariant?.totalIngredientCost ?? 0;
+            variant.cost = getRecipeTotalCost(
+                recipeVariant?.totalIngredientCost ?? 0,
+                recipeVariant?.otherCost ?? 0
+            );
         }
     } else {
-        dish.cost = recipe.totalIngredientCost || recipe.costPerServing || 0;
+        dish.cost = getRecipeTotalCost(
+            recipe.totalIngredientCost || 0,
+            recipe.otherCost || 0
+        ) || recipe.costPerServing || 0;
     }
 
     await dish.save();
@@ -129,13 +147,14 @@ export function getRecipeForSize(
         ingredients: RecipeLineInput[];
         sizeVariantRecipes: SizeVariantRecipeInput[];
         totalIngredientCost: number;
+        otherCost?: number;
     },
     size: string | null | undefined
 ): { ingredients: RecipeLineInput[]; totalCost: number } {
     if (!size || recipe.sizeVariantRecipes.length === 0) {
         return {
             ingredients: recipe.ingredients,
-            totalCost: recipe.totalIngredientCost,
+            totalCost: getRecipeTotalCost(recipe.totalIngredientCost, recipe.otherCost),
         };
     }
 
@@ -143,13 +162,13 @@ export function getRecipeForSize(
     if (variant) {
         return {
             ingredients: variant.ingredients,
-            totalCost: variant.totalIngredientCost ?? 0,
+            totalCost: getRecipeTotalCost(variant.totalIngredientCost ?? 0, variant.otherCost),
         };
     }
 
     return {
         ingredients: recipe.ingredients,
-        totalCost: recipe.totalIngredientCost,
+        totalCost: getRecipeTotalCost(recipe.totalIngredientCost, recipe.otherCost),
     };
 }
 
@@ -163,6 +182,39 @@ export async function recalculateAllRecipeCosts(
         await calculateRecipeCost(recipe as RecipeDocument, storeId);
         await recipe.save();
         await updateDishCostsFromRecipe(recipe.dishId);
+        updated += 1;
+    }
+
+    return updated;
+}
+
+export async function updateToppingCostsFromRecipe(
+    toppingId: Types.ObjectId | string
+): Promise<void> {
+    const topping = await Topping.findById(toppingId);
+    const recipe = await ToppingRecipe.findOne({ toppingId, isActive: true });
+
+    if (!topping || !recipe) {
+        return;
+    }
+
+    topping.cost = getRecipeTotalCost(
+        recipe.totalIngredientCost || 0,
+        recipe.otherCost || 0
+    ) || recipe.costPerServing || 0;
+    await topping.save();
+}
+
+export async function recalculateAllToppingRecipeCosts(
+    storeId: Types.ObjectId | string
+): Promise<number> {
+    const recipes = await ToppingRecipe.find({ store: storeId, isActive: true });
+    let updated = 0;
+
+    for (const recipe of recipes) {
+        await calculateRecipeCost(recipe as RecipeDocument, storeId);
+        await recipe.save();
+        await updateToppingCostsFromRecipe(recipe.toppingId);
         updated += 1;
     }
 

@@ -12,6 +12,7 @@ import {
   formatPackageLabel,
   formatStorageItemOptionLabel,
   getDefaultRecipeUnit,
+  getRecipeTotalCost,
   getRecipeUnitOptions,
 } from "../../utils/recipeCost";
 
@@ -41,27 +42,47 @@ const RecipeModal = ({ isOpen, onClose, dish, onSuccess }) => {
     prepTime: 0,
     instructions: "",
     notes: "",
+    otherCost: 0,
   });
-  const [totalCost, setTotalCost] = useState(0);
+  const [ingredientCost, setIngredientCost] = useState(0);
+  const [variantCosts, setVariantCosts] = useState([]);
   const [useVariants, setUseVariants] = useState(false);
 
   const activeDish = selectedDish || dish;
 
-  const calculateTotalCost = useCallback(() => {
-    let cost = 0;
-    const lines = useVariants
-      ? formData.sizeVariantRecipes.flatMap((variant) => variant.ingredients)
-      : formData.ingredients;
+  const calculateIngredientCost = useCallback(() => {
+    if (useVariants) {
+      const costs = formData.sizeVariantRecipes.map((variant) => {
+        let cost = 0;
+        variant.ingredients.forEach((line) => {
+          if (!line.storageItemId) return;
+          const item = storageItems.find((entry) => entry._id === line.storageItemId);
+          if (item) {
+            cost += calculateRecipeLineCost(line.quantity, line.unit, item);
+          }
+        });
+        return {
+          size: variant.size,
+          ingredientCost: cost,
+          otherCost: variant.otherCost || 0,
+          totalCost: getRecipeTotalCost(cost, variant.otherCost),
+        };
+      });
+      setVariantCosts(costs);
+      setIngredientCost(0);
+      return;
+    }
 
-    lines.forEach((line) => {
+    let cost = 0;
+    formData.ingredients.forEach((line) => {
       if (!line.storageItemId) return;
       const item = storageItems.find((entry) => entry._id === line.storageItemId);
       if (item) {
         cost += calculateRecipeLineCost(line.quantity, line.unit, item);
       }
     });
-
-    setTotalCost(cost);
+    setIngredientCost(cost);
+    setVariantCosts([]);
   }, [formData.ingredients, formData.sizeVariantRecipes, storageItems, useVariants]);
 
   useEffect(() => {
@@ -106,14 +127,16 @@ const RecipeModal = ({ isOpen, onClose, dish, onSuccess }) => {
         sizeVariantRecipes: (currentRecipe.sizeVariantRecipes || []).map((variant) => ({
           size: variant.size,
           totalIngredientCost: variant.totalIngredientCost || 0,
+          otherCost: variant.otherCost || 0,
           ingredients: processLines(variant.ingredients),
         })),
         servings: currentRecipe.servings || 1,
         prepTime: currentRecipe.prepTime || 0,
         instructions: currentRecipe.instructions || "",
         notes: currentRecipe.notes || "",
+        otherCost: currentRecipe.otherCost || 0,
       });
-      setTotalCost(currentRecipe.totalIngredientCost || 0);
+      setIngredientCost(currentRecipe.totalIngredientCost || 0);
       setUseVariants(
         (currentRecipe.sizeVariantRecipes?.length > 0) ||
           (activeDish.hasSizeVariants && activeDish.sizeVariants?.length > 0)
@@ -131,21 +154,37 @@ const RecipeModal = ({ isOpen, onClose, dish, onSuccess }) => {
               size: variant.size,
               ingredients: [emptyLine()],
               totalIngredientCost: 0,
+              otherCost: 0,
             }))
           : [],
         servings: 1,
         prepTime: 0,
         instructions: "",
         notes: "",
+        otherCost: 0,
       });
-      setTotalCost(0);
+      setIngredientCost(0);
+      setVariantCosts([]);
       setUseVariants(hasVariants);
     }
   }, [currentRecipe, activeDish, isOpen]);
 
   useEffect(() => {
-    calculateTotalCost();
-  }, [calculateTotalCost]);
+    calculateIngredientCost();
+  }, [calculateIngredientCost]);
+
+  const totalCost = getRecipeTotalCost(ingredientCost, formData.otherCost);
+
+  const updateVariantOtherCost = (variantIndex, value) => {
+    setFormData((prev) => {
+      const sizeVariantRecipes = [...prev.sizeVariantRecipes];
+      sizeVariantRecipes[variantIndex] = {
+        ...sizeVariantRecipes[variantIndex],
+        otherCost: parseFloat(value) || 0,
+      };
+      return { ...prev, sizeVariantRecipes };
+    });
+  };
 
   const handleDishSelect = (dishId) => {
     const selected = dishes.find((entry) => entry._id === dishId);
@@ -387,6 +426,33 @@ const RecipeModal = ({ isOpen, onClose, dish, onSuccess }) => {
                   >
                     <MdAdd /> Add storage item
                   </button>
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[#ababab] text-sm mb-2">
+                        Other cost (cup, labor, etc.)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1000"
+                        value={variant.otherCost || ""}
+                        onChange={(e) => updateVariantOtherCost(variantIndex, e.target.value)}
+                        placeholder="0"
+                        className="w-full bg-[#262626] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
+                      />
+                    </div>
+                    <div className="flex flex-col justify-end text-right">
+                      <p className="text-[#ababab] text-xs">Total for {variant.size}</p>
+                      <p className="text-brand font-semibold">
+                        {formatVND(
+                          getRecipeTotalCost(
+                            variantCosts.find((entry) => entry.size === variant.size)?.ingredientCost || 0,
+                            variant.otherCost
+                          )
+                        )}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
@@ -403,6 +469,25 @@ const RecipeModal = ({ isOpen, onClose, dish, onSuccess }) => {
               >
                 <MdAdd /> Add storage item
               </button>
+              <div className="mt-4">
+                <label className="block text-[#ababab] text-sm mb-2">
+                  Other cost (cup, labor, packaging, etc.)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="1000"
+                  value={formData.otherCost || ""}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      otherCost: parseFloat(e.target.value) || 0,
+                    }))
+                  }
+                  placeholder="0"
+                  className="w-full max-w-xs bg-[#262626] border border-[#343434] rounded-lg px-4 py-2 text-[#f5f5f5] focus:outline-none focus:border-brand"
+                />
+              </div>
             </div>
           ))}
 
@@ -465,20 +550,45 @@ const RecipeModal = ({ isOpen, onClose, dish, onSuccess }) => {
               </div>
 
               <div className="bg-brand/10 border border-brand/30 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <MdCalculate className="text-brand" size={24} />
-                    <span className="text-[#f5f5f5] font-semibold">Estimated ingredient cost</span>
+                {useVariants ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 mb-3">
+                      <MdCalculate className="text-brand" size={24} />
+                      <span className="text-[#f5f5f5] font-semibold">Estimated cost by size</span>
+                    </div>
+                    {variantCosts.map((entry) => (
+                      <div key={entry.size} className="flex items-center justify-between text-sm">
+                        <span className="text-[#ababab]">{entry.size}</span>
+                        <span className="text-brand font-semibold">{formatVND(entry.totalCost)}</span>
+                      </div>
+                    ))}
                   </div>
-                  <span className="text-brand text-2xl font-bold">{formatVND(totalCost)}</span>
-                </div>
-                {formData.servings > 1 && (
-                  <p className="text-[#ababab] text-sm mt-2 text-right">
-                    Cost per serving: {formatVND(totalCost / formData.servings)}
-                  </p>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[#ababab] text-sm">Storage items</span>
+                      <span className="text-[#f5f5f5] font-medium">{formatVND(ingredientCost)}</span>
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="text-[#ababab] text-sm">Other cost</span>
+                      <span className="text-[#f5f5f5] font-medium">{formatVND(formData.otherCost || 0)}</span>
+                    </div>
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-brand/20">
+                      <div className="flex items-center gap-2">
+                        <MdCalculate className="text-brand" size={24} />
+                        <span className="text-[#f5f5f5] font-semibold">Total recipe cost</span>
+                      </div>
+                      <span className="text-brand text-2xl font-bold">{formatVND(totalCost)}</span>
+                    </div>
+                    {formData.servings > 1 && (
+                      <p className="text-[#ababab] text-sm mt-2 text-right">
+                        Cost per serving: {formatVND(totalCost / formData.servings)}
+                      </p>
+                    )}
+                  </>
                 )}
                 <p className="text-[#ababab] text-xs mt-2">
-                  For box/pack/bag items, enter recipe amounts in ml/g (e.g. 100 ml from 1 box = 1000 ml).
+                  Other cost covers items not in storage, such as cups, lids, labor, or packaging.
                 </p>
               </div>
 

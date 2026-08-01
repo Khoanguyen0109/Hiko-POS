@@ -22,6 +22,7 @@ import storageImportReducer from "./slices/storageImportSlice";
 import storageExportReducer from "./slices/storageExportSlice";
 import storageAnalyticsReducer from "./slices/storageAnalyticsSlice";
 import recipeReducer from "./slices/recipeSlice";
+import toppingRecipeReducer from "./slices/toppingRecipeSlice";
 import ticketReducer from "./slices/ticketSlice";
 import storeReducer from "./slices/storeSlice";
 import rewardReducer from "./slices/rewardSlice";
@@ -52,6 +53,7 @@ const store = configureStore({
         storageExports: storageExportReducer,
         storageAnalytics: storageAnalyticsReducer,
         recipes: recipeReducer,
+        toppingRecipes: toppingRecipeReducer,
         tickets: ticketReducer,
         store: storeReducer,
         rewards: rewardReducer,

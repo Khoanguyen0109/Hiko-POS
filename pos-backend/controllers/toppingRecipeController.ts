@@ -1,14 +1,13 @@
 // @ts-nocheck
 import createHttpError from "http-errors";
 import mongoose from "mongoose";
-import Dish from "../models/dishModel.js";
-import DishRecipe from "../models/dishRecipeModel.js";
+import Topping from "../models/toppingModel.js";
+import ToppingRecipe from "../models/toppingRecipeModel.js";
 import StorageItem from "../models/storageItemModel.js";
 import {
     calculateRecipeCost,
-    getRecipeForSize,
-    recalculateAllRecipeCosts,
-    updateDishCostsFromRecipe,
+    recalculateAllToppingRecipeCosts,
+    updateToppingCostsFromRecipe,
 } from "../services/recipeService.js";
 
 interface RecipeLineBody {
@@ -18,16 +17,9 @@ interface RecipeLineBody {
     notes?: string;
 }
 
-interface SizeVariantRecipeBody {
-    size: string;
-    ingredients: RecipeLineBody[];
-    otherCost?: number;
-}
-
-interface RecipeBody {
-    dishId: string;
+interface ToppingRecipeBody {
+    toppingId: string;
     ingredients?: RecipeLineBody[];
-    sizeVariantRecipes?: SizeVariantRecipeBody[];
     servings?: number;
     prepTime?: number;
     instructions?: string;
@@ -36,15 +28,14 @@ interface RecipeBody {
 }
 
 const recipePopulate = [
-    { path: "dishId", select: "name image category hasSizeVariants sizeVariants price cost" },
-    { path: "ingredients.storageItemId", select: "name code unit averageCost currentStock" },
-    { path: "sizeVariantRecipes.ingredients.storageItemId", select: "name code unit averageCost currentStock" },
+    { path: "toppingId", select: "name price cost category isAvailable" },
+    {
+        path: "ingredients.storageItemId",
+        select: "name code unit averageCost currentStock contentQuantity contentUnit",
+    },
 ];
 
-async function validateStorageItemsBelongToStore(
-    storeId: Types.ObjectId,
-    lines: RecipeLineBody[]
-): Promise<void> {
+async function validateStorageItemsBelongToStore(storeId, lines) {
     const ids = [...new Set(lines.map((line) => line.storageItemId))].filter(Boolean);
 
     if (ids.length === 0) {
@@ -68,15 +59,7 @@ async function validateStorageItemsBelongToStore(
     }
 }
 
-function collectLines(body: RecipeBody): RecipeLineBody[] {
-    const defaultLines = body.ingredients ?? [];
-    const variantLines = (body.sizeVariantRecipes ?? []).flatMap(
-        (variant) => variant.ingredients ?? []
-    );
-    return [...defaultLines, ...variantLines];
-}
-
-function validateRecipeLines(lines: RecipeLineBody[]): void {
+function validateRecipeLines(lines) {
     for (const line of lines) {
         if (!line.storageItemId) {
             throw createHttpError(400, "Each recipe line requires a storage item");
@@ -90,14 +73,13 @@ function validateRecipeLines(lines: RecipeLineBody[]): void {
     }
 }
 
-export const createOrUpdateRecipe = async (req, res, next) => {
+export const createOrUpdateToppingRecipe = async (req, res, next) => {
     try {
         const { _id: userId, name: userName } = req.user ?? {};
-        const body = req.body as RecipeBody;
+        const body = req.body as ToppingRecipeBody;
         const {
-            dishId,
+            toppingId,
             ingredients = [],
-            sizeVariantRecipes = [],
             servings = 1,
             prepTime = 0,
             instructions = "",
@@ -105,34 +87,35 @@ export const createOrUpdateRecipe = async (req, res, next) => {
             otherCost = 0,
         } = body;
 
-        if (!dishId || !mongoose.Types.ObjectId.isValid(dishId)) {
-            return next(createHttpError(400, "Valid dish ID is required"));
+        if (!toppingId || !mongoose.Types.ObjectId.isValid(toppingId)) {
+            return next(createHttpError(400, "Valid topping ID is required"));
         }
 
-        const dish = await Dish.findById(dishId);
-        if (!dish) {
-            return next(createHttpError(404, "Dish not found"));
+        const topping = await Topping.findOne({
+            _id: toppingId,
+            store: req.store._id,
+        });
+
+        if (!topping) {
+            return next(createHttpError(404, "Topping not found"));
         }
 
-        if (ingredients.length === 0 && sizeVariantRecipes.length === 0) {
+        if (ingredients.length === 0) {
             return next(createHttpError(400, "Recipe must have at least one ingredient line"));
         }
 
-        const allLines = collectLines(body);
-        validateRecipeLines(allLines);
-        await validateStorageItemsBelongToStore(req.store._id, allLines);
+        validateRecipeLines(ingredients);
+        await validateStorageItemsBelongToStore(req.store._id, ingredients);
 
-        let recipe = await DishRecipe.findOne({
+        let recipe = await ToppingRecipe.findOne({
             store: req.store._id,
-            dishId,
+            toppingId,
         });
 
-        const userMeta =
-            userId && userName ? { userId, userName } : undefined;
+        const userMeta = userId && userName ? { userId, userName } : undefined;
 
         if (recipe) {
             recipe.ingredients = ingredients;
-            recipe.sizeVariantRecipes = sizeVariantRecipes;
             recipe.servings = servings;
             recipe.prepTime = prepTime;
             recipe.instructions = instructions;
@@ -143,11 +126,10 @@ export const createOrUpdateRecipe = async (req, res, next) => {
                 recipe.lastModifiedBy = userMeta;
             }
         } else {
-            recipe = new DishRecipe({
+            recipe = new ToppingRecipe({
                 store: req.store._id,
-                dishId,
+                toppingId,
                 ingredients,
-                sizeVariantRecipes,
                 servings,
                 prepTime,
                 instructions,
@@ -159,13 +141,13 @@ export const createOrUpdateRecipe = async (req, res, next) => {
 
         await calculateRecipeCost(recipe, req.store._id);
         await recipe.save();
-        await updateDishCostsFromRecipe(dishId);
+        await updateToppingCostsFromRecipe(toppingId);
 
         await recipe.populate(recipePopulate);
 
         res.status(200).json({
             success: true,
-            message: recipe.isNew ? "Recipe created successfully" : "Recipe updated successfully",
+            message: recipe.isNew ? "Topping recipe created successfully" : "Topping recipe updated successfully",
             data: recipe,
         });
     } catch (error) {
@@ -173,22 +155,22 @@ export const createOrUpdateRecipe = async (req, res, next) => {
     }
 };
 
-export const getRecipeByDishId = async (req, res, next) => {
+export const getToppingRecipeByToppingId = async (req, res, next) => {
     try {
-        const { dishId } = req.params;
+        const { toppingId } = req.params;
 
-        if (!mongoose.Types.ObjectId.isValid(dishId)) {
-            return next(createHttpError(400, "Invalid dish ID"));
+        if (!mongoose.Types.ObjectId.isValid(toppingId)) {
+            return next(createHttpError(400, "Invalid topping ID"));
         }
 
-        const recipe = await DishRecipe.findOne({
+        const recipe = await ToppingRecipe.findOne({
             store: req.store._id,
-            dishId,
+            toppingId,
             isActive: true,
         }).populate(recipePopulate);
 
         if (!recipe) {
-            return next(createHttpError(404, "Recipe not found for this dish"));
+            return next(createHttpError(404, "Recipe not found for this topping"));
         }
 
         res.json({ success: true, data: recipe });
@@ -197,7 +179,7 @@ export const getRecipeByDishId = async (req, res, next) => {
     }
 };
 
-export const getAllRecipes = async (req, res, next) => {
+export const getAllToppingRecipes = async (req, res, next) => {
     try {
         const page = parseInt(String(req.query.page ?? "1"), 10);
         const limit = parseInt(String(req.query.limit ?? "50"), 10);
@@ -209,7 +191,7 @@ export const getAllRecipes = async (req, res, next) => {
             isActive: true,
         };
 
-        let recipes = await DishRecipe.find(query)
+        let recipes = await ToppingRecipe.find(query)
             .populate(recipePopulate)
             .skip(skip)
             .limit(limit)
@@ -218,15 +200,15 @@ export const getAllRecipes = async (req, res, next) => {
         if (search) {
             const lowerSearch = search.toLowerCase();
             recipes = recipes.filter((recipe) =>
-                recipe.dishId &&
-                typeof recipe.dishId === "object" &&
-                "name" in recipe.dishId &&
-                typeof recipe.dishId.name === "string" &&
-                recipe.dishId.name.toLowerCase().includes(lowerSearch)
+                recipe.toppingId &&
+                typeof recipe.toppingId === "object" &&
+                "name" in recipe.toppingId &&
+                typeof recipe.toppingId.name === "string" &&
+                recipe.toppingId.name.toLowerCase().includes(lowerSearch)
             );
         }
 
-        const totalCount = await DishRecipe.countDocuments(query);
+        const totalCount = await ToppingRecipe.countDocuments(query);
 
         res.json({
             success: true,
@@ -243,17 +225,17 @@ export const getAllRecipes = async (req, res, next) => {
     }
 };
 
-export const deleteRecipe = async (req, res, next) => {
+export const deleteToppingRecipe = async (req, res, next) => {
     try {
-        const { dishId } = req.params;
+        const { toppingId } = req.params;
 
-        if (!mongoose.Types.ObjectId.isValid(dishId)) {
-            return next(createHttpError(400, "Invalid dish ID"));
+        if (!mongoose.Types.ObjectId.isValid(toppingId)) {
+            return next(createHttpError(400, "Invalid topping ID"));
         }
 
-        const recipe = await DishRecipe.findOne({
+        const recipe = await ToppingRecipe.findOne({
             store: req.store._id,
-            dishId,
+            toppingId,
             isActive: true,
         });
 
@@ -264,34 +246,32 @@ export const deleteRecipe = async (req, res, next) => {
         recipe.isActive = false;
         await recipe.save();
 
-        const dish = await Dish.findById(dishId);
-        if (dish) {
-            if (dish.hasSizeVariants && dish.sizeVariants.length > 0) {
-                dish.sizeVariants.forEach((variant) => {
-                    variant.cost = 0;
-                });
-            } else {
-                dish.cost = 0;
-            }
-            await dish.save();
+        const topping = await Topping.findOne({
+            _id: toppingId,
+            store: req.store._id,
+        });
+
+        if (topping) {
+            topping.cost = 0;
+            await topping.save();
         }
 
         res.json({
             success: true,
-            message: "Recipe deleted successfully",
+            message: "Topping recipe deleted successfully",
         });
     } catch (error) {
         next(error);
     }
 };
 
-export const recalculateAllCosts = async (req, res, next) => {
+export const recalculateAllToppingCosts = async (req, res, next) => {
     try {
-        const updatedCount = await recalculateAllRecipeCosts(req.store._id);
+        const updatedCount = await recalculateAllToppingRecipeCosts(req.store._id);
 
         res.json({
             success: true,
-            message: `Recalculated costs for ${updatedCount} recipe(s)`,
+            message: `Recalculated costs for ${updatedCount} topping recipe(s)`,
             data: { updatedCount },
         });
     } catch (error) {
@@ -299,38 +279,37 @@ export const recalculateAllCosts = async (req, res, next) => {
     }
 };
 
-export const calculateDishCost = async (req, res, next) => {
+export const calculateToppingCost = async (req, res, next) => {
     try {
-        const { dishId } = req.params;
-        const size = typeof req.query.size === "string" ? req.query.size : null;
+        const { toppingId } = req.params;
 
-        if (!mongoose.Types.ObjectId.isValid(dishId)) {
-            return next(createHttpError(400, "Invalid dish ID"));
+        if (!mongoose.Types.ObjectId.isValid(toppingId)) {
+            return next(createHttpError(400, "Invalid topping ID"));
         }
 
-        const recipe = await DishRecipe.findOne({
+        const recipe = await ToppingRecipe.findOne({
             store: req.store._id,
-            dishId,
+            toppingId,
             isActive: true,
         }).populate(recipePopulate);
 
         if (!recipe) {
-            return next(createHttpError(404, "Recipe not found for this dish"));
+            return next(createHttpError(404, "Recipe not found for this topping"));
         }
 
         await calculateRecipeCost(recipe, req.store._id);
         await recipe.save();
-        await updateDishCostsFromRecipe(dishId);
-
-        const costData = getRecipeForSize(recipe, size);
+        await updateToppingCostsFromRecipe(toppingId);
 
         res.json({
             success: true,
             data: {
-                dishId,
-                size,
-                totalCost: costData.totalCost,
-                ingredients: costData.ingredients,
+                toppingId,
+                totalCost: recipe.totalIngredientCost,
+                otherCost: recipe.otherCost || 0,
+                totalRecipeCost: (recipe.totalIngredientCost || 0) + (recipe.otherCost || 0),
+                costPerServing: recipe.costPerServing,
+                ingredients: recipe.ingredients,
                 lastCostUpdate: recipe.lastCostUpdate,
             },
         });

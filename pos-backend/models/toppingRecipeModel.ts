@@ -35,32 +35,7 @@ const recipeLineSchema = new mongoose.Schema(
     { _id: false }
 );
 
-const sizeVariantRecipeSchema = new mongoose.Schema(
-    {
-        size: {
-            type: String,
-            required: true,
-            trim: true,
-        },
-        ingredients: {
-            type: [recipeLineSchema],
-            default: [],
-        },
-        totalIngredientCost: {
-            type: Number,
-            default: 0,
-            min: 0,
-        },
-        otherCost: {
-            type: Number,
-            default: 0,
-            min: 0,
-        },
-    },
-    { _id: false }
-);
-
-const dishRecipeSchema = new mongoose.Schema(
+const toppingRecipeSchema = new mongoose.Schema(
     {
         store: {
             type: mongoose.Schema.Types.ObjectId,
@@ -68,17 +43,13 @@ const dishRecipeSchema = new mongoose.Schema(
             required: true,
             index: true,
         },
-        dishId: {
+        toppingId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Dish",
+            ref: "Topping",
             required: true,
         },
         ingredients: {
             type: [recipeLineSchema],
-            default: [],
-        },
-        sizeVariantRecipes: {
-            type: [sizeVariantRecipeSchema],
             default: [],
         },
         totalIngredientCost: {
@@ -136,8 +107,8 @@ const dishRecipeSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-dishRecipeSchema.index({ store: 1, dishId: 1 }, { unique: true });
-dishRecipeSchema.index({ store: 1, isActive: 1 });
-dishRecipeSchema.index({ "ingredients.storageItemId": 1 });
+toppingRecipeSchema.index({ store: 1, toppingId: 1 }, { unique: true });
+toppingRecipeSchema.index({ store: 1, isActive: 1 });
+toppingRecipeSchema.index({ "ingredients.storageItemId": 1 });
 
-export default mongoose.model("DishRecipe", dishRecipeSchema);
+export default mongoose.model("ToppingRecipe", toppingRecipeSchema);

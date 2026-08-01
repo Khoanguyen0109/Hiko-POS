@@ -355,6 +355,25 @@ export const calculateDishCost = (dishId, params = {}) => {
   return axiosWrapper.get(`/api/recipe/dish/${dishId}/cost${queryString ? `?${queryString}` : ""}`);
 };
 
+// Topping Recipe Endpoints
+export const getAllToppingRecipes = (params = {}) => {
+  const queryParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== "" && value !== null && value !== undefined) {
+      queryParams.append(key, value);
+    }
+  });
+  const queryString = queryParams.toString();
+  return axiosWrapper.get(`/api/topping-recipe${queryString ? `?${queryString}` : ""}`);
+};
+export const getToppingRecipeByToppingId = (toppingId) =>
+  axiosWrapper.get(`/api/topping-recipe/topping/${toppingId}`);
+export const createOrUpdateToppingRecipe = (data) => axiosWrapper.post("/api/topping-recipe", data);
+export const deleteToppingRecipe = (toppingId) =>
+  axiosWrapper.delete(`/api/topping-recipe/topping/${toppingId}`);
+export const recalculateAllToppingCosts = () =>
+  axiosWrapper.post("/api/topping-recipe/recalculate-all");
+
 // Ticket Endpoints
 export {
   getTickets,
