@@ -1,0 +1,1505 @@
+{
+  "source": "Công thức chuẩn Hiko Matcha.xlsx",
+  "storeCode": "MAIN",
+  "sizeMapping": {
+    "M": "Medium",
+    "L": "Large"
+  },
+  "conversionNotes": {
+    "muong_mut": "1 muỗng mứt = 15g",
+    "muong_oreo": "1 muỗng oreo = 10g",
+    "vong_caramel": "1 vòng = 5ml",
+    "xit_kem_beo": "1 xịt = 2ml",
+    "va_kem_muoi": "1 vá = 30ml"
+  },
+  "storageItems": [
+    {
+      "code": "MAT001",
+      "name": "Matcha bột",
+      "unit": "g",
+      "averageCost": 5000,
+      "category": "Ingredient"
+    },
+    {
+      "code": "HOU001",
+      "name": "Houjicha",
+      "unit": "g",
+      "averageCost": 4000,
+      "category": "Ingredient"
+    },
+    {
+      "code": "SAK001",
+      "name": "Sakura bột",
+      "unit": "g",
+      "averageCost": 8000,
+      "category": "Ingredient"
+    },
+    {
+      "code": "SUA_DAC",
+      "name": "Sữa đặc",
+      "unit": "ml",
+      "averageCost": 118,
+      "category": "Ingredient"
+    },
+    {
+      "code": "DUONG",
+      "name": "Đường",
+      "unit": "ml",
+      "averageCost": 50,
+      "category": "Ingredient"
+    },
+    {
+      "code": "SYR_TC",
+      "name": "Syrup trái cây",
+      "unit": "ml",
+      "averageCost": 120,
+      "category": "Ingredient"
+    },
+    {
+      "code": "SYR_MO",
+      "name": "Syrup mơ",
+      "unit": "ml",
+      "averageCost": 120,
+      "category": "Ingredient"
+    },
+    {
+      "code": "SYR_VAI",
+      "name": "Syrup vải",
+      "unit": "ml",
+      "averageCost": 120,
+      "category": "Ingredient"
+    },
+    {
+      "code": "SYR_DUONG",
+      "name": "Syrup đường",
+      "unit": "ml",
+      "averageCost": 50,
+      "category": "Ingredient"
+    },
+    {
+      "code": "SUA_HAT",
+      "name": "Sữa hạt (Oatside)",
+      "unit": "ml",
+      "averageCost": 45,
+      "category": "Ingredient"
+    },
+    {
+      "code": "SUA_TUOI",
+      "name": "Sữa tươi",
+      "unit": "ml",
+      "averageCost": 35,
+      "category": "Ingredient"
+    },
+    {
+      "code": "NUOC_DUA",
+      "name": "Nước dừa",
+      "unit": "ml",
+      "averageCost": 40,
+      "category": "Ingredient"
+    },
+    {
+      "code": "NUOC_LOC",
+      "name": "Nước lọc",
+      "unit": "ml",
+      "averageCost": 0,
+      "category": "Ingredient"
+    },
+    {
+      "code": "MUT001",
+      "name": "Mứt trái cây",
+      "unit": "g",
+      "averageCost": 80,
+      "category": "Ingredient"
+    },
+    {
+      "code": "OREO01",
+      "name": "Oreo",
+      "unit": "g",
+      "averageCost": 60,
+      "category": "Ingredient"
+    },
+    {
+      "code": "CARAMEL",
+      "name": "Caramel sauce",
+      "unit": "ml",
+      "averageCost": 100,
+      "category": "Ingredient"
+    },
+    {
+      "code": "NUOC_MO",
+      "name": "Nước mơ",
+      "unit": "ml",
+      "averageCost": 150,
+      "category": "Ingredient"
+    },
+    {
+      "code": "KEM_BEO",
+      "name": "Kem béo",
+      "unit": "ml",
+      "averageCost": 80,
+      "category": "Ingredient"
+    },
+    {
+      "code": "MUOI01",
+      "name": "Muối",
+      "unit": "g",
+      "averageCost": 100,
+      "category": "Ingredient"
+    },
+    {
+      "code": "TRA001",
+      "name": "Trà pha (lài + đen)",
+      "unit": "ml",
+      "averageCost": 15,
+      "category": "Ingredient"
+    },
+    {
+      "code": "TAC001",
+      "name": "Tắc",
+      "unit": "piece",
+      "averageCost": 2000,
+      "category": "Ingredient"
+    },
+    {
+      "code": "CU_NANG",
+      "name": "Củ năng",
+      "unit": "piece",
+      "averageCost": 5000,
+      "category": "Ingredient"
+    },
+    {
+      "code": "KEM_MUOI",
+      "name": "Kem muối (pha sẵn)",
+      "unit": "ml",
+      "averageCost": 90,
+      "category": "Ingredient"
+    },
+    {
+      "code": "CAFE001",
+      "name": "Cà phê phin",
+      "unit": "ml",
+      "averageCost": 80,
+      "category": "Ingredient"
+    },
+    {
+      "code": "CAC001",
+      "name": "Cacao bột",
+      "unit": "g",
+      "averageCost": 6000,
+      "category": "Ingredient"
+    },
+    {
+      "code": "BOT_NEP",
+      "name": "Bột nếp",
+      "unit": "g",
+      "averageCost": 25,
+      "category": "Ingredient"
+    },
+    {
+      "code": "BOT_BAP",
+      "name": "Bột bắp",
+      "unit": "g",
+      "averageCost": 30,
+      "category": "Ingredient"
+    },
+    {
+      "code": "BO001",
+      "name": "Bơ",
+      "unit": "g",
+      "averageCost": 120,
+      "category": "Ingredient"
+    },
+    {
+      "code": "BOT_NEP_R",
+      "name": "Bột nếp rang",
+      "unit": "g",
+      "averageCost": 30,
+      "category": "Ingredient"
+    }
+  ],
+  "dishes": [
+    {
+      "name": "Cold Whisk",
+      "category": "Matcha",
+      "prices": {
+        "Medium": 45000,
+        "Large": 55000
+      },
+      "instructions": "1. Pha sữa đặc + Oatside (trong ly khách) + khuấy 2. Đánh matcha (coldwhisk) 3. Cho đá vào ly (vừa phải) 4. Đổ matcha (nhớ vét sạch)",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 4.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 15.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_HAT",
+              "quantity": 100.0,
+              "unit": "ml"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 5.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 20.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_HAT",
+              "quantity": 150.0,
+              "unit": "ml"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CoConut (coldwhisk)",
+      "category": "Matcha",
+      "prices": {
+        "Medium": 45000,
+        "Large": 55000
+      },
+      "instructions": "1. Cho nước đường vào ly uống 2. Cho nước dừa 3. Cho đá 4. Đánh matcha (coldwhisk) 5. Đổ matcha (nhớ vét sạch)",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 4.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "DUONG",
+              "quantity": 15.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "NUOC_DUA",
+              "quantity": 100.0,
+              "unit": "ml"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 5.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "DUONG",
+              "quantity": 20.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "NUOC_DUA",
+              "quantity": 150.0,
+              "unit": "ml"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Matcha  Latte",
+      "category": "Matcha",
+      "prices": {
+        "Medium": 45000,
+        "Large": 55000
+      },
+      "instructions": "1. Pha sữa đặc + Oatside (trong ly uống) + khuấy 2. Đánh matcha (latte) 3. Cho đá vào ly 4. Đổ matcha (nhớ vét sạch)",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 3.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 15.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_HAT",
+              "quantity": 100.0,
+              "unit": "ml"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 4.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 20.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_HAT",
+              "quantity": 150.0,
+              "unit": "ml"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Americanomatcha",
+      "category": "Matcha",
+      "prices": {
+        "Medium": 45000,
+        "Large": 55000
+      },
+      "instructions": "1. Đánh matcha latte 2. Cho đường + nước lọc vào ly + khuấy 3. Sau đó cho matcha vào ly khuấy đều 4. Cho đá",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 3.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "DUONG",
+              "quantity": 15.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "NUOC_LOC",
+              "quantity": 100.0,
+              "unit": "ml"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 4.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "DUONG",
+              "quantity": 20.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "NUOC_LOC",
+              "quantity": 150.0,
+              "unit": "ml"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Sakura",
+      "category": "Matcha",
+      "prices": {
+        "Medium": 45000,
+        "Large": 55000
+      },
+      "instructions": "1. Pha sakura (trong cốc đong nhỏ) 2. Cho sakura vào ly uống 3. Pha sữa đặc + Oatside (trong ly đong) 4. Đánh matcha (latte/ Cold) 5. Cho đá vào ly + sữa đã pha 6. Đổ matcha (nhớ vét sạch)",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 3.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 15.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_HAT",
+              "quantity": 100.0,
+              "unit": "ml"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 4.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 20.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_HAT",
+              "quantity": 150.0,
+              "unit": "ml"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Creamy",
+      "category": "Matcha",
+      "prices": {
+        "Medium": 45000,
+        "Large": 55000
+      },
+      "instructions": "1. Đánh matcha (latte) trong ly đong lớn 500ml = chasen 2. Xịt kem béo + đánh chung với matcha lần nữa 3. Pha sữa đặc + Oatside + khuấy 4. Đổ sữa vừa pha vào ly vừa đánh matcha 5. Đánh hỗn hợp bằng máy (1 phút) cho bông lên 6. Đổ hỗn hợp vào ly khách 7. Cho đá (ít đá) Đặc điểm: Creamy luôn bông gần đầy ly và ít đá mới đúng. Và luôn cho đá vào sau nếu không sẽ bị tràn",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 3.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 15.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_HAT",
+              "quantity": 100.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "KEM_BEO",
+              "quantity": 4,
+              "unit": "ml",
+              "notes": "2 xịt"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 4.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 20.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_HAT",
+              "quantity": 150.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "KEM_BEO",
+              "quantity": 6,
+              "unit": "ml",
+              "notes": "3 xịt"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Mứt (Xoài,Cam,Việt Quất,Kiwi,Dâu)",
+      "category": "Matcha",
+      "prices": {
+        "Medium": 45000,
+        "Large": 55000
+      },
+      "instructions": "1. Múc mứt vào ly khách + vét lên nửa thành ly 2. Đánh matcha (latte/Coldwhisk) 3. Pha sữa đặc + Oatside trong ly đong 4. Cho đá vào ly uống 5. Cho sữa đã pha vào ly 6. Đổ matcha",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 3.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 15.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_HAT",
+              "quantity": 100.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "MUT001",
+              "quantity": 45,
+              "unit": "g",
+              "notes": "3 muỗng"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 4.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 20.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_HAT",
+              "quantity": 150.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "MUT001",
+              "quantity": 60,
+              "unit": "g",
+              "notes": "4 muỗng"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Matcha Vải (Cold Whisk)",
+      "category": "Matcha",
+      "prices": {
+        "Medium": 45000,
+        "Large": 55000
+      },
+      "instructions": "1. Múc mứt vào ly khách + vét lên nửa thành ly 2. Đánh matcha Cold Whisk 3. Pha nước đường + Syrup vải + nước lọc trong ly đong 4. Cho đá vào ly uống 5. Cho nước vào ly 6. Đổ matcha",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 4.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "SYR_VAI",
+              "quantity": 15.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "NUOC_LOC",
+              "quantity": 100.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "MUT001",
+              "quantity": 45,
+              "unit": "g",
+              "notes": "3 muỗng"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 5.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "SYR_VAI",
+              "quantity": 25.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "NUOC_LOC",
+              "quantity": 150.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "MUT001",
+              "quantity": 60,
+              "unit": "g",
+              "notes": "4 muỗng"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Oreo (Coldwhisk)",
+      "category": "Matcha",
+      "prices": {
+        "Medium": 45000,
+        "Large": 55000
+      },
+      "instructions": "1. Pha sữa đặc + Oatside trong ly uống 2. Đánh matcha (coldwhisk) 3. Cho đá 4. Cho hỗn hợp sữa vào ly 5. Đổ matcha 6. Rải Oreo 7. Húng lủi (1 ngọn)",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 4.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 15.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_HAT",
+              "quantity": 100.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "OREO01",
+              "quantity": 30,
+              "unit": "g",
+              "notes": "3 muỗng"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 5.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 20.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_HAT",
+              "quantity": 150.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "OREO01",
+              "quantity": 40,
+              "unit": "g",
+              "notes": "4 muỗng"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Caramel",
+      "category": "Matcha",
+      "prices": {
+        "Medium": 45000,
+        "Large": 55000
+      },
+      "instructions": "1. Xịt caramel vào thành ly theo hình tròn 2. Pha sữa hạt + Oatside vào ly đong 3. Đánh matcha (coldwhisk) 4. Cho đá vào ly 5. Cho hỗn hợp sữa vào ly  6. Đổ matcha",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 3.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "CARAMEL",
+              "quantity": 15,
+              "unit": "ml",
+              "notes": "3 vòng"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 15.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_HAT",
+              "quantity": 100.0,
+              "unit": "ml"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 4.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "CARAMEL",
+              "quantity": 20,
+              "unit": "ml",
+              "notes": "4 vòng"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 20.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_HAT",
+              "quantity": 150.0,
+              "unit": "ml"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Matcha Mơ (coldwhisk)",
+      "category": "Matcha",
+      "prices": {
+        "Medium": 45000,
+        "Large": 55000
+      },
+      "instructions": "1. Cho nước mơ vào ly khách 2. Pha sữa đặc+ sữa hạt trong ly đong+ khuấy 3. đánh matcha coldwhisk 4. Cho đá vào ly 5. Cho hỗn hợp sữa 6. Cho matcha",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 4.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "NUOC_MO",
+              "quantity": 15,
+              "unit": "ml",
+              "notes": "Nước mơ (vừa chạm vạch đầu tiên của đáy ly)"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 15.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_HAT",
+              "quantity": 100.0,
+              "unit": "ml"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 5.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "NUOC_MO",
+              "quantity": 20,
+              "unit": "ml",
+              "notes": "Nước mơ (chưa chạm vạch đầu tiên của đáy ly)"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 20.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_HAT",
+              "quantity": 150.0,
+              "unit": "ml"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Houjicha coldwhisk",
+      "category": "Houjicha",
+      "prices": {
+        "Medium": 42000,
+        "Large": 52000
+      },
+      "instructions": "1. Pha sữa đặc + Sữa tươi (trong  ly khách) 2. Đánh Hojicha (coldwhisk) trong ly đong lớn 3. Cho đá vào ly  4. Đổ Hojicha(nhớ vét sạch)",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 5.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 15.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_TUOI",
+              "quantity": 100.0,
+              "unit": "ml"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 6.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 20.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_TUOI",
+              "quantity": 150.0,
+              "unit": "ml"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Houjicha latte",
+      "category": "Houjicha",
+      "prices": {
+        "Medium": 42000,
+        "Large": 52000
+      },
+      "instructions": "1. Pha sữa đặc + Sữa Tươi (trong  ly khách) 2. Đánh Hojicha(latte) 3. Cho đá vào ly 4. Đổ Hojicha (nhớ vét sạch)",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 4.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 15.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_TUOI",
+              "quantity": 100.0,
+              "unit": "ml"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 5.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 20.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_TUOI",
+              "quantity": 150.0,
+              "unit": "ml"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Trà trái cây",
+      "category": "Trà trái cây",
+      "prices": {
+        "Medium": 35000,
+        "Large": 45000
+      },
+      "instructions": "1. Cho mứt vào đáy ly 2. Nước đường vào ly uống 3. Syrup 3. 1 trái Tắc 5. Trà  6. Dùng cây sục hỗn hợp đều 6. Cho đá 8. 1 lát chanh 9. 1 lá húng lủi 10. Củ năng",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "DUONG",
+              "quantity": 5,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SYR_TC",
+              "quantity": 20,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "MUT001",
+              "quantity": 45,
+              "unit": "g",
+              "notes": "3 muỗng"
+            },
+            {
+              "itemCode": "TRA001",
+              "quantity": 150,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "TAC001",
+              "quantity": 1,
+              "unit": "piece"
+            },
+            {
+              "itemCode": "CU_NANG",
+              "quantity": 0.5,
+              "unit": "piece",
+              "notes": "Nửa vá"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "DUONG",
+              "quantity": 10,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SYR_TC",
+              "quantity": 30,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "MUT001",
+              "quantity": 60,
+              "unit": "g",
+              "notes": "4 muỗng"
+            },
+            {
+              "itemCode": "TRA001",
+              "quantity": 200,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "CU_NANG",
+              "quantity": 1,
+              "unit": "piece"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Trà mơ",
+      "category": "Trà mơ",
+      "prices": {
+        "Medium": 38000,
+        "Large": 48000
+      },
+      "instructions": "Làm như trà bình thường. Không cho tắc",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "DUONG",
+              "quantity": 5,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SYR_MO",
+              "quantity": 20,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "TRA001",
+              "quantity": 150,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "CU_NANG",
+              "quantity": 0.5,
+              "unit": "piece"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "DUONG",
+              "quantity": 10,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SYR_MO",
+              "quantity": 30,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "TRA001",
+              "quantity": 200,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "CU_NANG",
+              "quantity": 1,
+              "unit": "piece"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Trà lài Machiato",
+      "category": "Trà lài Machiato",
+      "prices": {
+        "Medium": 48000,
+        "Large": 58000
+      },
+      "instructions": "1. Cho nước đường vào ly uống 2. Cho trà vào  3. Dùng cây sục hỗn hợp đều 4. Cho đá 5. Cho kem muối lên top 6. Cho củ năng lên trên kem muối 6. 1 ngọn húng lủi 7. 1 lát chanh trên top",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "DUONG",
+              "quantity": 8,
+              "unit": "ml",
+              "notes": "Cao hơn vạch đáy ly M"
+            },
+            {
+              "itemCode": "TRA001",
+              "quantity": 160,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "KEM_MUOI",
+              "quantity": 30,
+              "unit": "ml",
+              "notes": "1 vá đầy"
+            },
+            {
+              "itemCode": "CU_NANG",
+              "quantity": 0.5,
+              "unit": "piece"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "DUONG",
+              "quantity": 12,
+              "unit": "ml",
+              "notes": "Cao hơn vạch đáy ly L"
+            },
+            {
+              "itemCode": "TRA001",
+              "quantity": 210,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "KEM_MUOI",
+              "quantity": 30,
+              "unit": "ml",
+              "notes": "1 vá đầy"
+            },
+            {
+              "itemCode": "CU_NANG",
+              "quantity": 1,
+              "unit": "piece"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Cafe Đen",
+      "category": "Cafe",
+      "prices": {
+        "Medium": 25000,
+        "Large": 30000
+      },
+      "instructions": "Bỏ đá trước đánh cafe",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "CAFE001",
+              "quantity": 50,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SYR_DUONG",
+              "quantity": 10,
+              "unit": "ml"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "CAFE001",
+              "quantity": 60.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SYR_DUONG",
+              "quantity": 12.0,
+              "unit": "ml"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Cafe Sữa",
+      "category": "Cafe",
+      "prices": {
+        "Medium": 30000,
+        "Large": 35000
+      },
+      "instructions": "Bỏ đá trước đánh cafe",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 20,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "CAFE001",
+              "quantity": 50,
+              "unit": "ml"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 24.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "CAFE001",
+              "quantity": 60.0,
+              "unit": "ml"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Cafe Muối",
+      "category": "Cafe",
+      "prices": {
+        "Medium": 35000,
+        "Large": 40000
+      },
+      "instructions": "Bỏ đá trước đánh cafe",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 20,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "CAFE001",
+              "quantity": 40,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "KEM_MUOI",
+              "quantity": 30,
+              "unit": "ml",
+              "notes": "1 vá đầy"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 24.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "CAFE001",
+              "quantity": 48.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "KEM_MUOI",
+              "quantity": 36.0,
+              "unit": "ml",
+              "notes": "1 vá đầy"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Bạc Xỉu",
+      "category": "Cafe",
+      "prices": {
+        "Medium": 32000,
+        "Large": 38000
+      },
+      "instructions": "Bỏ đá trước đánh cafe",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 20,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_TUOI",
+              "quantity": 50,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "CAFE001",
+              "quantity": 30,
+              "unit": "ml"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 24.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_TUOI",
+              "quantity": 60.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "CAFE001",
+              "quantity": 36.0,
+              "unit": "ml"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Cacao sữa",
+      "category": "Cacao",
+      "prices": {
+        "Medium": 40000,
+        "Large": 50000
+      },
+      "instructions": "1. Pha cacao trong ly đong 2. Pha sữa đặc + sữa tươi trong ly uống 3. Cho đá 4. Đổ cacao",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "CAC001",
+              "quantity": 15,
+              "unit": "g",
+              "notes": "3 muỗng"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 15,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_TUOI",
+              "quantity": 100,
+              "unit": "ml"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "CAC001",
+              "quantity": 20,
+              "unit": "g",
+              "notes": "4 muỗng"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 20,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_TUOI",
+              "quantity": 150,
+              "unit": "ml"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Mochi Matcha",
+      "category": "Matcha",
+      "prices": {
+        "Regular": 8000
+      },
+      "servings": 1,
+      "instructions": "1. Trộn tất cả các bột lại: bột nếp + bắp + đường + muối + matcha -> trộn đều 2. Đổ sữa  -> trộn đều 3. Rây bột mịn 4. Bọc kín + đâm thủng vài lỗ trên bề mặt màng bọc 5. Để vào lò vi sóng ( chế độ thấp + 9’ quay ) 6. Lấy ra -> Để nguội -> bỏ xíu bơ vào 7. Nhào bột đến độ dẻo nhất định 8. Nặn thành viên mochi ( 13 - xấp xỉ 14) 9. Áo qua lớp bột nếp đã rang  => KQ: 24 viên ( không thừa k thiếu)",
+      "ingredients": [
+        {
+          "itemCode": "BOT_NEP",
+          "quantity": 5.4167,
+          "unit": "g"
+        },
+        {
+          "itemCode": "BOT_BAP",
+          "quantity": 0.8333,
+          "unit": "g"
+        },
+        {
+          "itemCode": "DUONG",
+          "quantity": 0.8333,
+          "unit": "ml"
+        },
+        {
+          "itemCode": "MUOI01",
+          "quantity": 0.0333,
+          "unit": "g"
+        },
+        {
+          "itemCode": "SUA_TUOI",
+          "quantity": 8.3333,
+          "unit": "ml"
+        },
+        {
+          "itemCode": "MAT001",
+          "quantity": 0.1458,
+          "unit": "g"
+        },
+        {
+          "itemCode": "BO001",
+          "quantity": 0.2083,
+          "unit": "g"
+        },
+        {
+          "itemCode": "BOT_NEP_R",
+          "quantity": 2,
+          "unit": "g",
+          "notes": "Áo bột nếp rang"
+        }
+      ]
+    },
+    {
+      "name": "Mochi Cacao",
+      "category": "Cacao",
+      "prices": {
+        "Regular": 8000
+      },
+      "servings": 1,
+      "instructions": "",
+      "ingredients": [
+        {
+          "itemCode": "BOT_NEP",
+          "quantity": 5.4167,
+          "unit": "g"
+        },
+        {
+          "itemCode": "BOT_BAP",
+          "quantity": 0.8333,
+          "unit": "g"
+        },
+        {
+          "itemCode": "DUONG",
+          "quantity": 0.8333,
+          "unit": "ml"
+        },
+        {
+          "itemCode": "MUOI01",
+          "quantity": 0.0208,
+          "unit": "g"
+        },
+        {
+          "itemCode": "SUA_TUOI",
+          "quantity": 8.3333,
+          "unit": "ml"
+        },
+        {
+          "itemCode": "CAC001",
+          "quantity": 0.1667,
+          "unit": "g"
+        },
+        {
+          "itemCode": "BO001",
+          "quantity": 0.2083,
+          "unit": "g"
+        },
+        {
+          "itemCode": "BOT_NEP_R",
+          "quantity": 2,
+          "unit": "g",
+          "notes": "Áo bột nếp rang"
+        }
+      ]
+    }
+  ]
+}

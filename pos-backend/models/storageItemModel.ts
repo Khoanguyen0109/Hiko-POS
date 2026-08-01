@@ -33,6 +33,18 @@ const storageItemSchema = new mongoose.Schema({
         enum: ['kg', 'g', 'liter', 'ml', 'piece', 'pack', 'box', 'bag'],
         default: 'kg'
     },
+    // When imported/stocked by box|pack|bag, how much usable content each unit contains.
+    // Example: 1 box = 1000 ml → contentQuantity: 1000, contentUnit: 'ml'
+    contentQuantity: {
+        type: Number,
+        min: 0,
+        default: 0
+    },
+    contentUnit: {
+        type: String,
+        enum: ['kg', 'g', 'liter', 'ml', 'piece', ''],
+        default: ''
+    },
     currentStock: {
         type: Number,
         default: 0,

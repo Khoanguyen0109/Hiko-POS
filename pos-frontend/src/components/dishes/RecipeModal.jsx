@@ -7,6 +7,13 @@ import { fetchStorageItems } from "../../redux/slices/storageItemSlice";
 import { fetchDishes } from "../../redux/slices/dishSlice";
 import { enqueueSnackbar } from "notistack";
 import { formatVND } from "../../utils";
+import {
+  calculateRecipeLineCost,
+  formatPackageLabel,
+  formatStorageItemOptionLabel,
+  getDefaultRecipeUnit,
+  getRecipeUnitOptions,
+} from "../../utils/recipeCost";
 
 const emptyLine = () => ({ storageItemId: "", quantity: 0, unit: "", notes: "" });
 
@@ -49,8 +56,8 @@ const RecipeModal = ({ isOpen, onClose, dish, onSuccess }) => {
     lines.forEach((line) => {
       if (!line.storageItemId) return;
       const item = storageItems.find((entry) => entry._id === line.storageItemId);
-      if (item && line.unit === item.unit) {
-        cost += line.quantity * (item.averageCost || 0);
+      if (item) {
+        cost += calculateRecipeLineCost(line.quantity, line.unit, item);
       }
     });
 
@@ -192,7 +199,7 @@ const RecipeModal = ({ isOpen, onClose, dish, onSuccess }) => {
         if (field === "storageItemId" && value) {
           const item = storageItems.find((entry) => entry._id === value);
           if (item) {
-            sizeVariantRecipes[variantIndex].ingredients[index].unit = item.unit;
+            sizeVariantRecipes[variantIndex].ingredients[index].unit = getDefaultRecipeUnit(item);
           }
         }
         return { ...prev, sizeVariantRecipes };
@@ -204,7 +211,7 @@ const RecipeModal = ({ isOpen, onClose, dish, onSuccess }) => {
         if (field === "storageItemId" && value) {
           const item = storageItems.find((entry) => entry._id === value);
           if (item) {
-            ingredients[index].unit = item.unit;
+            ingredients[index].unit = getDefaultRecipeUnit(item);
           }
         }
         return { ...prev, ingredients };
@@ -238,8 +245,9 @@ const RecipeModal = ({ isOpen, onClose, dish, onSuccess }) => {
 
   const renderIngredientRow = (line, index, variantIndex = null) => {
     const selectedItem = storageItems.find((entry) => entry._id === line.storageItemId);
-    const unitCost = selectedItem?.averageCost || 0;
-    const lineCost = line.unit === selectedItem?.unit ? line.quantity * unitCost : 0;
+    const unitOptions = selectedItem ? getRecipeUnitOptions(selectedItem) : ["ml", "g", "piece"];
+    const lineCost = calculateRecipeLineCost(line.quantity, line.unit, selectedItem);
+    const packageLabel = selectedItem ? formatPackageLabel(selectedItem) : null;
 
     return (
       <div key={index} className="grid grid-cols-12 gap-2 items-start bg-[#1a1a1a] p-3 rounded-lg">
@@ -253,10 +261,13 @@ const RecipeModal = ({ isOpen, onClose, dish, onSuccess }) => {
             <option value="">Select storage item</option>
             {storageItems.map((item) => (
               <option key={item._id} value={item._id}>
-                {item.name} ({item.code}) - {formatVND(item.averageCost || 0)}/{item.unit}
+                {formatStorageItemOptionLabel(item, formatVND)}
               </option>
             ))}
           </select>
+          {packageLabel && (
+            <p className="text-[#ababab] text-xs mt-1">{packageLabel}</p>
+          )}
         </div>
         <div className="col-span-4 sm:col-span-2">
           <input
@@ -272,13 +283,17 @@ const RecipeModal = ({ isOpen, onClose, dish, onSuccess }) => {
           />
         </div>
         <div className="col-span-4 sm:col-span-2">
-          <input
-            type="text"
+          <select
             value={line.unit}
             onChange={(e) => updateIngredient(index, "unit", e.target.value, variantIndex)}
-            placeholder="Unit"
             className="w-full bg-[#262626] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
-          />
+          >
+            {unitOptions.map((unit) => (
+              <option key={unit} value={unit}>
+                {unit}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="col-span-3 sm:col-span-2 text-right">
           <p className="text-[#ababab] text-xs">Line cost</p>
@@ -463,7 +478,7 @@ const RecipeModal = ({ isOpen, onClose, dish, onSuccess }) => {
                   </p>
                 )}
                 <p className="text-[#ababab] text-xs mt-2">
-                  Final cost is calculated on save using storage item average costs and unit conversion.
+                  For box/pack/bag items, enter recipe amounts in ml/g (e.g. 100 ml from 1 box = 1000 ml).
                 </p>
               </div>
 

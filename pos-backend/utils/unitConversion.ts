@@ -38,9 +38,35 @@ const TO_BASE_FACTOR: Record<string, number> = {
     bag: 1,
 };
 
+export const PACKAGING_UNITS = ["box", "pack", "bag"] as const;
+export const RECIPE_UNITS = ["kg", "g", "liter", "ml", "piece"] as const;
+
+export interface StorageItemCostInput {
+    unit: string;
+    averageCost: number;
+    contentQuantity?: number;
+    contentUnit?: string;
+}
+
 export function normalizeUnit(unit: string): string {
     const trimmed = unit.trim().toLowerCase();
     return UNIT_ALIASES[trimmed] ?? trimmed;
+}
+
+export function hasPackageContent(item: StorageItemCostInput): boolean {
+    return Boolean(
+        item.contentQuantity &&
+        item.contentQuantity > 0 &&
+        item.contentUnit &&
+        item.contentUnit.trim().length > 0
+    );
+}
+
+export function getDefaultRecipeUnit(item: StorageItemCostInput): string {
+    if (hasPackageContent(item)) {
+        return normalizeUnit(item.contentUnit!);
+    }
+    return normalizeUnit(item.unit);
 }
 
 export function convertQuantity(
@@ -66,17 +92,51 @@ export function convertQuantity(
     return baseQuantity / TO_BASE_FACTOR[to];
 }
 
+export function getCostPerRecipeUnit(item: StorageItemCostInput, recipeUnit: string): number {
+    const normalizedRecipeUnit = normalizeUnit(recipeUnit);
+
+    if (normalizedRecipeUnit === normalizeUnit(item.unit)) {
+        return item.averageCost;
+    }
+
+    if (hasPackageContent(item)) {
+        const contentUnit = normalizeUnit(item.contentUnit!);
+        const quantityInContentUnit = convertQuantity(
+            1,
+            normalizedRecipeUnit,
+            contentUnit
+        );
+
+        if (quantityInContentUnit !== null) {
+            return (item.averageCost / item.contentQuantity!) * quantityInContentUnit;
+        }
+    }
+
+    const convertedQuantity = convertQuantity(1, normalizedRecipeUnit, item.unit);
+    if (convertedQuantity !== null) {
+        return item.averageCost * convertedQuantity;
+    }
+
+    return 0;
+}
+
 export function calculateLineCost(
     quantity: number,
     lineUnit: string,
-    itemUnit: string,
-    averageCost: number
+    item: StorageItemCostInput
 ): number {
-    const convertedQuantity = convertQuantity(quantity, lineUnit, itemUnit);
-
-    if (convertedQuantity === null) {
+    if (quantity <= 0) {
         return 0;
     }
 
-    return convertedQuantity * averageCost;
+    const costPerUnit = getCostPerRecipeUnit(item, lineUnit);
+    return quantity * costPerUnit;
+}
+
+export function formatPackageLabel(item: StorageItemCostInput): string | null {
+    if (!hasPackageContent(item)) {
+        return null;
+    }
+
+    return `1 ${item.unit} = ${item.contentQuantity} ${item.contentUnit}`;
 }

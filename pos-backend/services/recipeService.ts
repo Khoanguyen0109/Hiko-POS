@@ -3,7 +3,7 @@ import type { Types } from "mongoose";
 import Dish from "../models/dishModel.js";
 import DishRecipe from "../models/dishRecipeModel.js";
 import StorageItem from "../models/storageItemModel.js";
-import { calculateLineCost } from "../utils/unitConversion.js";
+import { calculateLineCost, getCostPerRecipeUnit } from "../utils/unitConversion.js";
 
 interface RecipeLineInput {
     storageItemId: Types.ObjectId | string;
@@ -33,19 +33,21 @@ type RecipeDocument = {
 async function loadStorageItemCosts(
     storeId: Types.ObjectId | string,
     lines: RecipeLineInput[]
-): Promise<Map<string, { unit: string; averageCost: number }>> {
+): Promise<Map<string, { unit: string; averageCost: number; contentQuantity?: number; contentUnit?: string }>> {
     const ids = [...new Set(lines.map((line) => String(line.storageItemId)))];
     const items = await StorageItem.find({
         _id: { $in: ids },
         store: storeId,
         isActive: true,
-    }).select("_id unit averageCost");
+    }).select("_id unit averageCost contentQuantity contentUnit");
 
-    const costMap = new Map<string, { unit: string; averageCost: number }>();
+    const costMap = new Map<string, { unit: string; averageCost: number; contentQuantity?: number; contentUnit?: string }>();
     for (const item of items) {
         costMap.set(String(item._id), {
             unit: item.unit,
             averageCost: item.averageCost ?? 0,
+            contentQuantity: item.contentQuantity ?? 0,
+            contentUnit: item.contentUnit || "",
         });
     }
 
@@ -54,7 +56,7 @@ async function loadStorageItemCosts(
 
 function calculateLinesCost(
     lines: RecipeLineInput[],
-    costMap: Map<string, { unit: string; averageCost: number }>
+    costMap: Map<string, { unit: string; averageCost: number; contentQuantity?: number; contentUnit?: string }>
 ): number {
     let total = 0;
 
@@ -66,13 +68,8 @@ function calculateLinesCost(
             continue;
         }
 
-        line.costPerUnit = itemCost.averageCost;
-        line.lineCost = calculateLineCost(
-            line.quantity,
-            line.unit,
-            itemCost.unit,
-            itemCost.averageCost
-        );
+        line.costPerUnit = getCostPerRecipeUnit(itemCost, line.unit);
+        line.lineCost = calculateLineCost(line.quantity, line.unit, itemCost);
         total += line.lineCost;
     }
 

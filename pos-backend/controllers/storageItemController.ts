@@ -6,6 +6,54 @@ import StorageItem from "../models/storageItemModel.js";
 import StorageImport from "../models/storageImportModel.js";
 import StorageExport from "../models/storageExportModel.js";
 import { getDateRangeVietnam } from "../utils/dateUtils.js";
+import { PACKAGING_UNITS } from "../utils/unitConversion.js";
+
+const VALID_UNITS = ["kg", "g", "liter", "ml", "piece", "pack", "box", "bag"];
+const VALID_CONTENT_UNITS = ["kg", "g", "liter", "ml", "piece"] as const;
+type ContentUnit = typeof VALID_CONTENT_UNITS[number];
+
+function validatePackageContent(
+    unit: string,
+    contentQuantity?: number,
+    contentUnit?: string
+): string | null {
+    const hasContentQuantity = contentQuantity !== undefined && contentQuantity !== null;
+    const hasContentUnit = contentUnit !== undefined && contentUnit !== null && contentUnit !== "";
+
+    if (hasContentQuantity || hasContentUnit) {
+        if (!hasContentQuantity || typeof contentQuantity !== "number" || contentQuantity <= 0) {
+            return "Content quantity must be a positive number (e.g. 1000 for 1 box = 1000 ml)";
+        }
+
+        if (!hasContentUnit || !VALID_CONTENT_UNITS.includes(contentUnit as ContentUnit)) {
+            return `Content unit must be one of: ${VALID_CONTENT_UNITS.join(", ")}`;
+        }
+    }
+
+    if (PACKAGING_UNITS.includes(unit as typeof PACKAGING_UNITS[number]) && !hasContentQuantity) {
+        return "Packaging units (box, pack, bag) require content quantity and content unit (e.g. 1 box = 1000 ml)";
+    }
+
+    return null;
+}
+
+function applyPackageContentFields(
+    item: InstanceType<typeof StorageItem>,
+    unit: string,
+    contentQuantity?: number,
+    contentUnit?: string
+) {
+    const isPackaging = PACKAGING_UNITS.includes(unit as typeof PACKAGING_UNITS[number]);
+
+    if (isPackaging && contentQuantity && contentQuantity > 0 && contentUnit) {
+        item.contentQuantity = contentQuantity;
+        item.contentUnit = contentUnit as ContentUnit;
+        return;
+    }
+
+    item.contentQuantity = 0;
+    item.contentUnit = "";
+}
 
 // Add storage item
 const addStorageItem = async (req, res, next) => {
@@ -20,7 +68,9 @@ const addStorageItem = async (req, res, next) => {
             minStock,
             maxStock,
             averageCost,
-            lastPurchaseCost
+            lastPurchaseCost,
+            contentQuantity,
+            contentUnit
         } = req.body;
 
         // Validate required fields
@@ -51,9 +101,13 @@ const addStorageItem = async (req, res, next) => {
         }
 
         // Validate unit enum
-        const validUnits = ['kg', 'g', 'liter', 'ml', 'piece', 'pack', 'box', 'bag'];
-        if (!validUnits.includes(unit)) {
-            return next(createHttpError(400, `Unit must be one of: ${validUnits.join(', ')}`));
+        if (!VALID_UNITS.includes(unit)) {
+            return next(createHttpError(400, `Unit must be one of: ${VALID_UNITS.join(", ")}`));
+        }
+
+        const packageError = validatePackageContent(unit, contentQuantity, contentUnit);
+        if (packageError) {
+            return next(createHttpError(400, packageError));
         }
 
         // Validate stock levels
@@ -92,6 +146,8 @@ const addStorageItem = async (req, res, next) => {
             lastPurchaseCost: lastPurchaseCost || 0,
             createdBy: userId && userName ? { userId, userName } : undefined
         });
+
+        applyPackageContentFields(storageItem, unit, contentQuantity, contentUnit);
 
         await storageItem.save();
 
@@ -230,7 +286,9 @@ const updateStorageItem = async (req, res, next) => {
             maxStock,
             averageCost,
             lastPurchaseCost,
-            isActive
+            isActive,
+            contentQuantity,
+            contentUnit
         } = req.body;
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -272,12 +330,39 @@ const updateStorageItem = async (req, res, next) => {
         }
 
         // Validate unit enum if being changed
+        const nextUnit = unit || item.unit;
         if (unit) {
-            const validUnits = ['kg', 'g', 'liter', 'ml', 'piece', 'pack', 'box', 'bag'];
-            if (!validUnits.includes(unit)) {
-                return next(createHttpError(400, `Unit must be one of: ${validUnits.join(', ')}`));
+            if (!VALID_UNITS.includes(unit)) {
+                return next(createHttpError(400, `Unit must be one of: ${VALID_UNITS.join(", ")}`));
             }
             item.unit = unit;
+        }
+
+        const nextContentQuantity =
+            contentQuantity !== undefined ? contentQuantity : item.contentQuantity;
+        const nextContentUnit =
+            contentUnit !== undefined ? contentUnit : item.contentUnit;
+
+        const packageError = validatePackageContent(
+            nextUnit,
+            nextContentQuantity,
+            nextContentUnit || undefined
+        );
+        if (packageError) {
+            return next(createHttpError(400, packageError));
+        }
+
+        if (
+            contentQuantity !== undefined ||
+            contentUnit !== undefined ||
+            unit !== undefined
+        ) {
+            applyPackageContentFields(
+                item,
+                nextUnit,
+                nextContentQuantity,
+                nextContentUnit || undefined
+            );
         }
 
         // Validate stock levels

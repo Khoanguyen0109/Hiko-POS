@@ -5,8 +5,10 @@ import BottomSheet from "../shared/BottomSheet";
 import { createStorageItemAction, editStorageItem } from "../../redux/slices/storageItemSlice";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
+import { PACKAGING_UNITS } from "../../utils/recipeCost";
 
 const UNIT_OPTIONS = ['kg', 'g', 'liter', 'ml', 'piece', 'pack', 'box', 'bag'];
+const CONTENT_UNIT_OPTIONS = ['ml', 'liter', 'g', 'kg', 'piece'];
 
 const StorageItemModal = ({ 
   isOpen, 
@@ -26,6 +28,8 @@ const StorageItemModal = ({
     maxStock: 1000,
     averageCost: 0,
     lastPurchaseCost: 0,
+    contentQuantity: 0,
+    contentUnit: "ml",
     isActive: true
   }), []);
 
@@ -45,6 +49,8 @@ const StorageItemModal = ({
         maxStock: item.maxStock || 1000,
         averageCost: item.averageCost || 0,
         lastPurchaseCost: item.lastPurchaseCost || 0,
+        contentQuantity: item.contentQuantity || 0,
+        contentUnit: item.contentUnit || "ml",
         isActive: item.isActive !== undefined ? item.isActive : true
       });
     } else if (mode === "create") {
@@ -54,11 +60,22 @@ const StorageItemModal = ({
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : (type === "number" ? parseFloat(value) || 0 : value)
-    }));
+    setFormData(prev => {
+      const next = {
+        ...prev,
+        [name]: type === "checkbox" ? checked : (type === "number" ? parseFloat(value) || 0 : value)
+      };
+
+      if (name === "unit" && !PACKAGING_UNITS.includes(value)) {
+        next.contentQuantity = 0;
+        next.contentUnit = "ml";
+      }
+
+      return next;
+    });
   };
+
+  const isPackagingUnit = PACKAGING_UNITS.includes(formData.unit);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -84,8 +101,19 @@ const StorageItemModal = ({
       return;
     }
 
+    if (isPackagingUnit && (!formData.contentQuantity || formData.contentQuantity <= 0)) {
+      setError("Enter how much content is in each box/pack/bag (e.g. 1000 ml)");
+      setLoading(false);
+      return;
+    }
+
     try {
       const submitData = { ...formData };
+
+      if (!isPackagingUnit) {
+        delete submitData.contentQuantity;
+        delete submitData.contentUnit;
+      }
       
       // Remove empty fields
       Object.keys(submitData).forEach(key => {
@@ -251,6 +279,65 @@ const StorageItemModal = ({
               </div>
             </div>
           </div>
+
+          {isPackagingUnit && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-[#f5f5f5] border-b border-[#343434] pb-2">
+                Package content
+              </h3>
+              <p className="text-[#ababab] text-sm">
+                Stock is counted in {formData.unit}, but recipes use smaller units.
+                Example: import oat milk by box, 1 box = 1000 ml, recipe uses 100 ml.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[#ababab] text-sm mb-2">
+                    Content per {formData.unit} <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
+                    <input
+                      type="number"
+                      name="contentQuantity"
+                      value={formData.contentQuantity || ""}
+                      onChange={handleInputChange}
+                      disabled={isViewMode}
+                      min="0"
+                      step="0.01"
+                      required={isPackagingUnit}
+                      className="bg-transparent flex-1 text-white focus:outline-none disabled:opacity-50"
+                      placeholder="1000"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[#ababab] text-sm mb-2">
+                    Content unit <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
+                    <select
+                      name="contentUnit"
+                      value={formData.contentUnit}
+                      onChange={handleInputChange}
+                      disabled={isViewMode}
+                      required={isPackagingUnit}
+                      className="bg-transparent flex-1 text-white focus:outline-none disabled:opacity-50"
+                    >
+                      {CONTENT_UNIT_OPTIONS.map((unit) => (
+                        <option key={unit} value={unit} className="bg-[#1f1f1f]">
+                          {unit}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+              {formData.contentQuantity > 0 && formData.contentUnit && (
+                <p className="text-brand text-sm">
+                  1 {formData.unit} = {formData.contentQuantity} {formData.contentUnit}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Stock Levels */}
           <div className="space-y-4">
