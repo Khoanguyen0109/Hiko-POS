@@ -92,6 +92,11 @@ ImportList.propTypes = {
   onCancel: PropTypes.func.isRequired,
 };
 
+const EXPORT_REASON_LABELS = {
+  production: "Production",
+  to_store: "To Store",
+};
+
 const ExportList = memo(({ exports, loading, onCancel }) => {
   if (loading) return <LoadingState message="Loading exports..." />;
   if (exports.length === 0) return <EmptyState icon={MdOutput} message="No exports found" />;
@@ -103,6 +108,7 @@ const ExportList = memo(({ exports, loading, onCancel }) => {
           <tr>
             <th className={`${thClass} sticky left-0 bg-[#262626] z-[1]`}>Item</th>
             <th className={thClass}>Qty</th>
+            <th className={thClass}>Reason</th>
             <th className={thClass}>Exported By</th>
             <th className={thClass}>Date</th>
             <th className={thClass}>Status</th>
@@ -116,6 +122,7 @@ const ExportList = memo(({ exports, loading, onCancel }) => {
                 <span className="font-medium">{r.storageItemId?.name || "N/A"}</span>
               </td>
               <td className={tdClass}>{r.quantity} {r.unit}</td>
+              <td className={tdClass}>{EXPORT_REASON_LABELS[r.reason] || r.reason || "N/A"}</td>
               <td className={tdClass}>{r.exportedBy?.userName || "N/A"}</td>
               <td className={tdClass}>{new Date(r.exportDate).toLocaleDateString("vi-VN")}</td>
               <td className={tdClass}><RecordStatusBadge status={r.status} /></td>
@@ -144,11 +151,12 @@ const StockList = memo(({ items, loading }) => {
 
   return (
     <div className="overflow-x-auto rounded-lg border border-[#343434]">
-      <table className="w-full min-w-[300px]">
+      <table className="w-full min-w-[420px]">
         <thead className="bg-[#262626]">
           <tr>
             <th className={`${thClass} sticky left-0 bg-[#262626] z-[1]`}>Item</th>
             <th className={thClass}>Current Stock</th>
+            <th className={thClass}>Avg Cost</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[#343434]">
@@ -174,6 +182,15 @@ const StockList = memo(({ items, loading }) => {
                 <td className={tdClass}>
                   <span className={`font-bold ${isOut ? "text-red-400" : isLow ? "text-yellow-400" : "text-green-400"}`}>
                     {item.currentStock}
+                  </span>
+                  {item.unit ? (
+                    <span className="ml-1 text-[#ababab]">{item.unit}</span>
+                  ) : null}
+                </td>
+                <td className={tdClass}>
+                  {(item.averageCost ?? 0).toLocaleString("vi-VN")}
+                  <span className="ml-1 text-[#ababab] text-xs">
+                    VND{item.unit ? `/${item.unit}` : ""}
                   </span>
                 </td>
               </tr>

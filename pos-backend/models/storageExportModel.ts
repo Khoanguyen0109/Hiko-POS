@@ -1,6 +1,8 @@
 // @ts-nocheck
 import mongoose from "mongoose";
 
+export const STORAGE_EXPORT_REASONS = ["production", "to_store"] as const;
+
 const storageExportSchema = new mongoose.Schema({
     store: {
         type: mongoose.Schema.Types.ObjectId,
@@ -31,7 +33,7 @@ const storageExportSchema = new mongoose.Schema({
     reason: {
         type: String,
         required: true,
-        enum: ['production', 'waste', 'damage', 'theft', 'transfer', 'other'],
+        enum: STORAGE_EXPORT_REASONS,
         default: 'production'
     },
     notes: {

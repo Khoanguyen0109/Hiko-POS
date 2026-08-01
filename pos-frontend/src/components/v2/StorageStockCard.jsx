@@ -14,9 +14,15 @@ const StorageStockCard = ({ item }) => {
   return (
     <div className={`rounded-lg border px-3 py-2 ${borderClass}`}>
       <div className="flex items-center justify-between gap-3">
-        <h3 className="min-w-0 flex-1 truncate text-sm font-medium text-[#f5f5f5]">
-          {item.name}
-        </h3>
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate text-sm font-medium text-[#f5f5f5]">
+            {item.name}
+          </h3>
+          <p className="mt-0.5 text-xs text-[#ababab] tabular-nums">
+            {(item.averageCost ?? 0).toLocaleString("vi-VN")} VND
+            {item.unit ? `/${item.unit}` : ""}
+          </p>
+        </div>
         <p className={`shrink-0 text-base font-bold tabular-nums leading-none ${qtyClass}`}>
           {item.currentStock}
           {item.unit ? (
@@ -35,6 +41,7 @@ StorageStockCard.propTypes = {
     currentStock: PropTypes.number.isRequired,
     minStock: PropTypes.number,
     unit: PropTypes.string,
+    averageCost: PropTypes.number,
     isActive: PropTypes.bool,
   }).isRequired,
 };

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { MdMenuBook, MdCalculate, MdEdit } from "react-icons/md";
-import BackButton from "../components/shared/BackButton";
 import FeaturePageHeader from "../components/shared/FeaturePageHeader";
 import LoadingState from "../components/shared/LoadingState";
 import EmptyState from "../components/shared/EmptyState";
@@ -111,20 +110,21 @@ const Recipes = () => {
     <section className="bg-[#1f1f1f] min-h-screen pb-20">
       <FeaturePageHeader
         title="Recipes"
-        subtitle="Manage dish recipes and auto-calculate product cost from storage items"
-        backButton={<BackButton />}
         actions={
           <>
             <HeaderActionButton
-              icon={MdCalculate}
-              label="Recalculate all"
+              icon={<MdCalculate size={16} />}
               onClick={handleRecalculateAll}
-            />
+            >
+              Recalculate all
+            </HeaderActionButton>
             <HeaderActionButton
-              icon={MdMenuBook}
-              label="Add recipe"
+              variant="primary"
+              icon={<MdMenuBook size={16} />}
               onClick={handleCreateRecipe}
-            />
+            >
+              Add recipe
+            </HeaderActionButton>
           </>
         }
       />

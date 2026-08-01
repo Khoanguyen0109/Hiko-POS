@@ -3,7 +3,7 @@ import type { MongoFilter } from "../types/mongo.js";
 
 import createHttpError from "http-errors";
 import mongoose from "mongoose";
-import StorageExport from "../models/storageExportModel.js";
+import StorageExport, { STORAGE_EXPORT_REASONS } from "../models/storageExportModel.js";
 import StorageItem from "../models/storageItemModel.js";
 
 // Create export record
@@ -30,9 +30,8 @@ const createStorageExport = async (req, res, next) => {
             return next(createHttpError(400, "Reason is required"));
         }
 
-        const validReasons = ['production', 'waste', 'damage', 'theft', 'transfer', 'other'];
-        if (!validReasons.includes(reason)) {
-            return next(createHttpError(400, `Reason must be one of: ${validReasons.join(', ')}`));
+        if (!STORAGE_EXPORT_REASONS.includes(reason)) {
+            return next(createHttpError(400, `Reason must be one of: ${STORAGE_EXPORT_REASONS.join(', ')}`));
         }
 
         // Validate storage item exists and is active
@@ -266,9 +265,8 @@ const updateStorageExport = async (req, res, next) => {
 
         // Update reason if provided
         if (reason) {
-            const validReasons = ['production', 'waste', 'damage', 'theft', 'transfer', 'other'];
-            if (!validReasons.includes(reason)) {
-                return next(createHttpError(400, `Reason must be one of: ${validReasons.join(', ')}`));
+            if (!STORAGE_EXPORT_REASONS.includes(reason)) {
+                return next(createHttpError(400, `Reason must be one of: ${STORAGE_EXPORT_REASONS.join(', ')}`));
             }
             exportRecord.reason = reason;
         }

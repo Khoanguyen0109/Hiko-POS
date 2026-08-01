@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, memo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import PropTypes from "prop-types";
 import { IoMdAdd, IoMdMedkit, IoMdTrash } from "react-icons/io";
-import { MdInventory, MdToggleOn, MdToggleOff, MdWarning } from "react-icons/md";
+import { MdInventory, MdToggleOn, MdToggleOff } from "react-icons/md";
 import {
   fetchStorageItems,
   removeStorageItem,
@@ -177,12 +177,11 @@ const StorageItems = () => {
           />
         ) : (
           <div className="overflow-x-auto rounded-lg border border-[#343434]">
-            <table className="w-full min-w-[600px]">
+            <table className="w-full min-w-[520px]">
               <thead className="bg-[#262626]">
                 <tr>
                   <th className={`${thClass} sticky left-0 bg-[#262626] z-[1]`}>Item</th>
-                  <th className={thClass}>Stock</th>
-                  <th className={thClass}>Status</th>
+                  <th className={thClass}>Avg Cost</th>
                   <th className={`${thClass} text-right`}>Actions</th>
                 </tr>
               </thead>
@@ -210,22 +209,9 @@ const StorageItems = () => {
                         </div>
                       </td>
                       <td className={tdClass}>
-                        <div className="flex items-center gap-2">
-                          {isOut && <MdWarning size={14} className="text-red-400 flex-shrink-0" />}
-                          {isLow && !isOut && <MdWarning size={14} className="text-yellow-400 flex-shrink-0" />}
-                          <span className={isOut ? "text-red-400 font-bold" : isLow ? "text-yellow-300 font-semibold" : ""}>
-                            {item.currentStock} {item.unit}
-                          </span>
-                          <span className="text-[#ababab] text-xs">/ {item.maxStock}</span>
-                        </div>
-                      </td>
-                      <td className={tdClass}>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          item.isActive
-                            ? "bg-green-900/30 text-green-400 border border-green-800"
-                            : "bg-red-900/30 text-red-400 border border-red-800"
-                        }`}>
-                          {item.isActive ? "Active" : "Inactive"}
+                        {(item.averageCost ?? 0).toLocaleString("vi-VN")}
+                        <span className="ml-1 text-[#ababab] text-xs">
+                          VND{item.unit ? `/${item.unit}` : ""}
                         </span>
                       </td>
                       <td className={`${tdClass} text-right`}>
