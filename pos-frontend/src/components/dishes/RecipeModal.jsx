@@ -1,7 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
 import { MdClose, MdAdd, MdDelete, MdCalculate } from "react-icons/md";
+import Autocomplete from "../shared/Autocomplete";
+import {
+  buildRecipeStorageItemOptions,
+  filterStorageItemOption,
+  renderRecipeStorageItemOption,
+} from "../storage/storageItemAutocompleteUtils";
 import { saveRecipe, fetchRecipeByDishId, clearCurrentRecipe } from "../../redux/slices/recipeSlice";
 import { fetchStorageItems } from "../../redux/slices/storageItemSlice";
 import { fetchDishes } from "../../redux/slices/dishSlice";
@@ -10,7 +16,6 @@ import { formatVND } from "../../utils";
 import {
   calculateRecipeLineCost,
   formatPackageLabel,
-  formatStorageItemOptionLabel,
   getDefaultRecipeUnit,
   getRecipeTotalCost,
   getRecipeUnitOptions,
@@ -49,6 +54,16 @@ const RecipeModal = ({ isOpen, onClose, dish, onSuccess }) => {
   const [useVariants, setUseVariants] = useState(false);
 
   const activeDish = selectedDish || dish;
+
+  const storageItemOptions = useMemo(
+    () => buildRecipeStorageItemOptions(storageItems, formatVND),
+    [storageItems]
+  );
+
+  const renderStorageOption = useCallback(
+    (option) => renderRecipeStorageItemOption(option, formatVND, formatPackageLabel),
+    []
+  );
 
   const calculateIngredientCost = useCallback(() => {
     if (useVariants) {
@@ -291,19 +306,19 @@ const RecipeModal = ({ isOpen, onClose, dish, onSuccess }) => {
     return (
       <div key={index} className="grid grid-cols-12 gap-2 items-start bg-[#1a1a1a] p-3 rounded-lg">
         <div className="col-span-12 sm:col-span-5">
-          <select
+          <Autocomplete
+            name={`storageItemId-${index}`}
             value={line.storageItemId}
-            onChange={(e) => updateIngredient(index, "storageItemId", e.target.value, variantIndex)}
+            onChange={(e) =>
+              updateIngredient(index, "storageItemId", e.target.value, variantIndex)
+            }
+            options={storageItemOptions}
+            placeholder="Search storage item by name or code..."
+            filterOption={filterStorageItemOption}
+            renderOption={renderStorageOption}
             required
-            className="w-full bg-[#262626] border border-[#343434] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
-          >
-            <option value="">Select storage item</option>
-            {storageItems.map((item) => (
-              <option key={item._id} value={item._id}>
-                {formatStorageItemOptionLabel(item, formatVND)}
-              </option>
-            ))}
-          </select>
+            noOptionsText="No storage items found"
+          />
           {packageLabel && (
             <p className="text-[#ababab] text-xs mt-1">{packageLabel}</p>
           )}
