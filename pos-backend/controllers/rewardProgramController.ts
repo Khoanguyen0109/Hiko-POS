@@ -171,7 +171,19 @@ const deleteRewardProgram = async (req, res, next) => {
 const getRewardAnalytics = async (req, res, next) => {
     try {
         const period = (req.query.period as string) || "30d";
-        const analytics = await RewardService.getRewardAnalytics(period);
+        const scopeAll = req.query.scope === "all";
+
+        let storeIds: import("mongoose").Types.ObjectId[] = [];
+        let scope: "all" | "single" = "single";
+
+        if (scopeAll) {
+            const Store = (await import("../models/storeModel.js")).default;
+            const stores = await Store.find({ isActive: true }).select("_id").lean();
+            storeIds = stores.map((s) => s._id);
+            scope = "all";
+        }
+
+        const analytics = await RewardService.getRewardAnalytics(period, { scope, storeIds });
 
         res.status(200).json({ success: true, data: analytics });
     } catch (error) {

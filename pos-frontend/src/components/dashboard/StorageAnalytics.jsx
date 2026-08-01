@@ -5,10 +5,11 @@ import { MdStorage, MdWarning, MdTrendingUp, MdTrendingDown } from "react-icons/
 import { formatVND } from "../../utils";
 import { getTodayDateVietnam, getDateRangeByPeriodVietnam } from "../../utils/dateUtils";
 import LoadingState from "../shared/LoadingState";
+import StoreSummariesTable from "./StoreSummariesTable";
 
 const StorageAnalytics = ({ dateFilter, customDateRange }) => {
     const dispatch = useDispatch();
-    const { summary, items, loading, error } = useSelector((state) => state.storageAnalytics);
+    const { summary, items, storeSummaries, scope, loading, error } = useSelector((state) => state.storageAnalytics);
 
     useEffect(() => {
         const params = {};
@@ -40,7 +41,7 @@ const StorageAnalytics = ({ dateFilter, customDateRange }) => {
             }
         }
 
-        dispatch(fetchStorageAnalytics(params));
+        dispatch(fetchStorageAnalytics({ ...params, scope: "all" }));
     }, [dispatch, dateFilter, customDateRange]);
 
     if (loading) {
@@ -70,6 +71,10 @@ const StorageAnalytics = ({ dateFilter, customDateRange }) => {
     return (
         <div className="container mx-auto px-4 md:px-6">
             <div className="space-y-4 sm:space-y-6 lg:space-y-8">
+                {scope === "all" && (
+                    <p className="text-sm text-[#ababab]">All stores · storage inventory analytics</p>
+                )}
+
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
                     <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
@@ -117,6 +122,19 @@ const StorageAnalytics = ({ dateFilter, customDateRange }) => {
                     </div>
                 </div>
 
+                {storeSummaries?.length > 0 && (
+                    <StoreSummariesTable
+                        title="Storage by Store"
+                        summaries={storeSummaries}
+                        columns={[
+                            { key: "totalItems", label: "Items", format: (row) => row.summary?.totalItems ?? 0 },
+                            { key: "lowStockItems", label: "Low Stock", format: (row) => row.summary?.lowStockItems ?? 0 },
+                            { key: "totalImportCost", label: "Import Cost", format: (row) => formatVND(row.summary?.totalImportCost || 0) },
+                            { key: "totalExportCost", label: "Export Cost", format: (row) => formatVND(row.summary?.totalExportCost || 0) },
+                        ]}
+                    />
+                )}
+
                 {/* Storage Items Table */}
                 <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
                     <div className="flex items-center gap-3 mb-4 sm:mb-6">
@@ -128,6 +146,9 @@ const StorageAnalytics = ({ dateFilter, customDateRange }) => {
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-[#343434]">
+                                    {scope === "all" && (
+                                        <th className="text-left py-3 px-2 sm:px-4 text-[#ababab] text-xs sm:text-sm font-medium">Store</th>
+                                    )}
                                     <th className="text-left py-3 px-2 sm:px-4 text-[#ababab] text-xs sm:text-sm font-medium">Item</th>
                                     <th className="text-right py-3 px-2 sm:px-4 text-[#ababab] text-xs sm:text-sm font-medium">Stock</th>
                                     <th className="text-right py-3 px-2 sm:px-4 text-[#ababab] text-xs sm:text-sm font-medium">Import Cost</th>
@@ -148,6 +169,11 @@ const StorageAnalytics = ({ dateFilter, customDateRange }) => {
                                             key={item._id}
                                             className={`border-b border-[#343434] transition-colors ${rowBg}`}
                                         >
+                                            {scope === "all" && (
+                                                <td className="py-3 px-2 sm:px-4 text-[#ababab] text-xs sm:text-sm whitespace-nowrap">
+                                                    {item.storeName}
+                                                </td>
+                                            )}
                                             <td className="py-3 px-2 sm:px-4">
                                                 <div className="flex flex-col">
                                                     <span className="text-[#f5f5f5] font-medium text-sm sm:text-base">

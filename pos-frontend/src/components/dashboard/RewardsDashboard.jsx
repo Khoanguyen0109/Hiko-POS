@@ -4,6 +4,8 @@ import { MdPeople, MdCardGiftcard, MdTrendingUp, MdLocalOffer } from "react-icon
 import { fetchRewardAnalytics } from "../../redux/slices/rewardSlice";
 import LoadingState from "../shared/LoadingState";
 import EmptyState from "../shared/EmptyState";
+import StoreSummariesTable from "./StoreSummariesTable";
+import { formatVND } from "../../utils";
 
 const PERIODS = [
   { label: "7D", value: "7d" },
@@ -18,7 +20,7 @@ const RewardsDashboard = () => {
   const [period, setPeriod] = useState("30d");
 
   useEffect(() => {
-    dispatch(fetchRewardAnalytics({ period }));
+    dispatch(fetchRewardAnalytics({ period, scope: "all" }));
   }, [dispatch, period]);
 
   if (analyticsLoading) {
@@ -43,10 +45,16 @@ const RewardsDashboard = () => {
     totalDiscountGiven = 0,
     programPerformance = [],
     topCustomers = [],
+    storeSummaries = [],
+    scope,
   } = analytics;
 
   return (
     <div className="space-y-4 sm:space-y-6 lg:space-y-8">
+      {scope === "all" && (
+        <p className="text-sm text-[#ababab]">All stores · rewards analytics</p>
+      )}
+
       {/* Period selector */}
       <div className="flex gap-2">
         {PERIODS.map((p) => (
@@ -105,11 +113,21 @@ const RewardsDashboard = () => {
             <span className="text-[#ababab] text-xs sm:text-sm">Period</span>
           </div>
           <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#f5f5f5] mb-1">
-            {totalDiscountGiven.toLocaleString()}
+            {formatVND(totalDiscountGiven)}
           </h3>
           <p className="text-[#ababab] text-xs sm:text-sm">Discount Given</p>
         </div>
       </div>
+
+      {storeSummaries?.length > 0 && (
+        <StoreSummariesTable
+          title="Rewards Redeemed by Store"
+          summaries={storeSummaries}
+          columns={[
+            { key: "rewardsRedeemed", label: "Redeemed" },
+          ]}
+        />
+      )}
 
       {/* Program Performance + Top Customers */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">

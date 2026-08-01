@@ -186,7 +186,11 @@ export const deleteRewardProgram = (id) => axiosWrapper.delete(`/api/reward-prog
 export const toggleRewardProgramStatus = (id) => axiosWrapper.patch(`/api/reward-program/${id}/toggle-status`);
 export const getRewardAnalytics = (params = {}) => {
   const queryParams = new URLSearchParams();
-  if (params.period) queryParams.append('period', params.period);
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== '' && value !== null && value !== undefined) {
+      queryParams.append(key, value);
+    }
+  });
   const queryString = queryParams.toString();
   return axiosWrapper.get(`/api/reward-program/analytics${queryString ? `?${queryString}` : ''}`);
 };

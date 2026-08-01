@@ -5,6 +5,7 @@ import createHttpError from "http-errors";
 import { Spending, SpendingCategory, Vendor } from "../models/spendingModel.js";
 import mongoose from "mongoose";
 import { getDateRangeVietnam, getCurrentVietnamTime, getStartOfDayVietnam, getEndOfDayVietnam, VIETNAM_TIMEZONE } from "../utils/dateUtils.js";
+import { resolveAnalyticsStoreScope } from "../utils/analyticsStoreScope.js";
 import { toZonedTime } from "date-fns-tz";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 
@@ -232,7 +233,7 @@ const getSpending = async (req, res, next) => {
         sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
         // Execute query with pagination
-        const [spending, totalCount] = await Promise.all([
+        const [spending, totalCount, amountAgg] = await Promise.all([
             Spending.find(query)
                 .populate('category', 'name description color')
                 .populate('vendor', 'name contactPerson phone')
@@ -240,8 +241,14 @@ const getSpending = async (req, res, next) => {
                 .sort(sortOptions)
                 .skip(skip)
                 .limit(limitNum),
-            Spending.countDocuments(query)
+            Spending.countDocuments(query),
+            Spending.aggregate([
+                { $match: query },
+                { $group: { _id: null, totalAmount: { $sum: '$amount' } } }
+            ])
         ]);
+
+        const totalAmount = amountAgg[0]?.totalAmount ?? 0;
 
         // Transform spending data to include createdBy details
         const transformedSpending = spending.map(item => {
@@ -277,6 +284,10 @@ const getSpending = async (req, res, next) => {
                 hasNextPage,
                 hasPrevPage,
                 limit: limitNum
+            },
+            summary: {
+                totalAmount,
+                totalCount
             },
             filters: {
                 startDate: startDate || null,
@@ -659,6 +670,25 @@ const deleteVendor = async (req, res, next) => {
 const getSpendingAnalytics = async (req, res, next) => {
     try {
         const { startDate, endDate, period = 'month' } = req.query;
+        const storeScope = await resolveAnalyticsStoreScope(req);
+
+        if (!storeScope.storeMatch) {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    scope: storeScope.scope,
+                    stores: [],
+                    storeSummaries: [],
+                    summary: { totalAmount: 0, totalTax: 0, totalWithTax: 0, count: 0, avgAmount: 0 },
+                    spendingByCategory: [],
+                    spendingByVendor: [],
+                    monthlyTrend: [],
+                    paymentStatusBreakdown: [],
+                    overdueSpending: [],
+                    period: { startDate: null, endDate: null, period }
+                }
+            });
+        }
         
         // Date range setup
         let start, end;
@@ -699,6 +729,12 @@ const getSpendingAnalytics = async (req, res, next) => {
         if (start) dateFilter.$gte = start;
         if (end) dateFilter.$lte = end;
 
+        const baseMatch: MongoFilter = {
+            store: storeScope.storeMatch,
+            status: 'active',
+            createdAt: dateFilter
+        };
+
         // Execute multiple analytics queries in parallel
         const [
             totalSpending,
@@ -706,11 +742,12 @@ const getSpendingAnalytics = async (req, res, next) => {
             spendingByVendor,
             monthlyTrend,
             paymentStatusBreakdown,
-            overdueSpending
+            overdueSpending,
+            storeSummaries
         ] = await Promise.all([
             // Total spending summary
             Spending.aggregate([
-                { $match: { store: req.store._id, status: 'active', createdAt: dateFilter } },
+                { $match: baseMatch },
                 {
                     $group: {
                         _id: null,
@@ -724,17 +761,17 @@ const getSpendingAnalytics = async (req, res, next) => {
             ]),
 
             // Spending by category
-            Spending.getSpendingByCategory(req.store._id, start, end),
+            Spending.getSpendingByCategory(storeScope.storeIdForStatics, start, end),
 
             // Spending by vendor
-            Spending.getSpendingByVendor(req.store._id, start, end),
+            Spending.getSpendingByVendor(storeScope.storeIdForStatics, start, end),
 
             // Monthly trend
-            Spending.getMonthlySpendingTrend(req.store._id, 12),
+            Spending.getMonthlySpendingTrend(storeScope.storeIdForStatics, 12),
 
             // Payment status breakdown
             Spending.aggregate([
-                { $match: { store: req.store._id, status: 'active', createdAt: dateFilter } },
+                { $match: baseMatch },
                 {
                     $group: {
                         _id: '$paymentStatus',
@@ -746,7 +783,7 @@ const getSpendingAnalytics = async (req, res, next) => {
 
             // Overdue spending
             Spending.find({
-                store: req.store._id,
+                store: storeScope.storeMatch,
                 status: 'active',
                 paymentStatus: { $in: ['pending', 'overdue'] },
                 dueDate: { $lt: getCurrentVietnamTime() }
@@ -754,12 +791,57 @@ const getSpendingAnalytics = async (req, res, next) => {
             .populate('category', 'name')
             .populate('vendor', 'name')
             .sort({ dueDate: 1 })
-            .limit(10)
+            .limit(10),
+
+            // Per-store breakdown (all-stores view)
+            storeScope.scope === 'all'
+                ? Spending.aggregate([
+                    { $match: baseMatch },
+                    {
+                        $group: {
+                            _id: '$store',
+                            totalAmount: { $sum: '$amount' },
+                            count: { $sum: 1 },
+                            pendingAmount: {
+                                $sum: {
+                                    $cond: [{ $eq: ['$paymentStatus', 'pending'] }, '$amount', 0]
+                                }
+                            }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'stores',
+                            localField: '_id',
+                            foreignField: '_id',
+                            as: 'storeInfo'
+                        }
+                    },
+                    { $unwind: '$storeInfo' },
+                    {
+                        $project: {
+                            _id: 0,
+                            store: {
+                                id: '$_id',
+                                name: '$storeInfo.name',
+                                code: '$storeInfo.code'
+                            },
+                            totalAmount: 1,
+                            count: 1,
+                            pendingAmount: 1
+                        }
+                    },
+                    { $sort: { totalAmount: -1 } }
+                ])
+                : Promise.resolve([])
         ]);
 
         res.status(200).json({
             success: true,
             data: {
+                scope: storeScope.scope,
+                stores: storeScope.stores,
+                storeSummaries,
                 summary: totalSpending[0] || {
                     totalAmount: 0,
                     totalTax: 0,

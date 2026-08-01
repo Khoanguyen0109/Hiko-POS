@@ -50,7 +50,8 @@ const SpendingManager = () => {
     loading,
     error,
     filters: reduxFilters,
-    pagination: reduxPagination
+    pagination: reduxPagination,
+    filterSummary
   } = useSelector((state) => state.spending);
 
   // Get user role
@@ -308,6 +309,7 @@ const SpendingManager = () => {
             vendors={vendors}
             filters={localFilters}
             pagination={reduxPagination}
+            filterSummary={filterSummary}
             loading={loading}
             isAdmin={isAdmin}
             onFilterChange={handleFilterChange}
@@ -392,7 +394,8 @@ const SpendingRecords = ({
   categories, 
   vendors, 
   filters, 
-  pagination, 
+  pagination,
+  filterSummary,
   loading,
   isAdmin,
   onFilterChange,
@@ -535,6 +538,19 @@ const SpendingRecords = ({
         </div>
         </div>
       )}
+
+      {!loading && filterSummary.totalCount > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-[#343434] bg-[#262626] px-4 py-3">
+          <div>
+            <p className="text-xs text-[#ababab]">Filtered total</p>
+            <p className="text-xl font-bold text-brand">{formatVND(filterSummary.totalAmount)}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-xs text-[#ababab]">Records</p>
+            <p className="text-lg font-semibold text-[#f5f5f5]">{filterSummary.totalCount}</p>
+          </div>
+        </div>
+      ) : null}
 
       {/* Spending List */}
       <div className="bg-[#262626] rounded-lg border border-[#343434] overflow-hidden">
@@ -772,6 +788,10 @@ SpendingRecords.propTypes = {
   vendors: PropTypes.array.isRequired,
   filters: PropTypes.object.isRequired,
   pagination: PropTypes.object.isRequired,
+  filterSummary: PropTypes.shape({
+    totalAmount: PropTypes.number,
+    totalCount: PropTypes.number,
+  }).isRequired,
   loading: PropTypes.bool.isRequired,
   isAdmin: PropTypes.bool.isRequired,
   onFilterChange: PropTypes.func.isRequired,

@@ -6,6 +6,7 @@ import StorageItem from "../models/storageItemModel.js";
 import StorageImport from "../models/storageImportModel.js";
 import StorageExport from "../models/storageExportModel.js";
 import { getDateRangeVietnam } from "../utils/dateUtils.js";
+import { resolveAnalyticsStoreScope } from "../utils/analyticsStoreScope.js";
 import { PACKAGING_UNITS } from "../utils/unitConversion.js";
 
 const VALID_UNITS = ["kg", "g", "liter", "ml", "piece", "pack", "box", "bag"];
@@ -471,6 +472,27 @@ const getLowStockItems = async (req, res, next) => {
 const getStorageAnalytics = async (req, res, next) => {
     try {
         const { startDate, endDate } = req.query;
+        const storeScope = await resolveAnalyticsStoreScope(req);
+
+        if (!storeScope.storeMatch) {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    scope: storeScope.scope,
+                    stores: [],
+                    storeSummaries: [],
+                    summary: {
+                        totalItems: 0,
+                        lowStockItems: 0,
+                        totalImportCost: 0,
+                        totalExportCost: 0,
+                        totalImportQuantity: 0,
+                        totalExportQuantity: 0
+                    },
+                    items: []
+                }
+            });
+        }
 
         // Build date filter for imports/exports using Vietnam timezone
         const dateFilter: MongoFilter = {};
@@ -482,8 +504,11 @@ const getStorageAnalytics = async (req, res, next) => {
             dateFilter.importDate = importDateRange;
         }
 
-        // Get all active storage items with their imports and exports
-        const items = await StorageItem.find({ isActive: true, store: req.store._id })
+        // Get all active storage items for scoped store(s)
+        const items = await StorageItem.find({
+            isActive: true,
+            store: storeScope.storeMatch
+        })
             .sort({ name: 1 })
             .lean();
 
@@ -499,12 +524,12 @@ const getStorageAnalytics = async (req, res, next) => {
 
         // Get completed imports and exports within date range
         const importFilter = { 
-            store: req.store._id,
+            store: storeScope.storeMatch,
             status: 'completed',
             ...dateFilter
         };
         const exportFilter = { 
-            store: req.store._id,
+            store: storeScope.storeMatch,
             status: 'completed',
             ...exportDateFilter
         };
@@ -513,6 +538,10 @@ const getStorageAnalytics = async (req, res, next) => {
             StorageImport.find(importFilter).lean(),
             StorageExport.find(exportFilter).lean()
         ]);
+
+        const storeNameById = new Map(
+            storeScope.stores.map((store) => [store._id.toString(), store.name])
+        );
 
         // Calculate analytics for each item
         const analyticsData = items.map(item => {
@@ -556,9 +585,12 @@ const getStorageAnalytics = async (req, res, next) => {
             // For now, we'll use the stored currentStock value
             const currentStock = item.currentStock;
             const isLowStock = currentStock <= item.minStock;
+            const storeId = item.store?.toString?.() || String(item.store);
 
             return {
                 _id: item._id,
+                storeId,
+                storeName: storeNameById.get(storeId) || 'Unknown',
                 name: item.name,
                 code: item.code,
                 category: item.category,
@@ -587,9 +619,32 @@ const getStorageAnalytics = async (req, res, next) => {
             totalExportQuantity: analyticsData.reduce((sum, item) => sum + item.totalExportQuantity, 0)
         };
 
+        const storeSummaries = storeScope.scope === 'all'
+            ? storeScope.stores.map((store) => {
+                const storeId = store._id.toString();
+                const storeItems = analyticsData.filter((item) => item.storeId === storeId);
+                return {
+                    store: {
+                        id: store._id,
+                        name: store.name,
+                        code: store.code
+                    },
+                    summary: {
+                        totalItems: storeItems.length,
+                        lowStockItems: storeItems.filter((item) => item.isLowStock).length,
+                        totalImportCost: storeItems.reduce((sum, item) => sum + item.totalImportCost, 0),
+                        totalExportCost: storeItems.reduce((sum, item) => sum + item.totalExportCost, 0)
+                    }
+                };
+            })
+            : [];
+
         res.status(200).json({
             success: true,
             data: {
+                scope: storeScope.scope,
+                stores: storeScope.stores,
+                storeSummaries,
                 summary,
                 items: analyticsData
             }

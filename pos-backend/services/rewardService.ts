@@ -5,6 +5,7 @@ import RewardProgram from "../models/rewardProgramModel.js";
 import RewardLog from "../models/rewardLogModel.js";
 import Dish from "../models/dishModel.js";
 import Order from "../models/orderModel.js";
+import Store from "../models/storeModel.js";
 
 interface AvailableReward {
     rewardProgramId: Types.ObjectId;
@@ -384,7 +385,8 @@ class RewardService {
         return { updated };
     }
 
-    static async getRewardAnalytics(period: string) {
+    static async getRewardAnalytics(period: string, options: { scope?: "all" | "single"; storeIds?: Types.ObjectId[] } = {}) {
+        const { scope = "single", storeIds = [] } = options;
         const now = new Date();
         let startDate: Date;
 
@@ -396,6 +398,8 @@ class RewardService {
         }
 
         const previousStart = new Date(startDate.getTime() - (now.getTime() - startDate.getTime()));
+        const storeFilter = storeIds.length > 0 ? { store: { $in: storeIds } } : {};
+        const periodFilter = { createdAt: { $gte: startDate } };
 
         const [
             totalCustomers,
@@ -404,17 +408,20 @@ class RewardService {
             prevRewardsRedeemed,
             programPerformance,
             topCustomers,
-            customerSegments
+            customerSegments,
+            totalDiscountGiven,
+            returningCustomers,
+            storeSummariesRaw
         ] = await Promise.all([
             Customer.countDocuments(),
             Customer.countDocuments({ createdAt: { $gte: startDate } }),
-            RewardLog.countDocuments({ type: "reward_redeemed", createdAt: { $gte: startDate } }),
-            RewardLog.countDocuments({ type: "reward_redeemed", createdAt: { $gte: previousStart, $lt: startDate } }),
+            RewardLog.countDocuments({ type: "reward_redeemed", ...periodFilter, ...storeFilter }),
+            RewardLog.countDocuments({ type: "reward_redeemed", createdAt: { $gte: previousStart, $lt: startDate }, ...storeFilter }),
             RewardLog.aggregate([
-                { $match: { type: { $in: ["reward_unlocked", "reward_redeemed"] } } },
+                { $match: { type: { $in: ["reward_unlocked", "reward_redeemed"] }, ...storeFilter } },
                 { $group: { _id: { rewardProgram: "$rewardProgram", type: "$type" }, count: { $sum: 1 } } }
             ]),
-            Customer.find().sort({ totalDishCount: -1 }).limit(5).select("name phone totalDishCount"),
+            Customer.find().sort({ totalDishCount: -1 }).limit(10).select("name phone nickname totalDishCount"),
             Customer.aggregate([
                 {
                     $bucket: {
@@ -424,7 +431,50 @@ class RewardService {
                         output: { count: { $sum: 1 } }
                     }
                 }
-            ])
+            ]),
+            Order.aggregate([
+                {
+                    $match: {
+                        "appliedReward.discountAmount": { $gt: 0 },
+                        ...periodFilter,
+                        ...(storeIds.length > 0 ? { store: { $in: storeIds } } : {})
+                    }
+                },
+                { $group: { _id: null, total: { $sum: "$appliedReward.discountAmount" } } }
+            ]),
+            Customer.countDocuments({ totalDishCount: { $gt: 1 } }),
+            scope === "all"
+                ? RewardLog.aggregate([
+                    { $match: { type: "reward_redeemed", ...periodFilter } },
+                    {
+                        $group: {
+                            _id: "$store",
+                            rewardsRedeemed: { $sum: 1 }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: "stores",
+                            localField: "_id",
+                            foreignField: "_id",
+                            as: "storeInfo"
+                        }
+                    },
+                    { $unwind: "$storeInfo" },
+                    {
+                        $project: {
+                            _id: 0,
+                            store: {
+                                id: "$_id",
+                                name: "$storeInfo.name",
+                                code: "$storeInfo.code"
+                            },
+                            rewardsRedeemed: 1
+                        }
+                    },
+                    { $sort: { rewardsRedeemed: -1 } }
+                ])
+                : Promise.resolve([])
         ]);
 
         const programMap: Record<string, { unlocked: number; redeemed: number }> = {};
@@ -436,7 +486,9 @@ class RewardService {
 
         const programs = await RewardProgram.find().select("name type dishThreshold isActive eligibleCategories").populate("eligibleCategories", "name");
         const programStats = programs.map(p => ({
-            ...p.toObject(),
+            programId: p._id,
+            name: p.name,
+            type: p.type,
             unlocked: programMap[String(p._id)]?.unlocked || 0,
             redeemed: programMap[String(p._id)]?.redeemed || 0,
             redemptionRate: programMap[String(p._id)]?.unlocked
@@ -444,13 +496,27 @@ class RewardService {
                 : 0
         }));
 
+        const stores = scope === "all"
+            ? await Store.find({ isActive: true }).select("_id name code").sort({ name: 1 }).lean()
+            : [];
+
+        const retentionRate = totalCustomers > 0
+            ? Math.round((returningCustomers / totalCustomers) * 100)
+            : null;
+
         return {
+            scope,
+            stores,
+            storeSummaries: storeSummariesRaw,
             totalCustomers,
             newCustomers,
             rewardsRedeemed,
             rewardsRedeemedGrowth: prevRewardsRedeemed > 0
                 ? Math.round((rewardsRedeemed - prevRewardsRedeemed) / prevRewardsRedeemed * 100)
                 : 0,
+            retentionRate,
+            totalDiscountGiven: totalDiscountGiven[0]?.total || 0,
+            programPerformance: programStats,
             programStats,
             topCustomers,
             customerSegments

@@ -20,6 +20,7 @@ import { fetchSpendingDashboard } from "../redux/slices/spendingSlice";
 import DateFilterBar from "../components/shared/DateFilterBar";
 import LoadingState from "../components/shared/LoadingState";
 import EmptyState from "../components/shared/EmptyState";
+import StoreSummariesTable from "../components/dashboard/StoreSummariesTable";
 
 // Spending Analytics Component
 const SpendingAnalytics = ({ dashboardData, loading, error }) => {
@@ -49,11 +50,15 @@ const SpendingAnalytics = ({ dashboardData, loading, error }) => {
     );
   }
 
-  const { summary, spendingByCategory, spendingByVendor, monthlyTrend, paymentStatusBreakdown } = dashboardData;
+  const { summary, spendingByCategory, spendingByVendor, monthlyTrend, paymentStatusBreakdown, storeSummaries, scope } = dashboardData;
 
   return (
     <div className="container mx-auto px-4 md:px-6">
       <div className="space-y-4 sm:space-y-6 lg:space-y-8">
+        {scope === "all" && (
+          <p className="text-sm text-[#ababab]">All stores · aggregated spending analytics</p>
+        )}
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
           <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
@@ -127,9 +132,9 @@ const SpendingAnalytics = ({ dashboardData, loading, error }) => {
           </div>
 
           <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
-            <h3 className="text-[#f5f5f5] font-semibold text-base sm:text-lg mb-3 sm:mb-4">Top Categories</h3>
+            <h3 className="text-[#f5f5f5] font-semibold text-base sm:text-lg mb-3 sm:mb-4">Categories</h3>
             <div className="space-y-2 sm:space-y-3">
-              {spendingByCategory?.slice(0, 5).map((item) => (
+              {spendingByCategory?.length > 0 ? spendingByCategory.map((item) => (
                 <div key={item._id} className="flex items-center justify-between py-2 border-b border-[#343434] last:border-b-0">
                   <div className="flex-1 min-w-0 pr-2">
                     <p className="text-[#f5f5f5] font-medium text-sm sm:text-base truncate">{item.categoryName}</p>
@@ -140,10 +145,24 @@ const SpendingAnalytics = ({ dashboardData, loading, error }) => {
                     <p className="text-[#ababab] text-xs">Avg: {formatVND(item.avgAmount)}</p>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <p className="text-[#ababab] text-center py-4 text-sm">No category data available</p>
+              )}
             </div>
           </div>
         </div>
+
+        {storeSummaries?.length > 0 && (
+          <StoreSummariesTable
+            title="Spending by Store"
+            summaries={storeSummaries}
+            columns={[
+              { key: "totalAmount", label: "Total", format: (row) => formatVND(row.totalAmount || 0) },
+              { key: "count", label: "Records" },
+              { key: "pendingAmount", label: "Pending", format: (row) => formatVND(row.pendingAmount || 0) },
+            ]}
+          />
+        )}
 
         {/* Top Vendors & Monthly Trend */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
@@ -204,7 +223,9 @@ SpendingAnalytics.propTypes = {
     spendingByCategory: PropTypes.arrayOf(PropTypes.object),
     spendingByVendor: PropTypes.arrayOf(PropTypes.object),
     monthlyTrend: PropTypes.arrayOf(PropTypes.object),
-    paymentStatusBreakdown: PropTypes.arrayOf(PropTypes.object)
+    paymentStatusBreakdown: PropTypes.arrayOf(PropTypes.object),
+    storeSummaries: PropTypes.arrayOf(PropTypes.object),
+    scope: PropTypes.string
   }),
   loading: PropTypes.bool,
   error: PropTypes.string
@@ -272,6 +293,7 @@ const Dashboard = () => {
       } else if (dateFilter !== "custom") {
         params.period = dateFilter; // today, week, month
       }
+      params.scope = "all";
       
       dispatch(fetchSpendingDashboard(params));
     }

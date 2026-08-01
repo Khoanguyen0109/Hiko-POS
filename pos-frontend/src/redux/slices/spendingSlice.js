@@ -26,7 +26,8 @@ export const fetchSpending = createAsyncThunk("spending/fetchAll", async (params
     const { data } = await getSpending(params);
     return {
       items: data.data || [],
-      pagination: data.pagination || {}
+      pagination: data.pagination || {},
+      summary: data.summary || { totalAmount: 0, totalCount: 0 }
     };
   } catch (error) {
     return thunkAPI.rejectWithValue(error.response?.data?.message || "Failed to fetch spending records");
@@ -196,6 +197,10 @@ const initialState = {
     totalItems: 0,
     itemsPerPage: 10
   },
+  filterSummary: {
+    totalAmount: 0,
+    totalCount: 0
+  },
   
   // Categories
   categories: [],
@@ -295,6 +300,7 @@ const spendingSlice = createSlice({
         state.loading = false;
         state.items = action.payload.items;
         state.pagination = action.payload.pagination;
+        state.filterSummary = action.payload.summary;
       })
       .addCase(fetchSpending.rejected, (state, action) => {
         state.loading = false;

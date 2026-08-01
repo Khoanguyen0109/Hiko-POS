@@ -21,6 +21,8 @@ const storageAnalyticsSlice = createSlice({
     initialState: {
         summary: null,
         items: [],
+        storeSummaries: [],
+        scope: "single",
         loading: false,
         error: null
     },
@@ -39,6 +41,8 @@ const storageAnalyticsSlice = createSlice({
                 state.loading = false;
                 state.summary = action.payload.summary;
                 state.items = action.payload.items;
+                state.storeSummaries = action.payload.storeSummaries || [];
+                state.scope = action.payload.scope || "single";
                 state.error = null;
             })
             .addCase(fetchStorageAnalytics.rejected, (state, action) => {
