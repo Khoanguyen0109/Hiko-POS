@@ -298,7 +298,8 @@ const getAllMembersSalarySummary = async (req, res, next) => {
             totalRegularSalary: 0,
             totalExtraWorkPayment: 0,
             totalSalary: 0,
-            totalTickets: 0
+            totalTickets: 0,
+            totalTicketScore: 0
         };
 
         for (const store of stores) {
@@ -314,7 +315,8 @@ const getAllMembersSalarySummary = async (req, res, next) => {
                 totalRegularSalary: 0,
                 totalExtraWorkPayment: 0,
                 totalSalary: 0,
-                totalTickets: 0
+                totalTickets: 0,
+                totalTicketScore: 0
             };
 
             for (const member of storeMembers) {
@@ -396,6 +398,7 @@ const getAllMembersSalarySummary = async (req, res, next) => {
                 storeSummary.totalExtraWorkPayment += summary.extraWorkPayment;
                 storeSummary.totalSalary += summary.totalSalary;
                 storeSummary.totalTickets += tickets.count;
+                storeSummary.totalTicketScore = (storeSummary.totalTicketScore || 0) + tickets.totalScore;
             }
 
             memberSummaries.sort(
@@ -429,6 +432,7 @@ const getAllMembersSalarySummary = async (req, res, next) => {
             overallSummary.totalExtraWorkPayment += storeSummary.totalExtraWorkPayment;
             overallSummary.totalSalary += storeSummary.totalSalary;
             overallSummary.totalTickets += storeSummary.totalTickets;
+            overallSummary.totalTicketScore += storeSummary.totalTicketScore;
         }
 
         const periodInfo: SalaryPeriodInfo = {
@@ -546,7 +550,8 @@ const getAllMembersSalarySummary = async (req, res, next) => {
                     totalRegularSalary: Math.round(overallSummary.totalRegularSalary * 100) / 100,
                     totalExtraWorkPayment: Math.round(overallSummary.totalExtraWorkPayment * 100) / 100,
                     totalSalary: Math.round(overallSummary.totalSalary * 100) / 100,
-                    totalTickets: overallSummary.totalTickets
+                    totalTickets: overallSummary.totalTickets,
+                    totalTicketScore: overallSummary.totalTicketScore
                 },
                 stores: storeSummaries,
                 members: flatMembers,

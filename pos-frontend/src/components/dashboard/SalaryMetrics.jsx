@@ -10,6 +10,11 @@ import {
   MdConfirmationNumber as TicketIcon
 } from 'react-icons/md';
 
+const POINT_COST = 10000;
+
+const calcFinalSalary = (totalSalary, totalPoints) =>
+  (totalSalary || 0) - POINT_COST * (totalPoints || 0);
+
 const SalaryMetrics = ({ dateFilter, customDateRange }) => {
   const dispatch = useDispatch();
   const { summaryData, loading, error } = useSelector(state => state.salary);
@@ -85,7 +90,7 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
     );
   }, [stores, membersSummary]);
 
-  const emptyColSpan = 1 + storeColumns.length + 3;
+  const emptyColSpan = 1 + storeColumns.length + 4;
 
   // Format currency (no dollar sign, as per previous requirements)
   const formatCurrency = (amount) => {
@@ -259,17 +264,17 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
           </p>
         </div>
 
-        {/* Total Tickets */}
+        {/* Total Points */}
         <div className="bg-[#262626] rounded-lg p-4 sm:p-5 border border-[#343434]">
           <div className="flex items-center gap-2 mb-2">
             <TicketIcon className="text-lg text-[#8B5CF6]" />
-            <h4 className="text-sm font-medium text-[#f5f5f5]">Total Tickets</h4>
+            <h4 className="text-sm font-medium text-[#f5f5f5]">Total Points</h4>
           </div>
           <p className="text-xl sm:text-2xl font-bold text-[#f5f5f5] mb-1">
-            {overallSummary?.totalTickets || 0}
+            {overallSummary?.totalTicketScore || 0}
           </p>
           <p className="text-xs text-[#ababab]">
-            Member tickets in selected period
+            Ticket points in selected period
           </p>
         </div>
       </div>
@@ -303,10 +308,13 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
                   Total Hours
                 </th>
                 <th className="px-4 py-3 text-right text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider whitespace-nowrap">
-                  Total Tickets
+                  Total Points
                 </th>
                 <th className="px-4 py-3 text-right text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider whitespace-nowrap">
                   Total Salary
+                </th>
+                <th className="px-4 py-3 text-right text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider whitespace-nowrap">
+                  Final Salary
                 </th>
               </tr>
             </thead>
@@ -351,12 +359,17 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
                     </td>
                     <td className="px-4 py-3 sm:py-4 text-right whitespace-nowrap">
                       <p className="text-sm font-medium text-[#f5f5f5]">
-                        {row.totalTickets ?? 0}
+                        {row.totalTicketScore ?? 0}
                       </p>
                     </td>
                     <td className="px-4 py-3 sm:py-4 text-right whitespace-nowrap">
                       <p className="text-sm sm:text-base font-bold text-brand">
                         {formatCurrency(row.totalSalary)}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3 sm:py-4 text-right whitespace-nowrap">
+                      <p className="text-sm sm:text-base font-bold text-[#10B981]">
+                        {formatCurrency(calcFinalSalary(row.totalSalary, row.totalTicketScore))}
                       </p>
                     </td>
                   </tr>
