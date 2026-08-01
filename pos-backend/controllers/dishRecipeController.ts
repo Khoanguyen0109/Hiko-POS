@@ -36,7 +36,11 @@ interface RecipeBody {
 }
 
 const recipePopulate = [
-    { path: "dishId", select: "name image category hasSizeVariants sizeVariants price cost" },
+    {
+        path: "dishId",
+        select: "name image category hasSizeVariants sizeVariants price cost",
+        populate: { path: "category", select: "name" },
+    },
     { path: "ingredients.storageItemId", select: "name code unit averageCost currentStock" },
     { path: "sizeVariantRecipes.ingredients.storageItemId", select: "name code unit averageCost currentStock" },
 ];

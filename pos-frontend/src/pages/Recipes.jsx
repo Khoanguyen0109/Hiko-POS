@@ -22,6 +22,7 @@ import {
   recalculateToppingRecipeCosts,
 } from "../redux/slices/toppingRecipeSlice";
 import { fetchDishes } from "../redux/slices/dishSlice";
+import { fetchCategories } from "../redux/slices/categorySlice";
 import { fetchToppings } from "../redux/slices/toppingSlice";
 import { enqueueSnackbar } from "notistack";
 import { formatVND } from "../utils";
@@ -105,6 +106,47 @@ const getSizeTotalCostSummary = (recipes, size) => {
   };
 };
 
+const getDishCategoryName = (dish, categoryById) => {
+  if (!dish?.category) return "Uncategorized";
+
+  if (typeof dish.category === "object" && dish.category.name) {
+    return dish.category.name;
+  }
+
+  const category = categoryById.get(String(dish.category));
+  return category?.name || "Uncategorized";
+};
+
+const getFoodCostByCategory = (recipes, categoryById) => {
+  const buckets = new Map();
+
+  for (const recipe of recipes) {
+    const dish = getDishFromRecipe(recipe);
+    if (!dish) continue;
+
+    const categoryName = getDishCategoryName(dish, categoryById);
+    const percents = collectDishFoodCostPercents(recipe);
+    if (percents.length === 0) continue;
+
+    if (!buckets.has(categoryName)) {
+      buckets.set(categoryName, { percents: [], recipeCount: 0 });
+    }
+
+    const bucket = buckets.get(categoryName);
+    bucket.percents.push(...percents);
+    bucket.recipeCount += 1;
+  }
+
+  return [...buckets.entries()]
+    .map(([category, { percents, recipeCount }]) => ({
+      category,
+      avgFoodCost: getAverageFoodCostPercent(percents),
+      recipeCount,
+      sampleCount: percents.length,
+    }))
+    .sort((a, b) => a.category.localeCompare(b.category, "vi"));
+};
+
 const getDishFoodCostPercent = (recipe) => {
   const percents = collectDishFoodCostPercents(recipe);
   if (percents.length === 0) return "—";
@@ -130,6 +172,7 @@ const Recipes = () => {
     loading: toppingLoading,
     error: toppingError,
   } = useSelector((state) => state.toppingRecipes);
+  const { items: categories } = useSelector((state) => state.categories);
 
   const [activeTab, setActiveTab] = useState("dishes");
   const [search, setSearch] = useState("");
@@ -141,7 +184,13 @@ const Recipes = () => {
   useEffect(() => {
     dispatch(fetchRecipes({ limit: 100 }));
     dispatch(fetchToppingRecipes({ limit: 100 }));
+    dispatch(fetchCategories());
   }, [dispatch]);
+
+  const categoryById = useMemo(
+    () => new Map(categories.map((category) => [String(category._id), category])),
+    [categories]
+  );
 
   const filteredDishRecipes = useMemo(() => {
     if (!search.trim()) return dishRecipes;
@@ -190,6 +239,14 @@ const Recipes = () => {
         ? getSizeTotalCostSummary(filteredDishRecipes, "Large")
         : { total: null, recipeCount: 0 },
     [activeTab, filteredDishRecipes]
+  );
+
+  const foodCostByCategory = useMemo(
+    () =>
+      activeTab === "dishes"
+        ? getFoodCostByCategory(filteredDishRecipes, categoryById)
+        : [],
+    [activeTab, filteredDishRecipes, categoryById]
   );
 
   const handleRecalculateAll = async () => {
@@ -318,6 +375,38 @@ const Recipes = () => {
             </>
           ) : null}
         </div>
+
+        {activeTab === "dishes" && foodCostByCategory.length > 0 ? (
+          <div className="mb-4">
+            <h2 className="mb-3 text-xs font-medium uppercase tracking-wider text-[#ababab]">
+              Food cost by category
+            </h2>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {foodCostByCategory.map((entry) => (
+                <div
+                  key={entry.category}
+                  className="rounded-lg border border-[#343434] bg-[#262626] p-4"
+                >
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="truncate text-sm font-medium text-[#f5f5f5]">
+                      {entry.category}
+                    </span>
+                    <MdPieChart className="shrink-0 text-base text-brand" />
+                  </div>
+                  <p className="text-lg font-bold text-[#f5f5f5] sm:text-xl">
+                    {entry.avgFoodCost !== null ? `${entry.avgFoodCost.toFixed(1)}%` : "—"}
+                  </p>
+                  <p className="mt-1 text-xs text-[#6a6a6a]">
+                    {entry.recipeCount} recipe{entry.recipeCount === 1 ? "" : "s"}
+                    {entry.sampleCount !== entry.recipeCount
+                      ? ` · ${entry.sampleCount} sizes`
+                      : ""}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <div className="mb-4">
           <input
