@@ -134,8 +134,8 @@ const SpendingManager = () => {
     const reduxFilterFormat = {
       startDate: localFilters.startDate || null,
       endDate: localFilters.endDate || null,
-      categoryId: localFilters.category !== "all" ? localFilters.category : null,
-      vendorId: localFilters.vendor !== "all" ? localFilters.vendor : null,
+      category: localFilters.category !== "all" ? localFilters.category : null,
+      vendor: localFilters.vendor !== "all" ? localFilters.vendor : null,
       paymentStatus: localFilters.paymentStatus !== "all" ? localFilters.paymentStatus : null
     };
     

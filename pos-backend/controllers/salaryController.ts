@@ -449,6 +449,91 @@ const getAllMembersSalarySummary = async (req, res, next) => {
 
         const flatMembers = storeSummaries.flatMap((storeBlock) => storeBlock.members);
 
+        const memberTicketTotalMap = new Map<string, { count: number; totalScore: number }>();
+        for (const row of ticketAgg) {
+            const memberId = row._id.member.toString();
+            const existing = memberTicketTotalMap.get(memberId) || { count: 0, totalScore: 0 };
+            existing.count += row.count;
+            existing.totalScore += row.totalScore;
+            memberTicketTotalMap.set(memberId, existing);
+        }
+
+        const membersSummaryMap = new Map<string, Record<string, unknown>>();
+
+        for (const storeBlock of storeSummaries) {
+            const storeId = storeBlock.store.id.toString();
+
+            for (const entry of storeBlock.members) {
+                const memberId = entry.member.id.toString();
+
+                if (!membersSummaryMap.has(memberId)) {
+                    membersSummaryMap.set(memberId, {
+                        member: entry.member,
+                        storeSalaries: {},
+                        storeTickets: {},
+                        totalHours: 0,
+                        totalSalary: 0,
+                        totalTickets: 0,
+                        totalTicketScore: 0
+                    });
+                }
+
+                const row = membersSummaryMap.get(memberId)!;
+                row.storeSalaries[storeId] = entry.summary.totalSalary;
+                row.storeTickets[storeId] = entry.tickets?.count || 0;
+                row.totalHours += entry.summary.totalHours;
+                row.totalSalary += entry.summary.totalSalary;
+            }
+        }
+
+        const missingMemberIds = [...memberTicketTotalMap.keys()].filter(
+            (memberId) => !membersSummaryMap.has(memberId)
+        );
+
+        if (missingMemberIds.length > 0) {
+            const ticketOnlyMembers = await User.find({
+                _id: { $in: missingMemberIds },
+                role: { $ne: "Admin" }
+            }).select("_id name salary role");
+
+            for (const member of ticketOnlyMembers) {
+                const memberId = member._id.toString();
+                membersSummaryMap.set(memberId, {
+                    member: {
+                        id: member._id,
+                        name: member.name,
+                        role: member.role,
+                        hourlyRate: member.salary || 0
+                    },
+                    storeSalaries: {},
+                    storeTickets: {},
+                    totalHours: 0,
+                    totalSalary: 0,
+                    totalTickets: 0,
+                    totalTicketScore: 0
+                });
+            }
+        }
+
+        for (const [memberId, tickets] of memberTicketTotalMap) {
+            const row = membersSummaryMap.get(memberId);
+            if (!row) continue;
+            row.totalTickets = tickets.count;
+            row.totalTicketScore = tickets.totalScore;
+        }
+
+        const membersSummary = [...membersSummaryMap.values()]
+            .map((row) => ({
+                member: row.member,
+                storeSalaries: row.storeSalaries,
+                storeTickets: row.storeTickets,
+                totalHours: Math.round(row.totalHours * 100) / 100,
+                totalTickets: row.totalTickets,
+                totalTicketScore: row.totalTicketScore,
+                totalSalary: Math.round(row.totalSalary * 100) / 100
+            }))
+            .sort((a, b) => b.totalSalary - a.totalSalary);
+
         res.status(200).json({
             success: true,
             data: {
@@ -464,7 +549,8 @@ const getAllMembersSalarySummary = async (req, res, next) => {
                     totalTickets: overallSummary.totalTickets
                 },
                 stores: storeSummaries,
-                members: flatMembers
+                members: flatMembers,
+                membersSummary
             }
         });
 

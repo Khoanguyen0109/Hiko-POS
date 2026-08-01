@@ -58,3 +58,19 @@ export interface SalaryStoreBlock {
   };
   members: SalaryMemberBlock[];
 }
+
+/** Pivoted member row for salary dashboard (one row per member, stores as columns). */
+export interface SalaryMemberPivotRow {
+  member: {
+    id: unknown;
+    name: unknown;
+    role: unknown;
+    hourlyRate: number;
+  };
+  storeSalaries: Record<string, number>;
+  storeTickets: Record<string, number>;
+  totalHours: number;
+  totalTickets: number;
+  totalTicketScore: number;
+  totalSalary: number;
+}

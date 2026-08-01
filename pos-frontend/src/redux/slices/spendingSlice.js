@@ -227,8 +227,8 @@ const initialState = {
   filters: {
     startDate: null,
     endDate: null,
-    categoryId: null,
-    vendorId: null,
+    category: null,
+    vendor: null,
     paymentStatus: 'all',
     minAmount: null,
     maxAmount: null

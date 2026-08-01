@@ -39,6 +39,7 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
   }, [dispatch, dateFilter, customDateRange]);
 
   const stores = summaryData?.stores;
+  const membersSummary = summaryData?.membersSummary;
 
   const storeColumns = useMemo(
     () => (stores || []).map((block) => block.store),
@@ -46,6 +47,10 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
   );
 
   const memberRows = useMemo(() => {
+    if (membersSummary?.length) {
+      return [...membersSummary].sort((a, b) => b.totalSalary - a.totalSalary);
+    }
+
     const memberMap = new Map();
 
     for (const storeBlock of stores || []) {
@@ -61,6 +66,7 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
             storeSalaries: {},
             totalHours: 0,
             totalTickets: 0,
+            totalTicketScore: 0,
             totalSalary: 0,
           });
         }
@@ -69,6 +75,7 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
         row.storeSalaries[storeId] = entry.summary?.totalSalary || 0;
         row.totalHours += entry.summary?.totalHours || 0;
         row.totalTickets += entry.tickets?.count || 0;
+        row.totalTicketScore += entry.tickets?.totalScore || 0;
         row.totalSalary += entry.summary?.totalSalary || 0;
       }
     }
@@ -76,7 +83,7 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
     return [...memberMap.values()].sort(
       (a, b) => b.totalSalary - a.totalSalary
     );
-  }, [stores]);
+  }, [stores, membersSummary]);
 
   const emptyColSpan = 1 + storeColumns.length + 3;
 
@@ -344,8 +351,13 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
                     </td>
                     <td className="px-4 py-3 sm:py-4 text-right whitespace-nowrap">
                       <p className="text-sm font-medium text-[#f5f5f5]">
-                        {row.totalTickets}
+                        {row.totalTickets ?? 0}
                       </p>
+                      {(row.totalTicketScore ?? 0) > 0 && (
+                        <p className="text-xs text-[#ababab]">
+                          {row.totalTicketScore} pts
+                        </p>
+                      )}
                     </td>
                     <td className="px-4 py-3 sm:py-4 text-right whitespace-nowrap">
                       <p className="text-sm sm:text-base font-bold text-brand">
