@@ -73,6 +73,28 @@ const collectDishFoodCostPercents = (recipe) => {
   return price > 0 ? [(cost / price) * 100] : [];
 };
 
+const collectDishRecipeCosts = (recipe) => {
+  const dish = getDishFromRecipe(recipe);
+  if (!dish) return [];
+
+  if (dish.hasSizeVariants && dish.sizeVariants?.length > 0) {
+    return dish.sizeVariants
+      .map((variant) => {
+        const recipeVariant = recipe.sizeVariantRecipes?.find(
+          (entry) => entry.size === variant.size
+        );
+        if (!recipeVariant) return null;
+        return getRecipeTotalCost(
+          recipeVariant.totalIngredientCost || 0,
+          recipeVariant.otherCost
+        );
+      })
+      .filter((value) => value !== null);
+  }
+
+  return [getRecipeTotalCost(recipe.totalIngredientCost, recipe.otherCost)];
+};
+
 const collectToppingFoodCostPercents = (recipe) => {
   const topping = getToppingFromRecipe(recipe);
   if (!topping?.price) return [];
@@ -80,10 +102,12 @@ const collectToppingFoodCostPercents = (recipe) => {
   return [(cost / topping.price) * 100];
 };
 
-const getAverageFoodCostPercent = (percents) => {
-  if (percents.length === 0) return null;
-  return percents.reduce((sum, value) => sum + value, 0) / percents.length;
+const getAverageValue = (values) => {
+  if (values.length === 0) return null;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
 };
+
+const getAverageFoodCostPercent = (percents) => getAverageValue(percents);
 
 const getVariantTotalCost = (recipe, size) => {
   const variant = recipe.sizeVariantRecipes?.find((entry) => entry.size === size);
@@ -126,23 +150,26 @@ const getFoodCostByCategory = (recipes, categoryById) => {
 
     const categoryName = getDishCategoryName(dish, categoryById);
     const percents = collectDishFoodCostPercents(recipe);
-    if (percents.length === 0) continue;
+    const costs = collectDishRecipeCosts(recipe);
+    if (percents.length === 0 && costs.length === 0) continue;
 
     if (!buckets.has(categoryName)) {
-      buckets.set(categoryName, { percents: [], recipeCount: 0 });
+      buckets.set(categoryName, { percents: [], costs: [], recipeCount: 0 });
     }
 
     const bucket = buckets.get(categoryName);
     bucket.percents.push(...percents);
+    bucket.costs.push(...costs);
     bucket.recipeCount += 1;
   }
 
   return [...buckets.entries()]
-    .map(([category, { percents, recipeCount }]) => ({
+    .map(([category, { percents, costs, recipeCount }]) => ({
       category,
+      avgRecipeCost: getAverageValue(costs),
       avgFoodCost: getAverageFoodCostPercent(percents),
       recipeCount,
-      sampleCount: percents.length,
+      sampleCount: costs.length,
     }))
     .sort((a, b) => a.category.localeCompare(b.category, "vi"));
 };
@@ -393,8 +420,13 @@ const Recipes = () => {
                     </span>
                     <MdPieChart className="shrink-0 text-base text-brand" />
                   </div>
-                  <p className="text-lg font-bold text-[#f5f5f5] sm:text-xl">
+                  <p className="text-lg font-bold text-brand sm:text-xl">
+                    {entry.avgRecipeCost !== null ? formatVND(entry.avgRecipeCost) : "—"}
+                  </p>
+                  <p className="mt-1 text-xs text-[#ababab]">Avg recipe cost</p>
+                  <p className="mt-2 text-sm font-semibold text-[#f5f5f5]">
                     {entry.avgFoodCost !== null ? `${entry.avgFoodCost.toFixed(1)}%` : "—"}
+                    <span className="ml-1 text-xs font-normal text-[#6a6a6a]">food cost</span>
                   </p>
                   <p className="mt-1 text-xs text-[#6a6a6a]">
                     {entry.recipeCount} recipe{entry.recipeCount === 1 ? "" : "s"}
