@@ -25,6 +25,19 @@ import {
   VendorPerformanceChart
 } from "../charts";
 
+const CATEGORY_CARD_COLORS = [
+  BRAND_PRIMARY,
+  "#025cca",
+  "#02ca3a",
+  "#be3e3f",
+  "#5b45b0",
+  "#285430",
+  "#735f32",
+  "#7f167f",
+  "#ff6b6b",
+  "#4ecdc4",
+];
+
 const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endDate: "" } }) => {
   const dispatch = useDispatch();
   
@@ -275,6 +288,53 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
     ];
   }, [dishes, categories, spendingData]);
 
+  const dishesSoldByCategory = useMemo(() => {
+    const completedOrders = orders?.filter((order) => order.orderStatus === "completed") || [];
+    const categoryTotals = {};
+
+    const resolveCategoryName = (item) => {
+      if (item.category) return item.category;
+
+      const dishRef = item.dishId;
+      if (dishRef && typeof dishRef === "object") {
+        if (dishRef.category) {
+          return typeof dishRef.category === "object" ? dishRef.category.name : dishRef.category;
+        }
+      }
+
+      const dishId = typeof dishRef === "object" ? dishRef?._id : dishRef;
+      const dish = dishes?.find((d) => d._id === dishId);
+      if (dish?.category) {
+        const catId = typeof dish.category === "object" ? dish.category._id : dish.category;
+        return categories?.find((c) => c._id === catId)?.name || "Unknown";
+      }
+
+      return "Unknown";
+    };
+
+    completedOrders.forEach((order) => {
+      order.items?.forEach((item) => {
+        const categoryName = resolveCategoryName(item);
+        categoryTotals[categoryName] = (categoryTotals[categoryName] || 0) + (item.quantity || 0);
+      });
+    });
+
+    const totalSold = Object.values(categoryTotals).reduce((sum, qty) => sum + qty, 0);
+
+    return Object.entries(categoryTotals)
+      .sort(([, a], [, b]) => b - a)
+      .map(([name, quantity], index) => {
+        const category = categories?.find((c) => c.name === name);
+        return {
+          title: name,
+          value: quantity.toString(),
+          percentage: totalSold > 0 ? `${((quantity / totalSold) * 100).toFixed(1)}%` : "0%",
+          color: category?.color || CATEGORY_CARD_COLORS[index % CATEGORY_CARD_COLORS.length],
+          isIncrease: true,
+        };
+      });
+  }, [orders, categories, dishes]);
+
   // Get display label for current date filter
   const getDateFilterLabel = () => {
     switch (dateFilter) {
@@ -412,6 +472,47 @@ const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endD
             })}
 
         </div>
+      </div>
+
+      {/* Dishes Sold by Category */}
+      <div className="mt-8 sm:mt-10 lg:mt-12">
+        <div className="mb-4 sm:mb-6">
+          <h2 className="font-semibold text-[#f5f5f5] text-lg sm:text-xl">
+            Dishes Sold by Category
+          </h2>
+          <p className="text-xs sm:text-sm text-[#ababab]">
+            Total dishes sold per menu category for {getDateFilterLabel().toLowerCase()}
+          </p>
+        </div>
+
+        {dishesSoldByCategory.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
+            {dishesSoldByCategory.map((category) => (
+              <div
+                key={category.title}
+                className="shadow-sm rounded-lg p-3 sm:p-4"
+                style={{ backgroundColor: category.color }}
+              >
+                <div className="flex justify-between items-start gap-2">
+                  <p className="font-medium text-xs text-[#f5f5f5] leading-tight truncate" title={category.title}>
+                    {category.title}
+                  </p>
+                  <p className="font-medium text-[10px] sm:text-xs text-[#f5f5f5] flex-shrink-0">
+                    {category.percentage}
+                  </p>
+                </div>
+                <p className="mt-1.5 sm:mt-2 font-semibold text-xl sm:text-2xl text-[#f5f5f5]">
+                  {category.value}
+                </p>
+                <p className="text-[10px] sm:text-xs text-[#f5f5f5]/80 mt-1">dishes sold</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-[#262626] rounded-lg p-6 border border-[#343434] text-center">
+            <p className="text-[#ababab] text-sm">No dish sales recorded for this period</p>
+          </div>
+        )}
       </div>
 
       {/* Charts Section */}
