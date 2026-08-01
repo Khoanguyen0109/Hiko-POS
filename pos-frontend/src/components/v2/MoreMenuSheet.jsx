@@ -84,6 +84,7 @@ function buildMoreMenuSections({ isAdmin, canManageTickets }) {
             label: "Menu Management",
             items: [
               { path: ROUTES.DISHES, icon: <BiSolidDish size={18} />, label: "Dishes" },
+              { path: ROUTES.RECIPES, icon: <MdMenuBook size={18} />, label: "Recipes" },
               { path: ROUTES.CATEGORIES, icon: <MdCategory size={18} />, label: "Categories" },
               { path: ROUTES.TOPPINGS, icon: <MdLocalOffer size={18} />, label: "Toppings" },
               { path: ROUTES.PROMOTIONS, icon: <MdLocalOffer size={18} />, label: "Promotions" },

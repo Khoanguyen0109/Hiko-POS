@@ -99,7 +99,14 @@ SummaryStrip.propTypes = {
   ).isRequired,
 };
 
-const DayCheckoutRow = ({ checkout, isAdmin, onEdit, onDelete, deleteLoading }) => {
+const DayCheckoutRow = ({
+  checkout,
+  canEditCheckout,
+  canDeleteCheckout,
+  onEdit,
+  onDelete,
+  deleteLoading,
+}) => {
   const cashOk = checkout.cashDifference === 0;
   const bankingOk = checkout.bankingDifference === 0;
 
@@ -150,28 +157,32 @@ const DayCheckoutRow = ({ checkout, isAdmin, onEdit, onDelete, deleteLoading }) 
       <td className={`${tdClass} max-w-[180px] truncate text-[#ababab]`}>
         {checkout.notes || "—"}
       </td>
-      {isAdmin ? (
+      {canEditCheckout || canDeleteCheckout ? (
         <td className={`${tdClass} text-right`}>
           <div className="flex items-center justify-end gap-1">
-            <button
-              type="button"
-              onClick={() => onEdit(checkout)}
-              className="rounded-lg p-2 text-brand transition-colors hover:bg-brand-20"
-              title="View / edit"
-              aria-label="View or edit checkout"
-            >
-              <MdEdit size={18} />
-            </button>
-            <button
-              type="button"
-              onClick={() => onDelete(checkout)}
-              disabled={deleteLoading}
-              className="rounded-lg p-2 text-red-400 transition-colors hover:bg-red-900/20 disabled:opacity-50"
-              title="Delete checkout"
-              aria-label="Delete checkout"
-            >
-              <MdDelete size={18} />
-            </button>
+            {canEditCheckout ? (
+              <button
+                type="button"
+                onClick={() => onEdit(checkout)}
+                className="rounded-lg p-2 text-brand transition-colors hover:bg-brand-20"
+                title="View / edit"
+                aria-label="View or edit checkout"
+              >
+                <MdEdit size={18} />
+              </button>
+            ) : null}
+            {canDeleteCheckout ? (
+              <button
+                type="button"
+                onClick={() => onDelete(checkout)}
+                disabled={deleteLoading}
+                className="rounded-lg p-2 text-red-400 transition-colors hover:bg-red-900/20 disabled:opacity-50"
+                title="Delete checkout"
+                aria-label="Delete checkout"
+              >
+                <MdDelete size={18} />
+              </button>
+            ) : null}
           </div>
         </td>
       ) : null}
@@ -181,7 +192,8 @@ const DayCheckoutRow = ({ checkout, isAdmin, onEdit, onDelete, deleteLoading }) 
 
 DayCheckoutRow.propTypes = {
   checkout: PropTypes.object.isRequired,
-  isAdmin: PropTypes.bool,
+  canEditCheckout: PropTypes.bool,
+  canDeleteCheckout: PropTypes.bool,
   onEdit: PropTypes.func.isRequired,
   onDelete: PropTypes.func.isRequired,
   deleteLoading: PropTypes.bool,
@@ -196,6 +208,7 @@ const ShiftCheckout = () => {
   const isAdmin = role === "Admin";
   const canViewDay =
     isAdmin || storeRole === "Owner" || storeRole === "Manager";
+  const canEditCheckout = canViewDay;
 
   const {
     myShifts,
@@ -437,7 +450,7 @@ const ShiftCheckout = () => {
                   <th className={thClass}>Diff</th>
                   <th className={thClass}>Status</th>
                   <th className={thClass}>Notes</th>
-                  {isAdmin ? (
+                  {(canEditCheckout || isAdmin) ? (
                     <th className={`${thClass} text-right`}>Actions</th>
                   ) : null}
                 </tr>
@@ -447,7 +460,8 @@ const ShiftCheckout = () => {
                   <DayCheckoutRow
                     key={c._id}
                     checkout={c}
-                    isAdmin={isAdmin}
+                    canEditCheckout={canEditCheckout}
+                    canDeleteCheckout={isAdmin}
                     onEdit={openCheckoutFromDay}
                     onDelete={handleDeleteCheckout}
                     deleteLoading={deleteLoading}
@@ -488,7 +502,7 @@ const ShiftCheckout = () => {
         scheduleId={selectedScheduleId}
         memberId={selectedMemberId}
         refreshDate={activeTab === TABS.DAY ? dayDate : selectedDate}
-        isAdmin={isAdmin}
+        canEditCheckout={canEditCheckout}
         onSuccess={() => {
           dispatch(fetchMyShiftCheckouts({ date: selectedDate }));
           if (activeTab === TABS.DAY && canViewDay) {

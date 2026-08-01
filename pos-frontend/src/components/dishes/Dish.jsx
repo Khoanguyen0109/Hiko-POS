@@ -12,7 +12,7 @@ import { enqueueSnackbar } from "notistack";
 import biryani from "../../assets/images/hyderabadibiryani.jpg";
 import { formatVND } from "../../utils";
 
-const Dish = ({ dish, onEdit }) => {
+const Dish = ({ dish, onEdit, onRecipe }) => {
   const dispatch = useDispatch();
   const [selectedVariant, setSelectedVariant] = useState(() => {
     if (dish.hasSizeVariants && dish.sizeVariants?.length > 0) {
@@ -55,6 +55,13 @@ const Dish = ({ dish, onEdit }) => {
     }
   };
 
+
+  const handleRecipeDish = (e) => {
+    e.stopPropagation();
+    if (onRecipe) {
+      onRecipe(dish);
+    }
+  };
 
   const handleToggleAvailability = async (e) => {
     e.stopPropagation();
@@ -280,6 +287,14 @@ const Dish = ({ dish, onEdit }) => {
       )}
 
       <div className="flex justify-end mt-4 items-center gap-2">
+        <button
+          onClick={handleRecipeDish}
+          className="p-2 rounded-lg bg-amber-900/30 text-amber-400 hover:bg-amber-900/50 border border-amber-800 transition-colors duration-200"
+          title="Manage recipe"
+        >
+          <MdMenuBook size={18} />
+        </button>
+
         {/* Edit Button */}
         <button
           onClick={handleEditDish}
@@ -340,6 +355,7 @@ Dish.propTypes = {
     ),
   }).isRequired,
   onEdit: PropTypes.func,
+  onRecipe: PropTypes.func,
 };
 
 export default Dish;

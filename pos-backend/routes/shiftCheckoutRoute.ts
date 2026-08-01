@@ -45,7 +45,12 @@ router.route("/").post(isVerifiedUser, storeContext, submitCheckout);
 router
   .route("/:id")
   .get(isVerifiedUser, storeContext, getById)
-  .patch(isVerifiedUser, storeContext, isAdmin, updateCheckout)
+  .patch(
+    isVerifiedUser,
+    storeContext,
+    isStoreRole("Owner", "Manager"),
+    updateCheckout
+  )
   .delete(isVerifiedUser, storeContext, isAdmin, deleteCheckout);
 
 export default router;

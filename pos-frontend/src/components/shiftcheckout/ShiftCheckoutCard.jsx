@@ -73,15 +73,30 @@ const ShiftCheckoutCard = ({
         ) : null}
 
         {checkout ? (
-          <ShiftMetricsGrid
-            totalBill={getTotalBill(checkout)}
-            orderCount={checkout.orderCount}
-            expectedCash={checkout.expectedCash}
-            expectedBanking={checkout.expectedBanking}
-            countedCash={checkout.countedCash}
-            countedBanking={checkout.countedBanking}
-            showCounted
-          />
+          <>
+            <ShiftMetricsGrid
+              totalBill={getTotalBill(checkout)}
+              orderCount={checkout.orderCount}
+              expectedCash={checkout.expectedCash}
+              expectedBanking={checkout.expectedBanking}
+              countedCash={checkout.countedCash}
+              countedBanking={checkout.countedBanking}
+              showCounted
+            />
+            {checkIn ? (
+              <p className="mt-2 text-xs text-[#6a6a6a]">
+                Shift collected:{" "}
+                <span className="text-[#ababab]">
+                  {formatVND(checkout.countedCash - checkIn.openingCash)}
+                </span>
+                {" · "}
+                Expected drawer:{" "}
+                <span className="text-[#ababab]">
+                  {formatVND(checkIn.openingCash + checkout.expectedCash)}
+                </span>
+              </p>
+            ) : null}
+          </>
         ) : expectedPreview ? (
           <ShiftMetricsGrid
             totalBill={getTotalBill(expectedPreview)}

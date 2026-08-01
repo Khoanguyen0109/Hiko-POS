@@ -226,12 +226,13 @@ const updateCheckout = async (req, res, next) => {
       return next(createHttpError(400, "Invalid checkout ID"));
     }
 
-    const { countedCash, countedBanking, notes } = req.body;
+    const { countedCash, countedBanking, notes, openingCash } = req.body;
 
     const checkout = await updateShiftCheckout(id, req.store._id, {
       countedCash,
       countedBanking,
       notes,
+      openingCash,
     });
 
     res.status(200).json({

@@ -151,6 +151,11 @@ const Sidebar = ({ isOpen, onClose, onOpen }) => {
                 label: "Dishes",
               },
               {
+                path: ROUTES.RECIPES,
+                icon: <MdMenuBook size={18} />,
+                label: "Recipes",
+              },
+              {
                 path: ROUTES.CATEGORIES,
                 icon: <MdCategory size={18} />,
                 label: "Categories",

@@ -329,6 +329,32 @@ export const cancelStorageExport = (id) => axiosWrapper.patch(`/api/storage/expo
 // Storage Analytics
 export const getStorageAnalytics = (params) => axiosWrapper.get("/api/storage/analytics", { params });
 
+// Recipe Endpoints
+export const getAllRecipes = (params = {}) => {
+  const queryParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== "" && value !== null && value !== undefined) {
+      queryParams.append(key, value);
+    }
+  });
+  const queryString = queryParams.toString();
+  return axiosWrapper.get(`/api/recipe${queryString ? `?${queryString}` : ""}`);
+};
+export const getRecipeByDishId = (dishId) => axiosWrapper.get(`/api/recipe/dish/${dishId}`);
+export const createOrUpdateRecipe = (data) => axiosWrapper.post("/api/recipe", data);
+export const deleteRecipe = (dishId) => axiosWrapper.delete(`/api/recipe/dish/${dishId}`);
+export const recalculateAllCosts = () => axiosWrapper.post("/api/recipe/recalculate-all");
+export const calculateDishCost = (dishId, params = {}) => {
+  const queryParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== "" && value !== null && value !== undefined) {
+      queryParams.append(key, value);
+    }
+  });
+  const queryString = queryParams.toString();
+  return axiosWrapper.get(`/api/recipe/dish/${dishId}/cost${queryString ? `?${queryString}` : ""}`);
+};
+
 // Ticket Endpoints
 export {
   getTickets,

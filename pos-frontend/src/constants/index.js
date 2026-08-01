@@ -445,6 +445,7 @@ export const ROUTES = {
   DASHBOARD: "/dashboard",
   MENU_ORDER: "/menu-order",
   DISHES: "/dishes",
+  RECIPES: "/recipes",
   CATEGORIES: "/categories",
   MEMBERS: "/members",
   ACCOUNT_SETTINGS: "/account-settings",
@@ -509,6 +510,11 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.DISHES,
     componentName: "Dishes",
+    adminOnly: true
+  },
+  {
+    path: ROUTES.RECIPES,
+    componentName: "Recipes",
     adminOnly: true
   },
   {

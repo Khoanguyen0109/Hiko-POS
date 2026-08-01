@@ -222,6 +222,7 @@ export async function updateShiftCheckout(
     countedCash: number;
     countedBanking: number;
     notes?: string;
+    openingCash?: number;
   }
 ) {
   const checkout = await ShiftCheckout.findOne({
@@ -256,6 +257,19 @@ export async function updateShiftCheckout(
       member: checkout.member,
     }),
   ]);
+
+  if (
+    body.openingCash !== undefined &&
+    body.openingCash !== null &&
+    checkIn
+  ) {
+    const newOpeningCash = Number(body.openingCash);
+    if (Number.isNaN(newOpeningCash) || newOpeningCash < 0) {
+      throw createHttpError(400, "Opening cash must be a non-negative number");
+    }
+    checkIn.openingCash = newOpeningCash;
+    await checkIn.save();
+  }
 
   const openingCash = checkIn?.openingCash ?? 0;
   const shiftCollectedCash = countedCash - openingCash;

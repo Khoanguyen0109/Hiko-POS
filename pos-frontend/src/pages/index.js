@@ -7,6 +7,7 @@ export { default as Menu } from './Menu.jsx'
 export { default as Dashboard } from "./Dashboard.jsx"
 export { default as MenuOrder } from "./MenuOrder.jsx"
 export { default as Dishes } from "./dishes"
+export { default as Recipes } from "./Recipes.jsx"
 export { default as Categories } from "./Categories"
 export { default as Members } from "./Members"
 export { default as AccountSettings } from "./AccountSettings.jsx"
