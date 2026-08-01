@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchSalarySummary } from '../../redux/slices/salarySlice';
 import { 
@@ -37,6 +37,48 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
     const params = getApiParams();
     dispatch(fetchSalarySummary(params));
   }, [dispatch, dateFilter, customDateRange]);
+
+  const stores = summaryData?.stores;
+
+  const storeColumns = useMemo(
+    () => (stores || []).map((block) => block.store),
+    [stores]
+  );
+
+  const memberRows = useMemo(() => {
+    const memberMap = new Map();
+
+    for (const storeBlock of stores || []) {
+      const storeId = String(storeBlock.store?.id);
+
+      for (const entry of storeBlock.members || []) {
+        const memberId = String(entry.member?.id);
+        if (!memberId) continue;
+
+        if (!memberMap.has(memberId)) {
+          memberMap.set(memberId, {
+            member: entry.member,
+            storeSalaries: {},
+            totalHours: 0,
+            totalTickets: 0,
+            totalSalary: 0,
+          });
+        }
+
+        const row = memberMap.get(memberId);
+        row.storeSalaries[storeId] = entry.summary?.totalSalary || 0;
+        row.totalHours += entry.summary?.totalHours || 0;
+        row.totalTickets += entry.tickets?.count || 0;
+        row.totalSalary += entry.summary?.totalSalary || 0;
+      }
+    }
+
+    return [...memberMap.values()].sort(
+      (a, b) => b.totalSalary - a.totalSalary
+    );
+  }, [stores]);
+
+  const emptyColSpan = 1 + storeColumns.length + 3;
 
   // Format currency (no dollar sign, as per previous requirements)
   const formatCurrency = (amount) => {
@@ -89,18 +131,7 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
     );
   }
 
-  const { period, overallSummary, stores } = summaryData;
-
-  const tableRows = (stores || []).flatMap((storeBlock) =>
-    (storeBlock.members || []).map((member) => ({
-      ...member,
-      store: storeBlock.store,
-    }))
-  ).sort((a, b) => {
-    const storeCompare = (a.store?.name || '').localeCompare(b.store?.name || '');
-    if (storeCompare !== 0) return storeCompare;
-    return (b.summary?.totalSalary || 0) - (a.summary?.totalSalary || 0);
-  });
+  const { period, overallSummary } = summaryData;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -241,107 +272,91 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
         <div className="p-4 sm:p-5 lg:p-6 border-b border-[#343434]">
           <h3 className="text-lg font-semibold text-[#f5f5f5]">Member Breakdown</h3>
           <p className="text-sm text-[#ababab] mt-1">
-            Salary and tickets by store and member
+            One row per member — store columns show salary per location
           </p>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[640px]">
             <thead className="bg-[#1a1a1a]">
               <tr>
-                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
-                  Store
-                </th>
-                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
+                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider sticky left-0 bg-[#1a1a1a] z-10">
                   Member
                 </th>
-                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
-                  Hours
+                {storeColumns.map((store) => (
+                  <th
+                    key={store.id}
+                    className="px-4 py-3 text-right text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider whitespace-nowrap"
+                    title={store.name}
+                  >
+                    {store.name}
+                  </th>
+                ))}
+                <th className="px-4 py-3 text-right text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider whitespace-nowrap">
+                  Total Hours
                 </th>
-                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider hidden sm:table-cell">
-                  Regular
+                <th className="px-4 py-3 text-right text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider whitespace-nowrap">
+                  Total Tickets
                 </th>
-                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider hidden sm:table-cell">
-                  Extra Work
-                </th>
-                <th className="px-4 py-3 text-center text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
-                  Tickets
-                </th>
-                <th className="px-4 py-3 text-right text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
+                <th className="px-4 py-3 text-right text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider whitespace-nowrap">
                   Total Salary
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#343434]">
-              {tableRows.length > 0 ? (
-                tableRows.map((row) => (
+              {memberRows.length > 0 ? (
+                memberRows.map((row) => (
                   <tr
-                    key={`${row.store?.id}-${row.member.id}`}
+                    key={row.member.id}
                     className="hover:bg-[#1a1a1a]/50 transition-colors"
                   >
-                    <td className="px-4 py-3 sm:py-4">
-                      <p className="text-sm font-medium text-[#f5f5f5]">
-                        {row.store?.name}
+                    <td className="px-4 py-3 sm:py-4 sticky left-0 bg-[#262626] z-10">
+                      <p className="text-sm sm:text-base font-medium text-[#f5f5f5]">
+                        {row.member.name}
                       </p>
                       <p className="text-xs text-[#ababab] mt-0.5">
-                        {row.store?.code}
+                        {formatCurrency(row.member.hourlyRate || 0)}/hr
                       </p>
                     </td>
-                    <td className="px-4 py-3 sm:py-4">
-                      <div>
-                        <p className="text-sm sm:text-base font-medium text-[#f5f5f5]">
-                          {row.member.name}
-                        </p>
-                        <p className="text-xs text-[#ababab] mt-0.5">
-                          {formatCurrency(row.member.hourlyRate || 0)}/hr
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 sm:py-4">
-                      <p className="text-sm sm:text-base font-medium text-[#f5f5f5]">
-                        {formatHours(row.summary?.totalHours || 0)}
-                      </p>
-                      <p className="text-xs text-[#ababab] sm:hidden mt-0.5">
-                        {row.summary?.totalShifts || 0} shifts
-                      </p>
-                    </td>
-                    <td className="px-4 py-3 sm:py-4 hidden sm:table-cell">
-                      <p className="text-sm text-[#f5f5f5]">
-                        {formatHours(row.summary?.regularHours || 0)}h
-                      </p>
-                      <p className="text-xs text-[#ababab]">
-                        {formatCurrency(row.summary?.regularSalary || 0)}
+                    {storeColumns.map((store) => {
+                      const storeId = String(store.id);
+                      const salary = row.storeSalaries[storeId];
+                      const hasStore = Object.prototype.hasOwnProperty.call(
+                        row.storeSalaries,
+                        storeId
+                      );
+
+                      return (
+                        <td
+                          key={store.id}
+                          className="px-4 py-3 sm:py-4 text-right whitespace-nowrap"
+                        >
+                          <p className={`text-sm ${hasStore ? 'text-[#f5f5f5]' : 'text-[#ababab]'}`}>
+                            {hasStore ? formatCurrency(salary) : '—'}
+                          </p>
+                        </td>
+                      );
+                    })}
+                    <td className="px-4 py-3 sm:py-4 text-right whitespace-nowrap">
+                      <p className="text-sm font-medium text-[#f5f5f5]">
+                        {formatHours(row.totalHours)}
                       </p>
                     </td>
-                    <td className="px-4 py-3 sm:py-4 hidden sm:table-cell">
-                      <p className="text-sm text-[#f5f5f5]">
-                        {formatHours(row.summary?.extraWorkHours || 0)}h
-                      </p>
-                      <p className="text-xs text-[#ababab]">
-                        {formatCurrency(row.summary?.extraWorkPayment || 0)}
+                    <td className="px-4 py-3 sm:py-4 text-right whitespace-nowrap">
+                      <p className="text-sm font-medium text-[#f5f5f5]">
+                        {row.totalTickets}
                       </p>
                     </td>
-                    <td className="px-4 py-3 sm:py-4 text-center">
-                      <p className="text-sm sm:text-base font-medium text-[#f5f5f5]">
-                        {row.tickets?.count || 0}
-                      </p>
-                      <p className="text-xs text-[#ababab]">
-                        {row.tickets?.totalScore || 0} pts
-                      </p>
-                    </td>
-                    <td className="px-4 py-3 sm:py-4 text-right">
+                    <td className="px-4 py-3 sm:py-4 text-right whitespace-nowrap">
                       <p className="text-sm sm:text-base font-bold text-brand">
-                        {formatCurrency(row.summary?.totalSalary || 0)}
-                      </p>
-                      <p className="text-xs text-[#ababab] sm:hidden mt-0.5">
-                        {row.summary?.totalShifts || 0} shifts
+                        {formatCurrency(row.totalSalary)}
                       </p>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="px-4 py-8 text-center text-[#ababab]">
+                  <td colSpan={emptyColSpan} className="px-4 py-8 text-center text-[#ababab]">
                     <PeopleIcon size={32} className="mx-auto mb-2 text-[#ababab]" />
                     <p>No member salary data available</p>
                   </td>
