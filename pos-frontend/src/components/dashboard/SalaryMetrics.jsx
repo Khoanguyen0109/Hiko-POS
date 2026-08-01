@@ -353,11 +353,6 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
                       <p className="text-sm font-medium text-[#f5f5f5]">
                         {row.totalTickets ?? 0}
                       </p>
-                      {(row.totalTicketScore ?? 0) > 0 && (
-                        <p className="text-xs text-[#ababab]">
-                          {row.totalTicketScore} pts
-                        </p>
-                      )}
                     </td>
                     <td className="px-4 py-3 sm:py-4 text-right whitespace-nowrap">
                       <p className="text-sm sm:text-base font-bold text-brand">
