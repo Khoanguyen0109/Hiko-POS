@@ -425,6 +425,69 @@
       ]
     },
     {
+      "name": "Matcha caramel",
+      "category": "Matcha",
+      "prices": {
+        "Medium": 40000,
+        "Large": 45000
+      },
+      "instructions": "1. Xịt caramel vào thành ly theo hình tròn 2. Pha sữa đặc + Oatside (trong ly uống) + khuấy 3. Đánh matcha (latte) 4. Cho đá vào ly 5. Cho sữa đã pha vào ly 6. Đổ matcha (nhớ vét sạch)",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 3.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "CARAMEL",
+              "quantity": 15,
+              "unit": "ml",
+              "notes": "3 vòng"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 15.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_HAT",
+              "quantity": 100.0,
+              "unit": "ml"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 4.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "CARAMEL",
+              "quantity": 20,
+              "unit": "ml",
+              "notes": "4 vòng"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 20.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_HAT",
+              "quantity": 150.0,
+              "unit": "ml"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Americanomatcha",
       "category": "Matcha",
       "prices": {
@@ -708,6 +771,69 @@
             {
               "itemCode": "MUT001",
               "quantity": 60,
+              "unit": "g",
+              "notes": "4 muỗng"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Matcha Oreo",
+      "category": "Matcha",
+      "prices": {
+        "Medium": 48000,
+        "Large": 53000
+      },
+      "instructions": "1. Pha sữa đặc + Oatside trong ly uống 2. Đánh matcha (coldwhisk) 3. Cho đá 4. Cho hỗn hợp sữa vào ly 5. Đổ matcha 6. Rải Oreo 7. Húng lủi (1 ngọn)",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 4.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 15.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_HAT",
+              "quantity": 100.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "OREO01",
+              "quantity": 30,
+              "unit": "g",
+              "notes": "3 muỗng"
+            }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            {
+              "itemCode": "MAT001",
+              "quantity": 5.0,
+              "unit": "g"
+            },
+            {
+              "itemCode": "SUA_DAC",
+              "quantity": 20.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "SUA_HAT",
+              "quantity": 150.0,
+              "unit": "ml"
+            },
+            {
+              "itemCode": "OREO01",
+              "quantity": 40,
               "unit": "g",
               "notes": "4 muỗng"
             }
@@ -1255,11 +1381,6 @@
               "unit": "ml"
             },
             {
-              "itemCode": "SYR_MO",
-              "quantity": 20,
-              "unit": "ml"
-            },
-            {
               "itemCode": "TRALAI",
               "quantity": 1.875,
               "unit": "g"
@@ -1267,11 +1388,6 @@
             {
               "itemCode": "TRADEN",
               "quantity": 1.875,
-              "unit": "g"
-            },
-            {
-              "itemCode": "CU_NANG",
-              "quantity": 20,
               "unit": "g"
             }
           ]
@@ -1285,11 +1401,6 @@
               "unit": "ml"
             },
             {
-              "itemCode": "SYR_MO",
-              "quantity": 30,
-              "unit": "ml"
-            },
-            {
               "itemCode": "TRALAI",
               "quantity": 2.5,
               "unit": "g"
@@ -1297,11 +1408,6 @@
             {
               "itemCode": "TRADEN",
               "quantity": 2.5,
-              "unit": "g"
-            },
-            {
-              "itemCode": "CU_NANG",
-              "quantity": 30,
               "unit": "g"
             }
           ]
@@ -1604,6 +1710,33 @@
               "quantity": 150,
               "unit": "ml"
             }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Matcha Mochi",
+      "category": "Matcha",
+      "prices": {
+        "Medium": 65000,
+        "Large": 75000
+      },
+      "instructions": "1. Pha sữa đặc + Oatside trong ly uống 2. Đánh matcha (coldwhisk) 3. Cho đá 4. Cho hỗn hợp sữa vào ly 5. Đổ matcha 6. Cho mochi matcha vào hộp riêng kèm ly",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            { "itemCode": "MAT001", "quantity": 4.0, "unit": "g" },
+            { "itemCode": "SUA_DAC", "quantity": 15.0, "unit": "ml" },
+            { "itemCode": "SUA_HAT", "quantity": 100.0, "unit": "ml" }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            { "itemCode": "MAT001", "quantity": 5.0, "unit": "g" },
+            { "itemCode": "SUA_DAC", "quantity": 20.0, "unit": "ml" },
+            { "itemCode": "SUA_HAT", "quantity": 150.0, "unit": "ml" }
           ]
         }
       ]

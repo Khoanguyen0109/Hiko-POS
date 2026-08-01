@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { MdMenuBook, MdCalculate, MdEdit, MdRestaurant, MdLocalOffer, MdPieChart } from "react-icons/md";
+import {
+  MdMenuBook,
+  MdCalculate,
+  MdEdit,
+  MdRestaurant,
+  MdLocalOffer,
+  MdPieChart,
+  MdPayments,
+} from "react-icons/md";
 import FeaturePageHeader from "../components/shared/FeaturePageHeader";
 import LoadingState from "../components/shared/LoadingState";
 import EmptyState from "../components/shared/EmptyState";
@@ -76,6 +84,27 @@ const getAverageFoodCostPercent = (percents) => {
   return percents.reduce((sum, value) => sum + value, 0) / percents.length;
 };
 
+const getVariantTotalCost = (recipe, size) => {
+  const variant = recipe.sizeVariantRecipes?.find((entry) => entry.size === size);
+  if (!variant) return null;
+  return getRecipeTotalCost(variant.totalIngredientCost || 0, variant.otherCost);
+};
+
+const getSizeTotalCostSummary = (recipes, size) => {
+  const costs = recipes
+    .map((recipe) => getVariantTotalCost(recipe, size))
+    .filter((cost) => cost !== null);
+
+  if (costs.length === 0) {
+    return { total: null, recipeCount: 0 };
+  }
+
+  return {
+    total: costs.reduce((sum, cost) => sum + cost, 0),
+    recipeCount: costs.length,
+  };
+};
+
 const getDishFoodCostPercent = (recipe) => {
   const percents = collectDishFoodCostPercents(recipe);
   if (percents.length === 0) return "—";
@@ -147,6 +176,22 @@ const Recipes = () => {
     };
   }, [activeTab, filteredDishRecipes, filteredToppingRecipes]);
 
+  const mediumTotalCost = useMemo(
+    () =>
+      activeTab === "dishes"
+        ? getSizeTotalCostSummary(filteredDishRecipes, "Medium")
+        : { total: null, recipeCount: 0 },
+    [activeTab, filteredDishRecipes]
+  );
+
+  const largeTotalCost = useMemo(
+    () =>
+      activeTab === "dishes"
+        ? getSizeTotalCostSummary(filteredDishRecipes, "Large")
+        : { total: null, recipeCount: 0 },
+    [activeTab, filteredDishRecipes]
+  );
+
   const handleRecalculateAll = async () => {
     try {
       if (activeTab === "dishes") {
@@ -210,8 +255,8 @@ const Recipes = () => {
       <div className="px-4 sm:px-10 pb-6">
         {error && <ErrorBanner message={error} className="mb-4" />}
 
-        <div className="mb-4">
-          <div className="inline-block min-w-[220px] rounded-lg border border-[#343434] bg-[#262626] p-4 sm:p-5">
+        <div className="mb-4 flex flex-wrap gap-3">
+          <div className="min-w-[220px] flex-1 rounded-lg border border-[#343434] bg-[#262626] p-4 sm:max-w-xs sm:p-5">
             <div className="mb-3 flex items-center justify-between">
               <MdPieChart className="text-xl text-brand sm:text-2xl" />
               <span className="text-xs text-[#ababab] sm:text-sm">
@@ -234,6 +279,44 @@ const Recipes = () => {
               </p>
             ) : null}
           </div>
+
+          {activeTab === "dishes" ? (
+            <>
+              <div className="min-w-[220px] flex-1 rounded-lg border border-[#343434] bg-[#262626] p-4 sm:max-w-xs sm:p-5">
+                <div className="mb-3 flex items-center justify-between">
+                  <MdPayments className="text-xl text-blue-400 sm:text-2xl" />
+                  <span className="text-xs text-[#ababab] sm:text-sm">Medium</span>
+                </div>
+                <h3 className="mb-1 text-lg font-bold text-[#f5f5f5] sm:text-2xl">
+                  {mediumTotalCost.total !== null ? formatVND(mediumTotalCost.total) : "—"}
+                </h3>
+                <p className="text-xs text-[#ababab] sm:text-sm">Total recipe cost (M)</p>
+                {mediumTotalCost.recipeCount > 0 ? (
+                  <p className="mt-2 text-xs text-[#6a6a6a]">
+                    {mediumTotalCost.recipeCount} recipe
+                    {mediumTotalCost.recipeCount === 1 ? "" : "s"}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="min-w-[220px] flex-1 rounded-lg border border-[#343434] bg-[#262626] p-4 sm:max-w-xs sm:p-5">
+                <div className="mb-3 flex items-center justify-between">
+                  <MdPayments className="text-xl text-purple-400 sm:text-2xl" />
+                  <span className="text-xs text-[#ababab] sm:text-sm">Large</span>
+                </div>
+                <h3 className="mb-1 text-lg font-bold text-[#f5f5f5] sm:text-2xl">
+                  {largeTotalCost.total !== null ? formatVND(largeTotalCost.total) : "—"}
+                </h3>
+                <p className="text-xs text-[#ababab] sm:text-sm">Total recipe cost (L)</p>
+                {largeTotalCost.recipeCount > 0 ? (
+                  <p className="mt-2 text-xs text-[#6a6a6a]">
+                    {largeTotalCost.recipeCount} recipe
+                    {largeTotalCost.recipeCount === 1 ? "" : "s"}
+                  </p>
+                ) : null}
+              </div>
+            </>
+          ) : null}
         </div>
 
         <div className="mb-4">
