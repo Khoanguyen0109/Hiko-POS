@@ -7,7 +7,6 @@ import {
   MdAccessTime as TimeIcon,
   MdTrendingUp as TrendingUpIcon,
   MdWork as WorkIcon,
-  MdStore as StoreIcon,
   MdConfirmationNumber as TicketIcon
 } from 'react-icons/md';
 
@@ -92,75 +91,16 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
 
   const { period, overallSummary, stores } = summaryData;
 
-  const renderMemberRows = (members) => {
-    if (!members || members.length === 0) {
-      return (
-        <tr>
-          <td colSpan="6" className="px-4 py-6 text-center text-[#ababab]">
-            <PeopleIcon size={28} className="mx-auto mb-2 text-[#ababab]" />
-            <p>No member salary data for this store</p>
-          </td>
-        </tr>
-      );
-    }
-
-    return [...members]
-      .sort((a, b) => (b.summary?.totalSalary || 0) - (a.summary?.totalSalary || 0))
-      .map((member) => (
-        <tr key={member.member.id} className="hover:bg-[#1a1a1a]/50 transition-colors">
-          <td className="px-4 py-3 sm:py-4">
-            <div>
-              <p className="text-sm sm:text-base font-medium text-[#f5f5f5]">
-                {member.member.name}
-              </p>
-              <p className="text-xs text-[#ababab] mt-0.5">
-                {formatCurrency(member.member.hourlyRate || 0)}/hr
-              </p>
-            </div>
-          </td>
-          <td className="px-4 py-3 sm:py-4">
-            <p className="text-sm sm:text-base font-medium text-[#f5f5f5]">
-              {formatHours(member.summary?.totalHours || 0)}
-            </p>
-            <p className="text-xs text-[#ababab] sm:hidden mt-0.5">
-              {member.summary?.totalShifts || 0} shifts
-            </p>
-          </td>
-          <td className="px-4 py-3 sm:py-4 hidden sm:table-cell">
-            <p className="text-sm text-[#f5f5f5]">
-              {formatHours(member.summary?.regularHours || 0)}h
-            </p>
-            <p className="text-xs text-[#ababab]">
-              {formatCurrency(member.summary?.regularSalary || 0)}
-            </p>
-          </td>
-          <td className="px-4 py-3 sm:py-4 hidden sm:table-cell">
-            <p className="text-sm text-[#f5f5f5]">
-              {formatHours(member.summary?.extraWorkHours || 0)}h
-            </p>
-            <p className="text-xs text-[#ababab]">
-              {formatCurrency(member.summary?.extraWorkPayment || 0)}
-            </p>
-          </td>
-          <td className="px-4 py-3 sm:py-4 text-center">
-            <p className="text-sm sm:text-base font-medium text-[#f5f5f5]">
-              {member.tickets?.count || 0}
-            </p>
-            <p className="text-xs text-[#ababab]">
-              {member.tickets?.totalScore || 0} pts
-            </p>
-          </td>
-          <td className="px-4 py-3 sm:py-4 text-right">
-            <p className="text-sm sm:text-base font-bold text-brand">
-              {formatCurrency(member.summary?.totalSalary || 0)}
-            </p>
-            <p className="text-xs text-[#ababab] sm:hidden mt-0.5">
-              {member.summary?.totalShifts || 0} shifts
-            </p>
-          </td>
-        </tr>
-      ));
-  };
+  const tableRows = (stores || []).flatMap((storeBlock) =>
+    (storeBlock.members || []).map((member) => ({
+      ...member,
+      store: storeBlock.store,
+    }))
+  ).sort((a, b) => {
+    const storeCompare = (a.store?.name || '').localeCompare(b.store?.name || '');
+    if (storeCompare !== 0) return storeCompare;
+    return (b.summary?.totalSalary || 0) - (a.summary?.totalSalary || 0);
+  });
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -296,77 +236,121 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
         </div>
       </div>
 
-      {/* Store Breakdown */}
-      {stores && stores.length > 0 ? (
-        stores.map((storeBlock) => (
-          <div key={storeBlock.store.id} className="bg-[#262626] rounded-lg border border-[#343434]">
-            <div className="p-4 sm:p-5 lg:p-6 border-b border-[#343434]">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <StoreIcon size={22} className="text-brand flex-shrink-0" />
-                  <div>
-                    <h3 className="text-lg font-semibold text-[#f5f5f5]">
-                      {storeBlock.store.name}
-                    </h3>
-                    <p className="text-sm text-[#ababab] mt-0.5">
-                      {storeBlock.store.code} · {storeBlock.summary?.totalMembers || 0} members
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-4 text-sm">
-                  <div>
-                    <span className="text-[#ababab]">Salary: </span>
-                    <span className="font-semibold text-brand">
-                      {formatCurrency(storeBlock.summary?.totalSalary || 0)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[#ababab]">Tickets: </span>
-                    <span className="font-semibold text-[#f5f5f5]">
-                      {storeBlock.summary?.totalTickets || 0}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-[#1a1a1a]">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
-                      Member
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
-                      Hours
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider hidden sm:table-cell">
-                      Regular
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider hidden sm:table-cell">
-                      Extra Work
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
-                      Tickets
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
-                      Total Salary
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#343434]">
-                  {renderMemberRows(storeBlock.members)}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ))
-      ) : (
-        <div className="bg-[#262626] rounded-lg border border-[#343434] p-8 text-center">
-          <StoreIcon size={32} className="mx-auto mb-2 text-[#ababab]" />
-          <p className="text-[#ababab]">No store salary data available</p>
+      {/* Member Breakdown */}
+      <div className="bg-[#262626] rounded-lg border border-[#343434]">
+        <div className="p-4 sm:p-5 lg:p-6 border-b border-[#343434]">
+          <h3 className="text-lg font-semibold text-[#f5f5f5]">Member Breakdown</h3>
+          <p className="text-sm text-[#ababab] mt-1">
+            Salary and tickets by store and member
+          </p>
         </div>
-      )}
+
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-[#1a1a1a]">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
+                  Store
+                </th>
+                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
+                  Member
+                </th>
+                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
+                  Hours
+                </th>
+                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider hidden sm:table-cell">
+                  Regular
+                </th>
+                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider hidden sm:table-cell">
+                  Extra Work
+                </th>
+                <th className="px-4 py-3 text-center text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
+                  Tickets
+                </th>
+                <th className="px-4 py-3 text-right text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
+                  Total Salary
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#343434]">
+              {tableRows.length > 0 ? (
+                tableRows.map((row) => (
+                  <tr
+                    key={`${row.store?.id}-${row.member.id}`}
+                    className="hover:bg-[#1a1a1a]/50 transition-colors"
+                  >
+                    <td className="px-4 py-3 sm:py-4">
+                      <p className="text-sm font-medium text-[#f5f5f5]">
+                        {row.store?.name}
+                      </p>
+                      <p className="text-xs text-[#ababab] mt-0.5">
+                        {row.store?.code}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3 sm:py-4">
+                      <div>
+                        <p className="text-sm sm:text-base font-medium text-[#f5f5f5]">
+                          {row.member.name}
+                        </p>
+                        <p className="text-xs text-[#ababab] mt-0.5">
+                          {formatCurrency(row.member.hourlyRate || 0)}/hr
+                        </p>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 sm:py-4">
+                      <p className="text-sm sm:text-base font-medium text-[#f5f5f5]">
+                        {formatHours(row.summary?.totalHours || 0)}
+                      </p>
+                      <p className="text-xs text-[#ababab] sm:hidden mt-0.5">
+                        {row.summary?.totalShifts || 0} shifts
+                      </p>
+                    </td>
+                    <td className="px-4 py-3 sm:py-4 hidden sm:table-cell">
+                      <p className="text-sm text-[#f5f5f5]">
+                        {formatHours(row.summary?.regularHours || 0)}h
+                      </p>
+                      <p className="text-xs text-[#ababab]">
+                        {formatCurrency(row.summary?.regularSalary || 0)}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3 sm:py-4 hidden sm:table-cell">
+                      <p className="text-sm text-[#f5f5f5]">
+                        {formatHours(row.summary?.extraWorkHours || 0)}h
+                      </p>
+                      <p className="text-xs text-[#ababab]">
+                        {formatCurrency(row.summary?.extraWorkPayment || 0)}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3 sm:py-4 text-center">
+                      <p className="text-sm sm:text-base font-medium text-[#f5f5f5]">
+                        {row.tickets?.count || 0}
+                      </p>
+                      <p className="text-xs text-[#ababab]">
+                        {row.tickets?.totalScore || 0} pts
+                      </p>
+                    </td>
+                    <td className="px-4 py-3 sm:py-4 text-right">
+                      <p className="text-sm sm:text-base font-bold text-brand">
+                        {formatCurrency(row.summary?.totalSalary || 0)}
+                      </p>
+                      <p className="text-xs text-[#ababab] sm:hidden mt-0.5">
+                        {row.summary?.totalShifts || 0} shifts
+                      </p>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="px-4 py-8 text-center text-[#ababab]">
+                    <PeopleIcon size={32} className="mx-auto mb-2 text-[#ababab]" />
+                    <p>No member salary data available</p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };
