@@ -1,13 +1,13 @@
 import express from "express";
 import { getMonthlySalary, getAllMembersSalarySummary } from "../controllers/salaryController.js";
 import { isVerifiedUser, isAdmin } from "../middlewares/tokenVerification.js";
-import { storeContext } from "../middlewares/storeContext.js";
+import { storeContext, optionalStoreContext } from "../middlewares/storeContext.js";
 
 const router = express.Router();
 
-// Get salary summary for all members (Admin only) - Must come before /:year/:month
+// Get salary summary for all members across all stores (Admin only)
 router.route("/summary/all")
-    .get(isVerifiedUser, storeContext, isAdmin, getAllMembersSalarySummary);
+    .get(isVerifiedUser, optionalStoreContext, isAdmin, getAllMembersSalarySummary);
 
 // Get member's monthly salary (member can only view their own)
 router.route("/:year/:month")

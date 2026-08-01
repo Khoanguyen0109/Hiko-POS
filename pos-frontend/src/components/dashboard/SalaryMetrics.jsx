@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchSalarySummary } from '../../redux/slices/salarySlice';
 import { 
@@ -6,9 +6,10 @@ import {
   MdAttachMoney as MoneyIcon,
   MdAccessTime as TimeIcon,
   MdTrendingUp as TrendingUpIcon,
-  MdWork as WorkIcon
+  MdWork as WorkIcon,
+  MdStore as StoreIcon,
+  MdConfirmationNumber as TicketIcon
 } from 'react-icons/md';
-import { toVietnamTime } from '../../utils/dateUtils';
 
 const SalaryMetrics = ({ dateFilter, customDateRange }) => {
   const dispatch = useDispatch();
@@ -89,7 +90,77 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
     );
   }
 
-  const { period, overallSummary, members } = summaryData;
+  const { period, overallSummary, stores } = summaryData;
+
+  const renderMemberRows = (members) => {
+    if (!members || members.length === 0) {
+      return (
+        <tr>
+          <td colSpan="6" className="px-4 py-6 text-center text-[#ababab]">
+            <PeopleIcon size={28} className="mx-auto mb-2 text-[#ababab]" />
+            <p>No member salary data for this store</p>
+          </td>
+        </tr>
+      );
+    }
+
+    return [...members]
+      .sort((a, b) => (b.summary?.totalSalary || 0) - (a.summary?.totalSalary || 0))
+      .map((member) => (
+        <tr key={member.member.id} className="hover:bg-[#1a1a1a]/50 transition-colors">
+          <td className="px-4 py-3 sm:py-4">
+            <div>
+              <p className="text-sm sm:text-base font-medium text-[#f5f5f5]">
+                {member.member.name}
+              </p>
+              <p className="text-xs text-[#ababab] mt-0.5">
+                {formatCurrency(member.member.hourlyRate || 0)}/hr
+              </p>
+            </div>
+          </td>
+          <td className="px-4 py-3 sm:py-4">
+            <p className="text-sm sm:text-base font-medium text-[#f5f5f5]">
+              {formatHours(member.summary?.totalHours || 0)}
+            </p>
+            <p className="text-xs text-[#ababab] sm:hidden mt-0.5">
+              {member.summary?.totalShifts || 0} shifts
+            </p>
+          </td>
+          <td className="px-4 py-3 sm:py-4 hidden sm:table-cell">
+            <p className="text-sm text-[#f5f5f5]">
+              {formatHours(member.summary?.regularHours || 0)}h
+            </p>
+            <p className="text-xs text-[#ababab]">
+              {formatCurrency(member.summary?.regularSalary || 0)}
+            </p>
+          </td>
+          <td className="px-4 py-3 sm:py-4 hidden sm:table-cell">
+            <p className="text-sm text-[#f5f5f5]">
+              {formatHours(member.summary?.extraWorkHours || 0)}h
+            </p>
+            <p className="text-xs text-[#ababab]">
+              {formatCurrency(member.summary?.extraWorkPayment || 0)}
+            </p>
+          </td>
+          <td className="px-4 py-3 sm:py-4 text-center">
+            <p className="text-sm sm:text-base font-medium text-[#f5f5f5]">
+              {member.tickets?.count || 0}
+            </p>
+            <p className="text-xs text-[#ababab]">
+              {member.tickets?.totalScore || 0} pts
+            </p>
+          </td>
+          <td className="px-4 py-3 sm:py-4 text-right">
+            <p className="text-sm sm:text-base font-bold text-brand">
+              {formatCurrency(member.summary?.totalSalary || 0)}
+            </p>
+            <p className="text-xs text-[#ababab] sm:hidden mt-0.5">
+              {member.summary?.totalShifts || 0} shifts
+            </p>
+          </td>
+        </tr>
+      ));
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -100,6 +171,7 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
           <div>
             <h2 className="text-xl font-semibold text-[#f5f5f5]">Salary Summary</h2>
             <p className="text-sm text-[#ababab]">
+              All stores ·{' '}
               {period?.monthName && period?.year 
                 ? `${period.monthName} ${period.year}`
                 : period?.startDateString && period?.endDateString
@@ -166,7 +238,7 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
       </div>
 
       {/* Breakdown Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {/* Regular Hours */}
         <div className="bg-[#262626] rounded-lg p-4 sm:p-5 border border-[#343434]">
           <div className="flex items-center gap-2 mb-2">
@@ -208,100 +280,93 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
             Combined regular + extra work
           </p>
         </div>
-      </div>
 
-      {/* Members List */}
-      <div className="bg-[#262626] rounded-lg border border-[#343434]">
-        <div className="p-4 sm:p-5 lg:p-6 border-b border-[#343434]">
-          <h3 className="text-lg font-semibold text-[#f5f5f5]">Member Breakdown</h3>
-          <p className="text-sm text-[#ababab] mt-1">
-            Individual salary details for each member
+        {/* Total Tickets */}
+        <div className="bg-[#262626] rounded-lg p-4 sm:p-5 border border-[#343434]">
+          <div className="flex items-center gap-2 mb-2">
+            <TicketIcon className="text-lg text-[#8B5CF6]" />
+            <h4 className="text-sm font-medium text-[#f5f5f5]">Total Tickets</h4>
+          </div>
+          <p className="text-xl sm:text-2xl font-bold text-[#f5f5f5] mb-1">
+            {overallSummary?.totalTickets || 0}
+          </p>
+          <p className="text-xs text-[#ababab]">
+            Member tickets in selected period
           </p>
         </div>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-[#1a1a1a]">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
-                  Member
-                </th>
-                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
-                  Hours
-                </th>
-                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider hidden sm:table-cell">
-                  Regular
-                </th>
-                <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider hidden sm:table-cell">
-                  Extra Work
-                </th>
-                <th className="px-4 py-3 text-right text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
-                  Total Salary
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#343434]">
-              {members && members.length > 0 ? (
-                [...members]
-                  .sort((a, b) => (b.summary?.totalSalary || 0) - (a.summary?.totalSalary || 0))
-                  .map((member) => (
-                    <tr key={member.member.id} className="hover:bg-[#1a1a1a]/50 transition-colors">
-                      <td className="px-4 py-3 sm:py-4">
-                        <div>
-                          <p className="text-sm sm:text-base font-medium text-[#f5f5f5]">
-                            {member.member.name}
-                          </p>
-                          <p className="text-xs text-[#ababab] mt-0.5">
-                            {formatCurrency(member.member.hourlyRate || 0)}/hr
-                          </p>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 sm:py-4">
-                        <p className="text-sm sm:text-base font-medium text-[#f5f5f5]">
-                          {formatHours(member.summary?.totalHours || 0)}
-                        </p>
-                        <p className="text-xs text-[#ababab] sm:hidden mt-0.5">
-                          {member.summary?.totalShifts || 0} shifts
-                        </p>
-                      </td>
-                      <td className="px-4 py-3 sm:py-4 hidden sm:table-cell">
-                        <p className="text-sm text-[#f5f5f5]">
-                          {formatHours(member.summary?.regularHours || 0)}h
-                        </p>
-                        <p className="text-xs text-[#ababab]">
-                          {formatCurrency(member.summary?.regularSalary || 0)}
-                        </p>
-                      </td>
-                      <td className="px-4 py-3 sm:py-4 hidden sm:table-cell">
-                        <p className="text-sm text-[#f5f5f5]">
-                          {formatHours(member.summary?.extraWorkHours || 0)}h
-                        </p>
-                        <p className="text-xs text-[#ababab]">
-                          {formatCurrency(member.summary?.extraWorkPayment || 0)}
-                        </p>
-                      </td>
-                      <td className="px-4 py-3 sm:py-4 text-right">
-                        <p className="text-sm sm:text-base font-bold text-brand">
-                          {formatCurrency(member.summary?.totalSalary || 0)}
-                        </p>
-                        <p className="text-xs text-[#ababab] sm:hidden mt-0.5">
-                          {member.summary?.totalShifts || 0} shifts
-                        </p>
-                      </td>
-                    </tr>
-                  ))
-              ) : (
-                <tr>
-                  <td colSpan="5" className="px-4 py-8 text-center text-[#ababab]">
-                    <PeopleIcon size={32} className="mx-auto mb-2 text-[#ababab]" />
-                    <p>No member salary data available</p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
       </div>
+
+      {/* Store Breakdown */}
+      {stores && stores.length > 0 ? (
+        stores.map((storeBlock) => (
+          <div key={storeBlock.store.id} className="bg-[#262626] rounded-lg border border-[#343434]">
+            <div className="p-4 sm:p-5 lg:p-6 border-b border-[#343434]">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <StoreIcon size={22} className="text-brand flex-shrink-0" />
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#f5f5f5]">
+                      {storeBlock.store.name}
+                    </h3>
+                    <p className="text-sm text-[#ababab] mt-0.5">
+                      {storeBlock.store.code} · {storeBlock.summary?.totalMembers || 0} members
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-4 text-sm">
+                  <div>
+                    <span className="text-[#ababab]">Salary: </span>
+                    <span className="font-semibold text-brand">
+                      {formatCurrency(storeBlock.summary?.totalSalary || 0)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[#ababab]">Tickets: </span>
+                    <span className="font-semibold text-[#f5f5f5]">
+                      {storeBlock.summary?.totalTickets || 0}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-[#1a1a1a]">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
+                      Member
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
+                      Hours
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider hidden sm:table-cell">
+                      Regular
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider hidden sm:table-cell">
+                      Extra Work
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
+                      Tickets
+                    </th>
+                    <th className="px-4 py-3 text-right text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider">
+                      Total Salary
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#343434]">
+                  {renderMemberRows(storeBlock.members)}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))
+      ) : (
+        <div className="bg-[#262626] rounded-lg border border-[#343434] p-8 text-center">
+          <StoreIcon size={32} className="mx-auto mb-2 text-[#ababab]" />
+          <p className="text-[#ababab]">No store salary data available</p>
+        </div>
+      )}
     </div>
   );
 };

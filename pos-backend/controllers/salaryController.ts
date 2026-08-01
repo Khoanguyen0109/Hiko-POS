@@ -1,9 +1,12 @@
 // @ts-nocheck
-import type { SalaryMemberBlock, SalaryPeriodInfo } from "../types/salary.js";
+import type { SalaryMemberBlock, SalaryPeriodInfo, SalaryStoreBlock } from "../types/salary.js";
 
 import Schedule from "../models/scheduleModel.js";
 import User from "../models/userModel.js";
 import ExtraWork from "../models/extraWorkModel.js";
+import Store from "../models/storeModel.js";
+import StoreUser from "../models/storeUserModel.js";
+import Ticket from "../models/ticketModel.js";
 import createHttpError from "http-errors";
 import { getDateRangeVietnam, getCurrentVietnamTime, getStartOfDayVietnam, getEndOfDayVietnam, VIETNAM_TIMEZONE } from "../utils/dateUtils.js";
 import { toZonedTime } from "date-fns-tz";
@@ -158,7 +161,7 @@ const getMonthlySalary = async (req, res, next) => {
 };
 
 /**
- * Get salary summary for all members (Admin only)
+ * Get salary summary for all members across all stores (Admin only)
  * Supports date range filtering via startDate/endDate or period (today, week, month)
  * Also supports legacy year/month parameters for backward compatibility
  */
@@ -170,12 +173,10 @@ const getAllMembersSalarySummary = async (req, res, next) => {
         let start, end;
         
         if (startDate && endDate) {
-            // Use explicit date range
             const dateRange = getDateRangeVietnam(startDate, endDate);
             start = dateRange.start;
             end = dateRange.end;
         } else if (period) {
-            // Use period-based filtering with proper Vietnam timezone boundaries
             const nowVN = toZonedTime(new Date(), VIETNAM_TIMEZONE);
 
             switch (period) {
@@ -198,7 +199,6 @@ const getAllMembersSalarySummary = async (req, res, next) => {
                     end = getEndOfDayVietnam(endOfMonth(nowVN));
             }
         } else if (year && month) {
-            // Legacy support: year and month parameters
             const yearNum = parseInt(year);
             const monthNum = parseInt(month);
 
@@ -207,16 +207,14 @@ const getAllMembersSalarySummary = async (req, res, next) => {
                 return next(error);
             }
 
-            start = new Date(yearNum, monthNum - 1, 1); // First day of month
-            end = new Date(yearNum, monthNum, 0, 23, 59, 59); // Last day of month
+            start = new Date(yearNum, monthNum - 1, 1);
+            end = new Date(yearNum, monthNum, 0, 23, 59, 59);
         } else {
-            // Default to current month if no parameters provided
             const today = getCurrentVietnamTime();
             start = new Date(today.getFullYear(), today.getMonth(), 1);
             end = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
         }
 
-        // Validate date range
         if (!start || !end) {
             const error = createHttpError(400, "Invalid date range!");
             return next(error);
@@ -227,133 +225,229 @@ const getAllMembersSalarySummary = async (req, res, next) => {
             return next(error);
         }
 
-        // Get all members (excluding admins)
-        const members = await User.find({ 
-            role: { $ne: 'Admin' }
-        }).select('_id name salary role isActive');
+        const stores = await Store.find({ isActive: true })
+            .select("_id name code")
+            .sort({ name: 1 })
+            .lean();
 
-        const salarySummaries: SalaryMemberBlock[] = [];
+        const storeIds = stores.map((store) => store._id);
 
-        for (const member of members) {
-            const memberId = member._id;
-            const hourlyRate = member.salary || 0;
+        const storeUsers = storeIds.length > 0
+            ? await StoreUser.find({ store: { $in: storeIds }, isActive: true })
+                .populate("user", "_id name salary role")
+                .lean()
+            : [];
 
-            // Find all schedules where this member is assigned
-            const schedules = await Schedule.find({
-                store: req.store._id,
-                'assignedMembers.member': memberId,
-                date: {
-                    $gte: start,
-                    $lte: end
-                }
-            })
-            .populate('shiftTemplate', 'durationHours')
-            .sort({ date: 1 });
+        const membersByStore = new Map<string, Array<Record<string, unknown>>>();
+        for (const storeUser of storeUsers) {
+            const user = storeUser.user as Record<string, unknown> | null;
+            if (!user || user.role === "Admin") continue;
 
-            // Calculate regular hours and shifts
-            // Only count shifts with valid statuses (exclude "absent" and "cancelled")
-            const validStatuses = ["scheduled", "confirmed", "completed"];
-            let totalHours = 0;
-            let totalShifts = 0;
-
-            for (const schedule of schedules) {
-                // Handle both populated and unpopulated member references
-                const memberAssignment = schedule.assignedMembers.find(
-                    am => {
-                        // If member is populated (object), use _id; otherwise use the ObjectId directly
-                        const memberRefId = am.member?._id ? am.member._id.toString() : am.member.toString();
-                        return memberRefId === memberId.toString();
-                    }
-                );
-
-                // Only count shifts with valid statuses
-                if (memberAssignment && schedule.shiftTemplate && validStatuses.includes(memberAssignment.status)) {
-                    const hours = schedule.shiftTemplate.durationHours || 0;
-                    totalHours += hours;
-                    totalShifts++;
-                }
+            const storeId = storeUser.store.toString();
+            if (!membersByStore.has(storeId)) {
+                membersByStore.set(storeId, []);
             }
-
-            // Calculate regular salary
-            const regularSalary = totalHours * hourlyRate;
-
-            // Fetch extra work entries
-            const extraWorkEntries = await ExtraWork.find({
-                store: req.store._id,
-                member: memberId,
-                date: {
-                    $gte: start,
-                    $lte: end
-                }
-            });
-
-            // Calculate extra work totals
-            let extraWorkHours = 0;
-            let extraWorkPayment = 0;
-
-            for (const entry of extraWorkEntries) {
-                extraWorkHours += entry.durationHours || 0;
-                extraWorkPayment += entry.paymentAmount || 0;
-            }
-
-            // Calculate combined totals
-            const combinedTotalHours = totalHours + extraWorkHours;
-            const combinedTotalSalary = regularSalary + extraWorkPayment;
-
-            salarySummaries.push({
-                member: {
-                    id: member._id,
-                    name: member.name,
-                    role: member.role,
-                    hourlyRate: hourlyRate
-                },
-                summary: {
-                    totalShifts: totalShifts,
-                    regularHours: Math.round(totalHours * 100) / 100,
-                    extraWorkHours: Math.round(extraWorkHours * 100) / 100,
-                    totalHours: Math.round(combinedTotalHours * 100) / 100,
-                    hourlyRate: hourlyRate,
-                    regularSalary: Math.round(regularSalary * 100) / 100,
-                    extraWorkPayment: Math.round(extraWorkPayment * 100) / 100,
-                    totalSalary: Math.round(combinedTotalSalary * 100) / 100
-                }
-            });
+            membersByStore.get(storeId)!.push(user);
         }
 
-        // Calculate overall totals
-        const overallSummary = salarySummaries.reduce((acc, member) => {
-            acc.totalMembers += 1;
-            acc.totalRegularHours += member.summary.regularHours;
-            acc.totalExtraWorkHours += member.summary.extraWorkHours;
-            acc.totalHours += member.summary.totalHours;
-            acc.totalRegularSalary += member.summary.regularSalary;
-            acc.totalExtraWorkPayment += member.summary.extraWorkPayment;
-            acc.totalSalary += member.summary.totalSalary;
-            return acc;
-        }, {
+        const validStatuses = ["scheduled", "confirmed", "completed"];
+
+        const [schedules, extraWorkEntries, ticketAgg] = storeIds.length > 0
+            ? await Promise.all([
+                Schedule.find({
+                    store: { $in: storeIds },
+                    date: { $gte: start, $lte: end }
+                })
+                    .populate("shiftTemplate", "durationHours")
+                    .lean(),
+                ExtraWork.find({
+                    store: { $in: storeIds },
+                    date: { $gte: start, $lte: end }
+                }).lean(),
+                Ticket.aggregate([
+                    {
+                        $match: {
+                            store: { $in: storeIds },
+                            createdAt: { $gte: start, $lte: end }
+                        }
+                    },
+                    {
+                        $group: {
+                            _id: { store: "$store", member: "$member" },
+                            count: { $sum: 1 },
+                            totalScore: { $sum: "$score" }
+                        }
+                    }
+                ])
+            ])
+            : [[], [], []];
+
+        const ticketMap = new Map<string, { count: number; totalScore: number }>(
+            ticketAgg.map((row) => [
+                `${row._id.store.toString()}_${row._id.member.toString()}`,
+                { count: row.count, totalScore: row.totalScore }
+            ])
+        );
+
+        const storeSummaries: SalaryStoreBlock[] = [];
+        const overallSummary = {
             totalMembers: 0,
             totalRegularHours: 0,
             totalExtraWorkHours: 0,
             totalHours: 0,
             totalRegularSalary: 0,
             totalExtraWorkPayment: 0,
-            totalSalary: 0
-        });
+            totalSalary: 0,
+            totalTickets: 0
+        };
 
-        // Format period info for response
+        for (const store of stores) {
+            const storeId = store._id.toString();
+            const storeMembers = membersByStore.get(storeId) || [];
+            const memberSummaries: SalaryMemberBlock[] = [];
+
+            const storeSummary = {
+                totalMembers: 0,
+                totalRegularHours: 0,
+                totalExtraWorkHours: 0,
+                totalHours: 0,
+                totalRegularSalary: 0,
+                totalExtraWorkPayment: 0,
+                totalSalary: 0,
+                totalTickets: 0
+            };
+
+            for (const member of storeMembers) {
+                const memberId = member._id.toString();
+                const hourlyRate = member.salary || 0;
+
+                let totalHours = 0;
+                let totalShifts = 0;
+
+                for (const schedule of schedules) {
+                    if (schedule.store.toString() !== storeId) continue;
+
+                    const memberAssignment = schedule.assignedMembers.find((assignment) => {
+                        const memberRefId = assignment.member?._id
+                            ? assignment.member._id.toString()
+                            : assignment.member.toString();
+                        return memberRefId === memberId;
+                    });
+
+                    if (
+                        memberAssignment &&
+                        schedule.shiftTemplate &&
+                        validStatuses.includes(memberAssignment.status)
+                    ) {
+                        totalHours += schedule.shiftTemplate.durationHours || 0;
+                        totalShifts++;
+                    }
+                }
+
+                const regularSalary = totalHours * hourlyRate;
+
+                let extraWorkHours = 0;
+                let extraWorkPayment = 0;
+
+                for (const entry of extraWorkEntries) {
+                    if (
+                        entry.store.toString() === storeId &&
+                        entry.member.toString() === memberId
+                    ) {
+                        extraWorkHours += entry.durationHours || 0;
+                        extraWorkPayment += entry.paymentAmount || 0;
+                    }
+                }
+
+                const combinedTotalHours = totalHours + extraWorkHours;
+                const combinedTotalSalary = regularSalary + extraWorkPayment;
+                const tickets = ticketMap.get(`${storeId}_${memberId}`) || {
+                    count: 0,
+                    totalScore: 0
+                };
+
+                const summary = {
+                    totalShifts,
+                    regularHours: Math.round(totalHours * 100) / 100,
+                    extraWorkHours: Math.round(extraWorkHours * 100) / 100,
+                    totalHours: Math.round(combinedTotalHours * 100) / 100,
+                    hourlyRate,
+                    regularSalary: Math.round(regularSalary * 100) / 100,
+                    extraWorkPayment: Math.round(extraWorkPayment * 100) / 100,
+                    totalSalary: Math.round(combinedTotalSalary * 100) / 100
+                };
+
+                memberSummaries.push({
+                    member: {
+                        id: member._id,
+                        name: member.name,
+                        role: member.role,
+                        hourlyRate
+                    },
+                    summary,
+                    tickets
+                });
+
+                storeSummary.totalMembers += 1;
+                storeSummary.totalRegularHours += summary.regularHours;
+                storeSummary.totalExtraWorkHours += summary.extraWorkHours;
+                storeSummary.totalHours += summary.totalHours;
+                storeSummary.totalRegularSalary += summary.regularSalary;
+                storeSummary.totalExtraWorkPayment += summary.extraWorkPayment;
+                storeSummary.totalSalary += summary.totalSalary;
+                storeSummary.totalTickets += tickets.count;
+            }
+
+            memberSummaries.sort(
+                (a, b) => (b.summary?.totalSalary || 0) - (a.summary?.totalSalary || 0)
+            );
+
+            storeSummaries.push({
+                store: {
+                    id: store._id,
+                    name: store.name,
+                    code: store.code
+                },
+                summary: {
+                    totalMembers: storeSummary.totalMembers,
+                    totalRegularHours: Math.round(storeSummary.totalRegularHours * 100) / 100,
+                    totalExtraWorkHours: Math.round(storeSummary.totalExtraWorkHours * 100) / 100,
+                    totalHours: Math.round(storeSummary.totalHours * 100) / 100,
+                    totalRegularSalary: Math.round(storeSummary.totalRegularSalary * 100) / 100,
+                    totalExtraWorkPayment: Math.round(storeSummary.totalExtraWorkPayment * 100) / 100,
+                    totalSalary: Math.round(storeSummary.totalSalary * 100) / 100,
+                    totalTickets: storeSummary.totalTickets
+                },
+                members: memberSummaries
+            });
+
+            overallSummary.totalMembers += storeSummary.totalMembers;
+            overallSummary.totalRegularHours += storeSummary.totalRegularHours;
+            overallSummary.totalExtraWorkHours += storeSummary.totalExtraWorkHours;
+            overallSummary.totalHours += storeSummary.totalHours;
+            overallSummary.totalRegularSalary += storeSummary.totalRegularSalary;
+            overallSummary.totalExtraWorkPayment += storeSummary.totalExtraWorkPayment;
+            overallSummary.totalSalary += storeSummary.totalSalary;
+            overallSummary.totalTickets += storeSummary.totalTickets;
+        }
+
         const periodInfo: SalaryPeriodInfo = {
             startDate: start,
             endDate: end,
-            startDateString: start.toISOString().split('T')[0],
-            endDateString: end.toISOString().split('T')[0]
+            startDateString: start.toISOString().split("T")[0],
+            endDateString: end.toISOString().split("T")[0]
         };
 
-        // Add month/year info if it's a full month
-        if (start.getDate() === 1 && end.getDate() === new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate()) {
+        if (
+            start.getDate() === 1 &&
+            end.getDate() === new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate()
+        ) {
             periodInfo.year = start.getFullYear();
             periodInfo.month = start.getMonth() + 1;
-            periodInfo.monthName = start.toLocaleString('en-US', { month: 'long' });
+            periodInfo.monthName = start.toLocaleString("en-US", { month: "long" });
         }
+
+        const flatMembers = storeSummaries.flatMap((storeBlock) => storeBlock.members);
 
         res.status(200).json({
             success: true,
@@ -366,9 +460,11 @@ const getAllMembersSalarySummary = async (req, res, next) => {
                     totalHours: Math.round(overallSummary.totalHours * 100) / 100,
                     totalRegularSalary: Math.round(overallSummary.totalRegularSalary * 100) / 100,
                     totalExtraWorkPayment: Math.round(overallSummary.totalExtraWorkPayment * 100) / 100,
-                    totalSalary: Math.round(overallSummary.totalSalary * 100) / 100
+                    totalSalary: Math.round(overallSummary.totalSalary * 100) / 100,
+                    totalTickets: overallSummary.totalTickets
                 },
-                members: salarySummaries
+                stores: storeSummaries,
+                members: flatMembers
             }
         });
 
