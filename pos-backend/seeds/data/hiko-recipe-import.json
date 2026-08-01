@@ -112,6 +112,41 @@
       "category": "Ingredient"
     },
     {
+      "code": "MUT_XOAI",
+      "name": "Mứt xoài",
+      "unit": "g",
+      "averageCost": 80,
+      "category": "Ingredient"
+    },
+    {
+      "code": "MUT_CAM",
+      "name": "Mứt cam",
+      "unit": "g",
+      "averageCost": 80,
+      "category": "Ingredient"
+    },
+    {
+      "code": "MUT_DAU",
+      "name": "Mứt dâu",
+      "unit": "g",
+      "averageCost": 80,
+      "category": "Ingredient"
+    },
+    {
+      "code": "MUT_KIWI",
+      "name": "Mứt kiwi",
+      "unit": "g",
+      "averageCost": 80,
+      "category": "Ingredient"
+    },
+    {
+      "code": "MUT_VQ",
+      "name": "Mứt việt quất",
+      "unit": "g",
+      "averageCost": 80,
+      "category": "Ingredient"
+    },
+    {
       "code": "OREO01",
       "name": "Oreo",
       "unit": "g",
@@ -154,6 +189,13 @@
       "category": "Ingredient"
     },
     {
+      "code": "TRAPHA",
+      "name": "Trà pha (lài + đen)",
+      "unit": "ml",
+      "averageCost": 5,
+      "category": "Ingredient"
+    },
+    {
       "code": "TAC001",
       "name": "Tắc",
       "unit": "piece",
@@ -163,8 +205,8 @@
     {
       "code": "CU_NANG",
       "name": "Củ năng",
-      "unit": "piece",
-      "averageCost": 5000,
+      "unit": "g",
+      "averageCost": 125,
       "category": "Ingredient"
     },
     {
@@ -172,6 +214,13 @@
       "name": "Kem muối (pha sẵn)",
       "unit": "ml",
       "averageCost": 90,
+      "category": "Ingredient"
+    },
+    {
+      "code": "KEMMUOI",
+      "name": "Kem muối (pha sẵn)",
+      "unit": "g",
+      "averageCost": 65,
       "category": "Ingredient"
     },
     {
@@ -960,7 +1009,7 @@
         "Medium": 35000,
         "Large": 45000
       },
-      "instructions": "1. Cho mứt vào đáy ly 2. Nước đường vào ly uống 3. Syrup 3. 1 trái Tắc 5. Trà  6. Dùng cây sục hỗn hợp đều 6. Cho đá 8. 1 lát chanh 9. 1 lá húng lủi 10. Củ năng",
+      "instructions": "1. Cho mứt vào đáy ly 2. Nước đường vào ly uống 3. Syrup 4. Trà 5. Dùng cây sục hỗn hợp đều 6. Cho đá 7. 1 lát chanh 8. 1 lá húng lủi 9. Củ năng",
       "sizeVariantRecipes": [
         {
           "size": "Medium",
@@ -977,9 +1026,8 @@
             },
             {
               "itemCode": "MUT001",
-              "quantity": 45,
-              "unit": "g",
-              "notes": "3 muỗng"
+              "quantity": 33,
+              "unit": "g"
             },
             {
               "itemCode": "TRA001",
@@ -987,15 +1035,9 @@
               "unit": "ml"
             },
             {
-              "itemCode": "TAC001",
-              "quantity": 1,
-              "unit": "piece"
-            },
-            {
               "itemCode": "CU_NANG",
-              "quantity": 0.5,
-              "unit": "piece",
-              "notes": "Nửa vá"
+              "quantity": 20,
+              "unit": "g"
             }
           ]
         },
@@ -1014,9 +1056,8 @@
             },
             {
               "itemCode": "MUT001",
-              "quantity": 60,
-              "unit": "g",
-              "notes": "4 muỗng"
+              "quantity": 43,
+              "unit": "g"
             },
             {
               "itemCode": "TRA001",
@@ -1025,9 +1066,149 @@
             },
             {
               "itemCode": "CU_NANG",
-              "quantity": 1,
-              "unit": "piece"
+              "quantity": 30,
+              "unit": "g"
             }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Trà Xoài",
+      "category": "Trà trái cây",
+      "prices": { "Medium": 35000, "Large": 45000 },
+      "instructions": "1. Cho mứt vào đáy ly 2. Nước đường vào ly uống 3. Syrup 4. Trà 5. Dùng cây sục hỗn hợp đều 6. Cho đá 7. 1 lát chanh 8. 1 lá húng lủi 9. Củ năng",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            { "itemCode": "DUONG", "quantity": 5, "unit": "ml" },
+            { "itemCode": "SYR_TC", "quantity": 20, "unit": "ml" },
+            { "itemCode": "MUT_XOAI", "quantity": 33, "unit": "g" },
+            { "itemCode": "TRA001", "quantity": 150, "unit": "ml" },
+            { "itemCode": "CU_NANG", "quantity": 20, "unit": "g" }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            { "itemCode": "DUONG", "quantity": 10, "unit": "ml" },
+            { "itemCode": "SYR_TC", "quantity": 30, "unit": "ml" },
+            { "itemCode": "MUT_XOAI", "quantity": 43, "unit": "g" },
+            { "itemCode": "TRA001", "quantity": 200, "unit": "ml" },
+            { "itemCode": "CU_NANG", "quantity": 30, "unit": "g" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Trà Cam",
+      "category": "Trà trái cây",
+      "prices": { "Medium": 35000, "Large": 45000 },
+      "instructions": "1. Cho mứt vào đáy ly 2. Nước đường vào ly uống 3. Syrup 4. Trà 5. Dùng cây sục hỗn hợp đều 6. Cho đá 7. 1 lát chanh 8. 1 lá húng lủi 9. Củ năng",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            { "itemCode": "DUONG", "quantity": 5, "unit": "ml" },
+            { "itemCode": "SYR_TC", "quantity": 20, "unit": "ml" },
+            { "itemCode": "MUT_CAM", "quantity": 33, "unit": "g" },
+            { "itemCode": "TRA001", "quantity": 150, "unit": "ml" },
+            { "itemCode": "CU_NANG", "quantity": 20, "unit": "g" }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            { "itemCode": "DUONG", "quantity": 10, "unit": "ml" },
+            { "itemCode": "SYR_TC", "quantity": 30, "unit": "ml" },
+            { "itemCode": "MUT_CAM", "quantity": 43, "unit": "g" },
+            { "itemCode": "TRA001", "quantity": 200, "unit": "ml" },
+            { "itemCode": "CU_NANG", "quantity": 30, "unit": "g" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Trà Dâu",
+      "category": "Trà trái cây",
+      "prices": { "Medium": 35000, "Large": 45000 },
+      "instructions": "1. Cho mứt vào đáy ly 2. Nước đường vào ly uống 3. Syrup 4. Trà 5. Dùng cây sục hỗn hợp đều 6. Cho đá 7. 1 lát chanh 8. 1 lá húng lủi 9. Củ năng",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            { "itemCode": "DUONG", "quantity": 5, "unit": "ml" },
+            { "itemCode": "SYR_TC", "quantity": 20, "unit": "ml" },
+            { "itemCode": "MUT_DAU", "quantity": 33, "unit": "g" },
+            { "itemCode": "TRA001", "quantity": 150, "unit": "ml" },
+            { "itemCode": "CU_NANG", "quantity": 20, "unit": "g" }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            { "itemCode": "DUONG", "quantity": 10, "unit": "ml" },
+            { "itemCode": "SYR_TC", "quantity": 30, "unit": "ml" },
+            { "itemCode": "MUT_DAU", "quantity": 43, "unit": "g" },
+            { "itemCode": "TRA001", "quantity": 200, "unit": "ml" },
+            { "itemCode": "CU_NANG", "quantity": 30, "unit": "g" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Trà Kiwi",
+      "category": "Trà trái cây",
+      "prices": { "Medium": 35000, "Large": 45000 },
+      "instructions": "1. Cho mứt vào đáy ly 2. Nước đường vào ly uống 3. Syrup 4. Trà 5. Dùng cây sục hỗn hợp đều 6. Cho đá 7. 1 lát chanh 8. 1 lá húng lủi 9. Củ năng",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            { "itemCode": "DUONG", "quantity": 5, "unit": "ml" },
+            { "itemCode": "SYR_TC", "quantity": 20, "unit": "ml" },
+            { "itemCode": "MUT_KIWI", "quantity": 33, "unit": "g" },
+            { "itemCode": "TRA001", "quantity": 150, "unit": "ml" },
+            { "itemCode": "CU_NANG", "quantity": 20, "unit": "g" }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            { "itemCode": "DUONG", "quantity": 10, "unit": "ml" },
+            { "itemCode": "SYR_TC", "quantity": 30, "unit": "ml" },
+            { "itemCode": "MUT_KIWI", "quantity": 43, "unit": "g" },
+            { "itemCode": "TRA001", "quantity": 200, "unit": "ml" },
+            { "itemCode": "CU_NANG", "quantity": 30, "unit": "g" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Trà Việt Quất",
+      "category": "Trà trái cây",
+      "prices": { "Medium": 35000, "Large": 45000 },
+      "instructions": "1. Cho mứt vào đáy ly 2. Nước đường vào ly uống 3. Syrup 4. Trà 5. Dùng cây sục hỗn hợp đều 6. Cho đá 7. 1 lát chanh 8. 1 lá húng lủi 9. Củ năng",
+      "sizeVariantRecipes": [
+        {
+          "size": "Medium",
+          "lines": [
+            { "itemCode": "DUONG", "quantity": 5, "unit": "ml" },
+            { "itemCode": "SYR_TC", "quantity": 20, "unit": "ml" },
+            { "itemCode": "MUT_VQ", "quantity": 33, "unit": "g" },
+            { "itemCode": "TRA001", "quantity": 150, "unit": "ml" },
+            { "itemCode": "CU_NANG", "quantity": 20, "unit": "g" }
+          ]
+        },
+        {
+          "size": "Large",
+          "lines": [
+            { "itemCode": "DUONG", "quantity": 10, "unit": "ml" },
+            { "itemCode": "SYR_TC", "quantity": 30, "unit": "ml" },
+            { "itemCode": "MUT_VQ", "quantity": 43, "unit": "g" },
+            { "itemCode": "TRA001", "quantity": 200, "unit": "ml" },
+            { "itemCode": "CU_NANG", "quantity": 30, "unit": "g" }
           ]
         }
       ]
@@ -1061,8 +1242,8 @@
             },
             {
               "itemCode": "CU_NANG",
-              "quantity": 0.5,
-              "unit": "piece"
+              "quantity": 20,
+              "unit": "g"
             }
           ]
         },
@@ -1086,8 +1267,8 @@
             },
             {
               "itemCode": "CU_NANG",
-              "quantity": 1,
-              "unit": "piece"
+              "quantity": 30,
+              "unit": "g"
             }
           ]
         }
@@ -1100,32 +1281,25 @@
         "Medium": 48000,
         "Large": 58000
       },
-      "instructions": "1. Cho nước đường vào ly uống 2. Cho trà vào  3. Dùng cây sục hỗn hợp đều 4. Cho đá 5. Cho kem muối lên top 6. Cho củ năng lên trên kem muối 6. 1 ngọn húng lủi 7. 1 lát chanh trên top",
+      "instructions": "1. Cho nước đường vào ly uống 2. Cho trà vào  3. Dùng cây sục hỗn hợp đều 4. Cho đá 5. Cho kem muối lên top 6. Cho củ năng lên trên kem muối 7. 1 ngọn húng lủi 8. 1 lát chanh trên top",
       "sizeVariantRecipes": [
         {
           "size": "Medium",
           "lines": [
             {
-              "itemCode": "DUONG",
-              "quantity": 8,
-              "unit": "ml",
-              "notes": "Cao hơn vạch đáy ly M"
-            },
-            {
-              "itemCode": "TRA001",
-              "quantity": 160,
+              "itemCode": "NUOCDUONG",
+              "quantity": 25,
               "unit": "ml"
             },
             {
-              "itemCode": "KEM_MUOI",
-              "quantity": 30,
-              "unit": "ml",
-              "notes": "1 vá đầy"
+              "itemCode": "TRAPHA",
+              "quantity": 150,
+              "unit": "ml"
             },
             {
-              "itemCode": "CU_NANG",
-              "quantity": 0.5,
-              "unit": "piece"
+              "itemCode": "KEMMUOI",
+              "quantity": 20,
+              "unit": "g"
             }
           ]
         },
@@ -1133,26 +1307,19 @@
           "size": "Large",
           "lines": [
             {
-              "itemCode": "DUONG",
-              "quantity": 12,
-              "unit": "ml",
-              "notes": "Cao hơn vạch đáy ly L"
-            },
-            {
-              "itemCode": "TRA001",
-              "quantity": 210,
+              "itemCode": "NUOCDUONG",
+              "quantity": 30,
               "unit": "ml"
             },
             {
-              "itemCode": "KEM_MUOI",
-              "quantity": 30,
-              "unit": "ml",
-              "notes": "1 vá đầy"
+              "itemCode": "TRAPHA",
+              "quantity": 200,
+              "unit": "ml"
             },
             {
-              "itemCode": "CU_NANG",
-              "quantity": 1,
-              "unit": "piece"
+              "itemCode": "KEMMUOI",
+              "quantity": 30,
+              "unit": "g"
             }
           ]
         }

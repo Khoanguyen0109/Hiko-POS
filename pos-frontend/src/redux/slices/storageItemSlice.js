@@ -141,25 +141,24 @@ const storageItemSlice = createSlice({
             // Update storage item
             .addCase(editStorageItem.fulfilled, (state, action) => {
                 const updated = action.payload;
-                const idx = state.items.findIndex(item => item._id === updated._id);
-                if (idx !== -1) {
-                    state.items[idx] = updated;
+                if (!updated.isActive) {
+                    state.items = state.items.filter(item => item._id !== updated._id);
+                } else {
+                    const idx = state.items.findIndex(item => item._id === updated._id);
+                    if (idx !== -1) {
+                        state.items[idx] = updated;
+                    }
                 }
-                // Update selected item if it's the one being updated
                 if (state.selectedItem && state.selectedItem._id === updated._id) {
-                    state.selectedItem = updated;
+                    state.selectedItem = updated.isActive ? updated : null;
                 }
             })
             // Delete storage item (soft delete)
             .addCase(removeStorageItem.fulfilled, (state, action) => {
                 const id = action.payload;
-                const idx = state.items.findIndex(item => item._id === id);
-                if (idx !== -1) {
-                    // Soft-deleted items stay in "all"/"inactive" views as inactive
-                    state.items[idx] = { ...state.items[idx], isActive: false };
-                }
+                state.items = state.items.filter(item => item._id !== id);
                 if (state.selectedItem && state.selectedItem._id === id) {
-                    state.selectedItem = { ...state.selectedItem, isActive: false };
+                    state.selectedItem = null;
                 }
             })
             // Fetch low stock items

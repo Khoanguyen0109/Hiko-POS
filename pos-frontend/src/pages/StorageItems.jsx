@@ -43,12 +43,6 @@ FilterGroup.propTypes = {
   onChange: PropTypes.func.isRequired,
 };
 
-const STATUS_OPTIONS = [
-  { value: "all", label: "All Status" },
-  { value: "active", label: "Active" },
-  { value: "inactive", label: "Inactive" },
-];
-
 const STOCK_OPTIONS = [
   { value: "all", label: "All Stock" },
   { value: "low", label: "Low Stock" },
@@ -62,15 +56,12 @@ const StorageItems = () => {
 
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  const [filterStatus, setFilterStatus] = useState("all");
   const [filterStock, setFilterStock] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    const isActive =
-      filterStatus === "all" ? "all" : filterStatus === "active";
-    dispatch(fetchStorageItems({ isActive }));
-  }, [dispatch, filterStatus]);
+    dispatch(fetchStorageItems({ isActive: true }));
+  }, [dispatch]);
 
   const handleAddItem = useCallback(() => {
     setEditingItem(null);
@@ -110,10 +101,8 @@ const StorageItems = () => {
   }, [dispatch]);
 
   const handleModalSuccess = useCallback(() => {
-    const isActive =
-      filterStatus === "all" ? "all" : filterStatus === "active";
-    dispatch(fetchStorageItems({ isActive }));
-  }, [dispatch, filterStatus]);
+    dispatch(fetchStorageItems({ isActive: true }));
+  }, [dispatch]);
 
   const handleCloseModal = useCallback(() => {
     setIsItemModalOpen(false);
@@ -121,10 +110,9 @@ const StorageItems = () => {
   }, []);
 
   const filteredItems = storageItems.filter((item) => {
+    if (!item.isActive) return false;
     const q = searchQuery.toLowerCase();
     if (q && !item.name.toLowerCase().includes(q) && !item.code.toLowerCase().includes(q)) return false;
-    if (filterStatus === "active" && !item.isActive) return false;
-    if (filterStatus === "inactive" && item.isActive) return false;
     if (filterStock === "low" && item.currentStock > item.minStock) return false;
     if (filterStock === "out" && item.currentStock !== 0) return false;
     return true;
@@ -158,7 +146,6 @@ const StorageItems = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="flex-1 px-4 py-2 bg-[#1f1f1f] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
           />
-          <FilterGroup options={STATUS_OPTIONS} value={filterStatus} onChange={setFilterStatus} />
           <FilterGroup options={STOCK_OPTIONS} value={filterStock} onChange={setFilterStock} />
         </div>
 
