@@ -182,18 +182,22 @@
       "category": "Ingredient"
     },
     {
-      "code": "TRA001",
-      "name": "Trà pha (lài + đen)",
-      "unit": "ml",
-      "averageCost": 15,
-      "category": "Ingredient"
+      "code": "TRALAI",
+      "name": "Trà lài",
+      "unit": "g",
+      "averageCost": 375000,
+      "category": "Ingredient",
+      "contentQuantity": 1000,
+      "contentUnit": "g"
     },
     {
-      "code": "TRAPHA",
-      "name": "Trà pha (lài + đen)",
-      "unit": "ml",
-      "averageCost": 5,
-      "category": "Ingredient"
+      "code": "TRADEN",
+      "name": "Trà đen",
+      "unit": "g",
+      "averageCost": 375000,
+      "category": "Ingredient",
+      "contentQuantity": 1000,
+      "contentUnit": "g"
     },
     {
       "code": "TAC001",
@@ -913,7 +917,7 @@
           "size": "Medium",
           "lines": [
             {
-              "itemCode": "MAT001",
+              "itemCode": "HOU001",
               "quantity": 5.0,
               "unit": "g"
             },
@@ -933,7 +937,7 @@
           "size": "Large",
           "lines": [
             {
-              "itemCode": "MAT001",
+              "itemCode": "HOU001",
               "quantity": 6.0,
               "unit": "g"
             },
@@ -964,7 +968,7 @@
           "size": "Medium",
           "lines": [
             {
-              "itemCode": "MAT001",
+              "itemCode": "HOU001",
               "quantity": 4.0,
               "unit": "g"
             },
@@ -984,7 +988,7 @@
           "size": "Large",
           "lines": [
             {
-              "itemCode": "MAT001",
+              "itemCode": "HOU001",
               "quantity": 5.0,
               "unit": "g"
             },
@@ -1030,9 +1034,14 @@
               "unit": "g"
             },
             {
-              "itemCode": "TRA001",
-              "quantity": 150,
-              "unit": "ml"
+              "itemCode": "TRALAI",
+              "quantity": 1.875,
+              "unit": "g"
+            },
+            {
+              "itemCode": "TRADEN",
+              "quantity": 1.875,
+              "unit": "g"
             },
             {
               "itemCode": "CU_NANG",
@@ -1060,9 +1069,14 @@
               "unit": "g"
             },
             {
-              "itemCode": "TRA001",
-              "quantity": 200,
-              "unit": "ml"
+              "itemCode": "TRALAI",
+              "quantity": 2.5,
+              "unit": "g"
+            },
+            {
+              "itemCode": "TRADEN",
+              "quantity": 2.5,
+              "unit": "g"
             },
             {
               "itemCode": "CU_NANG",
@@ -1085,7 +1099,8 @@
             { "itemCode": "DUONG", "quantity": 5, "unit": "ml" },
             { "itemCode": "SYR_TC", "quantity": 20, "unit": "ml" },
             { "itemCode": "MUT_XOAI", "quantity": 33, "unit": "g" },
-            { "itemCode": "TRA001", "quantity": 150, "unit": "ml" },
+            { "itemCode": "TRALAI", "quantity": 1.875, "unit": "g" },
+            { "itemCode": "TRADEN", "quantity": 1.875, "unit": "g" },
             { "itemCode": "CU_NANG", "quantity": 20, "unit": "g" }
           ]
         },
@@ -1095,7 +1110,8 @@
             { "itemCode": "DUONG", "quantity": 10, "unit": "ml" },
             { "itemCode": "SYR_TC", "quantity": 30, "unit": "ml" },
             { "itemCode": "MUT_XOAI", "quantity": 43, "unit": "g" },
-            { "itemCode": "TRA001", "quantity": 200, "unit": "ml" },
+            { "itemCode": "TRALAI", "quantity": 2.5, "unit": "g" },
+            { "itemCode": "TRADEN", "quantity": 2.5, "unit": "g" },
             { "itemCode": "CU_NANG", "quantity": 30, "unit": "g" }
           ]
         }
@@ -1113,7 +1129,8 @@
             { "itemCode": "DUONG", "quantity": 5, "unit": "ml" },
             { "itemCode": "SYR_TC", "quantity": 20, "unit": "ml" },
             { "itemCode": "MUT_CAM", "quantity": 33, "unit": "g" },
-            { "itemCode": "TRA001", "quantity": 150, "unit": "ml" },
+            { "itemCode": "TRALAI", "quantity": 1.875, "unit": "g" },
+            { "itemCode": "TRADEN", "quantity": 1.875, "unit": "g" },
             { "itemCode": "CU_NANG", "quantity": 20, "unit": "g" }
           ]
         },
@@ -1123,7 +1140,8 @@
             { "itemCode": "DUONG", "quantity": 10, "unit": "ml" },
             { "itemCode": "SYR_TC", "quantity": 30, "unit": "ml" },
             { "itemCode": "MUT_CAM", "quantity": 43, "unit": "g" },
-            { "itemCode": "TRA001", "quantity": 200, "unit": "ml" },
+            { "itemCode": "TRALAI", "quantity": 2.5, "unit": "g" },
+            { "itemCode": "TRADEN", "quantity": 2.5, "unit": "g" },
             { "itemCode": "CU_NANG", "quantity": 30, "unit": "g" }
           ]
         }
@@ -1141,7 +1159,8 @@
             { "itemCode": "DUONG", "quantity": 5, "unit": "ml" },
             { "itemCode": "SYR_TC", "quantity": 20, "unit": "ml" },
             { "itemCode": "MUT_DAU", "quantity": 33, "unit": "g" },
-            { "itemCode": "TRA001", "quantity": 150, "unit": "ml" },
+            { "itemCode": "TRALAI", "quantity": 1.875, "unit": "g" },
+            { "itemCode": "TRADEN", "quantity": 1.875, "unit": "g" },
             { "itemCode": "CU_NANG", "quantity": 20, "unit": "g" }
           ]
         },
@@ -1151,7 +1170,8 @@
             { "itemCode": "DUONG", "quantity": 10, "unit": "ml" },
             { "itemCode": "SYR_TC", "quantity": 30, "unit": "ml" },
             { "itemCode": "MUT_DAU", "quantity": 43, "unit": "g" },
-            { "itemCode": "TRA001", "quantity": 200, "unit": "ml" },
+            { "itemCode": "TRALAI", "quantity": 2.5, "unit": "g" },
+            { "itemCode": "TRADEN", "quantity": 2.5, "unit": "g" },
             { "itemCode": "CU_NANG", "quantity": 30, "unit": "g" }
           ]
         }
@@ -1169,7 +1189,8 @@
             { "itemCode": "DUONG", "quantity": 5, "unit": "ml" },
             { "itemCode": "SYR_TC", "quantity": 20, "unit": "ml" },
             { "itemCode": "MUT_KIWI", "quantity": 33, "unit": "g" },
-            { "itemCode": "TRA001", "quantity": 150, "unit": "ml" },
+            { "itemCode": "TRALAI", "quantity": 1.875, "unit": "g" },
+            { "itemCode": "TRADEN", "quantity": 1.875, "unit": "g" },
             { "itemCode": "CU_NANG", "quantity": 20, "unit": "g" }
           ]
         },
@@ -1179,7 +1200,8 @@
             { "itemCode": "DUONG", "quantity": 10, "unit": "ml" },
             { "itemCode": "SYR_TC", "quantity": 30, "unit": "ml" },
             { "itemCode": "MUT_KIWI", "quantity": 43, "unit": "g" },
-            { "itemCode": "TRA001", "quantity": 200, "unit": "ml" },
+            { "itemCode": "TRALAI", "quantity": 2.5, "unit": "g" },
+            { "itemCode": "TRADEN", "quantity": 2.5, "unit": "g" },
             { "itemCode": "CU_NANG", "quantity": 30, "unit": "g" }
           ]
         }
@@ -1197,7 +1219,8 @@
             { "itemCode": "DUONG", "quantity": 5, "unit": "ml" },
             { "itemCode": "SYR_TC", "quantity": 20, "unit": "ml" },
             { "itemCode": "MUT_VQ", "quantity": 33, "unit": "g" },
-            { "itemCode": "TRA001", "quantity": 150, "unit": "ml" },
+            { "itemCode": "TRALAI", "quantity": 1.875, "unit": "g" },
+            { "itemCode": "TRADEN", "quantity": 1.875, "unit": "g" },
             { "itemCode": "CU_NANG", "quantity": 20, "unit": "g" }
           ]
         },
@@ -1207,7 +1230,8 @@
             { "itemCode": "DUONG", "quantity": 10, "unit": "ml" },
             { "itemCode": "SYR_TC", "quantity": 30, "unit": "ml" },
             { "itemCode": "MUT_VQ", "quantity": 43, "unit": "g" },
-            { "itemCode": "TRA001", "quantity": 200, "unit": "ml" },
+            { "itemCode": "TRALAI", "quantity": 2.5, "unit": "g" },
+            { "itemCode": "TRADEN", "quantity": 2.5, "unit": "g" },
             { "itemCode": "CU_NANG", "quantity": 30, "unit": "g" }
           ]
         }
@@ -1236,9 +1260,14 @@
               "unit": "ml"
             },
             {
-              "itemCode": "TRA001",
-              "quantity": 150,
-              "unit": "ml"
+              "itemCode": "TRALAI",
+              "quantity": 1.875,
+              "unit": "g"
+            },
+            {
+              "itemCode": "TRADEN",
+              "quantity": 1.875,
+              "unit": "g"
             },
             {
               "itemCode": "CU_NANG",
@@ -1261,9 +1290,14 @@
               "unit": "ml"
             },
             {
-              "itemCode": "TRA001",
-              "quantity": 200,
-              "unit": "ml"
+              "itemCode": "TRALAI",
+              "quantity": 2.5,
+              "unit": "g"
+            },
+            {
+              "itemCode": "TRADEN",
+              "quantity": 2.5,
+              "unit": "g"
             },
             {
               "itemCode": "CU_NANG",
@@ -1292,9 +1326,14 @@
               "unit": "ml"
             },
             {
-              "itemCode": "TRAPHA",
-              "quantity": 150,
-              "unit": "ml"
+              "itemCode": "TRALAI",
+              "quantity": 1.875,
+              "unit": "g"
+            },
+            {
+              "itemCode": "TRADEN",
+              "quantity": 1.875,
+              "unit": "g"
             },
             {
               "itemCode": "KEMMUOI",
@@ -1312,9 +1351,14 @@
               "unit": "ml"
             },
             {
-              "itemCode": "TRAPHA",
-              "quantity": 200,
-              "unit": "ml"
+              "itemCode": "TRALAI",
+              "quantity": 2.5,
+              "unit": "g"
+            },
+            {
+              "itemCode": "TRADEN",
+              "quantity": 2.5,
+              "unit": "g"
             },
             {
               "itemCode": "KEMMUOI",

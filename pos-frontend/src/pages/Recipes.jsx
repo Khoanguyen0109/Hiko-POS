@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { MdMenuBook, MdCalculate, MdEdit, MdRestaurant, MdLocalOffer } from "react-icons/md";
+import { MdMenuBook, MdCalculate, MdEdit, MdRestaurant, MdLocalOffer, MdPieChart } from "react-icons/md";
 import FeaturePageHeader from "../components/shared/FeaturePageHeader";
 import LoadingState from "../components/shared/LoadingState";
 import EmptyState from "../components/shared/EmptyState";
@@ -40,14 +40,16 @@ const getDishRecipeCostSummary = (recipe) => {
   return formatVND(getRecipeTotalCost(recipe.totalIngredientCost, recipe.otherCost));
 };
 
-const getDishFoodCostPercent = (recipe) => {
+const collectDishFoodCostPercents = (recipe) => {
   const dish = getDishFromRecipe(recipe);
-  if (!dish) return "—";
+  if (!dish) return [];
 
   if (dish.hasSizeVariants && dish.sizeVariants?.length > 0) {
-    const percents = dish.sizeVariants
+    return dish.sizeVariants
       .map((variant) => {
-        const recipeVariant = recipe.sizeVariantRecipes?.find((entry) => entry.size === variant.size);
+        const recipeVariant = recipe.sizeVariantRecipes?.find(
+          (entry) => entry.size === variant.size
+        );
         const cost = getRecipeTotalCost(
           recipeVariant?.totalIngredientCost || 0,
           recipeVariant?.otherCost
@@ -55,23 +57,38 @@ const getDishFoodCostPercent = (recipe) => {
         return variant.price > 0 ? (cost / variant.price) * 100 : null;
       })
       .filter((value) => value !== null);
-
-    if (percents.length === 0) return "—";
-    const min = Math.min(...percents);
-    const max = Math.max(...percents);
-    return min === max ? `${min.toFixed(1)}%` : `${min.toFixed(1)}% - ${max.toFixed(1)}%`;
   }
 
   const cost = getRecipeTotalCost(recipe.totalIngredientCost, recipe.otherCost);
   const price = dish.price || 0;
-  return price > 0 ? `${((cost / price) * 100).toFixed(1)}%` : "—";
+  return price > 0 ? [(cost / price) * 100] : [];
+};
+
+const collectToppingFoodCostPercents = (recipe) => {
+  const topping = getToppingFromRecipe(recipe);
+  if (!topping?.price) return [];
+  const cost = getRecipeTotalCost(recipe.totalIngredientCost, recipe.otherCost);
+  return [(cost / topping.price) * 100];
+};
+
+const getAverageFoodCostPercent = (percents) => {
+  if (percents.length === 0) return null;
+  return percents.reduce((sum, value) => sum + value, 0) / percents.length;
+};
+
+const getDishFoodCostPercent = (recipe) => {
+  const percents = collectDishFoodCostPercents(recipe);
+  if (percents.length === 0) return "—";
+
+  const min = Math.min(...percents);
+  const max = Math.max(...percents);
+  return min === max ? `${min.toFixed(1)}%` : `${min.toFixed(1)}% - ${max.toFixed(1)}%`;
 };
 
 const getToppingFoodCostPercent = (recipe) => {
-  const topping = getToppingFromRecipe(recipe);
-  if (!topping?.price) return "—";
-  const cost = getRecipeTotalCost(recipe.totalIngredientCost, recipe.otherCost);
-  return `${((cost / topping.price) * 100).toFixed(1)}%`;
+  const percents = collectToppingFoodCostPercents(recipe);
+  if (percents.length === 0) return "—";
+  return `${percents[0].toFixed(1)}%`;
 };
 
 const Recipes = () => {
@@ -114,6 +131,21 @@ const Recipes = () => {
       return topping?.name?.toLowerCase().includes(query);
     });
   }, [toppingRecipes, search]);
+
+  const averageFoodCost = useMemo(() => {
+    const recipes =
+      activeTab === "dishes" ? filteredDishRecipes : filteredToppingRecipes;
+    const percents = recipes.flatMap((recipe) =>
+      activeTab === "dishes"
+        ? collectDishFoodCostPercents(recipe)
+        : collectToppingFoodCostPercents(recipe)
+    );
+    return {
+      value: getAverageFoodCostPercent(percents),
+      sampleCount: percents.length,
+      recipeCount: recipes.length,
+    };
+  }, [activeTab, filteredDishRecipes, filteredToppingRecipes]);
 
   const handleRecalculateAll = async () => {
     try {
@@ -177,6 +209,32 @@ const Recipes = () => {
 
       <div className="px-4 sm:px-10 pb-6">
         {error && <ErrorBanner message={error} className="mb-4" />}
+
+        <div className="mb-4">
+          <div className="inline-block min-w-[220px] rounded-lg border border-[#343434] bg-[#262626] p-4 sm:p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <MdPieChart className="text-xl text-brand sm:text-2xl" />
+              <span className="text-xs text-[#ababab] sm:text-sm">
+                {activeTab === "dishes" ? "Dishes" : "Toppings"}
+              </span>
+            </div>
+            <h3 className="mb-1 text-lg font-bold text-[#f5f5f5] sm:text-2xl">
+              {averageFoodCost.value !== null
+                ? `${averageFoodCost.value.toFixed(1)}%`
+                : "—"}
+            </h3>
+            <p className="text-xs text-[#ababab] sm:text-sm">Avg food cost</p>
+            {averageFoodCost.sampleCount > 0 ? (
+              <p className="mt-2 text-xs text-[#6a6a6a]">
+                {averageFoodCost.recipeCount} recipe
+                {averageFoodCost.recipeCount === 1 ? "" : "s"}
+                {averageFoodCost.sampleCount !== averageFoodCost.recipeCount
+                  ? ` · ${averageFoodCost.sampleCount} sizes`
+                  : ""}
+              </p>
+            ) : null}
+          </div>
+        </div>
 
         <div className="mb-4">
           <input

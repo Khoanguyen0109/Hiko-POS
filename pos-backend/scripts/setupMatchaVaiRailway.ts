@@ -13,31 +13,30 @@ import {
 dotenv.config();
 
 const STORE_CODE = "MAIN";
-const DISH_NAME = "Trà Lài Machiato";
-
-/** Batch: 25g lài + 25g đen → 2000ml. Cup: 150ml M / 200ml L */
-const TEA_MEDIUM_QTY = 1.875;
-const TEA_LARGE_QTY = 2.5;
+const DISH_NAME = "Matcha Vải";
 
 const RECIPE = {
     Medium: {
-        nuocDuong: 25,
-        kemMuoi: 20,
+        oatside: 40,
+        syrupVai: 15,
+        matcha: 3,
+        suaDac: 15,
+        mutVai: 33,
         lyCode: "LYNHO",
         ongHutCode: "ONGHUTNHO",
     },
     Large: {
-        nuocDuong: 30,
-        kemMuoi: 30,
+        oatside: 50,
+        syrupVai: 20,
+        matcha: 4,
+        suaDac: 20,
+        mutVai: 43,
         lyCode: "LYLON",
         ongHutCode: "ONGHUTLON",
     },
 } as const;
 
 const OTHER_COST = 2000;
-
-const INSTRUCTIONS =
-    "1. Cho nước đường vào ly uống 2. Cho trà vào 3. Dùng cây sục hỗn hợp đều 4. Cho đá 5. Cho kem muối lên top 6. Cho củ năng lên trên kem muối 7. 1 ngọn húng lủi 8. 1 lát chanh trên top";
 
 function escapeRegex(value: string): string {
     return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -48,67 +47,6 @@ async function findStorage(
     code: string
 ) {
     return StorageItem.findOne({ store: storeId, code });
-}
-
-async function ensureStorageItem(
-    storeId: mongoose.Types.ObjectId,
-    spec: {
-        code: string;
-        name: string;
-        unit: string;
-        averageCost: number;
-        contentQuantity?: number;
-        contentUnit?: string;
-    }
-) {
-    let item = await StorageItem.findOne({ store: storeId, code: spec.code });
-
-    if (item) {
-        item.name = spec.name;
-        item.unit = spec.unit;
-        item.category = "Ingredient";
-        item.isActive = true;
-        if (spec.contentQuantity) {
-            item.contentQuantity = spec.contentQuantity;
-            item.contentUnit = spec.contentUnit || "";
-        }
-        if (!item.averageCost) {
-            item.averageCost = spec.averageCost;
-        }
-        await item.save();
-        console.log(`  storage exists: ${spec.code}`);
-        return item;
-    }
-
-    item = await StorageItem.create({
-        store: storeId,
-        code: spec.code,
-        name: spec.name,
-        unit: spec.unit,
-        category: "Ingredient",
-        averageCost: spec.averageCost,
-        contentQuantity: spec.contentQuantity ?? 0,
-        contentUnit: spec.contentUnit ?? "",
-        currentStock: 0,
-        minStock: 0,
-        maxStock: 1000,
-        isActive: true,
-    });
-    console.log(`  storage created: ${spec.code}`);
-    return item;
-}
-
-function computeKemMuoiCostPerG(
-    kemBeo: { averageCost: number; contentQuantity?: number },
-    suaDac: { averageCost: number; contentQuantity?: number },
-    suaTuoi: { averageCost: number; contentQuantity?: number }
-): number {
-    const kemPerMl = kemBeo.averageCost / (kemBeo.contentQuantity || 450);
-    const dacPerMl = suaDac.averageCost / (suaDac.contentQuantity || 1000);
-    const tuoiPerMl = suaTuoi.averageCost / (suaTuoi.contentQuantity || 1000);
-    const batchCost = 60 * kemPerMl + 5 * dacPerMl + 10 * tuoiPerMl;
-    const batchGrams = 75;
-    return Math.round((batchCost / batchGrams) * 100) / 100;
 }
 
 async function main() {
@@ -126,41 +64,33 @@ async function main() {
 
     const storeId = store._id as mongoose.Types.ObjectId;
 
-    const traLai = await findStorage(storeId, "TRALAI");
-    const traDen = await findStorage(storeId, "TRADEN");
-    const nuocDuong = await findStorage(storeId, "NUOCDUONG");
-    const kemBeo = await findStorage(storeId, "KEMBEO");
+    const oatside = await findStorage(storeId, "OATSIDE");
+    const syrupVai = await findStorage(storeId, "SYRUPVAI");
+    const matcha = await findStorage(storeId, "MATCHA");
     const suaDac = await findStorage(storeId, "SUADAC");
-    const suaTuoi = await findStorage(storeId, "SUATUOI");
+    const mutVai = await findStorage(storeId, "MUTVAI");
     const nao = await findStorage(storeId, "NAO");
     const lyNho = await findStorage(storeId, "LYNHO");
     const lyLon = await findStorage(storeId, "LYLON");
+    const hopDung = await findStorage(storeId, "HOPDUNATCHA");
     const ongNho = await findStorage(storeId, "ONGHUTNHO");
     const ongLon = await findStorage(storeId, "ONGHUTLON");
 
     if (
-        !traLai ||
-        !traDen ||
-        !nuocDuong ||
-        !kemBeo ||
+        !oatside ||
+        !syrupVai ||
+        !matcha ||
         !suaDac ||
-        !suaTuoi ||
+        !mutVai ||
         !nao ||
         !lyNho ||
         !lyLon ||
+        !hopDung ||
         !ongNho ||
         !ongLon
     ) {
         throw new Error("Missing required storage items on MAIN store");
     }
-
-    console.log("Ensuring semi-finished storage items...");
-    const kemMuoi = await ensureStorageItem(storeId, {
-        code: "KEMMUOI",
-        name: "Kem muối (pha sẵn)",
-        unit: "g",
-        averageCost: computeKemMuoiCostPerG(kemBeo, suaDac, suaTuoi),
-    });
 
     const dish =
         (await Dish.findOne({
@@ -168,12 +98,17 @@ async function main() {
             name: new RegExp(`^${escapeRegex(DISH_NAME)}$`, "i"),
         })) ??
         (await Dish.findOne({
-            store: storeId,
-            name: /Trà.*Machiato/i,
+            name: new RegExp(`^${escapeRegex(DISH_NAME)}$`, "i"),
         }));
 
     if (!dish) {
         throw new Error(`Dish not found: ${DISH_NAME}`);
+    }
+
+    if (!dish.store) {
+        dish.store = storeId;
+        await dish.save();
+        console.log(`Linked dish to store ${STORE_CODE}`);
     }
 
     console.log(`Dish: ${dish.name} (${dish._id})`);
@@ -182,33 +117,38 @@ async function main() {
         const spec = RECIPE[size];
         const ly = size === "Medium" ? lyNho : lyLon;
         const ong = size === "Medium" ? ongNho : ongLon;
-        const teaQty = size === "Large" ? TEA_LARGE_QTY : TEA_MEDIUM_QTY;
 
         return {
             size,
             otherCost: OTHER_COST,
             ingredients: [
                 {
-                    storageItemId: nuocDuong!._id,
-                    quantity: spec.nuocDuong,
+                    storageItemId: oatside!._id,
+                    quantity: spec.oatside,
                     unit: "ml",
                     notes: "",
                 },
                 {
-                    storageItemId: traLai!._id,
-                    quantity: teaQty,
+                    storageItemId: syrupVai!._id,
+                    quantity: spec.syrupVai,
+                    unit: "ml",
+                    notes: "",
+                },
+                {
+                    storageItemId: matcha!._id,
+                    quantity: spec.matcha,
                     unit: "g",
                     notes: "",
                 },
                 {
-                    storageItemId: traDen!._id,
-                    quantity: teaQty,
-                    unit: "g",
+                    storageItemId: suaDac!._id,
+                    quantity: spec.suaDac,
+                    unit: "ml",
                     notes: "",
                 },
                 {
-                    storageItemId: kemMuoi._id,
-                    quantity: spec.kemMuoi,
+                    storageItemId: mutVai!._id,
+                    quantity: spec.mutVai,
                     unit: "g",
                     notes: "",
                 },
@@ -220,6 +160,12 @@ async function main() {
                 },
                 {
                     storageItemId: nao!._id,
+                    quantity: 1,
+                    unit: "piece",
+                    notes: "",
+                },
+                {
+                    storageItemId: hopDung!._id,
                     quantity: 1,
                     unit: "piece",
                     notes: "",
@@ -251,8 +197,8 @@ async function main() {
         sizeVariantRecipes,
         servings: 1,
         prepTime: 0,
-        instructions: INSTRUCTIONS,
-        notes: "Không bỏ tắc",
+        instructions: "",
+        notes: "",
         otherCost: 0,
         isActive: true,
     };
@@ -271,16 +217,17 @@ async function main() {
     for (const variant of recipe.sizeVariantRecipes) {
         const total =
             (variant.totalIngredientCost ?? 0) + (variant.otherCost ?? 0);
-        const lines = variant.ingredients.map((line) => {
-            const labels: Record<string, string> = {
-                [String(nuocDuong!._id)]: "đường",
-                [String(traLai!._id)]: "trà lài",
-                [String(traDen!._id)]: "trà đen",
-                [String(kemMuoi._id)]: "kem muối",
-            };
-            const label = labels[String(line.storageItemId)] ?? "item";
-            return `${label} ${line.quantity}${line.unit}`;
-        });
+        const lines: string[] = [];
+        for (const line of variant.ingredients) {
+            const item = [oatside, syrupVai, matcha, suaDac, mutVai].find(
+                (entry) => String(entry!._id) === String(line.storageItemId)
+            );
+            if (item) {
+                lines.push(
+                    `${item.code} ${line.quantity}${line.unit}`
+                );
+            }
+        }
         console.log(
             `  ${variant.size}: ${total.toLocaleString("vi-VN")}₫ (${lines.join(", ")})`
         );

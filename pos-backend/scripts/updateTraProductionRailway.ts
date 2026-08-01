@@ -14,8 +14,9 @@ dotenv.config();
 
 const STORE_CODE = "MAIN";
 
-const TRAPHA_MEDIUM_ML = 150;
-const TRAPHA_LARGE_ML = 200;
+/** Batch: 25g lài + 25g đen → 2000ml. Cup: 150ml M / 200ml L */
+const TEA_MEDIUM_QTY = 1.875;
+const TEA_LARGE_QTY = 2.5;
 
 const FRUIT_TRA_NAMES = [
     "Trà Xoài",
@@ -44,89 +45,7 @@ async function findDishByName(
     });
 }
 
-async function ensureTraPha(
-    storeId: mongoose.Types.ObjectId,
-    traLai: { averageCost: number; contentQuantity?: number },
-    traDen: { averageCost: number; contentQuantity?: number }
-) {
-    const laiPerG = traLai.averageCost / (traLai.contentQuantity || 1000);
-    const denPerG = traDen.averageCost / (traDen.contentQuantity || 1000);
-    const costPerMl = (25 * laiPerG + 25 * denPerG) / 2000;
-
-    let item = await StorageItem.findOne({ store: storeId, code: "TRAPHA" });
-    if (item) {
-        item.unit = "ml";
-        item.name = "Trà pha (lài + đen)";
-        item.averageCost = Math.round(costPerMl * 100) / 100;
-        item.isActive = true;
-        await item.save();
-        return item;
-    }
-
-    return StorageItem.create({
-        store: storeId,
-        code: "TRAPHA",
-        name: "Trà pha (lài + đen)",
-        unit: "ml",
-        category: "Ingredient",
-        averageCost: Math.round(costPerMl * 100) / 100,
-        currentStock: 0,
-        minStock: 0,
-        maxStock: 10000,
-        isActive: true,
-    });
-}
-
-function replaceTeaWithTraPha(
-    variant: {
-        size: string;
-        ingredients: Array<{
-            storageItemId: mongoose.Types.ObjectId;
-            quantity: number;
-            unit: string;
-            notes?: string;
-        }>;
-    },
-    traPhaId: mongoose.Types.ObjectId,
-    traLaiId: mongoose.Types.ObjectId,
-    traDenId: mongoose.Types.ObjectId,
-    nuocDuongId: mongoose.Types.ObjectId | null,
-    tra001Id?: mongoose.Types.ObjectId | null
-) {
-    const qty = variant.size === "Large" ? TRAPHA_LARGE_ML : TRAPHA_MEDIUM_ML;
-    const skipIds = new Set(
-        [traLaiId, traDenId, tra001Id, traPhaId]
-            .filter(Boolean)
-            .map((id) => String(id))
-    );
-
-    const kept = variant.ingredients.filter(
-        (line) => !skipIds.has(String(line.storageItemId))
-    );
-
-    const traLine = {
-        storageItemId: traPhaId,
-        quantity: qty,
-        unit: "ml",
-        notes: "",
-    };
-
-    const duongIdx = nuocDuongId
-        ? kept.findIndex(
-              (line) => String(line.storageItemId) === String(nuocDuongId)
-          )
-        : -1;
-
-    if (duongIdx >= 0) {
-        kept.splice(duongIdx + 1, 0, traLine);
-    } else {
-        kept.unshift(traLine);
-    }
-
-    variant.ingredients = kept;
-}
-
-function setTraPhaQuantity(
+function setLeafTeaQuantities(
     recipe: {
         sizeVariantRecipes: Array<{
             size: string;
@@ -137,15 +56,17 @@ function setTraPhaQuantity(
             }>;
         }>;
     },
-    traPhaId: mongoose.Types.ObjectId
+    traLaiId: mongoose.Types.ObjectId,
+    traDenId: mongoose.Types.ObjectId
 ) {
     for (const variant of recipe.sizeVariantRecipes) {
-        const qty =
-            variant.size === "Large" ? TRAPHA_LARGE_ML : TRAPHA_MEDIUM_ML;
+        const teaQty =
+            variant.size === "Large" ? TEA_LARGE_QTY : TEA_MEDIUM_QTY;
         for (const line of variant.ingredients) {
-            if (String(line.storageItemId) === String(traPhaId)) {
-                line.quantity = qty;
-                line.unit = "ml";
+            const id = String(line.storageItemId);
+            if (id === String(traLaiId) || id === String(traDenId)) {
+                line.quantity = teaQty;
+                line.unit = "g";
             }
         }
     }
@@ -154,12 +75,8 @@ function setTraPhaQuantity(
 async function updateRecipeTea(
     storeId: mongoose.Types.ObjectId,
     dishName: string,
-    traPha: mongoose.Document,
     traLai: mongoose.Document,
-    traDen: mongoose.Document,
-    nuocDuong: mongoose.Document | null,
-    tra001: mongoose.Document | null,
-    mode: "replace" | "set"
+    traDen: mongoose.Document
 ) {
     const dish = await findDishByName(storeId, dishName);
     if (!dish) {
@@ -177,25 +94,11 @@ async function updateRecipeTea(
         return;
     }
 
-    for (const variant of recipe.sizeVariantRecipes) {
-        if (mode === "replace") {
-            replaceTeaWithTraPha(
-                variant,
-                traPha._id as mongoose.Types.ObjectId,
-                traLai._id as mongoose.Types.ObjectId,
-                traDen._id as mongoose.Types.ObjectId,
-                nuocDuong?._id as mongoose.Types.ObjectId | null,
-                tra001?._id as mongoose.Types.ObjectId | null
-            );
-        }
-    }
-
-    if (mode === "set") {
-        setTraPhaQuantity(
-            recipe,
-            traPha._id as mongoose.Types.ObjectId
-        );
-    }
+    setLeafTeaQuantities(
+        recipe,
+        traLai._id as mongoose.Types.ObjectId,
+        traDen._id as mongoose.Types.ObjectId
+    );
 
     await calculateRecipeCost(recipe, String(storeId));
     await recipe.save();
@@ -203,15 +106,15 @@ async function updateRecipeTea(
 
     const m = recipe.sizeVariantRecipes.find((v) => v.size === "Medium");
     const l = recipe.sizeVariantRecipes.find((v) => v.size === "Large");
-    const mTra = m?.ingredients.find(
-        (line) => String(line.storageItemId) === String(traPha._id)
+    const mLai = m?.ingredients.find(
+        (line) => String(line.storageItemId) === String(traLai._id)
     );
-    const lTra = l?.ingredients.find(
-        (line) => String(line.storageItemId) === String(traPha._id)
+    const lLai = l?.ingredients.find(
+        (line) => String(line.storageItemId) === String(traLai._id)
     );
 
     console.log(
-        `OK ${dish.name} => trà M ${mTra?.quantity}ml / L ${lTra?.quantity}ml (cost M ${Math.round((m?.totalIngredientCost ?? 0) + (m?.otherCost ?? 0))} / L ${Math.round((l?.totalIngredientCost ?? 0) + (l?.otherCost ?? 0))})`
+        `OK ${dish.name} => TRALAI+TRADEN M ${mLai?.quantity}g / L ${lLai?.quantity}g`
     );
 }
 
@@ -238,65 +141,21 @@ async function main() {
         store: storeId,
         code: "TRADEN",
     });
-    const tra001 = await StorageItem.findOne({
-        store: storeId,
-        code: "TRA001",
-    });
-    const nuocDuong = await StorageItem.findOne({
-        store: storeId,
-        code: "NUOCDUONG",
-    });
 
     if (!traLai || !traDen) {
         throw new Error("TRALAI or TRADEN not found");
     }
 
-    const traPha = await ensureTraPha(storeId, traLai, traDen);
-
     console.log(
-        `Trà production: M ${TRAPHA_MEDIUM_ML}ml / L ${TRAPHA_LARGE_ML}ml (TRAPHA @ ${traPha.averageCost}/ml)\n`
+        `Trà production: TRALAI + TRADEN M ${TEA_MEDIUM_QTY}g / L ${TEA_LARGE_QTY}g each\n`
     );
 
-    for (const dishName of FRUIT_TRA_NAMES) {
-        await updateRecipeTea(
-            storeId,
-            dishName,
-            traPha,
-            traLai,
-            traDen,
-            nuocDuong,
-            tra001,
-            "replace"
-        );
-    }
-
-    for (const dishName of TRA001_NAMES) {
-        await updateRecipeTea(
-            storeId,
-            dishName,
-            traPha,
-            traLai,
-            traDen,
-            nuocDuong,
-            tra001,
-            "replace"
-        );
-    }
-
-    for (const dishName of MACHIATO_NAMES) {
-        const dish = await findDishByName(storeId, dishName);
-        if (!dish) continue;
-        await updateRecipeTea(
-            storeId,
-            dishName,
-            traPha,
-            traLai,
-            traDen,
-            nuocDuong,
-            tra001,
-            "set"
-        );
-        break;
+    for (const dishName of [
+        ...FRUIT_TRA_NAMES,
+        ...TRA001_NAMES,
+        ...MACHIATO_NAMES,
+    ]) {
+        await updateRecipeTea(storeId, dishName, traLai, traDen);
     }
 
     await mongoose.disconnect();
