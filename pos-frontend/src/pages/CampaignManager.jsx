@@ -21,9 +21,8 @@ const CampaignManager = () => {
   const dispatch = useDispatch();
   const { enqueueSnackbar } = useSnackbar();
 
-  const { items: campaigns, loading, error } = useSelector(
-    (state) => state.campaigns
-  );
+  const { campaigns, campaignsLoading: loading, campaignsError: error } =
+    useSelector((state) => state.campaigns);
 
   const [showForm, setShowForm] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState(null);
