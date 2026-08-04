@@ -34,6 +34,7 @@ interface PopulatedParticipation {
 
 export class VoucherService {
   static async validate(qrToken: string): Promise<VoucherPreviewDTO> {
+    await CampaignService.expireVouchersForEndedCampaigns();
     const voucher = await CampaignVoucher.findOne({ qrToken })
       .populate("campaign")
       .populate("freeDish", "name price")
@@ -93,6 +94,7 @@ export class VoucherService {
     userId: string,
     storeId: string
   ): Promise<VoucherRedeemDTO> {
+    await CampaignService.expireVouchersForEndedCampaigns();
     const voucher = await CampaignVoucher.findOneAndUpdate(
       { qrToken, status: "active" },
       {

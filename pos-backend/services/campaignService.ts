@@ -315,10 +315,29 @@ export class CampaignService {
     };
   }
 
+  static async expireVouchersForEndedCampaigns(): Promise<number> {
+    const now = new Date();
+    const endedCampaignIds = await Campaign.find({ endDate: { $lte: now } }).distinct(
+      "_id"
+    );
+    const result = await CampaignVoucher.updateMany(
+      {
+        status: "active",
+        $or: [
+          { expiresAt: { $lte: now } },
+          { campaign: { $in: endedCampaignIds } },
+        ],
+      },
+      { $set: { status: "expired" } }
+    );
+    return result.modifiedCount;
+  }
+
   static async playCampaign(
     slug: string,
     phone: string
   ): Promise<PlayCampaignResult> {
+    await this.expireVouchersForEndedCampaigns();
     this.validatePhone(phone);
 
     const campaign = await Campaign.findOne({ slug: normalizeSlug(slug) });
@@ -395,6 +414,7 @@ export class CampaignService {
   }
 
   static async lookupVoucher(slug: string, phone: string): Promise<LookupResult> {
+    await this.expireVouchersForEndedCampaigns();
     this.validatePhone(phone);
 
     const campaign = await Campaign.findOne({ slug: normalizeSlug(slug) });

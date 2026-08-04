@@ -58,7 +58,13 @@ app.use(helmet());
 // ─── CORS ──────────────────────────────────────────────────────────────────
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://hiko-pos.vercel.app"],
+    origin: [
+      "http://localhost:5173",
+      "https://hiko-pos.vercel.app",
+      "http://localhost:4321",
+      "https://hikomatcha.vn",
+      "https://www.hikomatcha.vn",
+    ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Store-Id"],
     credentials: true,
