@@ -39,6 +39,7 @@ import extraWorkRoute from "./routes/extraWorkRoute.js";
 import shiftCheckoutRoute from "./routes/shiftCheckoutRoute.js";
 import ticketRoute from "./routes/ticketRoute.js";
 import rewardProgramRoute from "./routes/rewardProgramRoute.js";
+import campaignRoute from "./routes/campaignRoute.js";
 import docRoute from "./routes/docRoute.js";
 import testRoute from "./routes/testRoute.js";
 
@@ -142,6 +143,7 @@ app.use("/api/extra-work", extraWorkRoute);
 app.use("/api/shift-checkout", shiftCheckoutRoute);
 app.use("/api/ticket", ticketRoute);
 app.use("/api/reward-program", rewardProgramRoute);
+app.use("/api/campaign", campaignRoute);
 app.use("/api/docs", docRoute);
 app.use("/api/test", testRoute);
 
