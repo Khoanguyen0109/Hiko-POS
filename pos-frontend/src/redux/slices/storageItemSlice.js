@@ -141,22 +141,23 @@ const storageItemSlice = createSlice({
             // Update storage item
             .addCase(editStorageItem.fulfilled, (state, action) => {
                 const updated = action.payload;
-                if (!updated.isActive) {
-                    state.items = state.items.filter(item => item._id !== updated._id);
+                const idx = state.items.findIndex(item => item._id === updated._id);
+                if (idx !== -1) {
+                    state.items[idx] = updated;
                 } else {
-                    const idx = state.items.findIndex(item => item._id === updated._id);
-                    if (idx !== -1) {
-                        state.items[idx] = updated;
-                    }
+                    state.items.unshift(updated);
                 }
                 if (state.selectedItem && state.selectedItem._id === updated._id) {
-                    state.selectedItem = updated.isActive ? updated : null;
+                    state.selectedItem = updated;
                 }
             })
             // Delete storage item (soft delete)
             .addCase(removeStorageItem.fulfilled, (state, action) => {
                 const id = action.payload;
-                state.items = state.items.filter(item => item._id !== id);
+                const idx = state.items.findIndex(item => item._id === id);
+                if (idx !== -1) {
+                    state.items[idx] = { ...state.items[idx], isActive: false };
+                }
                 if (state.selectedItem && state.selectedItem._id === id) {
                     state.selectedItem = null;
                 }

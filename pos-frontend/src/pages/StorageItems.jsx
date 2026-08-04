@@ -49,6 +49,11 @@ const STOCK_OPTIONS = [
   { value: "out", label: "Out of Stock" },
 ];
 
+const STATUS_OPTIONS = [
+  { value: "all", label: "All" },
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+];
 
 const StorageItems = () => {
   const dispatch = useDispatch();
@@ -57,10 +62,11 @@ const StorageItems = () => {
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [filterStock, setFilterStock] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
-    dispatch(fetchStorageItems({ isActive: true }));
+    dispatch(fetchStorageItems({ isActive: "all" }));
   }, [dispatch]);
 
   const handleAddItem = useCallback(() => {
@@ -101,7 +107,7 @@ const StorageItems = () => {
   }, [dispatch]);
 
   const handleModalSuccess = useCallback(() => {
-    dispatch(fetchStorageItems({ isActive: true }));
+    dispatch(fetchStorageItems({ isActive: "all" }));
   }, [dispatch]);
 
   const handleCloseModal = useCallback(() => {
@@ -110,9 +116,10 @@ const StorageItems = () => {
   }, []);
 
   const filteredItems = storageItems.filter((item) => {
-    if (!item.isActive) return false;
+    if (filterStatus === "active" && !item.isActive) return false;
+    if (filterStatus === "inactive" && item.isActive) return false;
     const q = searchQuery.toLowerCase();
-    if (q && !item.name.toLowerCase().includes(q) && !item.code.toLowerCase().includes(q)) return false;
+    if (q && !item.name.toLowerCase().includes(q) && !(item.code || "").toLowerCase().includes(q)) return false;
     if (filterStock === "low" && item.currentStock > item.minStock) return false;
     if (filterStock === "out" && item.currentStock !== 0) return false;
     return true;
@@ -146,6 +153,7 @@ const StorageItems = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="flex-1 px-4 py-2 bg-[#1f1f1f] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
           />
+          <FilterGroup options={STATUS_OPTIONS} value={filterStatus} onChange={setFilterStatus} />
           <FilterGroup options={STOCK_OPTIONS} value={filterStock} onChange={setFilterStock} />
         </div>
 
@@ -155,7 +163,15 @@ const StorageItems = () => {
         {filteredItems.length === 0 ? (
           <EmptyState
             icon={MdInventory}
-            message={searchQuery ? "No items match your search" : "No storage items found"}
+            message={
+              searchQuery
+                ? "No items match your search"
+                : filterStatus === "inactive"
+                ? "No inactive storage items"
+                : filterStatus === "active"
+                ? "No active storage items"
+                : "No storage items found"
+            }
             action={
               !searchQuery
                 ? { label: "Add Your First Item", onClick: handleAddItem }
@@ -174,14 +190,22 @@ const StorageItems = () => {
               </thead>
               <tbody className="divide-y divide-[#343434]">
                 {filteredItems.map((item) => {
-                  const isLow = item.currentStock <= item.minStock;
-                  const isOut = item.currentStock === 0;
-                  const rowBg = isOut
+                  const isLow = item.isActive && item.currentStock <= item.minStock;
+                  const isOut = item.isActive && item.currentStock === 0;
+                  const rowBg = !item.isActive
+                    ? "bg-[#262626] hover:bg-[#2e2e2e] border-l-4 border-l-[#555555] opacity-70"
+                    : isOut
                     ? "bg-[#3b2222] hover:bg-[#4a2a2a] border-l-4 border-l-red-500"
                     : isLow
                     ? "bg-[#3b3520] hover:bg-[#4a4228] border-l-4 border-l-yellow-400"
                     : "bg-[#1f1f1f] hover:bg-[#262626]";
-                  const stickyBg = isOut ? "bg-[#3b2222]" : isLow ? "bg-[#3b3520]" : "bg-[#1f1f1f]";
+                  const stickyBg = !item.isActive
+                    ? "bg-[#262626]"
+                    : isOut
+                    ? "bg-[#3b2222]"
+                    : isLow
+                    ? "bg-[#3b3520]"
+                    : "bg-[#1f1f1f]";
                   return (
                     <tr key={item._id} className={`${rowBg} transition-colors`}>
                       <td className={`${tdClass} sticky left-0 ${stickyBg} z-[1] shadow-[2px_0_4px_-1px_rgba(0,0,0,0.3)]`}>
@@ -190,7 +214,14 @@ const StorageItems = () => {
                             <MdInventory size={16} className="text-brand" />
                           </div>
                           <div>
-                            <p className="font-medium">{item.name}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium">{item.name}</p>
+                              {!item.isActive ? (
+                                <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-900/30 text-red-400 border border-red-800">
+                                  Inactive
+                                </span>
+                              ) : null}
+                            </div>
                             <p className="text-xs text-[#ababab]">{item.code}</p>
                           </div>
                         </div>
