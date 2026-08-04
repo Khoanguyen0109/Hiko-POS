@@ -453,6 +453,7 @@ export const ROUTES = {
   TOPPINGS: "/toppings",
   PROMOTIONS: "/promotions",
   CAMPAIGNS: "/campaigns",
+  REDEEM_REWARD: "/redeem-reward",
   SPENDING: "/spending",
   SHIFT_CHECKOUT: "/shift-checkout",
   SCHEDULES: "/schedules",
@@ -554,6 +555,10 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.SHIFT_CHECKOUT,
     componentName: "ShiftCheckout"
+  },
+  {
+    path: ROUTES.REDEEM_REWARD,
+    componentName: "RedeemReward"
   },
   {
     path: ROUTES.SCHEDULES,

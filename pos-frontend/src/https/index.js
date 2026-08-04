@@ -172,6 +172,11 @@ export const updateCampaign = ({ campaignId, ...data }) =>
   axiosWrapper.put(`/api/campaign/${campaignId}`, data);
 export const deactivateCampaign = (campaignId) =>
   axiosWrapper.delete(`/api/campaign/${campaignId}`);
+export const validateVoucher = (qrToken) =>
+  axiosWrapper.get(`/api/voucher/validate/${encodeURIComponent(qrToken)}`);
+export const redeemVoucher = (qrToken) =>
+  axiosWrapper.post("/api/voucher/redeem", { qrToken });
+
 export const getCampaignDashboardAnalytics = (params = {}) => {
   const queryParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {

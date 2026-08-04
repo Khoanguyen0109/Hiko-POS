@@ -18,6 +18,7 @@ import {
   MdCardGiftcard,
   MdMenuBook,
   MdCasino,
+  MdQrCodeScanner,
 } from "react-icons/md";
 import { BiSolidDish } from "react-icons/bi";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -114,6 +115,11 @@ const Sidebar = ({ isOpen, onClose, onOpen }) => {
           path: ROUTES.SHIFT_CHECKOUT,
           icon: <MdAccountBalanceWallet size={18} />,
           label: "Shift checkout",
+        },
+        {
+          path: ROUTES.REDEEM_REWARD,
+          icon: <MdQrCodeScanner size={18} />,
+          label: "Redeem Reward",
         },
       ],
     },
