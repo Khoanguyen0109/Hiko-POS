@@ -17,6 +17,7 @@ import {
   MdPeople,
   MdCardGiftcard,
   MdMenuBook,
+  MdCasino,
 } from "react-icons/md";
 import { BiSolidDish } from "react-icons/bi";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -169,6 +170,11 @@ const Sidebar = ({ isOpen, onClose, onOpen }) => {
                 path: ROUTES.PROMOTIONS,
                 icon: <MdLocalOffer size={18} />,
                 label: "Promotions",
+              },
+              {
+                path: ROUTES.CAMPAIGNS,
+                icon: <MdCasino size={18} />,
+                label: "Campaigns",
               },
             ],
           },

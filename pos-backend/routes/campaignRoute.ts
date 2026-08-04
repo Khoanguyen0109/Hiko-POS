@@ -8,6 +8,7 @@ import {
   getPublicCampaign,
   playCampaign,
   lookupVoucher,
+  getDashboardAnalytics,
 } from "../controllers/campaignController.js";
 import { isVerifiedUser, isAdmin } from "../middlewares/tokenVerification.js";
 import { campaignPlayLimiter } from "../middlewares/campaignPlayLimiter.js";
@@ -20,6 +21,7 @@ router.post("/:slug/lookup", campaignPlayLimiter, lookupVoucher);
 
 router.use(isVerifiedUser, isAdmin);
 
+router.get("/analytics/dashboard", getDashboardAnalytics);
 router.get("/", listCampaigns);
 router.post("/", createCampaign);
 router.get("/:id", getCampaignById);

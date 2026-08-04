@@ -11,6 +11,7 @@ import PromotionMetrics from "../components/dashboard/PromotionMetrics";
 import SalaryMetrics from "../components/dashboard/SalaryMetrics";
 import StorageAnalytics from "../components/dashboard/StorageAnalytics";
 import RewardsDashboard from "../components/dashboard/RewardsDashboard";
+import RedeemRewardDashboard from "../components/dashboard/RedeemRewardDashboard";
 import ShiftCheckoutDashboard from "../components/dashboard/ShiftCheckoutDashboard";
 import CategoryModal from "../components/dashboard/CategoryModal";
 import DishModal from "../components/dashboard/DishModal";
@@ -256,7 +257,7 @@ const Dashboard = () => {
 
   // Memoize tabs array
   const tabs = useMemo(() => 
-    ["Metrics", "Promotions", ...(isAdmin ? ["Spending", "Shift Checkout", "Salary", "Storage Analytics", "Rewards"] : [])],
+    ["Metrics", "Promotions", ...(isAdmin ? ["Spending", "Shift Checkout", "Salary", "Storage Analytics", "Rewards", "Redeem Reward"] : [])],
     [isAdmin]
   );
 
@@ -435,6 +436,15 @@ const Dashboard = () => {
       {activeTab === "Rewards" && isAdmin && (
         <div className="container mx-auto px-4 md:px-6">
           <RewardsDashboard />
+        </div>
+      )}
+
+      {activeTab === "Redeem Reward" && isAdmin && (
+        <div className="container mx-auto px-4 md:px-6">
+          <RedeemRewardDashboard
+            dateFilter={dateFilter}
+            customDateRange={customDateRange}
+          />
         </div>
       )}
 

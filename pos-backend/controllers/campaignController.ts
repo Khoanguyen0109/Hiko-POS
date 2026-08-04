@@ -5,6 +5,7 @@ import {
   type CreateCampaignInput,
   type UpdateCampaignInput,
 } from "../services/campaignService.js";
+import { CampaignAnalyticsService } from "../services/campaignAnalyticsService.js";
 
 const listCampaigns = async (
   req: import("express").Request,
@@ -165,6 +166,30 @@ const playCampaign = async (
   }
 };
 
+const getDashboardAnalytics = async (
+  req: import("express").Request,
+  res: import("express").Response,
+  next: import("express").NextFunction
+) => {
+  try {
+    const { startDate, endDate, campaignId } = req.query as {
+      startDate?: string;
+      endDate?: string;
+      campaignId?: string;
+    };
+
+    const analytics = await CampaignAnalyticsService.getDashboard({
+      startDate,
+      endDate,
+      campaignId,
+    });
+
+    res.status(200).json({ success: true, data: analytics });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const lookupVoucher = async (
   req: import("express").Request,
   res: import("express").Response,
@@ -194,4 +219,5 @@ export {
   getPublicCampaign,
   playCampaign,
   lookupVoucher,
+  getDashboardAnalytics,
 };

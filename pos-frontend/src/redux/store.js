@@ -26,6 +26,7 @@ import toppingRecipeReducer from "./slices/toppingRecipeSlice";
 import ticketReducer from "./slices/ticketSlice";
 import storeReducer from "./slices/storeSlice";
 import rewardReducer from "./slices/rewardSlice";
+import campaignReducer from "./slices/campaignSlice";
 import docsReducer from "./slices/docsSlice";
 
 const store = configureStore({
@@ -57,6 +58,7 @@ const store = configureStore({
         tickets: ticketReducer,
         store: storeReducer,
         rewards: rewardReducer,
+        campaigns: campaignReducer,
         docs: docsReducer
     },
 

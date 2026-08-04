@@ -163,6 +163,26 @@ export const getPromotionAnalytics = (params = {}) => {
 };
 export const validateCouponCode = (code) => axiosWrapper.post("/api/promotion/validate-coupon", { code });
 
+// Campaign Endpoints
+export const getCampaigns = () => axiosWrapper.get("/api/campaign");
+export const getCampaignById = (campaignId) =>
+  axiosWrapper.get(`/api/campaign/${campaignId}`);
+export const addCampaign = (data) => axiosWrapper.post("/api/campaign", data);
+export const updateCampaign = ({ campaignId, ...data }) =>
+  axiosWrapper.put(`/api/campaign/${campaignId}`, data);
+export const deactivateCampaign = (campaignId) =>
+  axiosWrapper.delete(`/api/campaign/${campaignId}`);
+export const getCampaignDashboardAnalytics = (params = {}) => {
+  const queryParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== "" && value !== null && value !== undefined) {
+      queryParams.append(key, value);
+    }
+  });
+  const queryString = queryParams.toString();
+  return axiosWrapper.get(`/api/campaign/analytics/dashboard${queryString ? `?${queryString}` : ""}`);
+};
+
 // Customer Search & Rewards Endpoints
 export const searchCustomers = (query) => axiosWrapper.get(`/api/customer/search?q=${encodeURIComponent(query)}`);
 export const getCustomerRewards = (customerId) => axiosWrapper.get(`/api/customer/${customerId}/rewards`);

@@ -452,6 +452,7 @@ export const ROUTES = {
   SETTINGS: "/settings",
   TOPPINGS: "/toppings",
   PROMOTIONS: "/promotions",
+  CAMPAIGNS: "/campaigns",
   SPENDING: "/spending",
   SHIFT_CHECKOUT: "/shift-checkout",
   SCHEDULES: "/schedules",
@@ -539,6 +540,11 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.PROMOTIONS,
     componentName: "PromotionManager",
+    adminOnly: true
+  },
+  {
+    path: ROUTES.CAMPAIGNS,
+    componentName: "CampaignManager",
     adminOnly: true
   },
   {
