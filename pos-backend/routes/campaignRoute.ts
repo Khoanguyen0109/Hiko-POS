@@ -5,16 +5,18 @@ import {
   createCampaign,
   updateCampaign,
   deactivateCampaign,
+  getPublicCampaign,
+  playCampaign,
+  lookupVoucher,
 } from "../controllers/campaignController.js";
 import { isVerifiedUser, isAdmin } from "../middlewares/tokenVerification.js";
+import { campaignPlayLimiter } from "../middlewares/campaignPlayLimiter.js";
 
 const router = express.Router();
 
-// Reserved for later tasks — register BEFORE /:id to avoid route conflicts:
-// GET  /analytics/dashboard
-// GET  /:slug/public
-// POST /:slug/play
-// POST /:slug/lookup
+router.get("/:slug/public", getPublicCampaign);
+router.post("/:slug/play", campaignPlayLimiter, playCampaign);
+router.post("/:slug/lookup", campaignPlayLimiter, lookupVoucher);
 
 router.use(isVerifiedUser, isAdmin);
 

@@ -131,10 +131,67 @@ const deactivateCampaign = async (
   }
 };
 
+const getPublicCampaign = async (
+  req: import("express").Request,
+  res: import("express").Response,
+  next: import("express").NextFunction
+) => {
+  try {
+    const slug = String(req.params.slug);
+    const campaign = await CampaignService.getPublicCampaign(slug);
+    res.status(200).json({ success: true, data: campaign });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const playCampaign = async (
+  req: import("express").Request,
+  res: import("express").Response,
+  next: import("express").NextFunction
+) => {
+  try {
+    const slug = String(req.params.slug);
+    const phone = (req.body as { phone?: string }).phone;
+
+    if (!phone) {
+      return next(createHttpError(400, "Phone is required"));
+    }
+
+    const result = await CampaignService.playCampaign(slug, phone.trim());
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const lookupVoucher = async (
+  req: import("express").Request,
+  res: import("express").Response,
+  next: import("express").NextFunction
+) => {
+  try {
+    const slug = String(req.params.slug);
+    const phone = (req.body as { phone?: string }).phone;
+
+    if (!phone) {
+      return next(createHttpError(400, "Phone is required"));
+    }
+
+    const result = await CampaignService.lookupVoucher(slug, phone.trim());
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 export {
   listCampaigns,
   getCampaignById,
   createCampaign,
   updateCampaign,
   deactivateCampaign,
+  getPublicCampaign,
+  playCampaign,
+  lookupVoucher,
 };

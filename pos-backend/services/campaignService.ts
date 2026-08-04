@@ -1,8 +1,22 @@
 import createHttpError from "http-errors";
 import mongoose, { type Types } from "mongoose";
 import Campaign from "../models/campaignModel.js";
+import CampaignParticipation from "../models/campaignParticipationModel.js";
+import CampaignVoucher from "../models/campaignVoucherModel.js";
+import Customer from "../models/customerModel.js";
 import Dish from "../models/dishModel.js";
-import type { WheelSlot } from "../types/campaign.js";
+import type {
+  LookupResult,
+  PlayCampaignResult,
+  PlayResultWin,
+  PublicCampaignDTO,
+  WheelSlot,
+} from "../types/campaign.js";
+import {
+  generateQrToken,
+  generateVoucherCode,
+  pickWeightedSlot,
+} from "../utils/campaignUtils.js";
 
 export interface CampaignDoc {
   _id: Types.ObjectId;
@@ -47,6 +61,47 @@ export interface PlayableResult {
 }
 
 const SLUG_PATTERN = /^[a-z0-9-]+$/;
+const PHONE_PATTERN = /^\d{10}$/;
+
+interface ParticipationDoc {
+  _id: Types.ObjectId;
+  campaign: Types.ObjectId;
+  phone: string;
+  customer?: Types.ObjectId;
+  playCount: number;
+  lastPlayedAt?: Date;
+}
+
+interface VoucherDoc {
+  _id: Types.ObjectId;
+  voucherCode: string;
+  qrToken: string;
+  rewardType: "percentage_discount" | "free_product";
+  discountPercent?: number;
+  freeDish?: Types.ObjectId;
+  rewardLabel: string;
+  status: "active" | "redeemed" | "expired";
+  expiresAt?: Date;
+  redeemedAt?: Date;
+}
+
+function isDuplicateKeyError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code: number }).code === 11000
+  );
+}
+
+function optionalNumber(value: number | null | undefined): number | undefined {
+  return value ?? undefined;
+}
+
+function freeDishToString(freeDish: unknown): string | undefined {
+  if (freeDish == null) return undefined;
+  return String(freeDish);
+}
 
 function parseOptionalDate(value: Date | string | null | undefined): Date | undefined {
   if (value == null || value === "") return undefined;
@@ -239,6 +294,166 @@ export class CampaignService {
     return campaign as CampaignDoc | null;
   }
 
+  static async getPublicCampaign(slug: string): Promise<PublicCampaignDTO> {
+    const campaign = await Campaign.findOne({ slug: normalizeSlug(slug) }).select(
+      "name description wheelSlots.label wheelSlots.color"
+    );
+
+    if (!campaign) {
+      throw createHttpError(404, "Campaign not found");
+    }
+
+    const wheelSlots = campaign.wheelSlots.map((slot) => ({
+      label: slot.label,
+      color: slot.color,
+    }));
+
+    return {
+      name: campaign.name,
+      description: campaign.description ?? "",
+      wheelSlots,
+    };
+  }
+
+  static async playCampaign(
+    slug: string,
+    phone: string
+  ): Promise<PlayCampaignResult> {
+    this.validatePhone(phone);
+
+    const campaign = await Campaign.findOne({ slug: normalizeSlug(slug) });
+    if (!campaign) {
+      throw createHttpError(404, "Campaign not found");
+    }
+
+    const campaignDoc = campaign as unknown as CampaignDoc;
+    const playable = this.isCampaignPlayable(campaignDoc);
+    if (!playable.ok) {
+      throw createHttpError(400, playable.reason ?? "Campaign is not playable");
+    }
+
+    let customer = await Customer.findOne({ phone });
+    if (!customer) {
+      customer = await Customer.create({ phone, name: "" });
+    }
+
+    let participation = await this.atomicPlayIncrement(
+      campaign._id,
+      phone,
+      customer._id,
+      campaign.maxPlaysPerPhone
+    );
+
+    if (!participation) {
+      const existing = await CampaignParticipation.findOne({
+        campaign: campaign._id,
+        phone,
+      });
+
+      if (existing && existing.playCount >= campaign.maxPlaysPerPhone) {
+        return this.buildMaxPlaysResponse(
+          campaign._id,
+          existing as ParticipationDoc,
+          campaign.maxPlaysPerPhone
+        );
+      }
+
+      throw createHttpError(400, "Unable to record play attempt");
+    }
+
+    const playsRemaining = Math.max(
+      0,
+      campaign.maxPlaysPerPhone - participation.playCount
+    );
+    const slot = pickWeightedSlot(campaign.wheelSlots as WheelSlot[]);
+
+    if (slot.rewardType === "no_prize") {
+      return {
+        result: "lose",
+        message: "Try again next time",
+        playsRemaining,
+      };
+    }
+
+    const voucher = await CampaignVoucher.create({
+      campaign: campaign._id,
+      participation: participation._id,
+      voucherCode: generateVoucherCode(),
+      qrToken: generateQrToken(),
+      rewardType: slot.rewardType,
+      discountPercent: slot.discountPercent,
+      freeDish: slot.freeDish,
+      rewardLabel: slot.label,
+      expiresAt: campaign.endDate ?? undefined,
+    });
+
+    return this.buildWinResult(
+      slot,
+      voucher as VoucherDoc,
+      playsRemaining
+    );
+  }
+
+  static async lookupVoucher(slug: string, phone: string): Promise<LookupResult> {
+    this.validatePhone(phone);
+
+    const campaign = await Campaign.findOne({ slug: normalizeSlug(slug) });
+    if (!campaign) {
+      throw createHttpError(404, "Campaign not found");
+    }
+
+    const participation = await CampaignParticipation.findOne({
+      campaign: campaign._id,
+      phone,
+    });
+
+    if (!participation) {
+      return {
+        status: "none",
+        message: "No voucher found for this phone number",
+      };
+    }
+
+    const vouchers = await CampaignVoucher.find({
+      campaign: campaign._id,
+      participation: participation._id,
+    }).sort({ wonAt: -1 });
+
+    if (vouchers.length === 0) {
+      return {
+        status: "none",
+        message: "No voucher found for this phone number",
+      };
+    }
+
+    const activeVoucher = vouchers.find((voucher) => voucher.status === "active");
+    if (activeVoucher) {
+      const playable = this.isCampaignPlayable(campaign as unknown as CampaignDoc);
+      if (!playable.ok) {
+        return {
+          status: "expired",
+          message: playable.reason ?? "Voucher expired",
+        };
+      }
+
+      return this.buildLookupActive(activeVoucher as VoucherDoc);
+    }
+
+    const redeemedVoucher = vouchers.find((voucher) => voucher.status === "redeemed");
+    if (redeemedVoucher?.redeemedAt) {
+      return {
+        status: "redeemed",
+        message: `Used on ${redeemedVoucher.redeemedAt.toLocaleDateString()}`,
+        redeemedAt: redeemedVoucher.redeemedAt.toISOString(),
+      };
+    }
+
+    return {
+      status: "expired",
+      message: "Voucher expired",
+    };
+  }
+
   static isCampaignPlayable(
     campaign: CampaignDoc,
     now: Date = new Date()
@@ -253,6 +468,145 @@ export class CampaignService {
       return { ok: false, reason: "Campaign has ended" };
     }
     return { ok: true };
+  }
+
+  private static validatePhone(phone: string): void {
+    if (!PHONE_PATTERN.test(phone)) {
+      throw createHttpError(400, "Phone number must be a 10-digit number");
+    }
+  }
+
+  private static async atomicPlayIncrement(
+    campaignId: Types.ObjectId,
+    phone: string,
+    customerId: Types.ObjectId,
+    maxPlaysPerPhone: number
+  ): Promise<ParticipationDoc | null> {
+    const now = new Date();
+
+    const updated = await CampaignParticipation.findOneAndUpdate(
+      {
+        campaign: campaignId,
+        phone,
+        playCount: { $lt: maxPlaysPerPhone },
+      },
+      {
+        $inc: { playCount: 1 },
+        $set: { lastPlayedAt: now, customer: customerId },
+      },
+      { new: true }
+    );
+
+    if (updated) {
+      return updated as ParticipationDoc;
+    }
+
+    const existing = await CampaignParticipation.findOne({ campaign: campaignId, phone });
+    if (existing) {
+      return null;
+    }
+
+    try {
+      const created = await CampaignParticipation.create({
+        campaign: campaignId,
+        phone,
+        customer: customerId,
+        playCount: 1,
+        lastPlayedAt: now,
+      });
+      return created as ParticipationDoc;
+    } catch (error) {
+      if (!isDuplicateKeyError(error)) {
+        throw error;
+      }
+    }
+
+    return CampaignParticipation.findOneAndUpdate(
+      {
+        campaign: campaignId,
+        phone,
+        playCount: { $lt: maxPlaysPerPhone },
+      },
+      {
+        $inc: { playCount: 1 },
+        $set: { lastPlayedAt: now, customer: customerId },
+      },
+      { new: true }
+    ) as Promise<ParticipationDoc | null>;
+  }
+
+  private static buildWinResult(
+    slot: WheelSlot,
+    voucher: VoucherDoc,
+    playsRemaining: number
+  ): PlayResultWin {
+    return {
+      result: "win",
+      reward: {
+        label: slot.label,
+        type: slot.rewardType as "percentage_discount" | "free_product",
+        discountPercent: slot.discountPercent,
+        freeDish: freeDishToString(slot.freeDish),
+      },
+      voucher: {
+        code: voucher.voucherCode,
+        qrToken: voucher.qrToken,
+        expiresAt: voucher.expiresAt?.toISOString() ?? null,
+      },
+      playsRemaining,
+    };
+  }
+
+  private static buildLookupActive(voucher: VoucherDoc): LookupResult {
+    return {
+      status: "active",
+      reward: {
+        label: voucher.rewardLabel,
+        type: voucher.rewardType,
+        discountPercent: optionalNumber(voucher.discountPercent),
+        freeDish: freeDishToString(voucher.freeDish),
+      },
+      voucher: {
+        code: voucher.voucherCode,
+        qrToken: voucher.qrToken,
+        expiresAt: voucher.expiresAt?.toISOString() ?? null,
+      },
+    };
+  }
+
+  private static async buildMaxPlaysResponse(
+    campaignId: Types.ObjectId,
+    participation: ParticipationDoc,
+    maxPlaysPerPhone: number
+  ): Promise<PlayCampaignResult> {
+    const existingVoucher = await CampaignVoucher.findOne({
+      campaign: campaignId,
+      participation: participation._id,
+      status: "active",
+    });
+
+    if (existingVoucher) {
+      return {
+        result: "win",
+        reward: {
+          label: existingVoucher.rewardLabel,
+          type: existingVoucher.rewardType,
+          discountPercent: optionalNumber(existingVoucher.discountPercent),
+          freeDish: freeDishToString(existingVoucher.freeDish),
+        },
+        voucher: {
+          code: existingVoucher.voucherCode,
+          qrToken: existingVoucher.qrToken,
+          expiresAt: existingVoucher.expiresAt?.toISOString() ?? null,
+        },
+        playsRemaining: Math.max(0, maxPlaysPerPhone - participation.playCount),
+      };
+    }
+
+    return {
+      result: "no_plays_remaining",
+      message: "You have already played",
+    };
   }
 
   private static validateWheelSlots(slots: WheelSlot[]): void {

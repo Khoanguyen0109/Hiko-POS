@@ -12,6 +12,7 @@ import mongoose from "mongoose";
 import connectDB from "./config/database.js";
 import config from "./config/config.js";
 import globalErrorHandler from "./middlewares/globalErrorHandler.js";
+import { campaignPlayLimiter } from "./middlewares/campaignPlayLimiter.js";
 
 import storeRoute from "./routes/storeRoute.js";
 import userRoute from "./routes/userRoute.js";
@@ -40,6 +41,7 @@ import shiftCheckoutRoute from "./routes/shiftCheckoutRoute.js";
 import ticketRoute from "./routes/ticketRoute.js";
 import rewardProgramRoute from "./routes/rewardProgramRoute.js";
 import campaignRoute from "./routes/campaignRoute.js";
+import voucherRoute from "./routes/voucherRoute.js";
 import docRoute from "./routes/docRoute.js";
 import testRoute from "./routes/testRoute.js";
 
@@ -99,6 +101,8 @@ const couponLimiter = rateLimit({
 app.use("/api/user/login", authLimiter);
 app.use("/api/user/register", authLimiter);
 app.use("/api/promotion/validate-coupon", couponLimiter);
+app.use("/api/campaign/:slug/play", campaignPlayLimiter);
+app.use("/api/campaign/:slug/lookup", campaignPlayLimiter);
 
 // ─── Health check ──────────────────────────────────────────────────────────
 app.get("/", (req: Request, res: Response) => {
@@ -144,6 +148,7 @@ app.use("/api/shift-checkout", shiftCheckoutRoute);
 app.use("/api/ticket", ticketRoute);
 app.use("/api/reward-program", rewardProgramRoute);
 app.use("/api/campaign", campaignRoute);
+app.use("/api/voucher", voucherRoute);
 app.use("/api/docs", docRoute);
 app.use("/api/test", testRoute);
 

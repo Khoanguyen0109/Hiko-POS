@@ -32,6 +32,59 @@ export interface PlayResultLose {
   playsRemaining: number;
 }
 
+export interface PlayResultNoPlaysRemaining {
+  result: "no_plays_remaining";
+  message: string;
+}
+
+export type PlayCampaignResult =
+  | PlayResultWin
+  | PlayResultLose
+  | PlayResultNoPlaysRemaining;
+
+export interface PublicCampaignDTO {
+  name: string;
+  description: string;
+  wheelSlots: Array<{ label: string; color: string }>;
+}
+
+export interface LookupResultActive {
+  status: "active";
+  reward: {
+    label: string;
+    type: "percentage_discount" | "free_product";
+    discountPercent?: number;
+    freeDish?: string;
+  };
+  voucher: {
+    code: string;
+    qrToken: string;
+    expiresAt: string | null;
+  };
+}
+
+export interface LookupResultRedeemed {
+  status: "redeemed";
+  message: string;
+  redeemedAt: string;
+}
+
+export interface LookupResultExpired {
+  status: "expired";
+  message: string;
+}
+
+export interface LookupResultNone {
+  status: "none";
+  message: string;
+}
+
+export type LookupResult =
+  | LookupResultActive
+  | LookupResultRedeemed
+  | LookupResultExpired
+  | LookupResultNone;
+
 export interface CampaignDashboardSummary {
   totalPlays: number;
   totalWins: number;
