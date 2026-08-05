@@ -1,8 +1,6 @@
 import createHttpError from "http-errors";
 import CampaignVoucher from "../models/campaignVoucherModel.js";
 import { CampaignService, type CampaignDoc } from "./campaignService.js";
-import { maskPhone } from "../utils/campaignUtils.js";
-
 export interface VoucherPreviewDTO {
   valid: boolean;
   status: string;
@@ -11,7 +9,7 @@ export interface VoucherPreviewDTO {
   discountPercent?: number;
   freeDish?: { _id: string; name: string; price?: number };
   voucherCode: string;
-  phoneMasked: string;
+  phone: string;
   expiresAt?: string | null;
   campaignName?: string;
 }
@@ -45,7 +43,7 @@ export class VoucherService {
     }
 
     const participation = voucher.participation as PopulatedParticipation | null;
-    const phoneMasked = maskPhone(participation?.phone ?? "");
+    const phone = participation?.phone ?? "";
 
     let valid = voucher.status === "active";
     let status: string = voucher.status;
@@ -83,7 +81,7 @@ export class VoucherService {
           }
         : undefined,
       voucherCode: voucher.voucherCode,
-      phoneMasked,
+      phone,
       expiresAt: voucher.expiresAt?.toISOString() ?? null,
       campaignName: campaign?.name,
     };

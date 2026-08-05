@@ -117,7 +117,7 @@ describe("Integration — Voucher validate and redeem", () => {
     expect(res.body.data.rewardType).toBe("percentage_discount");
     expect(res.body.data.discountPercent).toBe(10);
     expect(res.body.data.voucherCode).toMatch(/^HK-/);
-    expect(res.body.data.phoneMasked).toBe("09****5678");
+    expect(res.body.data.phone).toBe("0912345678");
     expect(res.body.data.campaignName).toBe("Summer Spin");
   });
 

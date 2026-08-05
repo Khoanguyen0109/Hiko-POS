@@ -81,7 +81,7 @@ const PreviewCard = ({ preview, onConfirm, onCancel, isRedeeming }) => {
         </div>
         <div className="flex justify-between gap-4 border-b border-[#343434] pb-3">
           <dt className="text-[#ababab]">Customer phone</dt>
-          <dd className="text-[#f5f5f5]">{preview.phoneMasked || "—"}</dd>
+          <dd className="text-[#f5f5f5]">{preview.phone || "—"}</dd>
         </div>
         {preview.campaignName ? (
           <div className="flex justify-between gap-4 border-b border-[#343434] pb-3">
@@ -140,7 +140,7 @@ PreviewCard.propTypes = {
       price: PropTypes.number,
     }),
     voucherCode: PropTypes.string.isRequired,
-    phoneMasked: PropTypes.string,
+    phone: PropTypes.string,
     expiresAt: PropTypes.string,
     campaignName: PropTypes.string,
   }).isRequired,
