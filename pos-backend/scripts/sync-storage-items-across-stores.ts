@@ -21,6 +21,36 @@ const targetCodes = targetArg
   ? targetArg.split("=")[1]?.split(",").map((c) => c.trim().toUpperCase()).filter(Boolean)
   : null;
 
+/** Target-store legacy codes that should align to source codes */
+const CODE_ALIASES: Record<string, string> = {
+  BOCMOCJI: "BOCMOCHI",
+  HOPKEMOREO: "HOPDUNGKEM",
+  HOPMOCHI: "HOPDUNGMOCHI",
+  XIENDAI: "XIENMOCHI",
+  "XIEN NGẮN": "XIENNGAN",
+};
+
+function normalizeName(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function catalogFields(template: Record<string, unknown>) {
+  return {
+    name: template.name,
+    code: template.code,
+    description: template.description,
+    category: template.category,
+    unit: template.unit,
+    minStock: template.minStock ?? 0,
+    maxStock: template.maxStock ?? 1000,
+    averageCost: template.averageCost ?? 0,
+    lastPurchaseCost: template.lastPurchaseCost ?? 0,
+    isActive: template.isActive ?? true,
+    contentQuantity: template.contentQuantity ?? 0,
+    contentUnit: template.contentUnit ?? "",
+  };
+}
+
 async function run() {
   const uri = process.env.MONGODB_URI;
   if (!uri) {
@@ -44,7 +74,7 @@ async function run() {
     throw new Error(`Source store with code "${sourceCode}" not found`);
   }
 
-  const sourceItems = await StorageItem.find({ store: sourceStore._id, isActive: true })
+  const sourceItems = await StorageItem.find({ store: sourceStore._id })
     .sort({ code: 1 })
     .lean();
 
@@ -55,6 +85,7 @@ async function run() {
   console.log(`Source: ${sourceStore.name} (${sourceStore.code}) — ${sourceItems.length} items\n`);
 
   let totalCreated = 0;
+  let totalUpdated = 0;
 
   for (const store of stores) {
     if (store._id.toString() === sourceStore._id.toString()) {
@@ -62,30 +93,41 @@ async function run() {
       continue;
     }
 
-    const existing = await StorageItem.find({ store: store._id }).select("code").lean();
-    const existingCodes = new Set(existing.map((i) => i.code));
+    const existingItems = await StorageItem.find({ store: store._id }).lean();
+    const existingByCode = new Map(existingItems.map((i) => [i.code, i]));
+    const existingByName = new Map(existingItems.map((i) => [normalizeName(i.name), i]));
 
-    const missing = sourceItems.filter((item) => !existingCodes.has(item.code));
+    const missing = sourceItems.filter((item) => !existingByCode.has(item.code));
     if (missing.length === 0) {
       console.log(`${store.name} (${store.code}): already complete`);
       continue;
     }
 
-    console.log(`${store.name} (${store.code}): creating ${missing.length} item(s)`);
+    console.log(`${store.name} (${store.code}): syncing ${missing.length} item(s)`);
     for (const template of missing) {
+      const aliasTarget = Object.entries(CODE_ALIASES).find(([, sourceCodeValue]) => sourceCodeValue === template.code);
+      const aliasMatch = aliasTarget
+        ? existingByCode.get(aliasTarget[0])
+        : null;
+      const nameMatch = existingByName.get(normalizeName(template.name));
+      const match = aliasMatch || nameMatch;
+
+      if (match) {
+        console.log(`  ~ ${match.code} -> ${template.code} | ${template.name} (align existing)`);
+        if (isExecute) {
+          await StorageItem.updateOne(
+            { _id: match._id },
+            { $set: catalogFields(template) }
+          );
+        }
+        totalUpdated += 1;
+        continue;
+      }
+
       const payload = {
         store: store._id,
-        name: template.name,
-        code: template.code,
-        description: template.description,
-        category: template.category,
-        unit: template.unit,
+        ...catalogFields(template),
         currentStock: 0,
-        minStock: template.minStock ?? 0,
-        maxStock: template.maxStock ?? 1000,
-        averageCost: template.averageCost ?? 0,
-        lastPurchaseCost: template.lastPurchaseCost ?? 0,
-        isActive: template.isActive ?? true,
         createdBy: template.createdBy,
       };
 
@@ -98,7 +140,8 @@ async function run() {
   }
 
   console.log(`\n${isExecute ? "Created" : "Would create"} ${totalCreated} storage item(s)`);
-  if (!isExecute && totalCreated > 0) {
+  console.log(`${isExecute ? "Updated" : "Would update"} ${totalUpdated} storage item(s)`);
+  if (!isExecute && (totalCreated > 0 || totalUpdated > 0)) {
     console.log("\nRe-run with --execute to apply changes.");
   }
 

@@ -198,6 +198,7 @@ const CampaignForm = ({ campaign, onSubmit, onClose }) => {
       onClose={onClose}
       title={campaign ? "Edit Campaign" : "New Campaign"}
       size="xl"
+      bodyClassName="p-4 sm:p-6"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
