@@ -14,6 +14,7 @@ import {
   MdPeople,
   MdCardGiftcard,
   MdMenuBook,
+  MdQrCodeScanner,
 } from "react-icons/md";
 import { BiSolidDish } from "react-icons/bi";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -55,6 +56,11 @@ function buildMoreMenuSections({ isAdmin, canManageTickets }) {
           path: ROUTES.SHIFT_CHECKOUT,
           icon: <MdAccountBalanceWallet size={18} />,
           label: "Shift checkout",
+        },
+        {
+          path: ROUTES.REDEEM_REWARD,
+          icon: <MdQrCodeScanner size={18} />,
+          label: "Redeem Reward",
         },
       ],
     },
