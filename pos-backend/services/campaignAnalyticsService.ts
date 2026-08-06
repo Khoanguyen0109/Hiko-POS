@@ -11,7 +11,6 @@ import type {
   RecentActivityRow,
   RedemptionsByStoreRow,
 } from "../types/campaign.js";
-import { maskPhone } from "../utils/campaignUtils.js";
 import { getDateRangeVietnam } from "../utils/dateUtils.js";
 
 interface GetDashboardParams {
@@ -283,9 +282,7 @@ export class CampaignAnalyticsService {
     const recentActivity: RecentActivityRow[] = [
       ...recentWins.map((voucher) => ({
         type: "win" as const,
-        phone: maskPhone(
-          (voucher.participation as { phone?: string } | null)?.phone ?? ""
-        ),
+        phone: (voucher.participation as { phone?: string } | null)?.phone ?? "",
         campaignName: (voucher.campaign as { name?: string } | null)?.name ?? "",
         rewardLabel: voucher.rewardLabel,
         timestamp: voucher.wonAt as Date,
@@ -298,9 +295,7 @@ export class CampaignAnalyticsService {
       })),
       ...      recentRedemptions.map((voucher) => ({
         type: "redeem" as const,
-        phone: maskPhone(
-          (voucher.participation as { phone?: string } | null)?.phone ?? ""
-        ),
+        phone: (voucher.participation as { phone?: string } | null)?.phone ?? "",
         campaignName: (voucher.campaign as { name?: string } | null)?.name ?? "",
         rewardLabel: voucher.rewardLabel,
         storeName: (voucher.redeemedAtStore as { name?: string } | null)?.name,
@@ -348,7 +343,7 @@ export class CampaignAnalyticsService {
         participationId: String(row._id),
         campaignId: String(campaign?._id ?? row.campaign),
         campaignName: campaign?.name ?? "Unknown",
-        phone: maskPhone(row.phone),
+        phone: row.phone,
         playCount: row.playCount,
         maxPlaysPerPhone: campaign?.maxPlaysPerPhone ?? 1,
         lastPlayedAt: row.lastPlayedAt as Date,
