@@ -32,6 +32,10 @@ const customerSchema = new mongoose.Schema({
         type: Map,
         of: Number,
         default: () => new Map()
+    },
+    phoneVerifiedAt: {
+        type: Date,
+        default: null
     }
 }, { timestamps: true });
 

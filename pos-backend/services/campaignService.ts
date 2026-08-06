@@ -356,6 +356,10 @@ export class CampaignService {
       customer = await Customer.create({ phone, name: "" });
     }
 
+    if (!customer.phoneVerifiedAt) {
+      throw createHttpError(403, "Phone not verified");
+    }
+
     let participation = await this.atomicPlayIncrement(
       campaign._id,
       phone,

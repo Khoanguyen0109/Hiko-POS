@@ -6,6 +6,7 @@ import {
   type UpdateCampaignInput,
 } from "../services/campaignService.js";
 import { CampaignAnalyticsService } from "../services/campaignAnalyticsService.js";
+import { PhoneOtpService } from "../services/phoneOtpService.js";
 
 const listCampaigns = async (
   req: import("express").Request,
@@ -166,6 +167,53 @@ const playCampaign = async (
   }
 };
 
+const sendCampaignOtp = async (
+  req: import("express").Request,
+  res: import("express").Response,
+  next: import("express").NextFunction
+) => {
+  try {
+    const slug = String(req.params.slug);
+    const phone = (req.body as { phone?: string }).phone;
+
+    if (!phone) {
+      return next(createHttpError(400, "Phone is required"));
+    }
+
+    const result = await PhoneOtpService.sendOtp(slug, phone.trim());
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const verifyCampaignOtp = async (
+  req: import("express").Request,
+  res: import("express").Response,
+  next: import("express").NextFunction
+) => {
+  try {
+    const slug = String(req.params.slug);
+    const { phone, otp } = req.body as { phone?: string; otp?: string };
+
+    if (!phone) {
+      return next(createHttpError(400, "Phone is required"));
+    }
+    if (!otp) {
+      return next(createHttpError(400, "OTP is required"));
+    }
+
+    const result = await PhoneOtpService.verifyOtp(
+      slug,
+      phone.trim(),
+      String(otp).trim()
+    );
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getDashboardAnalytics = async (
   req: import("express").Request,
   res: import("express").Response,
@@ -220,4 +268,6 @@ export {
   playCampaign,
   lookupVoucher,
   getDashboardAnalytics,
+  sendCampaignOtp,
+  verifyCampaignOtp,
 };

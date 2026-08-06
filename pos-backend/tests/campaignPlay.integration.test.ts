@@ -55,13 +55,36 @@ async function createTestCampaign(overrides = {}) {
   });
 }
 
+async function ensureVerifiedPhone(phone) {
+  await Customer.findOneAndUpdate(
+    { phone },
+    {
+      $set: { phoneVerifiedAt: new Date() },
+      $setOnInsert: { name: "" },
+    },
+    { upsert: true }
+  );
+}
+
 describe("Integration — Campaign play API", () => {
   beforeEach(() => {
     jest.restoreAllMocks();
   });
 
+  test("play rejects unverified phone", async () => {
+    await createTestCampaign();
+
+    const res = await request(app)
+      .post("/api/campaign/summer-spin/play")
+      .send({ phone: "0901234500" })
+      .expect(403);
+
+    expect(res.body.message).toMatch(/not verified/i);
+  });
+
   test("play returns win and creates voucher", async () => {
     await createTestCampaign();
+    await ensureVerifiedPhone("0901234567");
     mockSpinToFirstSlot();
 
     const res = await request(app)
@@ -89,6 +112,7 @@ describe("Integration — Campaign play API", () => {
       maxPlaysPerPhone: 2,
       wheelSlots: [LOSE_SLOT, WIN_SLOT],
     });
+    await ensureVerifiedPhone("0901234568");
     mockSpinToFirstSlot();
 
     const res = await request(app)
@@ -106,6 +130,7 @@ describe("Integration — Campaign play API", () => {
 
   test("play returns no_plays_remaining after max plays used", async () => {
     await createTestCampaign({ wheelSlots: [LOSE_SLOT, WIN_SLOT] });
+    await ensureVerifiedPhone("0901234569");
     mockSpinToFirstSlot();
 
     await request(app)
@@ -129,6 +154,7 @@ describe("Integration — Campaign play API", () => {
 
   test("play returns existing win when max plays reached but active voucher exists", async () => {
     await createTestCampaign();
+    await ensureVerifiedPhone("0901234570");
     mockSpinToFirstSlot();
 
     const first = await request(app)
@@ -152,6 +178,7 @@ describe("Integration — Campaign play API", () => {
     await createTestCampaign({
       endDate: new Date(Date.now() - 24 * 60 * 60 * 1000),
     });
+    await ensureVerifiedPhone("0901234571");
 
     const res = await request(app)
       .post("/api/campaign/summer-spin/play")
@@ -163,6 +190,7 @@ describe("Integration — Campaign play API", () => {
 
   test("lookup returns active voucher", async () => {
     await createTestCampaign();
+    await ensureVerifiedPhone("0901234572");
     mockSpinToFirstSlot();
 
     const playRes = await request(app)
@@ -206,5 +234,16 @@ describe("Integration — Campaign play API", () => {
       .expect(400);
 
     expect(res.body.message).toMatch(/10-digit/i);
+  });
+
+  test("lookup works without phone verification", async () => {
+    await createTestCampaign();
+
+    const res = await request(app)
+      .post("/api/campaign/summer-spin/lookup")
+      .send({ phone: "0901234599" })
+      .expect(200);
+
+    expect(res.body.status).toBe("none");
   });
 });

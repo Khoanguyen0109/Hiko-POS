@@ -9,6 +9,8 @@ import {
   playCampaign,
   lookupVoucher,
   getDashboardAnalytics,
+  sendCampaignOtp,
+  verifyCampaignOtp,
 } from "../controllers/campaignController.js";
 import { isVerifiedUser, isAdmin } from "../middlewares/tokenVerification.js";
 import { campaignPlayLimiter } from "../middlewares/campaignPlayLimiter.js";
@@ -16,6 +18,8 @@ import { campaignPlayLimiter } from "../middlewares/campaignPlayLimiter.js";
 const router = express.Router();
 
 router.get("/:slug/public", getPublicCampaign);
+router.post("/:slug/otp/send", campaignPlayLimiter, sendCampaignOtp);
+router.post("/:slug/otp/verify", campaignPlayLimiter, verifyCampaignOtp);
 router.post("/:slug/play", campaignPlayLimiter, playCampaign);
 router.post("/:slug/lookup", campaignPlayLimiter, lookupVoucher);
 
