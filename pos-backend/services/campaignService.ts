@@ -1,5 +1,6 @@
 import createHttpError from "http-errors";
 import mongoose, { type Types } from "mongoose";
+import config from "../config/config.js";
 import Campaign from "../models/campaignModel.js";
 import CampaignParticipation from "../models/campaignParticipationModel.js";
 import CampaignVoucher from "../models/campaignVoucherModel.js";
@@ -374,7 +375,7 @@ export class CampaignService {
       customer = await Customer.create({ phone, name: "" });
     }
 
-    if (!customer.phoneVerifiedAt) {
+    if (config.znsEnabled && !customer.phoneVerifiedAt) {
       throw createHttpError(403, "Phone not verified");
     }
 

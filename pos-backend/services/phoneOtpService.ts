@@ -48,6 +48,10 @@ export class PhoneOtpService {
     validatePhone(phone);
     await assertCampaignPlayable(slug);
 
+    if (!config.znsEnabled) {
+      return { success: true, alreadyVerified: true };
+    }
+
     let customer = await Customer.findOne({ phone });
     if (!customer) {
       customer = await Customer.create({ phone, name: "" });
@@ -109,6 +113,10 @@ export class PhoneOtpService {
   ): Promise<OtpVerifyResult> {
     validatePhone(phone);
     await assertCampaignPlayable(slug);
+
+    if (!config.znsEnabled) {
+      return { success: true, verified: true };
+    }
 
     const normalizedOtp = String(otp || "").trim();
     if (!/^\d{6}$/.test(normalizedOtp)) {

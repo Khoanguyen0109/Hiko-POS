@@ -16,6 +16,8 @@ const config = Object.freeze({
     znsOtpDryRun:
         process.env.ZNS_OTP_DRY_RUN === "true" ||
         process.env.NODE_ENV === "test",
+    /** When ZNS=false, skip Zalo OTP verification before spin. */
+    znsEnabled: process.env.ZNS !== "false",
     otpHashSecret:
         process.env.OTP_HASH_SECRET || process.env.JWT_SECRET || "otp-dev-secret",
 });
