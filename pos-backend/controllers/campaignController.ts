@@ -238,6 +238,24 @@ const getDashboardAnalytics = async (
   }
 };
 
+const clearParticipation = async (
+  req: import("express").Request,
+  res: import("express").Response,
+  next: import("express").NextFunction
+) => {
+  try {
+    const participationId = String(req.params.participationId);
+    await CampaignService.clearParticipation(participationId);
+
+    res.status(200).json({
+      success: true,
+      message: "Phone cleared. Customer can spin again for this campaign.",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const lookupVoucher = async (
   req: import("express").Request,
   res: import("express").Response,
@@ -268,6 +286,7 @@ export {
   playCampaign,
   lookupVoucher,
   getDashboardAnalytics,
+  clearParticipation,
   sendCampaignOtp,
   verifyCampaignOtp,
 };

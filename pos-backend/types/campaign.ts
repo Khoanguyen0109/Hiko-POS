@@ -137,6 +137,19 @@ export interface RecentActivityRow {
   rewardLabel?: string;
   storeName?: string;
   timestamp: Date;
+  participationId?: string;
+  campaignId?: string;
+}
+
+export interface ParticipantRow {
+  participationId: string;
+  campaignId: string;
+  campaignName: string;
+  phone: string;
+  playCount: number;
+  maxPlaysPerPhone: number;
+  lastPlayedAt: Date;
+  hasActiveVoucher: boolean;
 }
 
 export interface CampaignDashboardAnalytics {
@@ -146,4 +159,5 @@ export interface CampaignDashboardAnalytics {
   redemptionsByStore: RedemptionsByStoreRow[];
   dailyTrend: DailyTrendRow[];
   recentActivity: RecentActivityRow[];
+  participants: ParticipantRow[];
 }

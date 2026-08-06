@@ -333,6 +333,24 @@ export class CampaignService {
     return result.modifiedCount;
   }
 
+  static async clearParticipation(participationId: string): Promise<void> {
+    if (!mongoose.Types.ObjectId.isValid(participationId)) {
+      throw createHttpError(404, "Participation not found");
+    }
+
+    const participation = await CampaignParticipation.findById(participationId);
+    if (!participation) {
+      throw createHttpError(404, "Participation not found");
+    }
+
+    await CampaignVoucher.updateMany(
+      { participation: participation._id, status: "active" },
+      { $set: { status: "expired" } }
+    );
+
+    await CampaignParticipation.deleteOne({ _id: participation._id });
+  }
+
   static async playCampaign(
     slug: string,
     phone: string

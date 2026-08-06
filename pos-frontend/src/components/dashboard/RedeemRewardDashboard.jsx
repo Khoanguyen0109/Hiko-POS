@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
+import { useSnackbar } from "notistack";
 import {
   MdCasino,
   MdEmojiEvents,
@@ -10,11 +11,13 @@ import {
   MdPeople,
   MdConfirmationNumber,
   MdBarChart,
+  MdDeleteOutline,
 } from "react-icons/md";
 import {
   fetchCampaignDashboardAnalytics,
   fetchCampaigns,
 } from "../../redux/slices/campaignSlice";
+import { clearCampaignParticipation } from "../../https";
 import { getTodayDateVietnam, getDateRangeByPeriodVietnam } from "../../utils/dateUtils";
 import LoadingState from "../shared/LoadingState";
 import EmptyState from "../shared/EmptyState";
@@ -22,15 +25,17 @@ import StoreSummariesTable from "./StoreSummariesTable";
 
 const RedeemRewardDashboard = ({ dateFilter, customDateRange }) => {
   const dispatch = useDispatch();
+  const { enqueueSnackbar } = useSnackbar();
   const { dashboardAnalytics, dashboardLoading, campaigns, campaignsLoading } =
     useSelector((state) => state.campaigns);
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
+  const [clearingId, setClearingId] = useState("");
 
   useEffect(() => {
     dispatch(fetchCampaigns());
   }, [dispatch]);
 
-  useEffect(() => {
+  const refreshAnalytics = useCallback(() => {
     const today = getTodayDateVietnam();
     let startDate;
     let endDate;
@@ -74,6 +79,34 @@ const RedeemRewardDashboard = ({ dateFilter, customDateRange }) => {
     }
   }, [dispatch, dateFilter, customDateRange, selectedCampaignId]);
 
+  useEffect(() => {
+    refreshAnalytics();
+  }, [refreshAnalytics]);
+
+  const handleClearParticipation = async (participant) => {
+    const message = participant.hasActiveVoucher
+      ? `Clear ${participant.phone} for "${participant.campaignName}"? They can spin again. Any active voucher will be expired.`
+      : `Clear ${participant.phone} for "${participant.campaignName}"? They can spin again.`;
+
+    if (!window.confirm(message)) {
+      return;
+    }
+
+    setClearingId(participant.participationId);
+    try {
+      await clearCampaignParticipation(participant.participationId);
+      enqueueSnackbar("Phone cleared successfully", { variant: "success" });
+      refreshAnalytics();
+    } catch (error) {
+      enqueueSnackbar(
+        error.response?.data?.message || "Failed to clear phone",
+        { variant: "error" }
+      );
+    } finally {
+      setClearingId("");
+    }
+  };
+
   if (dashboardLoading || campaignsLoading) {
     return <LoadingState message="Loading redeem reward analytics…" />;
   }
@@ -96,6 +129,7 @@ const RedeemRewardDashboard = ({ dateFilter, customDateRange }) => {
     redemptionsByStore = [],
     dailyTrend = [],
     recentActivity = [],
+    participants = [],
   } = dashboardAnalytics;
 
   const storeSummaries = redemptionsByStore.map((row) => ({
@@ -253,6 +287,67 @@ const RedeemRewardDashboard = ({ dateFilter, customDateRange }) => {
                     <td className="py-3 px-2 text-right text-sm text-[#f5f5f5]">{row.redeemed}</td>
                     <td className="py-3 px-2 text-right text-sm text-brand">{row.redemptionRate}%</td>
                     <td className="py-3 px-2 text-right text-sm text-[#f5f5f5]">{row.activeVouchers}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
+        <h3 className="text-[#f5f5f5] font-semibold text-base sm:text-lg mb-1">
+          Used Phones
+        </h3>
+        <p className="text-[#ababab] text-xs sm:text-sm mb-4">
+          Admin only — clear a phone to let the customer spin again for that campaign.
+        </p>
+        {participants.length === 0 ? (
+          <p className="text-[#ababab] text-center py-4 text-sm">
+            No participants in this period
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[#343434]">
+                  <th className="text-left py-2 px-2 text-[#ababab] text-xs font-medium">Phone</th>
+                  <th className="text-left py-2 px-2 text-[#ababab] text-xs font-medium">Campaign</th>
+                  <th className="text-right py-2 px-2 text-[#ababab] text-xs font-medium">Plays</th>
+                  <th className="text-left py-2 px-2 text-[#ababab] text-xs font-medium">Last played</th>
+                  <th className="text-right py-2 px-2 text-[#ababab] text-xs font-medium">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {participants.map((participant) => (
+                  <tr
+                    key={participant.participationId}
+                    className="border-b border-[#343434] last:border-b-0"
+                  >
+                    <td className="py-3 px-2 text-sm text-[#f5f5f5]">{participant.phone}</td>
+                    <td className="py-3 px-2 text-sm text-[#f5f5f5]">
+                      {participant.campaignName}
+                      {participant.hasActiveVoucher ? (
+                        <span className="ml-2 text-xs text-amber-400">Active voucher</span>
+                      ) : null}
+                    </td>
+                    <td className="py-3 px-2 text-right text-sm text-[#f5f5f5]">
+                      {participant.playCount}/{participant.maxPlaysPerPhone}
+                    </td>
+                    <td className="py-3 px-2 text-sm text-[#ababab]">
+                      {formatTimestamp(participant.lastPlayedAt)}
+                    </td>
+                    <td className="py-3 px-2 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleClearParticipation(participant)}
+                        disabled={clearingId === participant.participationId}
+                        className="inline-flex items-center gap-1 rounded-md border border-red-500/30 px-2.5 py-1.5 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/10 disabled:opacity-50"
+                      >
+                        <MdDeleteOutline size={14} />
+                        {clearingId === participant.participationId ? "Clearing…" : "Clear phone"}
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

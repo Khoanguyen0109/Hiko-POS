@@ -7,6 +7,7 @@ import type {
   CampaignPerformanceRow,
   DailyTrendRow,
   PrizeDistributionRow,
+  ParticipantRow,
   RecentActivityRow,
   RedemptionsByStoreRow,
 } from "../types/campaign.js";
@@ -167,14 +168,14 @@ export class CampaignAnalyticsService {
       CampaignVoucher.find(winDateFilter)
         .sort({ wonAt: -1 })
         .limit(20)
-        .populate("campaign", "name")
-        .populate({ path: "participation", select: "phone" })
+        .populate("campaign", "name _id")
+        .populate({ path: "participation", select: "phone _id" })
         .lean(),
       CampaignVoucher.find(redeemDateFilter)
         .sort({ redeemedAt: -1 })
         .limit(20)
-        .populate("campaign", "name")
-        .populate({ path: "participation", select: "phone" })
+        .populate("campaign", "name _id")
+        .populate({ path: "participation", select: "phone _id" })
         .populate({ path: "redeemedAtStore", select: "name" })
         .lean(),
     ]);
@@ -288,8 +289,14 @@ export class CampaignAnalyticsService {
         campaignName: (voucher.campaign as { name?: string } | null)?.name ?? "",
         rewardLabel: voucher.rewardLabel,
         timestamp: voucher.wonAt as Date,
+        participationId: String(
+          (voucher.participation as { _id?: unknown } | null)?._id ?? ""
+        ) || undefined,
+        campaignId: String(
+          (voucher.campaign as { _id?: unknown } | null)?._id ?? ""
+        ) || undefined,
       })),
-      ...recentRedemptions.map((voucher) => ({
+      ...      recentRedemptions.map((voucher) => ({
         type: "redeem" as const,
         phone: maskPhone(
           (voucher.participation as { phone?: string } | null)?.phone ?? ""
@@ -298,10 +305,56 @@ export class CampaignAnalyticsService {
         rewardLabel: voucher.rewardLabel,
         storeName: (voucher.redeemedAtStore as { name?: string } | null)?.name,
         timestamp: voucher.redeemedAt as Date,
+        participationId: String(
+          (voucher.participation as { _id?: unknown } | null)?._id ?? ""
+        ) || undefined,
+        campaignId: String(
+          (voucher.campaign as { _id?: unknown } | null)?._id ?? ""
+        ) || undefined,
       })),
     ]
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, 20);
+
+    const participationDocs = await CampaignParticipation.find({
+      ...playDateFilter,
+      playCount: { $gt: 0 },
+    })
+      .populate("campaign", "name maxPlaysPerPhone")
+      .sort({ lastPlayedAt: -1 })
+      .limit(100)
+      .lean();
+
+    const participationIds = participationDocs.map((row) => row._id);
+    const activeVoucherParticipationIds = new Set(
+      (
+        await CampaignVoucher.find({
+          participation: { $in: participationIds },
+          status: "active",
+        })
+          .select("participation")
+          .lean()
+      ).map((voucher) => String(voucher.participation))
+    );
+
+    const participants: ParticipantRow[] = participationDocs.map((row) => {
+      const campaign = row.campaign as {
+        _id?: unknown;
+        name?: string;
+        maxPlaysPerPhone?: number;
+      } | null;
+
+      return {
+        participationId: String(row._id),
+        campaignId: String(campaign?._id ?? row.campaign),
+        campaignName: campaign?.name ?? "Unknown",
+        phone: maskPhone(row.phone),
+        playCount: row.playCount,
+        maxPlaysPerPhone: campaign?.maxPlaysPerPhone ?? 1,
+        lastPlayedAt: row.lastPlayedAt as Date,
+        hasActiveVoucher: activeVoucherParticipationIds.has(String(row._id)),
+      };
+    });
 
     return {
       summary: {
@@ -319,6 +372,7 @@ export class CampaignAnalyticsService {
       redemptionsByStore,
       dailyTrend,
       recentActivity,
+      participants,
     };
   }
 }

@@ -187,6 +187,8 @@ export const getCampaignDashboardAnalytics = (params = {}) => {
   const queryString = queryParams.toString();
   return axiosWrapper.get(`/api/campaign/analytics/dashboard${queryString ? `?${queryString}` : ""}`);
 };
+export const clearCampaignParticipation = (participationId) =>
+  axiosWrapper.post(`/api/campaign/participations/${participationId}/clear`);
 
 // Customer Search & Rewards Endpoints
 export const searchCustomers = (query) => axiosWrapper.get(`/api/customer/search?q=${encodeURIComponent(query)}`);

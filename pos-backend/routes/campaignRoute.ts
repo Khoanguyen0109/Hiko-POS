@@ -9,6 +9,7 @@ import {
   playCampaign,
   lookupVoucher,
   getDashboardAnalytics,
+  clearParticipation,
   sendCampaignOtp,
   verifyCampaignOtp,
 } from "../controllers/campaignController.js";
@@ -26,6 +27,7 @@ router.post("/:slug/lookup", campaignPlayLimiter, lookupVoucher);
 router.use(isVerifiedUser, isAdmin);
 
 router.get("/analytics/dashboard", getDashboardAnalytics);
+router.post("/participations/:participationId/clear", clearParticipation);
 router.get("/", listCampaigns);
 router.post("/", createCampaign);
 router.get("/:id", getCampaignById);
