@@ -11,9 +11,9 @@ const router = express.Router();
 router.route("/my-schedule-all")
     .get(isVerifiedUser, getMySchedulesAllStores);
 
-// Admin: all members across all stores for a given week
+// All authenticated users: every store's schedules for a given week (view-only for members)
 router.route("/all-members-week/:year/:week")
-    .get(isVerifiedUser, isAdmin, getAllMembersWeek);
+    .get(isVerifiedUser, getAllMembersWeek);
 
 // Admin: check conflicts before assigning
 router.route("/check-conflicts")

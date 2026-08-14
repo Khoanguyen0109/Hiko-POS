@@ -50,9 +50,14 @@ const createStore = async (req, res, next) => {
 
 const getAllStores = async (req, res, next) => {
     try {
-        const stores = await Store.find()
-            .populate('owner', 'name phone email')
-            .sort({ createdAt: -1 });
+        const isAdmin = req.user?.role === "Admin";
+        const stores = isAdmin
+            ? await Store.find()
+                .populate("owner", "name phone email")
+                .sort({ createdAt: -1 })
+            : await Store.find({ isActive: true })
+                .select("name code isActive")
+                .sort({ name: 1 });
 
         res.status(200).json({ success: true, data: stores });
     } catch (error) {

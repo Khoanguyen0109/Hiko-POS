@@ -127,7 +127,7 @@ const shiftTemplateSlice = createSlice({
                 state.activeShiftTemplates = action.payload.data;
             });
 
-        // Fetch active shift templates across all stores (admin)
+        // Fetch active shift templates across all stores
         builder
             .addCase(fetchAllActiveShiftTemplates.fulfilled, (state, action) => {
                 state.activeShiftTemplates = action.payload.data;

@@ -8,8 +8,8 @@ const router = express.Router();
 // Get stores the current user belongs to
 router.get("/my-stores", isVerifiedUser, getMyStores);
 
-// Super-admin: list all stores & create new
-router.get("/", isVerifiedUser, isAdmin, getAllStores);
+// List stores: admins get full records; members get active stores (name/code) for cross-store views
+router.get("/", isVerifiedUser, getAllStores);
 router.post("/", isVerifiedUser, isAdmin, createStore);
 
 // Store-specific routes (require store context)

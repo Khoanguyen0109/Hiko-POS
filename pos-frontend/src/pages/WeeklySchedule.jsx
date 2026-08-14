@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import { MdSettings, MdCalendarToday, MdAccessTime, MdFilterList, MdPeople, MdPerson, MdStore, MdDelete } from "react-icons/md";
+import { MdSettings, MdAccessTime, MdFilterList, MdPeople, MdPerson, MdStore, MdDelete } from "react-icons/md";
 import { enqueueSnackbar } from "notistack";
 import FeaturePageHeader from "../components/shared/FeaturePageHeader";
 import WeekNavigator from "../components/schedule/WeekNavigator";
-import ScheduleCell from "../components/schedule/ScheduleCell";
 import MemberAssignmentModal from "../components/schedule/MemberAssignmentModal";
 import ByMemberView from "../components/schedule/ByMemberView";
 import MyScheduleView from "../components/schedule/MyScheduleView";
@@ -18,18 +17,14 @@ import EmptyState from "../components/shared/EmptyState";
 import HeaderActionButton from "../components/shared/HeaderActionButton";
 import ScheduleViewSwitcher from "../components/v2/ScheduleViewSwitcher";
 import { useV2Ui } from "../hooks/useV2Ui";
-import { getCurrentWeekInfo, getWeekDates, formatDate, getDayName, getWeekNumber, getLocalDateString, isShiftOver } from "../utils/dateUtils";
+import { getCurrentWeekInfo, getWeekDates, formatDate, getWeekNumber, getLocalDateString, isShiftOver } from "../utils/dateUtils";
 import {
-  fetchSchedulesByWeek,
   fetchAllMembersWeek,
   createNewSchedule,
   clearError
 } from "../redux/slices/scheduleSlice";
 import { deleteExtraWork } from "../redux/slices/extraWorkSlice";
-import {
-  fetchActiveShiftTemplates,
-  fetchAllActiveShiftTemplates
-} from "../redux/slices/shiftTemplateSlice";
+import { fetchAllActiveShiftTemplates } from "../redux/slices/shiftTemplateSlice";
 import { fetchMembers } from "../redux/slices/memberSlice";
 import { fetchExtraWork } from "../redux/slices/extraWorkSlice";
 import { fetchAllStores } from "../redux/slices/storeSlice";
@@ -78,12 +73,12 @@ function getMonthGridDays(year, month) {
 const WeeklySchedule = () => {
   const dispatch = useDispatch();
   const { v2UiEnabled } = useV2Ui();
-  const { schedules, loading, error, createLoading, allMembersSchedules, allMembersLoading } = useSelector((state) => state.schedules);
+  const { allMembersSchedules, allMembersLoading, error, createLoading } = useSelector((state) => state.schedules);
   const { activeShiftTemplates, loading: templatesLoading } = useSelector(
     (state) => state.shiftTemplates
   );
   const { members } = useSelector((state) => state.members);
-  const { allStores, activeStore } = useSelector((state) => state.store);
+  const { allStores, activeStore, allStoresLoading } = useSelector((state) => state.store);
   const { extraWorkEntries, totalHours, totalPayment, loading: extraWorkLoading } = useSelector((state) => state.extraWork);
   const { role } = useSelector((state) => state.user);
   const isAdmin = role === "Admin";
@@ -107,19 +102,10 @@ const WeeklySchedule = () => {
 
   useEffect(() => {
     document.title = "POS | Weekly Schedule";
-    if (isAdmin) {
-      dispatch(fetchAllActiveShiftTemplates());
-    } else {
-      dispatch(fetchActiveShiftTemplates());
-    }
+    dispatch(fetchAllActiveShiftTemplates());
     if (activeTab === TABS.BY_STORE) {
-      if (isAdmin) {
-        // Admin sees every store's grid at once (cross-store week data).
-        dispatch(fetchAllMembersWeek(currentWeek));
-        if (allStores.length === 0) dispatch(fetchAllStores());
-      } else {
-        dispatch(fetchSchedulesByWeek(currentWeek));
-      }
+      dispatch(fetchAllMembersWeek(currentWeek));
+      if (allStores.length === 0) dispatch(fetchAllStores());
     }
     if (isAdmin) {
       dispatch(fetchMembers());
@@ -149,59 +135,6 @@ const WeeklySchedule = () => {
 
   const handleWeekChange = (year, week) => {
     setCurrentWeek({ year, week });
-  };
-
-  const findSchedule = (date, shiftTemplateId) => {
-    if (!schedules || schedules.length === 0) return null;
-    const targetDateStr = getLocalDateString(date);
-    return schedules.find(schedule => {
-      const scheduleDateStr = getLocalDateString(new Date(schedule.date));
-      const scheduleTemplateId = typeof schedule.shiftTemplate === 'string'
-        ? schedule.shiftTemplate
-        : schedule.shiftTemplate?._id;
-      return scheduleDateStr === targetDateStr && scheduleTemplateId === shiftTemplateId;
-    });
-  };
-
-  const handleCellClick = async (date, shiftTemplate) => {
-    if (!isAdmin) return;
-
-    if (isShiftOver(date, shiftTemplate.endTime)) {
-      enqueueSnackbar("This shift has ended and can no longer be changed", { variant: "info" });
-      return;
-    }
-
-    try {
-      const existingSchedule = findSchedule(date, shiftTemplate._id);
-      if (existingSchedule) {
-        setSelectedSchedule(existingSchedule);
-        setSelectedShiftTemplate(shiftTemplate);
-        setShowAssignmentModal(true);
-      } else {
-        const dateStr = formatDate(date, "iso");
-        const scheduleDate = new Date(date);
-        const year = scheduleDate.getFullYear();
-        const weekNumber = getWeekNumber(scheduleDate);
-
-        const result = await dispatch(createNewSchedule({
-          date: dateStr,
-          shiftTemplateId: shiftTemplate._id,
-          memberIds: [],
-          year,
-          weekNumber
-        })).unwrap();
-
-        if (result.existed) {
-          enqueueSnackbar("Opening existing schedule", { variant: "info" });
-        }
-
-        setSelectedSchedule(result.data);
-        setSelectedShiftTemplate(shiftTemplate);
-        setShowAssignmentModal(true);
-      }
-    } catch (err) {
-      enqueueSnackbar(err || "Failed to access schedule", { variant: "error" });
-    }
   };
 
   // Find a schedule for a specific store within the cross-store week data.
@@ -330,136 +263,30 @@ const WeeklySchedule = () => {
 
   const getSchedulesForDate = (date) => {
     const targetDateStr = getLocalDateString(date);
-    const sourceSchedules = isAdmin ? allMembersSchedules : schedules;
 
-    return (sourceSchedules || []).filter((schedule) => {
+    return (allMembersSchedules || []).filter((schedule) => {
       return getLocalDateString(new Date(schedule.date)) === targetDateStr;
     });
   };
 
-  const renderMemberWeekGrid = (layoutClassName = "") => (
-    <div className={`bg-[#1f1f1f] rounded-lg border border-[#343434] overflow-hidden ${layoutClassName}`}>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[1000px]">
-          <thead>
-            <tr className="border-b border-[#343434]">
-              <th className="px-4 py-3 text-left text-[#ababab] text-sm font-medium w-32">
-                Shift
-              </th>
-              {weekDates.map((date, index) => (
-                <th
-                  key={index}
-                  className="px-4 py-3 text-center text-[#ababab] text-sm font-medium"
-                >
-                  <div>{getDayName(date, "short")}</div>
-                  <div className="text-[#f5f5f5] font-semibold mt-1">
-                    {formatDate(date, "short")}
-                  </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {activeShiftTemplates.map((template) => (
-              <tr
-                key={template._id}
-                className="border-b border-[#343434] last:border-0"
-              >
-                <td className="px-4 py-6 align-top">
-                  <div className="flex items-start gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full mt-1"
-                      style={{ backgroundColor: template.color }}
-                    />
-                    <div>
-                      <div className="text-[#f5f5f5] font-medium text-sm">
-                        {template.name}
-                      </div>
-                      <div className="text-[#ababab] text-xs mt-1">
-                        {template.startTime} - {template.endTime}
-                      </div>
-                      <div className="text-[#6a6a6a] text-xs mt-0.5">
-                        {template.durationHours}h
-                      </div>
-                    </div>
-                  </div>
-                </td>
-                {weekDates.map((date, dateIndex) => {
-                  const schedule = findSchedule(date, template._id);
-                  const shiftEnded = isShiftOver(date, template.endTime);
-                  return (
-                    <td
-                      key={dateIndex}
-                      className="px-2 py-3 align-top bg-[#262626]/30"
-                    >
-                      <ScheduleCell
-                        schedule={schedule}
-                        shiftTemplate={template}
-                        members={members}
-                        onClick={() => handleCellClick(date, template)}
-                        disabled
-                        disabledTitle={shiftEnded ? "Shift ended" : "View only"}
-                      />
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+  const getScheduleStoreName = (schedule) => {
+    const store = schedule?.store;
+    if (store && typeof store === "object") return store.name || store.code || null;
+    return null;
+  };
 
-  const renderFullWeekView = () => (
-    <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
-      {weekDates.map((date) => {
-        const dateStr = getLocalDateString(date);
-        const daySchedules = getSchedulesForDate(date);
-
-        return (
-          <div
-            key={dateStr}
-            className="w-[280px] shrink-0 snap-start rounded-xl border border-[#343434] bg-[#1f1f1f] p-4"
-          >
-            <div className="mb-3 border-b border-[#343434] pb-3">
-              <p className="text-xs uppercase tracking-wide text-[#ababab]">
-                {getDayName(date, "short")}
-              </p>
-              <p className="text-lg font-semibold text-[#f5f5f5]">
-                {formatDate(date, "short")}
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              {daySchedules.length === 0 ? (
-                <p className="text-sm text-[#6a6a6a]">No shifts scheduled</p>
-              ) : (
-                daySchedules.map((schedule) => {
-                  const shift = schedule.shiftTemplate;
-                  const shiftName =
-                    typeof shift === "object"
-                      ? shift?.name || shift?.shortName || "Shift"
-                      : "Shift";
-                  const assignedCount = schedule.assignedMembers?.length || 0;
-
-                  return (
-                    <div
-                      key={schedule._id}
-                      className="rounded-lg border border-[#343434] bg-[#262626] p-3"
-                    >
-                      <p className="text-sm font-medium text-[#f5f5f5]">{shiftName}</p>
-                      <p className="mt-1 text-xs text-[#ababab]">
-                        {assignedCount} member{assignedCount === 1 ? "" : "s"} assigned
-                      </p>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        );
-      })}
+  const renderAllStoresGrid = (layoutClassName = "") => (
+    <div className={layoutClassName}>
+      <AllStoresWeekGrid
+        stores={allStores.filter((s) => s.isActive !== false)}
+        schedules={allMembersSchedules}
+        shiftTemplates={activeShiftTemplates}
+        members={members}
+        weekDates={weekDates}
+        activeStoreId={activeStore?._id}
+        onCellClick={handleCombinedCellClick}
+        readOnly={!isAdmin}
+      />
     </div>
   );
 
@@ -540,12 +367,18 @@ const WeeklySchedule = () => {
                     typeof shift === "object" ? shift?.startTime : null;
                   const endTime = typeof shift === "object" ? shift?.endTime : null;
                   const assignedCount = schedule.assignedMembers?.length || 0;
+                  const storeName = getScheduleStoreName(schedule);
 
                   return (
                     <div
                       key={schedule._id}
                       className="rounded-lg border border-[#343434] bg-[#262626] p-3"
                     >
+                      {storeName ? (
+                        <p className="text-[10px] font-medium uppercase tracking-wide text-[#6a6a6a]">
+                          {storeName}
+                        </p>
+                      ) : null}
                       <p className="text-sm font-medium text-[#f5f5f5]">{shiftName}</p>
                       {startTime && endTime ? (
                         <p className="mt-1 text-xs text-[#ababab]">
@@ -570,43 +403,14 @@ const WeeklySchedule = () => {
 
   const renderByStoreSchedule = () => {
     if (v2UiEnabled && scheduleViewMode === SCHEDULE_VIEW_MODES.FULL_WEEK) {
-      if (isAdmin) {
-        return (
-          <div className="overflow-x-auto">
-            <AllStoresWeekGrid
-              stores={allStores.filter((s) => s.isActive !== false)}
-              schedules={allMembersSchedules}
-              shiftTemplates={activeShiftTemplates}
-              members={members}
-              weekDates={weekDates}
-              activeStoreId={activeStore?._id}
-              onCellClick={handleCombinedCellClick}
-            />
-          </div>
-        );
-      }
-      return renderFullWeekView();
+      return renderAllStoresGrid("overflow-x-auto");
     }
 
     if (v2UiEnabled && scheduleViewMode === SCHEDULE_VIEW_MODES.CALENDAR) {
       return renderCalendarView();
     }
 
-    if (isAdmin) {
-      return (
-        <AllStoresWeekGrid
-          stores={allStores.filter((s) => s.isActive !== false)}
-          schedules={allMembersSchedules}
-          shiftTemplates={activeShiftTemplates}
-          members={members}
-          weekDates={weekDates}
-          activeStoreId={activeStore?._id}
-          onCellClick={handleCombinedCellClick}
-        />
-      );
-    }
-
-    return renderMemberWeekGrid();
+    return renderAllStoresGrid();
   };
 
   // Tab definitions
@@ -686,34 +490,14 @@ const WeeklySchedule = () => {
         {/* ── By Store Tab ── */}
         {activeTab === TABS.BY_STORE && (
           <>
-            {(isAdmin ? allMembersLoading : loading) || templatesLoading ? (
+            {allMembersLoading || templatesLoading || allStoresLoading ? (
               <FullScreenLoader />
-            ) : !isAdmin && activeShiftTemplates.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="w-20 h-20 bg-[#262626] rounded-full flex items-center justify-center mb-6">
-                  <MdCalendarToday size={40} className="text-[#ababab]" />
-                </div>
-                <h3 className="text-[#f5f5f5] text-xl font-semibold mb-2">
-                  No Shift Templates Available
-                </h3>
-                <p className="text-[#ababab] text-sm max-w-md mb-6">
-                  You need to create shift templates before you can manage schedules.
-                </p>
-                {isAdmin && (
-                  <Link
-                    to={ROUTES.SHIFT_TEMPLATES}
-                    className="px-6 py-3 bg-brand text-[#f5f5f5] rounded-lg font-medium hover:bg-brand-hover transition-colors"
-                  >
-                    Create Shift Templates
-                  </Link>
-                )}
-              </div>
             ) : (
               <div className="space-y-6">
                 {renderByStoreSchedule()}
 
-                {/* Summary Stats (member single-store view) */}
-                {!isAdmin && schedules && schedules.length > 0 && (
+                {/* Summary Stats */}
+                {!isAdmin && allMembersSchedules && allMembersSchedules.length > 0 && (
                   <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
                     <h4 className="text-[#f5f5f5] text-lg font-semibold mb-4">
                       Week Summary
@@ -721,24 +505,24 @@ const WeeklySchedule = () => {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                       <div className="bg-[#262626] rounded-lg p-4">
                         <div className="text-[#ababab] text-xs mb-1">Total Shifts</div>
-                        <div className="text-[#f5f5f5] text-2xl font-bold">{schedules.length}</div>
+                        <div className="text-[#f5f5f5] text-2xl font-bold">{allMembersSchedules.length}</div>
                       </div>
                       <div className="bg-[#262626] rounded-lg p-4">
                         <div className="text-[#ababab] text-xs mb-1">Assigned</div>
                         <div className="text-[#4ECDC4] text-2xl font-bold">
-                          {schedules.filter(s => s.assignedMembers && s.assignedMembers.length > 0).length}
+                          {allMembersSchedules.filter(s => s.assignedMembers && s.assignedMembers.length > 0).length}
                         </div>
                       </div>
                       <div className="bg-[#262626] rounded-lg p-4">
                         <div className="text-[#ababab] text-xs mb-1">Empty</div>
                         <div className="text-brand text-2xl font-bold">
-                          {schedules.filter(s => !s.assignedMembers || s.assignedMembers.length === 0).length}
+                          {allMembersSchedules.filter(s => !s.assignedMembers || s.assignedMembers.length === 0).length}
                         </div>
                       </div>
                       <div className="bg-[#262626] rounded-lg p-4">
                         <div className="text-[#ababab] text-xs mb-1">Total Members</div>
                         <div className="text-[#f5f5f5] text-2xl font-bold">
-                          {new Set(schedules.flatMap(s => s.assignedMembers || []).map(am => {
+                          {new Set(allMembersSchedules.flatMap(s => s.assignedMembers || []).map(am => {
                             const memberId = am?.member?._id || am?.member || am;
                             return typeof memberId === 'string' ? memberId : memberId?._id;
                           })).size}

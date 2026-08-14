@@ -729,7 +729,7 @@ const getMySchedulesAllStores = async (req, res, next) => {
     }
 };
 
-// ── admin: all members week (cross-store) ────────────────────────────────
+// ── all members week (cross-store, viewable by any authenticated user) ──
 
 const getAllMembersWeek = async (req, res, next) => {
     try {
@@ -738,13 +738,15 @@ const getAllMembersWeek = async (req, res, next) => {
             return next(createHttpError(400, "Year and week are required"));
         }
 
+        const memberFields = req.user?.role === "Admin" ? "name email phone" : "name";
+
         const schedules = await Schedule.find({
             year: parseInt(year),
             weekNumber: parseInt(week)
         })
         .populate('shiftTemplate')
         .populate('store', 'name code')
-        .populate('assignedMembers.member', 'name email phone')
+        .populate('assignedMembers.member', memberFields)
         .sort({ date: 1 });
 
         res.status(200).json({ success: true, count: schedules.length, data: schedules });

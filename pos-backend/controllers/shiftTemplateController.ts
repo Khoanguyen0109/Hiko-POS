@@ -45,7 +45,7 @@ const getAllShiftTemplates = async (req, res, next) => {
         }
 
         const templates = await ShiftTemplate.find(query)
-            .populate("store", "name")
+            .populate("store", "name code")
             .sort({ startTime: 1 });
 
         res.status(200).json({
@@ -58,13 +58,13 @@ const getAllShiftTemplates = async (req, res, next) => {
     }
 };
 
-// Get active shift templates for the selected store (admin without store header sees all stores)
+// Get active shift templates for the selected store (no store header returns all stores)
 const getActiveShiftTemplates = async (req, res, next) => {
     try {
         const query: MongoFilter = { isActive: true, ...buildStoreFilter(req) };
 
         const templates = await ShiftTemplate.find(query)
-            .populate("store", "name")
+            .populate("store", "name code")
             .sort({ startTime: 1 });
 
         res.status(200).json({

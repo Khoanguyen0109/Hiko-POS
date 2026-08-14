@@ -29,9 +29,9 @@ const templateIdOf = (ref) => {
 };
 
 /**
- * Admin combined view: one editable weekly grid per store, stacked vertically.
- * Lets an admin see and edit every store's schedule on a single page without
- * switching the global active store.
+ * Combined view: one weekly grid per store, stacked vertically.
+ * Admins can edit any store without switching the global active store.
+ * Members get the same layout in read-only mode.
  */
 const AllStoresWeekGrid = ({
   stores,
@@ -40,10 +40,43 @@ const AllStoresWeekGrid = ({
   members,
   weekDates,
   activeStoreId,
-  onCellClick
+  onCellClick,
+  readOnly = false
 }) => {
   const sectionRefs = useRef({});
+  const tableScrollRefs = useRef({});
+  const scrollLeftRef = useRef(0);
+  const syncingScrollRef = useRef(false);
   const [collapsed, setCollapsed] = useState(() => new Set());
+
+  const setTableScrollRef = (storeId, el) => {
+    if (el) {
+      tableScrollRefs.current[storeId] = el;
+      if (el.scrollLeft !== scrollLeftRef.current) {
+        el.scrollLeft = scrollLeftRef.current;
+      }
+      return;
+    }
+    delete tableScrollRefs.current[storeId];
+  };
+
+  const syncTableScroll = (sourceEl) => {
+    if (syncingScrollRef.current || !sourceEl) return;
+
+    const nextLeft = sourceEl.scrollLeft;
+    scrollLeftRef.current = nextLeft;
+    syncingScrollRef.current = true;
+
+    Object.values(tableScrollRefs.current).forEach((el) => {
+      if (el && el !== sourceEl && el.scrollLeft !== nextLeft) {
+        el.scrollLeft = nextLeft;
+      }
+    });
+
+    requestAnimationFrame(() => {
+      syncingScrollRef.current = false;
+    });
+  };
 
   // Index schedules as map[storeId][dateStr][templateId] = schedule, and gather
   // per-store stats in a single pass.
@@ -92,7 +125,7 @@ const AllStoresWeekGrid = ({
     return map;
   }, [shiftTemplates]);
 
-  // Active store first, then alphabetical — keeps the admin's default context on top.
+  // Active store first, then alphabetical — keeps the current store context on top.
   const orderedStores = useMemo(() => {
     const list = [...(stores || [])];
     list.sort((a, b) => {
@@ -246,11 +279,17 @@ const AllStoresWeekGrid = ({
               storeTemplates.length === 0 ? (
                 <div className="border-t border-[#343434] px-6 py-10 text-center">
                   <p className="text-[#ababab] text-sm">
-                    No shift templates for this store. Switch to this store and create templates in Shift Templates.
+                    {readOnly
+                      ? "No shift templates for this store."
+                      : "No shift templates for this store. Switch to this store and create templates in Shift Templates."}
                   </p>
                 </div>
               ) : (
-              <div className="overflow-x-auto border-t border-[#343434]">
+              <div
+                ref={(el) => setTableScrollRef(store._id, el)}
+                onScroll={(event) => syncTableScroll(event.currentTarget)}
+                className="overflow-x-auto border-t border-[#343434] [scrollbar-gutter:stable]"
+              >
                 <table className="w-full min-w-[1000px]">
                   <thead>
                     <tr className="border-b border-[#343434]">
@@ -293,9 +332,15 @@ const AllStoresWeekGrid = ({
                                 schedule={schedule}
                                 shiftTemplate={template}
                                 members={members}
-                                onClick={() => onCellClick(store, date, template)}
-                                disabled={shiftEnded}
-                                disabledTitle={shiftEnded ? "Shift ended" : undefined}
+                                onClick={() => onCellClick?.(store, date, template)}
+                                disabled={readOnly || shiftEnded}
+                                disabledTitle={
+                                  readOnly
+                                    ? "View only"
+                                    : shiftEnded
+                                      ? "Shift ended"
+                                      : undefined
+                                }
                               />
                             </td>
                           );
@@ -321,7 +366,8 @@ AllStoresWeekGrid.propTypes = {
   members: PropTypes.array,
   weekDates: PropTypes.array.isRequired,
   activeStoreId: PropTypes.string,
-  onCellClick: PropTypes.func.isRequired
+  onCellClick: PropTypes.func,
+  readOnly: PropTypes.bool
 };
 
 export default AllStoresWeekGrid;

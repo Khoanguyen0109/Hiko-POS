@@ -64,19 +64,16 @@ const isStoreRole = (...allowedRoles) => {
 };
 
 /**
- * Like storeContext but doesn't error for admin when X-Store-Id is missing.
- * If admin has no store header, req.store stays undefined so controllers
- * can aggregate across all stores.
+ * Like storeContext but doesn't error when X-Store-Id is missing.
+ * Without a store header, req.store stays undefined so controllers
+ * can aggregate across all stores (e.g. active shift templates, week grid).
  */
 const optionalStoreContext = async (req, res, next) => {
     try {
         const storeId = req.headers['x-store-id'];
 
         if (!storeId) {
-            if (req.user.role === userRoles.ADMIN) {
-                return next();
-            }
-            return next(createHttpError(400, "Store selection required. Please select a store."));
+            return next();
         }
 
         if (req.user.role === userRoles.ADMIN) {
