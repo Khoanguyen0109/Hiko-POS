@@ -281,7 +281,7 @@ const AccountSettings = () => {
                   </div>
                   Monthly Salary
                 </h2>
-                <p className="text-[#ababab] text-xs sm:text-sm mt-1 sm:mt-2 ml-0 sm:ml-14">Track your earnings based on shifts worked</p>
+                <p className="text-[#ababab] text-xs sm:text-sm mt-1 sm:mt-2 ml-0 sm:ml-14">Earnings and tickets across every assigned store</p>
               </div>
             </div>
           </div>
@@ -341,7 +341,7 @@ const AccountSettings = () => {
             ) : salaryData ? (
               <>
                 {/* Summary Cards - Enhanced */}
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
                   {/* Total Shifts Card */}
                   <div className="bg-gradient-to-br from-[#262626] to-[#1f1f1f] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[#3a3a3a] hover:border-[#4ECDC4]/50 transition-all">
                     <div className="flex items-center justify-between mb-2 sm:mb-3">
@@ -410,7 +410,62 @@ const AccountSettings = () => {
                       </p>
                     </div>
                   </div>
+
+                  <div className="bg-gradient-to-br from-[#262626] to-[#1f1f1f] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[#3a3a3a] hover:border-brand/50 transition-all">
+                    <div className="flex items-center justify-between mb-2 sm:mb-3">
+                      <p className="text-[#ababab] text-[10px] sm:text-xs font-medium uppercase tracking-wide">Tickets</p>
+                      <MdStar className="text-[#6a6a6a] w-3 h-3 sm:w-4 sm:h-4" />
+                    </div>
+                    <p className="text-[#f5f5f5] text-base sm:text-lg font-bold">{salaryData.summary.totalTickets || 0}</p>
+                    <p className="text-[#6a6a6a] text-[10px] sm:text-xs mt-1 sm:mt-2">this month</p>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-[#262626] to-[#1f1f1f] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[#3a3a3a] hover:border-brand/50 transition-all">
+                    <div className="flex items-center justify-between mb-2 sm:mb-3">
+                      <p className="text-[#ababab] text-[10px] sm:text-xs font-medium uppercase tracking-wide">Ticket Points</p>
+                      <MdStar className="text-brand w-3 h-3 sm:w-4 sm:h-4" />
+                    </div>
+                    <p className="text-brand text-base sm:text-lg font-bold">{salaryData.summary.totalTicketScore || 0}</p>
+                    <p className="text-[#6a6a6a] text-[10px] sm:text-xs mt-1 sm:mt-2">this month</p>
+                  </div>
                 </div>
+
+                {salaryData.stores && salaryData.stores.length > 0 && (
+                  <div className="bg-[#262626]/30 rounded-lg sm:rounded-xl border border-[#3a3a3a] overflow-hidden">
+                    <div className="px-3 sm:px-6 py-3 sm:py-4 border-b border-[#3a3a3a]">
+                      <p className="text-[#f5f5f5] font-semibold text-sm sm:text-base">By store</p>
+                      <p className="text-[#ababab] text-[10px] sm:text-xs mt-0.5">Every store you are assigned to this month</p>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[640px]">
+                        <thead>
+                          <tr className="border-b border-[#343434]">
+                            <th className="px-3 sm:px-4 py-2 text-left text-[#ababab] text-[10px] sm:text-xs font-medium">Store</th>
+                            <th className="px-3 sm:px-4 py-2 text-right text-[#ababab] text-[10px] sm:text-xs font-medium">Shifts</th>
+                            <th className="px-3 sm:px-4 py-2 text-right text-[#ababab] text-[10px] sm:text-xs font-medium">Hours</th>
+                            <th className="px-3 sm:px-4 py-2 text-right text-[#ababab] text-[10px] sm:text-xs font-medium">Pay</th>
+                            <th className="px-3 sm:px-4 py-2 text-right text-[#ababab] text-[10px] sm:text-xs font-medium">Tickets</th>
+                            <th className="px-3 sm:px-4 py-2 text-right text-[#ababab] text-[10px] sm:text-xs font-medium">Points</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {salaryData.stores.map((row) => (
+                            <tr key={row.store.id} className="border-b border-[#343434] last:border-0">
+                              <td className="px-3 sm:px-4 py-2.5 text-[#f5f5f5] text-xs sm:text-sm font-medium">{row.store.name}</td>
+                              <td className="px-3 sm:px-4 py-2.5 text-[#f5f5f5] text-xs sm:text-sm text-right">{row.summary.totalShifts}</td>
+                              <td className="px-3 sm:px-4 py-2.5 text-brand text-xs sm:text-sm text-right">{row.summary.totalHours}h</td>
+                              <td className="px-3 sm:px-4 py-2.5 text-[#4ECDC4] text-xs sm:text-sm text-right">
+                                {row.summary.totalSalary?.toLocaleString ? row.summary.totalSalary.toLocaleString("en-US") : row.summary.totalSalary}
+                              </td>
+                              <td className="px-3 sm:px-4 py-2.5 text-[#f5f5f5] text-xs sm:text-sm text-right">{row.summary.totalTickets}</td>
+                              <td className="px-3 sm:px-4 py-2.5 text-brand text-xs sm:text-sm text-right">{row.summary.totalTicketScore}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
 
                 {/* Shift Details Toggle - Enhanced */}
                 {salaryData.shifts && salaryData.shifts.length > 0 && (
@@ -461,6 +516,9 @@ const AccountSettings = () => {
                                 <p className="text-[#ababab] text-[10px] sm:text-xs mt-0.5 flex items-center gap-1">
                                   <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full" style={{ backgroundColor: shift.color }}></span>
                                   {shift.shiftName}
+                                  {shift.storeName ? (
+                                    <span className="text-[#6a6a6a]"> · {shift.storeName}</span>
+                                  ) : null}
                                 </p>
                               </div>
                             </div>
@@ -499,9 +557,9 @@ const AccountSettings = () => {
                     <div className="inline-block p-3 sm:p-4 bg-[#1f1f1f] rounded-full mb-3 sm:mb-4">
                       <MdCalendarToday size={32} className="sm:w-12 sm:h-12 text-[#3a3a3a]" />
                     </div>
-                    <p className="text-[#ababab] text-sm sm:text-lg font-medium">No shifts assigned for this month</p>
+                    <p className="text-[#ababab] text-sm sm:text-lg font-medium">No activity at any assigned store this month</p>
                     <p className="text-[#6a6a6a] text-xs sm:text-sm mt-2 max-w-md mx-auto px-4">
-                      Your salary will be calculated once shifts are assigned to you by the administrator
+                      Your salary and tickets will show here once shifts or tickets are recorded
                     </p>
                   </div>
                 )}
@@ -539,6 +597,7 @@ const AccountSettings = () => {
                             <thead>
                               <tr className="border-b border-[#343434]">
                                 <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[#ababab] text-[10px] sm:text-xs font-medium">Date</th>
+                                <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[#ababab] text-[10px] sm:text-xs font-medium">Store</th>
                                 <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[#ababab] text-[10px] sm:text-xs font-medium">Type</th>
                                 <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[#ababab] text-[10px] sm:text-xs font-medium">Duration</th>
                                 <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-[#ababab] text-[10px] sm:text-xs font-medium hidden sm:table-cell">Rate</th>
@@ -572,6 +631,9 @@ const AccountSettings = () => {
                                         day: 'numeric',
                                         year: 'numeric'
                                       })}
+                                    </td>
+                                    <td className="px-2 sm:px-4 py-2 sm:py-3 text-[#ababab] text-xs sm:text-sm">
+                                      {entry.storeName || "-"}
                                     </td>
                                     <td className="px-2 sm:px-4 py-2 sm:py-3">
                                       <span className={`inline-flex px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-[10px] sm:text-xs font-medium border ${getWorkTypeColor(entry.workType)}`}>
@@ -860,7 +922,10 @@ const AccountSettings = () => {
                             <div className="flex-1 min-w-0">
                               <p className="text-[#f5f5f5] text-sm font-medium truncate">{t.title}</p>
                               {t.note && <p className="text-[#6a6a6a] text-xs mt-0.5 truncate">{t.note}</p>}
-                              <p className="text-[#ababab] text-xs mt-0.5">{new Date(t.createdAt).toLocaleDateString()}</p>
+                              <p className="text-[#ababab] text-xs mt-0.5">
+                                {new Date(t.createdAt).toLocaleDateString()}
+                                {t.store?.name ? ` · ${t.store.name}` : ""}
+                              </p>
                             </div>
                             <span className="text-brand font-bold text-sm flex-shrink-0">+{t.score}</span>
                           </div>
