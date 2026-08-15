@@ -2,6 +2,7 @@
 import type { MongoFilter } from "../types/mongo.js";
 
 import createHttpError from "http-errors";
+import mongoose from "mongoose";
 import Ticket from "../models/ticketModel.js";
 import StoreUser from "../models/storeUserModel.js";
 import User from "../models/userModel.js";
@@ -261,6 +262,10 @@ const getMyTickets = async (req, res, next) => {
             });
         }
 
+        const assignedStoreObjectIds = assignedStoreIds.map(
+            (id) => new mongoose.Types.ObjectId(id)
+        );
+
         const [monthlyTickets, allTimeAgg] = await Promise.all([
             Ticket.find({
                 store: { $in: assignedStoreIds },
@@ -271,7 +276,7 @@ const getMyTickets = async (req, res, next) => {
                 .sort({ createdAt: -1 })
                 .lean(),
             Ticket.aggregate([
-                { $match: { store: { $in: assignedStoreIds }, member: memberId } },
+                { $match: { store: { $in: assignedStoreObjectIds }, member: memberId } },
                 { $group: { _id: null, allTimeScore: { $sum: "$score" }, allTimeCount: { $sum: 1 } } }
             ])
         ]);
