@@ -262,6 +262,8 @@ const getMyTickets = async (req, res, next) => {
             });
         }
 
+        // Aggregation $match compares store as ObjectId. String ids match 0 documents —
+        // do not put assignedStoreIds back into this $match during a later cleanup.
         const assignedStoreObjectIds = assignedStoreIds.map(
             (id) => new mongoose.Types.ObjectId(id)
         );

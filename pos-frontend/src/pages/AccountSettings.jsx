@@ -417,7 +417,7 @@ const AccountSettings = () => {
                       <MdStar className="text-[#6a6a6a] w-3 h-3 sm:w-4 sm:h-4" />
                     </div>
                     <p className="text-[#f5f5f5] text-base sm:text-lg font-bold">{salaryData.summary.totalTickets || 0}</p>
-                    <p className="text-[#6a6a6a] text-[10px] sm:text-xs mt-1 sm:mt-2">this month</p>
+                    <p className="text-[#6a6a6a] text-[10px] sm:text-xs mt-1 sm:mt-2">{salaryData.period.monthName}</p>
                   </div>
 
                   <div className="bg-gradient-to-br from-[#262626] to-[#1f1f1f] rounded-lg sm:rounded-xl p-3 sm:p-5 border border-[#3a3a3a] hover:border-brand/50 transition-all">
@@ -426,7 +426,7 @@ const AccountSettings = () => {
                       <MdStar className="text-brand w-3 h-3 sm:w-4 sm:h-4" />
                     </div>
                     <p className="text-brand text-base sm:text-lg font-bold">{salaryData.summary.totalTicketScore || 0}</p>
-                    <p className="text-[#6a6a6a] text-[10px] sm:text-xs mt-1 sm:mt-2">this month</p>
+                    <p className="text-[#6a6a6a] text-[10px] sm:text-xs mt-1 sm:mt-2">{salaryData.period.monthName}</p>
                   </div>
                 </div>
 
@@ -552,7 +552,7 @@ const AccountSettings = () => {
                 )}
 
                 {/* No Shifts Message - Enhanced */}
-                {salaryData.shifts && salaryData.shifts.length === 0 && (!salaryData.extraWork || salaryData.extraWork.length === 0) && (
+                {salaryData.shifts && salaryData.shifts.length === 0 && (!salaryData.extraWork || salaryData.extraWork.length === 0) && !(salaryData.summary.totalTickets > 0) && (
                   <div className="text-center py-8 sm:py-16 bg-[#262626]/30 rounded-lg sm:rounded-xl border border-dashed border-[#3a3a3a]">
                     <div className="inline-block p-3 sm:p-4 bg-[#1f1f1f] rounded-full mb-3 sm:mb-4">
                       <MdCalendarToday size={32} className="sm:w-12 sm:h-12 text-[#3a3a3a]" />

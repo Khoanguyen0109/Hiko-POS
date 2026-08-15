@@ -66,13 +66,6 @@ function idOf(value: unknown): string {
   return String(value);
 }
 
-function memberIdOf(value: unknown): string {
-  if (value && typeof value === "object" && "_id" in value) {
-    return String((value as { _id: unknown })._id);
-  }
-  return String(value);
-}
-
 type StoreAcc = {
   totalShifts: number;
   regularHours: number;
@@ -127,7 +120,7 @@ export function buildMemberMonthlySalary(input: BuildMemberMonthlySalaryInput) {
     }
 
     const memberAssignment = (schedule.assignedMembers || []).find((assignment) => {
-      return memberIdOf(assignment.member) === memberId;
+      return idOf(assignment.member) === memberId;
     });
 
     if (
