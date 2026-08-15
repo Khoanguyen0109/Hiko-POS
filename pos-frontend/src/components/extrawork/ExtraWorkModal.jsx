@@ -144,7 +144,13 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
     onClose();
   };
 
-  const activeMembers = members?.filter(m => m.isActive && m.role !== "Admin") || [];
+  const activeMembers = members?.filter((m) => {
+    if (m.isActive === false || m.role === "Admin") return false;
+    if (!formData.storeId) return true;
+    return m.assignedStores?.some(
+      (s) => String(s._id) === String(formData.storeId) && s.isActive
+    );
+  }) || [];
   const activeStores = allStores?.filter(s => s.isActive) || [];
   const workTypes = [
     { value: "overtime", label: "Overtime" },

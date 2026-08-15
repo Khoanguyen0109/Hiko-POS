@@ -77,6 +77,7 @@ const TicketModal = ({ isOpen, onClose, ticket, members }) => {
     }
   };
 
+  const activeMembers = members.filter((m) => m.isActive !== false);
   const loading = createLoading || updateLoading;
   const title = (
     <h2 className="flex items-center gap-2 text-lg font-semibold text-[#f5f5f5]">
@@ -108,7 +109,7 @@ const TicketModal = ({ isOpen, onClose, ticket, members }) => {
                 className="w-full bg-[#262626] border border-[#343434] rounded-lg px-3 py-2.5 text-[#f5f5f5] text-sm focus:outline-none focus:border-brand"
               >
                 <option value="">Select a member…</option>
-                {members.map((m) => (
+                {activeMembers.map((m) => (
                   <option key={m._id} value={m._id}>
                     {m.name} ({m.role})
                   </option>

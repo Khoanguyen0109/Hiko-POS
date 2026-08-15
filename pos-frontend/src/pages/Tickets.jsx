@@ -41,18 +41,21 @@ const Tickets = () => {
   const storeRole = activeStore?.role || activeStore?.storeRole || "";
   const canManage = role === "Admin" || storeRole === "Owner" || storeRole === "Manager";
 
-  const members = storeMembers?.map((sm) => ({
-    _id: sm.user?._id || sm.user,
-    name: sm.user?.name || sm.name || "Unknown",
-    role: sm.role,
-  })).filter((m) => m._id) || [];
+  const members = storeMembers
+    ?.filter((sm) => sm.isActive && sm.user?.isActive)
+    .map((sm) => ({
+      _id: sm.user?._id || sm.user,
+      name: sm.user?.name || sm.name || "Unknown",
+      role: sm.role,
+      isActive: true,
+    }))
+    .filter((m) => m._id) || [];
 
-  // Fetch storeMembers if not already loaded (needed for the create modal)
   useEffect(() => {
-    if (activeStore?._id && (!storeMembers || storeMembers.length === 0)) {
+    if (activeStore?._id) {
       dispatch(fetchStoreMembers(activeStore._id));
     }
-  }, [dispatch, activeStore, storeMembers]);
+  }, [dispatch, activeStore?._id]);
 
   const loadData = useCallback(() => {
     dispatch(fetchTicketSummary({ month, year }));

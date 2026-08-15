@@ -565,7 +565,13 @@ const WeeklySchedule = () => {
                             className="w-full px-3 py-2 bg-[#262626] border border-[#3a3a3a] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-[#4ECDC4]"
                           >
                             <option value="">All Members</option>
-                            {members?.filter(m => m.isActive && m.role !== "Admin").map(member => (
+                            {members?.filter((m) => {
+                              if (m.isActive === false || m.role === "Admin") return false;
+                              if (!activeStore?._id) return true;
+                              return m.assignedStores?.some(
+                                (s) => String(s._id) === String(activeStore._id) && s.isActive
+                              );
+                            }).map(member => (
                               <option key={member._id} value={member._id}>{member.name}</option>
                             ))}
                           </select>
