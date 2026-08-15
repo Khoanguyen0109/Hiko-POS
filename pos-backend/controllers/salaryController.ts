@@ -8,9 +8,12 @@ import Store from "../models/storeModel.js";
 import StoreUser from "../models/storeUserModel.js";
 import Ticket from "../models/ticketModel.js";
 import createHttpError from "http-errors";
+import { userRoles } from "../constants/user.js";
 import { getDateRangeVietnam, getCurrentVietnamTime, getStartOfDayVietnam, getEndOfDayVietnam, VIETNAM_TIMEZONE } from "../utils/dateUtils.js";
 import { toZonedTime } from "date-fns-tz";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
+import { pickAssignedStores } from "../utils/assignedStores.js";
+import { buildMemberMonthlySalary } from "../utils/memberMonthlySalary.js";
 
 /**
  * Get member's monthly salary based on assigned shifts
@@ -19,9 +22,8 @@ import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
 const getMonthlySalary = async (req, res, next) => {
     try {
         const { year, month } = req.params;
-        const memberId = req.user._id; // Current logged-in user
+        const memberId = req.user._id;
 
-        // Validate year and month
         const yearNum = parseInt(year);
         const monthNum = parseInt(month);
 
@@ -30,131 +32,68 @@ const getMonthlySalary = async (req, res, next) => {
             return next(error);
         }
 
-        // Get member's hourly rate (salary field)
-        const member = await User.findById(memberId).select('salary name role');
+        const member = await User.findById(memberId).select("salary name role");
         if (!member) {
             const error = createHttpError(404, "Member not found!");
             return next(error);
         }
 
-        const hourlyRate = member.salary || 0;
-
-        // Calculate date range for the month
-        const startDate = new Date(yearNum, monthNum - 1, 1); // First day of month
-        const endDate = new Date(yearNum, monthNum, 0, 23, 59, 59); // Last day of month
-
-        // Find all schedules where this member is assigned
-        const schedules = await Schedule.find({
-            store: req.store._id,
-            'assignedMembers.member': memberId,
-            date: {
-                $gte: startDate,
-                $lte: endDate
-            }
+        const assignments = await StoreUser.find({
+            user: memberId,
+            isActive: true
         })
-        .populate('shiftTemplate', 'name shortName startTime endTime durationHours color')
-        .populate('assignedMembers.member', 'name')
-        .sort({ date: 1 });
+            .populate("store", "name code isActive")
+            .lean();
 
-        // Calculate total hours and shifts
-        // Only count shifts with valid statuses (exclude "absent" and "cancelled")
-        const validStatuses = ["scheduled", "confirmed", "completed"];
-        let totalHours = 0;
-        let totalShifts = 0;
-        const shiftDetails: Array<Record<string, unknown>> = [];
+        const assignedStores = pickAssignedStores(assignments, {
+            isAdmin: req.user.role === userRoles.ADMIN,
+            fallbackStore: req.store
+        });
+        const assignedStoreIds = assignedStores.map((store) => store.id);
 
-        for (const schedule of schedules) {
-            // Check if member is actually assigned to this schedule
-            const memberAssignment = schedule.assignedMembers.find(
-                am => am.member._id.toString() === memberId.toString()
-            );
+        const startDate = new Date(yearNum, monthNum - 1, 1);
+        const endDate = new Date(yearNum, monthNum, 0, 23, 59, 59);
 
-            // Only count shifts with valid statuses
-            if (memberAssignment && schedule.shiftTemplate && validStatuses.includes(memberAssignment.status)) {
-                const hours = schedule.shiftTemplate.durationHours || 0;
-                totalHours += hours;
-                totalShifts++;
+        const [schedules, extraWorkEntries, tickets] = assignedStoreIds.length > 0
+            ? await Promise.all([
+                Schedule.find({
+                    store: { $in: assignedStoreIds },
+                    "assignedMembers.member": memberId,
+                    date: { $gte: startDate, $lte: endDate }
+                })
+                    .populate("shiftTemplate", "name shortName startTime endTime durationHours color")
+                    .populate("assignedMembers.member", "name")
+                    .sort({ date: 1 })
+                    .lean(),
+                ExtraWork.find({
+                    store: { $in: assignedStoreIds },
+                    member: memberId,
+                    date: { $gte: startDate, $lte: endDate }
+                })
+                    .sort({ date: 1 })
+                    .lean(),
+                Ticket.find({
+                    store: { $in: assignedStoreIds },
+                    member: memberId,
+                    createdAt: { $gte: startDate, $lte: endDate }
+                }).lean()
+            ])
+            : [[], [], []];
 
-                shiftDetails.push({
-                    date: schedule.date,
-                    shiftName: schedule.shiftTemplate.name,
-                    startTime: schedule.shiftTemplate.startTime,
-                    endTime: schedule.shiftTemplate.endTime,
-                    hours: hours,
-                    status: memberAssignment.status,
-                    color: schedule.shiftTemplate.color
-                });
-            }
-        }
-
-        // Calculate total salary from regular shifts
-        const regularSalary = totalHours * hourlyRate;
-
-        // Fetch extra work entries for this member in the selected month
-        const extraWorkEntries = await ExtraWork.find({
-            store: req.store._id,
-            member: memberId,
-            date: {
-                $gte: startDate,
-                $lte: endDate
-            }
-        })
-        .sort({ date: 1 });
-
-        // Calculate extra work totals
-        let extraWorkHours = 0;
-        let extraWorkPayment = 0;
-        const extraWorkDetails: Array<Record<string, unknown>> = [];
-
-        for (const entry of extraWorkEntries) {
-            extraWorkHours += entry.durationHours || 0;
-            extraWorkPayment += entry.paymentAmount || 0;
-            
-            extraWorkDetails.push({
-                date: entry.date,
-                durationHours: entry.durationHours,
-                workType: entry.workType,
-                description: entry.description,
-                hourlyRate: entry.hourlyRate,
-                paymentAmount: entry.paymentAmount,
-                isApproved: entry.isApproved,
-                isPaid: entry.isPaid
-            });
-        }
-
-        // Calculate combined totals
-        const combinedTotalHours = totalHours + extraWorkHours;
-        const combinedTotalSalary = regularSalary + extraWorkPayment;
+        const data = buildMemberMonthlySalary({
+            member,
+            year: yearNum,
+            month: monthNum,
+            assignedStores,
+            schedules,
+            extraWork: extraWorkEntries,
+            tickets
+        });
 
         res.status(200).json({
             success: true,
-            data: {
-                member: {
-                    id: member._id,
-                    name: member.name,
-                    role: member.role,
-                    hourlyRate: hourlyRate
-                },
-                period: {
-                    year: yearNum,
-                    month: monthNum,
-                    monthName: new Date(yearNum, monthNum - 1).toLocaleString('en-US', { month: 'long' })
-                },
-                summary: {
-                    totalShifts: totalShifts,
-                    regularHours: Math.round(totalHours * 100) / 100,
-                    extraWorkHours: Math.round(extraWorkHours * 100) / 100,
-                    totalHours: Math.round(combinedTotalHours * 100) / 100,
-                    hourlyRate: hourlyRate,
-                    regularSalary: Math.round(regularSalary * 100) / 100,
-                    extraWorkPayment: Math.round(extraWorkPayment * 100) / 100,
-                    totalSalary: Math.round(combinedTotalSalary * 100) / 100
-                },
-                shifts: shiftDetails,
-                extraWork: extraWorkDetails
-            }
+            data
         });
-
     } catch (error) {
         next(error);
     }
