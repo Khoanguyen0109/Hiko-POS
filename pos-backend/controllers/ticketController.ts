@@ -5,6 +5,8 @@ import createHttpError from "http-errors";
 import Ticket from "../models/ticketModel.js";
 import StoreUser from "../models/storeUserModel.js";
 import User from "../models/userModel.js";
+import { userRoles } from "../constants/user.js";
+import { pickAssignedStores } from "../utils/assignedStores.js";
 
 // GET /api/ticket — list tickets for the active store
 const getTickets = async (req, res, next) => {
@@ -221,29 +223,60 @@ const getTicketSummary = async (req, res, next) => {
     }
 };
 
-// GET /api/ticket/my-tickets — logged-in member's own tickets + totals
 const getMyTickets = async (req, res, next) => {
     try {
-        const storeId  = req.store._id;
         const memberId = req.user._id;
         const now = new Date();
         const targetMonth = parseInt(req.query.month as string, 10) || (now.getMonth() + 1);
-        const targetYear  = parseInt(req.query.year  as string, 10) || now.getFullYear();
+        const targetYear = parseInt(req.query.year as string, 10) || now.getFullYear();
+
+        const assignments = await StoreUser.find({
+            user: memberId,
+            isActive: true
+        })
+            .populate("store", "name code isActive")
+            .lean();
+
+        const assignedStores = pickAssignedStores(assignments, {
+            isAdmin: req.user.role === userRoles.ADMIN,
+            fallbackStore: req.store
+        });
+        const assignedStoreIds = assignedStores.map((store) => store.id);
 
         const monthStart = new Date(targetYear, targetMonth - 1, 1);
-        const monthEnd   = new Date(targetYear, targetMonth, 1);
+        const monthEnd = new Date(targetYear, targetMonth, 1);
+
+        if (assignedStoreIds.length === 0) {
+            return res.status(200).json({
+                success: true,
+                data: {
+                    month: targetMonth,
+                    year: targetYear,
+                    monthlyScore: 0,
+                    monthlyCount: 0,
+                    allTimeScore: 0,
+                    allTimeCount: 0,
+                    tickets: []
+                }
+            });
+        }
 
         const [monthlyTickets, allTimeAgg] = await Promise.all([
-            Ticket.find({ store: storeId, member: memberId, createdAt: { $gte: monthStart, $lt: monthEnd } })
+            Ticket.find({
+                store: { $in: assignedStoreIds },
+                member: memberId,
+                createdAt: { $gte: monthStart, $lt: monthEnd }
+            })
+                .populate("store", "name")
                 .sort({ createdAt: -1 })
                 .lean(),
             Ticket.aggregate([
-                { $match: { store: storeId, member: memberId } },
+                { $match: { store: { $in: assignedStoreIds }, member: memberId } },
                 { $group: { _id: null, allTimeScore: { $sum: "$score" }, allTimeCount: { $sum: 1 } } }
             ])
         ]);
 
-        const monthlyScore = monthlyTickets.reduce((sum, t) => sum + t.score, 0);
+        const monthlyScore = monthlyTickets.reduce((sum, ticket) => sum + ticket.score, 0);
         const allTimeScore = allTimeAgg[0]?.allTimeScore || 0;
         const allTimeCount = allTimeAgg[0]?.allTimeCount || 0;
 
@@ -251,7 +284,7 @@ const getMyTickets = async (req, res, next) => {
             success: true,
             data: {
                 month: targetMonth,
-                year:  targetYear,
+                year: targetYear,
                 monthlyScore,
                 monthlyCount: monthlyTickets.length,
                 allTimeScore,
