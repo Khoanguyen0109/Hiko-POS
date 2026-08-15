@@ -74,3 +74,57 @@ export interface SalaryMemberPivotRow {
   totalTicketScore: number;
   totalSalary: number;
 }
+
+/** Store identity used on the member monthly salary payload. */
+export interface AssignedStoreInfo {
+  id: string;
+  name: string;
+  code: string;
+}
+
+/** Combined month totals for the logged-in member across assigned stores. */
+export interface MemberMonthlySalarySummary {
+  totalShifts: number;
+  regularHours: number;
+  extraWorkHours: number;
+  totalHours: number;
+  hourlyRate: number;
+  regularSalary: number;
+  extraWorkPayment: number;
+  totalSalary: number;
+  totalTickets: number;
+  totalTicketScore: number;
+}
+
+/** One assigned store row on the member monthly salary payload. */
+export interface MemberStoreSalaryBlock {
+  store: AssignedStoreInfo;
+  summary: MemberMonthlySalarySummary;
+}
+
+/** One shift row on the member monthly salary payload. */
+export interface MemberSalaryShiftDetail {
+  date: Date | string;
+  shiftName: string;
+  startTime: string;
+  endTime: string;
+  hours: number;
+  status: string;
+  color?: string;
+  storeId: string;
+  storeName: string;
+}
+
+/** One extra work row on the member monthly salary payload. */
+export interface MemberSalaryExtraWorkDetail {
+  date: Date | string;
+  durationHours: number;
+  workType: string;
+  description: string;
+  hourlyRate: number;
+  paymentAmount: number;
+  isApproved: boolean;
+  isPaid: boolean;
+  storeId: string;
+  storeName: string;
+}
