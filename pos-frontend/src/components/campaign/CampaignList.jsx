@@ -2,20 +2,22 @@ import PropTypes from "prop-types";
 import {
   MdEdit,
   MdLink,
+  MdQrCode,
   MdBlock,
   MdCheckCircle,
   MdCancel,
   MdSchedule,
 } from "react-icons/md";
-
-const SPIN_BASE_URL = "https://hikomatcha.vn/spin";
+import { getSpinUrl } from "../../utils/spinQr";
 
 const CampaignList = ({
   campaigns,
   loading,
   onEdit,
   onCopyLink,
+  onDownloadQr,
   onDeactivate,
+  downloadingSlug,
 }) => {
   const formatDate = (dateString) => {
     if (!dateString) return "—";
@@ -155,13 +157,20 @@ const CampaignList = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() =>
-                      onCopyLink(`${SPIN_BASE_URL}/${campaign.slug}`)
-                    }
+                    onClick={() => onCopyLink(getSpinUrl(campaign.slug))}
                     className="p-1.5 text-brand hover:bg-brand/10 rounded transition-colors"
                     title="Copy spin link"
                   >
                     <MdLink size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDownloadQr(campaign.slug)}
+                    disabled={downloadingSlug === campaign.slug}
+                    className="p-1.5 text-brand hover:bg-brand/10 rounded transition-colors disabled:opacity-50 disabled:cursor-wait"
+                    title="Download spin QR"
+                  >
+                    <MdQrCode size={18} />
                   </button>
                   {campaign.isActive && (
                     <button
@@ -199,7 +208,9 @@ CampaignList.propTypes = {
   loading: PropTypes.bool.isRequired,
   onEdit: PropTypes.func.isRequired,
   onCopyLink: PropTypes.func.isRequired,
+  onDownloadQr: PropTypes.func.isRequired,
   onDeactivate: PropTypes.func.isRequired,
+  downloadingSlug: PropTypes.string,
 };
 
 export default CampaignList;

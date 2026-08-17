@@ -16,6 +16,7 @@ import {
   deactivateCampaignAction,
   clearError,
 } from "../redux/slices/campaignSlice";
+import { downloadSpinQr } from "../utils/spinQr";
 
 const CampaignManager = () => {
   const dispatch = useDispatch();
@@ -28,6 +29,7 @@ const CampaignManager = () => {
   const [editingCampaign, setEditingCampaign] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [downloadingSlug, setDownloadingSlug] = useState("");
 
   useEffect(() => {
     dispatch(fetchCampaigns());
@@ -93,6 +95,20 @@ const CampaignManager = () => {
       enqueueSnackbar("Spin link copied!", { variant: "success" });
     } catch {
       enqueueSnackbar("Failed to copy link", { variant: "error" });
+    }
+  };
+
+  const handleDownloadQr = async (slug) => {
+    if (downloadingSlug) return;
+
+    setDownloadingSlug(slug);
+    try {
+      await downloadSpinQr(slug);
+      enqueueSnackbar("Spin QR downloaded!", { variant: "success" });
+    } catch {
+      enqueueSnackbar("Failed to generate QR", { variant: "error" });
+    } finally {
+      setDownloadingSlug("");
     }
   };
 
@@ -216,7 +232,9 @@ const CampaignManager = () => {
             loading={loading}
             onEdit={handleEdit}
             onCopyLink={handleCopyLink}
+            onDownloadQr={handleDownloadQr}
             onDeactivate={handleDeactivate}
+            downloadingSlug={downloadingSlug}
           />
         </div>
 

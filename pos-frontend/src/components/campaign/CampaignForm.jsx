@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 import BottomSheet from "../shared/BottomSheet";
 import WheelSlotEditor from "./WheelSlotEditor";
 import { fetchDishes } from "../../redux/slices/dishSlice";
+import { getSpinUrl } from "../../utils/spinQr";
 
 const DEFAULT_SLOTS = [
   {
@@ -238,7 +239,7 @@ const CampaignForm = ({ campaign, onSubmit, onClose }) => {
             )}
             {formData.slug && (
               <p className="text-xs text-[#ababab] mt-1">
-                Spin link: https://hikomatcha.vn/spin/{formData.slug}
+                Spin link: {getSpinUrl(formData.slug)}
               </p>
             )}
           </div>
