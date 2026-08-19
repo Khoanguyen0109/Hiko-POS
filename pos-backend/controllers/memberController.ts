@@ -12,12 +12,14 @@ import { userRoles } from "../constants/user.js";
 // Admin: Get all members (paginated)
 const getAllMembers = async (req, res, next) => {
     try {
-        const { page, limit, search } = req.query;
+        const { page, limit, search, isActive } = req.query;
         const pageNum  = Math.max(1, parseInt(page, 10)  || 1);
         const limitNum = Math.min(200, Math.max(1, parseInt(limit, 10) || 50));
         const skip     = (pageNum - 1) * limitNum;
 
         const filter: MongoFilter = { role: { $ne: userRoles.ADMIN } };
+        if (isActive === 'true') filter.isActive = { $ne: false };
+        else if (isActive === 'false') filter.isActive = false;
         if (search) {
             const re = new RegExp(search.trim(), 'i');
             filter.$or = [{ name: re }, { phone: re }, { email: re }];

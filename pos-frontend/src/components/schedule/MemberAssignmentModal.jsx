@@ -49,14 +49,14 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, store
     setSelectedMembers(ids);
 
     if (!members || members.length === 0) {
-      dispatch(fetchMembers());
+      dispatch(fetchMembers({ isActive: true }));
     }
 
     const loadConflicts = async () => {
       setConflictsLoading(true);
       try {
         const activeIds = members
-          ?.filter(m => m.isActive)
+          ?.filter(m => m.isActive !== false)
           .map(m => m._id) || [];
         if (activeIds.length === 0) { setConflictsLoading(false); return; }
 
@@ -87,7 +87,7 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, store
 
   // Get store members (members assigned to the target store)
   const storeMembers = members?.filter(m => {
-    if (!m.isActive) return false;
+    if (m.isActive === false) return false;
     // Filter by store assignment if available
     if (m.assignedStores && m.assignedStores.length > 0 && targetStore) {
       return m.assignedStores.some(s => s._id === targetStore._id && s.isActive);

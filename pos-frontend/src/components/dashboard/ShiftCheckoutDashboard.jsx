@@ -43,6 +43,7 @@ const ShiftCheckoutDashboard = ({ dateFilter, customDateRange }) => {
   const { listCheckouts, listSummary, listLoading, listError, deleteLoading } =
     useSelector((state) => state.shiftCheckout);
   const { members } = useSelector((state) => state.members);
+  const activeMembers = (members || []).filter((member) => member.isActive !== false);
 
   const [statusFilter, setStatusFilter] = useState("all");
   const [memberFilter, setMemberFilter] = useState("all");
@@ -84,7 +85,7 @@ const ShiftCheckoutDashboard = ({ dateFilter, customDateRange }) => {
   }, [dateFilter, customDateRange]);
 
   useEffect(() => {
-    dispatch(fetchMembers());
+    dispatch(fetchMembers({ isActive: true }));
   }, [dispatch]);
 
   useEffect(() => {
@@ -210,7 +211,7 @@ const ShiftCheckoutDashboard = ({ dateFilter, customDateRange }) => {
               className="w-full bg-[#1f1f1f] border border-[#383838] rounded-lg px-3 py-2 text-[#f5f5f5] text-sm"
             >
               <option value="all">All members</option>
-              {(members || []).map((m) => (
+              {activeMembers.map((m) => (
                 <option key={m._id} value={m._id}>
                   {m.name}
                 </option>

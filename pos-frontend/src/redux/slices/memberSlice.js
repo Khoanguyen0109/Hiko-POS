@@ -14,9 +14,9 @@ import {
 // Async thunks for member management (Admin only)
 export const fetchMembers = createAsyncThunk(
     "members/fetchMembers",
-    async (_, { rejectWithValue }) => {
+    async (params, { rejectWithValue }) => {
         try {
-            const response = await getAllMembers();
+            const response = await getAllMembers(params || {});
             return response.data;
         } catch (error) {
             return rejectWithValue(error.response?.data?.message || "Failed to fetch members");

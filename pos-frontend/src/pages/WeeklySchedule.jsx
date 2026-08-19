@@ -108,7 +108,7 @@ const WeeklySchedule = () => {
       if (allStores.length === 0) dispatch(fetchAllStores());
     }
     if (isAdmin) {
-      dispatch(fetchMembers());
+      dispatch(fetchMembers({ isActive: true }));
     }
   }, [dispatch, isAdmin, currentWeek, activeTab, allStores.length, activeStore?._id]);
 

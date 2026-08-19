@@ -100,7 +100,7 @@ export const updateCustomer = ({ customerId, ...customerData }) =>
 export const deleteCustomer = (customerId) => axiosWrapper.delete(`/api/customer/${customerId}`);
 
 // Member Management Endpoints
-export const getAllMembers = () => axiosWrapper.get("/api/member/");
+export const getAllMembers = (params = {}) => axiosWrapper.get("/api/member/", { params });
 export const getMemberById = (id) => axiosWrapper.get(`/api/member/${id}`);
 export const createMember = (data) => axiosWrapper.post("/api/member/", data);
 export const updateMember = (id, data) => axiosWrapper.put(`/api/member/${id}`, data);

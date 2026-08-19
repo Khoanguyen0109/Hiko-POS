@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, memo, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import PropTypes from "prop-types";
 import { IoMdAdd } from "react-icons/io";
-import { MdInput, MdOutput, MdSettings, MdBusiness, MdInventory, MdToday, MdDateRange, MdCalendarMonth, MdFilterList } from "react-icons/md";
+import { MdInput, MdOutput, MdSettings, MdBusiness, MdInventory, MdToday, MdDateRange, MdCalendarMonth, MdFilterList, MdSearch } from "react-icons/md";
 import {
   fetchStorageImports,
   cancelStorageImportAction,
@@ -143,11 +143,18 @@ ExportList.propTypes = {
   onCancel: PropTypes.func.isRequired,
 };
 
-const StockList = memo(({ items, loading }) => {
+const StockList = memo(({ items, loading, searchQuery = "" }) => {
   if (loading) return <LoadingState message="Loading stock..." />;
 
   const activeItems = items.filter((item) => item.isActive);
-  if (activeItems.length === 0) return <EmptyState icon={MdInventory} message="No items in storage" />;
+  if (activeItems.length === 0) {
+    return (
+      <EmptyState
+        icon={MdInventory}
+        message={searchQuery.trim() ? "No items match your search" : "No items in storage"}
+      />
+    );
+  }
 
   return (
     <div className="overflow-x-auto rounded-lg border border-[#343434]">
@@ -205,14 +212,20 @@ StockList.displayName = "StockList";
 StockList.propTypes = {
   items: PropTypes.arrayOf(PropTypes.object).isRequired,
   loading: PropTypes.bool.isRequired,
+  searchQuery: PropTypes.string,
 };
 
-const StockCardList = memo(({ items, loading }) => {
+const StockCardList = memo(({ items, loading, searchQuery = "" }) => {
   if (loading) return <LoadingState message="Loading stock..." />;
 
   const activeItems = items.filter((item) => item.isActive);
   if (activeItems.length === 0) {
-    return <EmptyState icon={MdInventory} message="No items in storage" />;
+    return (
+      <EmptyState
+        icon={MdInventory}
+        message={searchQuery.trim() ? "No items match your search" : "No items in storage"}
+      />
+    );
   }
 
   return (
@@ -227,6 +240,7 @@ StockCardList.displayName = "StockCardList";
 StockCardList.propTypes = {
   items: PropTypes.arrayOf(PropTypes.object).isRequired,
   loading: PropTypes.bool.isRequired,
+  searchQuery: PropTypes.string,
 };
 
 const StorageMobileFab = ({ activeTab, onImport, onExport }) => (
@@ -290,6 +304,8 @@ const Storage = () => {
   const [dateFilter, setDateFilter] = useState("week");
   const [customDateRange, setCustomDateRange] = useState({ startDate: "", endDate: "" });
   const [showDateFilter, setShowDateFilter] = useState(true);
+  const [stockSearchInput, setStockSearchInput] = useState("");
+  const [debouncedStockSearch, setDebouncedStockSearch] = useState("");
 
   const dateFilterOptions = useMemo(() => [
     { value: "today", label: "Today", icon: <MdToday /> },
@@ -325,6 +341,23 @@ const Storage = () => {
   }, [dateParams]);
 
   useEffect(() => { dispatch(fetchStorageItems({ isActive: true })); }, [dispatch]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedStockSearch(stockSearchInput.trim());
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [stockSearchInput]);
+
+  const filteredStockItems = useMemo(() => {
+    const query = debouncedStockSearch.toLowerCase();
+    if (!query) return storageItems;
+    return storageItems.filter((item) => {
+      const name = (item.name || "").toLowerCase();
+      const code = (item.code || "").toLowerCase();
+      return name.includes(query) || code.includes(query);
+    });
+  }, [storageItems, debouncedStockSearch]);
 
   useEffect(() => {
     if (!dateParams) return;
@@ -444,6 +477,19 @@ const Storage = () => {
           </>
         }
       >
+        {activeTab === "stock" ? (
+          <div className="relative max-w-md">
+            <MdSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-[#ababab]" size={20} />
+            <input
+              type="search"
+              placeholder="Search stock by name or code..."
+              value={stockSearchInput}
+              onChange={(e) => setStockSearchInput(e.target.value)}
+              className="w-full rounded-lg border border-[#343434] bg-[#262626] py-2 pl-10 pr-4 text-[#f5f5f5] placeholder-[#ababab] transition-colors focus:border-brand focus:outline-none"
+              aria-label="Search stock by name or code"
+            />
+          </div>
+        ) : null}
         {activeTab !== "stock" && showDateFilter ? (
           <div className="flex flex-col gap-2">
             <p className="text-xs text-[#ababab]">
@@ -473,15 +519,27 @@ const Storage = () => {
         {activeTab === "stock" && v2UiEnabled ? (
           <>
             <div className="md:hidden">
-              <StockCardList items={storageItems} loading={storageItemsLoading} />
+              <StockCardList
+                items={filteredStockItems}
+                loading={storageItemsLoading}
+                searchQuery={debouncedStockSearch}
+              />
             </div>
             <div className="hidden md:block">
-              <StockList items={storageItems} loading={storageItemsLoading} />
+              <StockList
+                items={filteredStockItems}
+                loading={storageItemsLoading}
+                searchQuery={debouncedStockSearch}
+              />
             </div>
           </>
         ) : null}
         {activeTab === "stock" && !v2UiEnabled ? (
-          <StockList items={storageItems} loading={storageItemsLoading} />
+          <StockList
+            items={filteredStockItems}
+            loading={storageItemsLoading}
+            searchQuery={debouncedStockSearch}
+          />
         ) : null}
         {activeTab === "imports" && dateParams && (
           <ImportList imports={imports} loading={importsLoading} onCancel={handleCancelImport} />

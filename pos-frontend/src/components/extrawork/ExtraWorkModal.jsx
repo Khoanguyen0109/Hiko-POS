@@ -30,7 +30,7 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
   useEffect(() => {
     if (isOpen) {
       if (!members || members.length === 0) {
-        dispatch(fetchMembers());
+        dispatch(fetchMembers({ isActive: true }));
       }
       if (!allStores || allStores.length === 0) {
         dispatch(fetchAllStores());

@@ -23,6 +23,7 @@ const Orders = () => {
   } = useSelector((state) => state.orders);
   const { members } = useSelector((state) => state.members);
   const isAdmin = role === "Admin";
+  const activeMembers = members.filter((member) => member.isActive !== false);
 
   // Scroll container ref for scroll position persistence
   const scrollContainerRef = useRef(null);
@@ -46,7 +47,7 @@ const Orders = () => {
     hasRestoredScroll.current = false;
     
     if (isAdmin) {
-      dispatch(fetchMembers());
+      dispatch(fetchMembers({ isActive: true }));
     }
   }, [dispatch, isAdmin]);
 
@@ -297,7 +298,7 @@ const Orders = () => {
                   className="w-full px-3 py-2 bg-[#262626] border border-[#343434] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-brand transition-colors"
                 >
                   <option value="all">All Staff Members</option>
-                  {members.map((member) => (
+                  {activeMembers.map((member) => (
                     <option key={member._id} value={member._id}>
                       {member.name} ({member.role})
                     </option>

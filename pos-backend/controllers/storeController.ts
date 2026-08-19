@@ -185,11 +185,18 @@ const getStoreMembers = async (req, res, next) => {
     try {
         const storeId = req.store._id;
 
-        const members = await StoreUser.find({ store: storeId })
-            .populate('user', 'name phone email role isActive salary')
+        const members = await StoreUser.find({ store: storeId, isActive: true })
+            .populate({
+                path: 'user',
+                select: 'name phone email role isActive salary',
+                match: { isActive: { $ne: false } }
+            })
             .sort({ createdAt: -1 });
 
-        res.status(200).json({ success: true, data: members });
+        res.status(200).json({
+            success: true,
+            data: members.filter((member) => member.user)
+        });
     } catch (error) {
         next(error);
     }
