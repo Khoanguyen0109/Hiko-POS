@@ -22,12 +22,12 @@
     "dist",
     "coverage",
     "scripts",
+    "tests",
     "api-test.ts",
     "manual-test-orders.ts",
     "test-runner.ts",
     "test-week50-api.ts",
     "test-schedule-api.ts",
-    "create-week50-schedules.ts",
-    "tests/order-promotion-tests.ts"
+    "create-week50-schedules.ts"
   ]
 }

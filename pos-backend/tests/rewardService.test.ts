@@ -151,6 +151,11 @@ describe("RewardService.earnDishes — buy 10 Matcha get 1 free", () => {
     );
 
     const updated = await Customer.findById(customer._id);
+    expect(updated).not.toBeNull();
+    if (!updated) {
+      throw new Error("Customer not found after earnDishes");
+    }
+
     const progress = await RewardService.getProgramProgress(updated);
     const available = await RewardService.calculateAvailableRewards(String(customer._id));
     const unlocked = await RewardLog.countDocuments({
