@@ -1,5 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
 import { applyReward, removeAppliedReward } from "../../redux/slices/rewardSlice";
+import RewardCategoryCounts from "./RewardCategoryCounts";
 
 const RewardSelector = () => {
   const dispatch = useDispatch();
@@ -9,8 +10,8 @@ const RewardSelector = () => {
 
   if (!customerRewards) return null;
 
-  const { rewards = [] } = customerRewards;
-  if (rewards.length === 0) return null;
+  const { rewards = [], progress = [] } = customerRewards;
+  if (rewards.length === 0 && progress.length === 0) return null;
 
   const isApplied = (reward) =>
     appliedReward?.rewardProgramId === reward.rewardProgramId &&
@@ -21,6 +22,10 @@ const RewardSelector = () => {
       <p className="text-[#ababab] text-[11px] uppercase tracking-wider font-semibold mb-2">
         Rewards
       </p>
+
+      {progress.length > 0 && (
+        <RewardCategoryCounts progress={progress} className="mb-2" />
+      )}
 
       {rewardsLoading && (
         <p className="text-[#ababab] text-xs text-center py-2">Loading…</p>

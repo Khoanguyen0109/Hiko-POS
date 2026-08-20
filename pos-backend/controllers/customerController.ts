@@ -130,7 +130,8 @@ const getCustomerRewards = async (req, res, next) => {
         if (!customer) return next(createHttpError(404, "Customer not found!"));
 
         const available = await RewardService.calculateAvailableRewards(id);
-        res.status(200).json({ success: true, data: { customer, rewards: available } });
+        const progress = await RewardService.getProgramProgress(customer);
+        res.status(200).json({ success: true, data: { customer, rewards: available, progress } });
     } catch (error) {
         next(error);
     }

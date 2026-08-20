@@ -43,6 +43,7 @@ import FullScreenLoader from "../components/shared/FullScreenLoader";
 import BackButton from "../components/shared/BackButton";
 import OrderItemEditor from "../components/orders/OrderItemEditor";
 import OrderAddItemsModal from "../components/orders/OrderAddItemsModal";
+import RewardCategoryCounts from "../components/menu/RewardCategoryCounts";
 import PropTypes from "prop-types";
 
 const OrderDetail = () => {
@@ -719,8 +720,11 @@ const OrderDetail = () => {
                   </p>
                   <p className="text-[#ababab] text-xs">
                     {order.customer.phone}
-                    {order.customer.totalDishCount != null && ` · ${order.customer.totalDishCount} dishes`}
                   </p>
+                  <RewardCategoryCounts
+                    className="mt-1"
+                    progress={customerRewards?.progress}
+                  />
                 </div>
                 <button
                   onClick={handleRemoveCustomer}
@@ -779,9 +783,6 @@ const OrderDetail = () => {
                           <p className="text-[#f5f5f5] text-sm truncate">{c.name || c.phone}</p>
                           <p className="text-[#ababab] text-xs">{c.phone}</p>
                         </div>
-                        {c.totalDishCount != null && (
-                          <span className="text-[#ababab] text-xs whitespace-nowrap">{c.totalDishCount} dishes</span>
-                        )}
                       </button>
                     ))}
 
@@ -1072,12 +1073,14 @@ const OrderDetail = () => {
                   </p>
                   <p className="text-[#ababab] text-sm">{order.customer.phone}</p>
                   {order.customer.nickname && (
-                    <p className="text-[#ababab] text-xs">"{order.customer.nickname}"</p>
+                    <p className="text-[#ababab] text-xs">
+                      {`"${order.customer.nickname}"`}
+                    </p>
                   )}
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="text-brand font-semibold text-lg">{order.customer.totalDishCount || 0}</p>
-                  <p className="text-[#ababab] text-xs">dishes</p>
+                  <RewardCategoryCounts
+                    className="mt-2"
+                    progress={customerRewards?.progress}
+                  />
                 </div>
               </div>
             </div>

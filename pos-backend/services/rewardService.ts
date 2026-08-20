@@ -19,6 +19,17 @@ interface AvailableReward {
     eligibleCategories?: Types.ObjectId[];
 }
 
+interface ProgramProgress {
+    rewardProgramId: Types.ObjectId;
+    name: string;
+    dishCount: number;
+    dishThreshold: number;
+    cycleLength: number;
+    categoryLabels: string[];
+}
+
+type EligibleCategoryRef = Types.ObjectId | { _id: Types.ObjectId; name?: string } | string;
+
 interface RedeemResult {
     rewardLog: InstanceType<typeof RewardLog>;
     type: string;
@@ -58,13 +69,20 @@ class RewardService {
         return breakdown;
     }
 
+    static categoryIdKey(category: EligibleCategoryRef): string {
+        if (category && typeof category === "object" && "_id" in category) {
+            return String(category._id);
+        }
+        return String(category);
+    }
+
     /**
      * Get the effective dish count for a program given the customer's counts.
      * Programs without eligibleCategories use totalDishCount.
      * Programs with eligibleCategories sum only matching category counts.
      */
     static getDishCountForProgram(
-        program: { eligibleCategories?: Types.ObjectId[] },
+        program: { eligibleCategories?: EligibleCategoryRef[] },
         totalDishCount: number,
         categoryDishCounts: Map<string, number> | Record<string, number>
     ): number {
@@ -73,7 +91,7 @@ class RewardService {
         }
         let count = 0;
         for (const catId of program.eligibleCategories) {
-            const key = String(catId);
+            const key = RewardService.categoryIdKey(catId);
             if (categoryDishCounts instanceof Map) {
                 count += categoryDishCounts.get(key) || 0;
             } else {
@@ -81,6 +99,47 @@ class RewardService {
             }
         }
         return count;
+    }
+
+    /**
+     * Per-program dish progress for staff display on an order.
+     * Category-scoped programs use only matching categoryDishCounts.
+     */
+    static async getProgramProgress(
+        customer: {
+            totalDishCount: number;
+            categoryDishCounts?: Map<string, number> | Record<string, number>;
+        }
+    ): Promise<ProgramProgress[]> {
+        const programs = await RewardProgram.find({ isActive: true })
+            .sort({ priority: 1 })
+            .populate("eligibleCategories", "name");
+
+        const catCounts = customer.categoryDishCounts || new Map<string, number>();
+
+        return programs.map((program) => {
+            const populatedCategories = (program.eligibleCategories || []) as EligibleCategoryRef[];
+            const dishCount = RewardService.getDishCountForProgram(
+                program,
+                customer.totalDishCount,
+                catCounts
+            );
+            const cycle = program.cycleLength && program.cycleLength > 0
+                ? program.cycleLength
+                : program.dishThreshold;
+            const categoryLabels = populatedCategories
+                .map((cat) => (cat && typeof cat === "object" && "name" in cat ? cat.name : undefined))
+                .filter((name): name is string => Boolean(name));
+
+            return {
+                rewardProgramId: program._id as Types.ObjectId,
+                name: program.name,
+                dishCount,
+                dishThreshold: program.dishThreshold,
+                cycleLength: cycle,
+                categoryLabels
+            };
+        });
     }
 
     /**
@@ -203,7 +262,7 @@ class RewardService {
             } else {
                 let delta = 0;
                 for (const catId of program.eligibleCategories) {
-                    delta += categoryBreakdown[String(catId)] || 0;
+                    delta += categoryBreakdown[RewardService.categoryIdKey(catId)] || 0;
                 }
                 previousCount = currentCount - delta;
             }

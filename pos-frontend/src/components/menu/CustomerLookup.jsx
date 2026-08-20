@@ -12,6 +12,7 @@ import {
 import { setCustomer, removeCustomer } from "../../redux/slices/customerSlice";
 import { MdPerson, MdClose, MdSearch } from "react-icons/md";
 import { getAvatarName } from "../../utils";
+import RewardCategoryCounts from "./RewardCategoryCounts";
 
 const CustomerLookup = () => {
   const dispatch = useDispatch();
@@ -107,11 +108,11 @@ const CustomerLookup = () => {
             <p className="text-[#f5f5f5] text-sm font-medium truncate">
               {selectedCustomer.name || selectedCustomer.phone}
             </p>
-            <p className="text-[#ababab] text-xs">
-              {selectedCustomer.phone}
-              {selectedCustomer.totalDishCount != null &&
-                ` · ${selectedCustomer.totalDishCount} dishes`}
-            </p>
+            <p className="text-[#ababab] text-xs">{selectedCustomer.phone}</p>
+            <RewardCategoryCounts
+              className="mt-1"
+              progress={customerRewards?.progress}
+            />
           </div>
           <button
             onClick={handleDeselect}
@@ -177,11 +178,6 @@ const CustomerLookup = () => {
                   </p>
                   <p className="text-[#ababab] text-xs">{c.phone}</p>
                 </div>
-                {c.totalDishCount != null && (
-                  <span className="text-[#ababab] text-xs whitespace-nowrap">
-                    {c.totalDishCount} dishes
-                  </span>
-                )}
               </button>
             ))}
 
