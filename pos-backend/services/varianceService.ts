@@ -8,15 +8,21 @@ import { convertRecipeQtyToStockQty } from "../utils/unitConversion.js";
 import { getDateRangeVietnam } from "../utils/dateUtils.js";
 import type { AnalyticsStoreScope } from "../utils/analyticsStoreScope.js";
 import type { MongoFilter } from "../types/mongo.js";
+import type { Types } from "mongoose";
 import type {
     MaterialVarianceData,
     MaterialVarianceInput,
-    VarianceDishRecipe,
     VarianceItemRow,
     VarianceMissingRecipe,
     VarianceStorageItem,
     VarianceUnitMismatch,
 } from "../types/variance.js";
+
+type ApplyRecipeLine = {
+    storageItemId: Types.ObjectId | string;
+    quantity: number;
+    unit: string;
+};
 
 function rowKey(storeId: string, storageItemId: string): string {
     return `${storeId}:${storageItemId}`;
@@ -68,16 +74,17 @@ export function buildMaterialVariance(input: MaterialVarianceInput): MaterialVar
 
     const applyLines = (
         storeId: string,
-        lines: VarianceDishRecipe["ingredients"],
+        lines: ApplyRecipeLine[],
         multiplier: number
     ) => {
         for (const line of lines) {
-            const item = itemById.get(line.storageItemId);
+            const storageItemId = String(line.storageItemId);
+            const item = itemById.get(storageItemId);
             const portions = multiplier;
             if (!item || !item.isActive || item.storeId !== storeId) {
                 addMismatch({
-                    storageItemId: line.storageItemId,
-                    name: item?.name ?? line.storageItemId,
+                    storageItemId,
+                    name: item?.name ?? storageItemId,
                     storeId,
                     storeName: storeNameById.get(storeId) ?? "",
                     fromUnit: line.unit,
