@@ -21,6 +21,7 @@ const storageVarianceSlice = createSlice({
         summary: null,
         items: [],
         storeSummaries: [],
+        stores: [],
         coverage: { missingRecipes: [], unitMismatches: [] },
         scope: "single",
         loading: false,
@@ -42,6 +43,7 @@ const storageVarianceSlice = createSlice({
                 state.summary = action.payload.summary;
                 state.items = action.payload.items;
                 state.storeSummaries = action.payload.storeSummaries || [];
+                state.stores = action.payload.stores || [];
                 state.coverage = action.payload.coverage || {
                     missingRecipes: [],
                     unitMismatches: [],

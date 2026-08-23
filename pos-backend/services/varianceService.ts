@@ -117,12 +117,17 @@ export function buildMaterialVariance(input: MaterialVarianceInput): MaterialVar
     };
 
     let completedOrderCount = 0;
+    const completedOrdersByStore = new Map<string, number>();
 
     for (const order of input.orders) {
         if (order.orderStatus !== "completed" || !order.completedAt) {
             continue;
         }
         completedOrderCount += 1;
+        completedOrdersByStore.set(
+            order.storeId,
+            (completedOrdersByStore.get(order.storeId) ?? 0) + 1
+        );
 
         for (const line of order.items) {
             const dishRecipe = dishByKey.get(recipeKey(order.storeId, line.dishId));
@@ -248,6 +253,7 @@ export function buildMaterialVariance(input: MaterialVarianceInput): MaterialVar
                           actualCost: storeActual,
                           varianceCost: storeActual - storeTheoretical,
                           coverageMissingPortions: storeMissing,
+                          completedOrderCount: completedOrdersByStore.get(store._id) ?? 0,
                       },
                   };
               })

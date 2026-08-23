@@ -11,6 +11,7 @@ export interface VarianceStoreSummary {
     actualCost: number;
     varianceCost: number;
     coverageMissingPortions: number;
+    completedOrderCount: number;
   };
 }
 

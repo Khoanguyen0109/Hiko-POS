@@ -207,4 +207,55 @@ describe("buildMaterialVariance", () => {
     expect(result.items).toEqual([]);
     expect(result.summary.completedOrderCount).toBe(0);
   });
+
+  it("counts completed orders per store on all-stores summaries", () => {
+    const storeTwo: VarianceStoreInfo = { _id: "s2", name: "Hiko D2", code: "D2" };
+    const milkTwo: VarianceStorageItem = { ...milk, id: "milk2", storeId: "s2" };
+    const result = buildMaterialVariance({
+      ...baseInput(),
+      scope: "all",
+      stores: [store, storeTwo],
+      storageItems: [milk, milkTwo],
+      orders: [
+        {
+          storeId: "s1",
+          orderStatus: "completed",
+          completedAt: new Date(),
+          items: [{ dishId: "latte", name: "Latte", quantity: 1, toppings: [] }],
+        },
+        {
+          storeId: "s1",
+          orderStatus: "completed",
+          completedAt: new Date(),
+          items: [{ dishId: "latte", name: "Latte", quantity: 1, toppings: [] }],
+        },
+        {
+          storeId: "s2",
+          orderStatus: "completed",
+          completedAt: new Date(),
+          items: [{ dishId: "latte", name: "Latte", quantity: 1, toppings: [] }],
+        },
+      ],
+      dishRecipes: [
+        {
+          storeId: "s1",
+          dishId: "latte",
+          ingredients: [{ storageItemId: "milk", quantity: 1, unit: "liter" }],
+          sizeVariantRecipes: [],
+          totalIngredientCost: 0,
+        },
+        {
+          storeId: "s2",
+          dishId: "latte",
+          ingredients: [{ storageItemId: "milk2", quantity: 1, unit: "liter" }],
+          sizeVariantRecipes: [],
+          totalIngredientCost: 0,
+        },
+      ],
+    });
+
+    expect(result.summary.completedOrderCount).toBe(3);
+    expect(result.storeSummaries.find((row) => row.store.id === "s1")?.summary.completedOrderCount).toBe(2);
+    expect(result.storeSummaries.find((row) => row.store.id === "s2")?.summary.completedOrderCount).toBe(1);
+  });
 });
