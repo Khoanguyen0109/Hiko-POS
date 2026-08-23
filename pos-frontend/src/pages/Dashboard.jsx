@@ -10,6 +10,7 @@ import Metrics from "../components/dashboard/Metrics";
 import PromotionMetrics from "../components/dashboard/PromotionMetrics";
 import SalaryMetrics from "../components/dashboard/SalaryMetrics";
 import StorageAnalytics from "../components/dashboard/StorageAnalytics";
+import MaterialVariance from "../components/dashboard/MaterialVariance";
 import RewardsDashboard from "../components/dashboard/RewardsDashboard";
 import RedeemRewardDashboard from "../components/dashboard/RedeemRewardDashboard";
 import ShiftCheckoutDashboard from "../components/dashboard/ShiftCheckoutDashboard";
@@ -257,7 +258,7 @@ const Dashboard = () => {
 
   // Memoize tabs array
   const tabs = useMemo(() => 
-    ["Metrics", "Promotions", ...(isAdmin ? ["Spending", "Shift Checkout", "Salary", "Storage Analytics", "Rewards", "Redeem Reward"] : [])],
+    ["Metrics", "Promotions", ...(isAdmin ? ["Spending", "Shift Checkout", "Salary", "Storage Analytics", "Material Variance", "Rewards", "Redeem Reward"] : [])],
     [isAdmin]
   );
 
@@ -428,6 +429,13 @@ const Dashboard = () => {
 
       {activeTab === "Storage Analytics" && isAdmin && (
         <StorageAnalytics 
+          dateFilter={dateFilter}
+          customDateRange={customDateRange}
+        />
+      )}
+
+      {activeTab === "Material Variance" && isAdmin && (
+        <MaterialVariance
           dateFilter={dateFilter}
           customDateRange={customDateRange}
         />

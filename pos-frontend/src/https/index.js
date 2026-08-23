@@ -359,6 +359,7 @@ export const cancelStorageExport = (id) => axiosWrapper.patch(`/api/storage/expo
 
 // Storage Analytics
 export const getStorageAnalytics = (params) => axiosWrapper.get("/api/storage/analytics", { params });
+export const getStorageVariance = (params) => axiosWrapper.get("/api/storage/variance", { params });
 
 // Recipe Endpoints
 export const getAllRecipes = (params = {}) => {
