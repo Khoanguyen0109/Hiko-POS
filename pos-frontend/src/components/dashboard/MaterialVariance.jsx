@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import PropTypes from "prop-types";
 import { useDispatch, useSelector } from "react-redux";
 import { MdWarning, MdTrendingUp, MdTrendingDown, MdInventory, MdReceipt } from "react-icons/md";
 import { fetchStorageVariance } from "../../redux/slices/storageVarianceSlice";
@@ -255,6 +256,14 @@ const MaterialVariance = ({ dateFilter, customDateRange }) => {
             </div>
         </div>
     );
+};
+
+MaterialVariance.propTypes = {
+    dateFilter: PropTypes.string.isRequired,
+    customDateRange: PropTypes.shape({
+        startDate: PropTypes.string,
+        endDate: PropTypes.string,
+    }).isRequired,
 };
 
 export default MaterialVariance;
