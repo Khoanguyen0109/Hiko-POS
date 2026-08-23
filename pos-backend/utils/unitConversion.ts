@@ -140,3 +140,32 @@ export function formatPackageLabel(item: StorageItemCostInput): string | null {
 
     return `1 ${item.unit} = ${item.contentQuantity} ${item.contentUnit}`;
 }
+
+export function convertRecipeQtyToStockQty(
+    quantity: number,
+    recipeUnit: string,
+    item: StorageItemCostInput
+): number | null {
+    if (quantity <= 0) {
+        return 0;
+    }
+
+    const normalizedRecipeUnit = normalizeUnit(recipeUnit);
+
+    if (normalizedRecipeUnit === normalizeUnit(item.unit)) {
+        return quantity;
+    }
+
+    if (hasPackageContent(item)) {
+        const quantityInContentUnit = convertQuantity(
+            quantity,
+            normalizedRecipeUnit,
+            item.contentUnit!
+        );
+        if (quantityInContentUnit !== null) {
+            return quantityInContentUnit / item.contentQuantity!;
+        }
+    }
+
+    return convertQuantity(quantity, normalizedRecipeUnit, item.unit);
+}
