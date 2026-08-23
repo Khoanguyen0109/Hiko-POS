@@ -5,6 +5,7 @@ import createHttpError from "http-errors";
 import mongoose from "mongoose";
 import StorageExport, { STORAGE_EXPORT_REASONS } from "../models/storageExportModel.js";
 import StorageItem from "../models/storageItemModel.js";
+import { resolveOtherStore } from "../utils/relatedStore.js";
 
 // Create export record
 const createStorageExport = async (req, res, next) => {
@@ -14,6 +15,7 @@ const createStorageExport = async (req, res, next) => {
             storageItemId,
             quantity,
             reason,
+            destinationStore,
             notes
         } = req.body;
 
@@ -50,6 +52,18 @@ const createStorageExport = async (req, res, next) => {
             ));
         }
 
+        let destinationStoreId;
+        let destinationStoreName;
+        if (reason === "to_store") {
+            const related = await resolveOtherStore(
+                destinationStore,
+                req.store._id,
+                "Destination store"
+            );
+            destinationStoreId = related.storeId;
+            destinationStoreName = related.storeName;
+        }
+
         // Generate export number
         const exportNumber = await StorageExport.generateExportNumber();
 
@@ -61,6 +75,8 @@ const createStorageExport = async (req, res, next) => {
             quantity,
             unit: storageItem.unit,
             reason,
+            destinationStore: destinationStoreId,
+            destinationStoreName,
             notes: notes || undefined,
             status: 'completed', // Auto-complete on creation
             exportedBy: userId && userName ? { userId, userName } : undefined,
@@ -195,6 +211,7 @@ const updateStorageExport = async (req, res, next) => {
         const {
             quantity,
             reason,
+            destinationStore,
             notes,
             status
         } = req.body;
@@ -269,6 +286,23 @@ const updateStorageExport = async (req, res, next) => {
                 return next(createHttpError(400, `Reason must be one of: ${STORAGE_EXPORT_REASONS.join(', ')}`));
             }
             exportRecord.reason = reason;
+            if (reason !== "to_store") {
+                exportRecord.destinationStore = undefined;
+                exportRecord.destinationStoreName = undefined;
+            }
+        }
+
+        const nextReason = exportRecord.reason;
+        if (nextReason === "to_store" && destinationStore !== undefined) {
+            const related = await resolveOtherStore(
+                destinationStore,
+                req.store._id,
+                "Destination store"
+            );
+            exportRecord.destinationStore = related.storeId;
+            exportRecord.destinationStoreName = related.storeName;
+        } else if (nextReason === "to_store" && !exportRecord.destinationStore) {
+            return next(createHttpError(400, "Destination store is required"));
         }
 
         if (notes !== undefined) {

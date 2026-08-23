@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, memo, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import PropTypes from "prop-types";
 import { IoMdAdd } from "react-icons/io";
-import { MdInput, MdOutput, MdSettings, MdBusiness, MdInventory, MdToday, MdDateRange, MdCalendarMonth, MdFilterList, MdSearch } from "react-icons/md";
+import { MdInput, MdOutput, MdSettings, MdBusiness, MdInventory, MdToday, MdDateRange, MdCalendarMonth, MdFilterList, MdSearch, MdSwapHoriz } from "react-icons/md";
 import {
   fetchStorageImports,
   cancelStorageImportAction,
@@ -34,6 +34,11 @@ import { getDateRangeByPeriodVietnam } from "../utils/dateUtils";
 const thClass = "px-4 py-3 text-left text-xs font-medium text-[#ababab] uppercase tracking-wider";
 const tdClass = "px-4 py-3 text-sm text-[#f5f5f5] whitespace-nowrap";
 
+const IMPORT_SOURCE_LABELS = {
+  supplier: "Supplier",
+  from_store: "From Store",
+};
+
 const CancelButton = ({ onClick }) => (
   <button
     onClick={onClick}
@@ -57,6 +62,7 @@ const ImportList = memo(({ imports, loading, onCancel }) => {
             <th className={thClass}>Qty</th>
             <th className={thClass}>Unit Cost</th>
             <th className={thClass}>Total</th>
+            <th className={thClass}>Source</th>
             <th className={thClass}>Supplier</th>
             <th className={thClass}>Date</th>
             <th className={thClass}>Status</th>
@@ -72,6 +78,7 @@ const ImportList = memo(({ imports, loading, onCancel }) => {
               <td className={tdClass}>{r.quantity} {r.unit}</td>
               <td className={tdClass}>{r.unitCost?.toLocaleString("vi-VN")}</td>
               <td className={`${tdClass} text-brand font-semibold`}>{r.totalCost?.toLocaleString("vi-VN")}</td>
+              <td className={tdClass}>{IMPORT_SOURCE_LABELS[r.source] || r.source || "Supplier"}</td>
               <td className={tdClass}>{r.supplierName || "—"}</td>
               <td className={tdClass}>{new Date(r.importDate).toLocaleDateString("vi-VN")}</td>
               <td className={tdClass}><RecordStatusBadge status={r.status} /></td>
@@ -141,6 +148,55 @@ ExportList.propTypes = {
   exports: PropTypes.arrayOf(PropTypes.object).isRequired,
   loading: PropTypes.bool.isRequired,
   onCancel: PropTypes.func.isRequired,
+};
+
+const TransferList = memo(({ rows, loading }) => {
+  if (loading) return <LoadingState message="Loading transfers..." />;
+  if (rows.length === 0) return <EmptyState icon={MdSwapHoriz} message="No store-to-store transfers found" />;
+
+  return (
+    <div className="overflow-x-auto rounded-lg border border-[#343434]">
+      <table className="w-full min-w-[760px]">
+        <thead className="bg-[#262626]">
+          <tr>
+            <th className={`${thClass} sticky left-0 bg-[#262626] z-[1]`}>Item</th>
+            <th className={thClass}>Direction</th>
+            <th className={thClass}>Qty</th>
+            <th className={thClass}>From</th>
+            <th className={thClass}>To</th>
+            <th className={thClass}>By</th>
+            <th className={thClass}>Date</th>
+            <th className={thClass}>Status</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[#343434]">
+          {rows.map((r) => (
+            <tr key={r.id} className="bg-[#1f1f1f] hover:bg-[#262626] transition-colors">
+              <td className={`${tdClass} sticky left-0 bg-[#1f1f1f] z-[1] shadow-[2px_0_4px_-1px_rgba(0,0,0,0.3)]`}>
+                <span className="font-medium">{r.itemName}</span>
+              </td>
+              <td className={tdClass}>
+                <span className={r.direction === "out" ? "text-orange-400" : "text-green-400"}>
+                  {r.direction === "out" ? "Out" : "In"}
+                </span>
+              </td>
+              <td className={tdClass}>{r.quantity} {r.unit}</td>
+              <td className={tdClass}>{r.fromStore}</td>
+              <td className={tdClass}>{r.toStore}</td>
+              <td className={tdClass}>{r.by}</td>
+              <td className={tdClass}>{new Date(r.date).toLocaleDateString("vi-VN")}</td>
+              <td className={tdClass}><RecordStatusBadge status={r.status} /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+});
+TransferList.displayName = "TransferList";
+TransferList.propTypes = {
+  rows: PropTypes.arrayOf(PropTypes.object).isRequired,
+  loading: PropTypes.bool.isRequired,
 };
 
 const StockList = memo(({ items, loading, searchQuery = "" }) => {
@@ -295,6 +351,7 @@ const Storage = () => {
   const { items: imports, loading: importsLoading, error: importsError } = useSelector((state) => state.storageImports);
   const { items: exports, loading: exportsLoading, error: exportsError } = useSelector((state) => state.storageExports);
   const { items: storageItems, loading: storageItemsLoading, error: storageItemsError } = useSelector((state) => state.storageItems);
+  const { activeStore } = useSelector((state) => state.store);
 
   const [activeTab, setActiveTab] = useState("stock");
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -363,14 +420,55 @@ const Storage = () => {
     if (!dateParams) return;
     if (activeTab === "imports") dispatch(fetchStorageImports(dateParams));
     if (activeTab === "exports") dispatch(fetchStorageExports(dateParams));
+    if (activeTab === "transfers") {
+      dispatch(fetchStorageImports({ ...dateParams, source: "from_store", limit: 200 }));
+      dispatch(fetchStorageExports({ ...dateParams, reason: "to_store", limit: 200 }));
+    }
   }, [dispatch, dateParams, activeTab]);
+
+  const transferRows = useMemo(() => {
+    const incoming = imports
+      .filter((r) => r.source === "from_store")
+      .map((r) => ({
+        id: `in-${r._id}`,
+        direction: "in",
+        itemName: r.storageItemId?.name || "N/A",
+        quantity: r.quantity,
+        unit: r.unit,
+        fromStore: r.sourceStoreName || "—",
+        toStore: activeStore?.name || "This store",
+        date: r.importDate,
+        by: r.importedBy?.userName || "N/A",
+        status: r.status,
+      }));
+
+    const outgoing = exports
+      .filter((r) => r.reason === "to_store")
+      .map((r) => ({
+        id: `out-${r._id}`,
+        direction: "out",
+        itemName: r.storageItemId?.name || "N/A",
+        quantity: r.quantity,
+        unit: r.unit,
+        fromStore: activeStore?.name || "This store",
+        toStore: r.destinationStoreName || "—",
+        date: r.exportDate,
+        by: r.exportedBy?.userName || "N/A",
+        status: r.status,
+      }));
+
+    return [...incoming, ...outgoing].sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [imports, exports, activeStore]);
+
+  const transfersLoading = importsLoading || exportsLoading;
+  const transfersError = importsError || exportsError;
 
   const handleCreateImport = useCallback(() => { setEditingImport(null); setIsImportModalOpen(true); }, []);
   const handleCreateExport = useCallback(() => { setEditingExport(null); setIsExportModalOpen(true); }, []);
 
   const handleTabChange = useCallback((tab) => {
     setActiveTab(tab);
-    if (tab === "imports" || tab === "exports") setShowDateFilter(true);
+    if (tab === "imports" || tab === "exports" || tab === "transfers") setShowDateFilter(true);
   }, []);
 
   const handleDateFilterChange = useCallback((value) => {
@@ -423,6 +521,7 @@ const Storage = () => {
   if (storageItemsLoading && storageItems.length === 0 && activeTab === "stock") return <FullScreenLoader />;
   if (importsLoading && imports.length === 0 && activeTab === "imports") return <FullScreenLoader />;
   if (exportsLoading && exports.length === 0 && activeTab === "exports") return <FullScreenLoader />;
+  if (transfersLoading && transferRows.length === 0 && activeTab === "transfers") return <FullScreenLoader />;
 
   return (
     <div className="min-h-screen bg-[#1a1a1a] pb-20 overflow-x-hidden">
@@ -433,6 +532,7 @@ const Storage = () => {
           { id: "stock", label: "Stock", icon: MdInventory },
           { id: "imports", label: "Imports", icon: MdInput },
           { id: "exports", label: "Exports", icon: MdOutput },
+          { id: "transfers", label: "Transfers", icon: MdSwapHoriz },
         ]}
         activeTab={activeTab}
         onTabChange={handleTabChange}
@@ -465,7 +565,7 @@ const Storage = () => {
                 </HeaderActionButton>
               </>
             ) : null}
-            {activeTab !== "stock" ? (
+            {activeTab === "imports" || activeTab === "exports" ? (
               <HeaderActionButton
                 variant="primary"
                 icon={<IoMdAdd size={18} />}
@@ -493,7 +593,7 @@ const Storage = () => {
         {activeTab !== "stock" && showDateFilter ? (
           <div className="flex flex-col gap-2">
             <p className="text-xs text-[#ababab]">
-              Showing {activeTab === "imports" ? "imports" : "exports"} for{" "}
+              Showing {activeTab === "imports" ? "imports" : activeTab === "exports" ? "exports" : "transfers"} for{" "}
               <span className="font-medium text-[#f5f5f5]">{activeDateLabel}</span>
             </p>
             <DateFilterBar
@@ -515,6 +615,7 @@ const Storage = () => {
         {storageItemsError && activeTab === "stock" && <ErrorBanner message={storageItemsError} />}
         {importsError && activeTab === "imports" && <ErrorBanner message={importsError} />}
         {exportsError && activeTab === "exports" && <ErrorBanner message={exportsError} />}
+        {transfersError && activeTab === "transfers" && <ErrorBanner message={transfersError} />}
 
         {activeTab === "stock" && v2UiEnabled ? (
           <>
@@ -553,8 +654,14 @@ const Storage = () => {
         {activeTab === "exports" && !dateParams && (
           <EmptyState icon={MdOutput} message="Select both start and end dates to view exports" />
         )}
+        {activeTab === "transfers" && dateParams && (
+          <TransferList rows={transferRows} loading={transfersLoading} />
+        )}
+        {activeTab === "transfers" && !dateParams && (
+          <EmptyState icon={MdSwapHoriz} message="Select both start and end dates to view transfers" />
+        )}
 
-        {v2UiEnabled ? (
+        {v2UiEnabled && activeTab !== "transfers" ? (
           <StorageMobileFab
             activeTab={activeTab}
             onImport={handleCreateImport}

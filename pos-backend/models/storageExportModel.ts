@@ -36,6 +36,14 @@ const storageExportSchema = new mongoose.Schema({
         enum: STORAGE_EXPORT_REASONS,
         default: 'production'
     },
+    destinationStore: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Store"
+    },
+    destinationStoreName: {
+        type: String,
+        trim: true
+    },
     notes: {
         type: String,
         trim: true
@@ -65,6 +73,7 @@ storageExportSchema.index({ exportDate: 1 });
 storageExportSchema.index({ store: 1, exportDate: 1 });
 storageExportSchema.index({ status: 1 });
 storageExportSchema.index({ reason: 1 });
+storageExportSchema.index({ destinationStore: 1 });
 
 // Static method to generate unique export number
 storageExportSchema.statics.generateExportNumber = async function() {

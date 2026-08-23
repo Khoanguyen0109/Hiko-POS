@@ -1,6 +1,8 @@
 // @ts-nocheck
 import mongoose from "mongoose";
 
+export const STORAGE_IMPORT_SOURCES = ["supplier", "from_store"] as const;
+
 const storageImportSchema = new mongoose.Schema({
     store: {
         type: mongoose.Schema.Types.ObjectId,
@@ -50,6 +52,19 @@ const storageImportSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
+    source: {
+        type: String,
+        enum: STORAGE_IMPORT_SOURCES,
+        default: "supplier"
+    },
+    sourceStore: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Store"
+    },
+    sourceStoreName: {
+        type: String,
+        trim: true
+    },
     notes: {
         type: String,
         trim: true
@@ -80,6 +95,8 @@ const storageImportSchema = new mongoose.Schema({
 storageImportSchema.index({ importNumber: 1 }, { unique: true });
 storageImportSchema.index({ storageItemId: 1 });
 storageImportSchema.index({ supplierId: 1 });
+storageImportSchema.index({ source: 1 });
+storageImportSchema.index({ sourceStore: 1 });
 storageImportSchema.index({ importDate: 1 });
 storageImportSchema.index({ store: 1, importDate: 1 });
 storageImportSchema.index({ status: 1 });

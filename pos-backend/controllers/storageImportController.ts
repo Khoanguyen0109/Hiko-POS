@@ -3,10 +3,13 @@ import type { MongoFilter } from "../types/mongo.js";
 
 import createHttpError from "http-errors";
 import mongoose from "mongoose";
-import StorageImport from "../models/storageImportModel.js";
+import StorageImport, { STORAGE_IMPORT_SOURCES } from "../models/storageImportModel.js";
 import StorageItem from "../models/storageItemModel.js";
 import Supplier from "../models/supplierModel.js";
 import { Spending, SpendingCategory } from "../models/spendingModel.js";
+import { resolveOtherStore } from "../utils/relatedStore.js";
+
+const isFromStoreImport = (source: string) => source === "from_store";
 
 const INGREDIENT_CATEGORY_NAME = "Ingredient";
 
@@ -58,8 +61,15 @@ const createStorageImport = async (req, res, next) => {
             unitCost,
             supplierId,
             supplierInvoice,
-            notes
+            notes,
+            source: rawSource,
+            sourceStore
         } = req.body;
+
+        const source = rawSource || "supplier";
+        if (!STORAGE_IMPORT_SOURCES.includes(source)) {
+            return next(createHttpError(400, `Source must be one of: ${STORAGE_IMPORT_SOURCES.join(", ")}`));
+        }
 
         // Validate required fields
         if (!storageItemId || !mongoose.Types.ObjectId.isValid(storageItemId)) {
@@ -83,10 +93,22 @@ const createStorageImport = async (req, res, next) => {
             return next(createHttpError(400, "Storage item is not active"));
         }
 
-        // Validate supplier if provided
+        let sourceStoreId;
+        let sourceStoreName;
+        if (isFromStoreImport(source)) {
+            const related = await resolveOtherStore(
+                sourceStore,
+                req.store._id,
+                "Source store"
+            );
+            sourceStoreId = related.storeId;
+            sourceStoreName = related.storeName;
+        }
+
+        // Internal store transfers do not use a supplier
         let supplier: { isActive?: boolean; name?: string } | null = null;
         let supplierName: string | null = null;
-        if (supplierId) {
+        if (!isFromStoreImport(source) && supplierId) {
             if (!mongoose.Types.ObjectId.isValid(supplierId)) {
                 return next(createHttpError(400, "Invalid supplier ID"));
             }
@@ -106,27 +128,28 @@ const createStorageImport = async (req, res, next) => {
         // Calculate total cost
         const totalCost = quantity * unitCost;
 
-        // Get Ingredient category
-        const ingredientCategory = await getIngredientCategory();
-
-        // Create spending record
-        const spending = new Spending({
-            store: req.store._id,
-            title: `Import: ${storageItem.name}`,
-            amount: totalCost,
-            currency: 'VND',
-            category: ingredientCategory._id,
-            vendor: supplierId || undefined,
-            vendorName: supplierName || undefined,
-            paymentStatus: 'paid',
-            paymentMethod: 'cash',
-            paymentDate: new Date(),
-            invoiceNumber: supplierInvoice || undefined,
-            notes: notes ? `${notes} (Import: ${importNumber})` : `Import: ${importNumber}`,
-            approvalStatus: 'approved',
-            createdBy: userId && userName ? { userId, userName } : undefined
-        });
-        await spending.save();
+        // Purchases create an expense; transfers from another store do not
+        let spending = null;
+        if (!isFromStoreImport(source)) {
+            const ingredientCategory = await getIngredientCategory();
+            spending = new Spending({
+                store: req.store._id,
+                title: `Import: ${storageItem.name}`,
+                amount: totalCost,
+                currency: 'VND',
+                category: ingredientCategory._id,
+                vendor: supplierId || undefined,
+                vendorName: supplierName || undefined,
+                paymentStatus: 'paid',
+                paymentMethod: 'cash',
+                paymentDate: new Date(),
+                invoiceNumber: supplierInvoice || undefined,
+                notes: notes ? `${notes} (Import: ${importNumber})` : `Import: ${importNumber}`,
+                approvalStatus: 'approved',
+                createdBy: userId && userName ? { userId, userName } : undefined
+            });
+            await spending.save();
+        }
 
         // Create import record
         const storageImport = new StorageImport({
@@ -137,11 +160,14 @@ const createStorageImport = async (req, res, next) => {
             unit: storageItem.unit,
             unitCost,
             totalCost,
-            supplierId: supplierId || undefined,
-            supplierName: supplierName || undefined,
-            supplierInvoice: supplierInvoice || undefined,
+            source,
+            sourceStore: sourceStoreId,
+            sourceStoreName,
+            supplierId: isFromStoreImport(source) ? undefined : (supplierId || undefined),
+            supplierName: isFromStoreImport(source) ? undefined : (supplierName || undefined),
+            supplierInvoice: isFromStoreImport(source) ? undefined : (supplierInvoice || undefined),
             notes: notes || undefined,
-            spendingId: spending._id,
+            spendingId: spending?._id,
             status: 'completed', // Auto-complete on creation
             importedBy: userId && userName ? { userId, userName } : undefined,
             importDate: new Date()
@@ -177,7 +203,7 @@ const createStorageImport = async (req, res, next) => {
             success: true,
             message: "Import created successfully!",
             data: storageImport,
-            spending: spending
+            spending: spending || undefined
         });
     } catch (error) {
         next(error);
@@ -190,6 +216,7 @@ const getStorageImports = async (req, res, next) => {
         const {
             storageItemId,
             supplierId,
+            source,
             status,
             startDate,
             endDate,
@@ -206,6 +233,10 @@ const getStorageImports = async (req, res, next) => {
 
         if (supplierId && mongoose.Types.ObjectId.isValid(supplierId)) {
             query.supplierId = supplierId;
+        }
+
+        if (source && STORAGE_IMPORT_SOURCES.includes(String(source))) {
+            query.source = source;
         }
 
         if (status) {
@@ -297,6 +328,8 @@ const updateStorageImport = async (req, res, next) => {
             supplierId,
             supplierInvoice,
             notes,
+            source,
+            sourceStore,
             status
         } = req.body;
 
@@ -361,8 +394,35 @@ const updateStorageImport = async (req, res, next) => {
             importRecord.totalCost = importRecord.quantity * importRecord.unitCost;
         }
 
-        // Update supplier if provided
-        if (supplierId !== undefined) {
+        if (source !== undefined) {
+            if (!STORAGE_IMPORT_SOURCES.includes(source)) {
+                return next(createHttpError(400, `Source must be one of: ${STORAGE_IMPORT_SOURCES.join(", ")}`));
+            }
+            importRecord.source = source;
+            if (isFromStoreImport(source)) {
+                importRecord.supplierId = undefined;
+                importRecord.supplierName = undefined;
+                importRecord.supplierInvoice = undefined;
+            } else {
+                importRecord.sourceStore = undefined;
+                importRecord.sourceStoreName = undefined;
+            }
+        }
+
+        if (isFromStoreImport(importRecord.source) && sourceStore !== undefined) {
+            const related = await resolveOtherStore(
+                sourceStore,
+                req.store._id,
+                "Source store"
+            );
+            importRecord.sourceStore = related.storeId;
+            importRecord.sourceStoreName = related.storeName;
+        } else if (isFromStoreImport(importRecord.source) && !importRecord.sourceStore) {
+            return next(createHttpError(400, "Source store is required"));
+        }
+
+        // Update supplier if provided (ignored for from-store transfers)
+        if (supplierId !== undefined && !isFromStoreImport(importRecord.source)) {
             if (supplierId && mongoose.Types.ObjectId.isValid(supplierId)) {
                 const supplier = await Supplier.findById(supplierId);
                 if (!supplier) {
@@ -376,7 +436,7 @@ const updateStorageImport = async (req, res, next) => {
             }
         }
 
-        if (supplierInvoice !== undefined) {
+        if (supplierInvoice !== undefined && !isFromStoreImport(importRecord.source)) {
             importRecord.supplierInvoice = supplierInvoice ? supplierInvoice.trim() : undefined;
         }
 

@@ -10,6 +10,8 @@ import {
 } from "./storageItemAutocompleteUtils";
 import { createStorageExportAction, editStorageExport } from "../../redux/slices/storageExportSlice";
 import { fetchStorageItems } from "../../redux/slices/storageItemSlice";
+import { fetchAllStores } from "../../redux/slices/storeSlice";
+import RelatedStoreSelect from "./RelatedStoreSelect";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
 
@@ -29,11 +31,13 @@ const ExportModal = ({
 }) => {
   const dispatch = useDispatch();
   const { items: storageItems } = useSelector((state) => state.storageItems);
+  const { allStores, activeStore } = useSelector((state) => state.store);
 
   const initialFormData = useMemo(() => ({
     storageItemId: "",
     quantity: 0,
     reason: DEFAULT_EXPORT_REASON,
+    destinationStore: "",
     notes: ""
   }), []);
 
@@ -51,10 +55,19 @@ const ExportModal = ({
     [storageItems]
   );
 
+  const otherStores = useMemo(
+    () => (allStores || []).filter(
+      (store) => store.isActive !== false && store._id !== activeStore?._id
+    ),
+    [allStores, activeStore]
+  );
+
+  const isToStore = formData.reason === "to_store";
+
   useEffect(() => {
     if (isOpen) {
-      // Fetch storage items when modal opens
       dispatch(fetchStorageItems({ isActive: true }));
+      dispatch(fetchAllStores());
     }
   }, [isOpen, dispatch]);
 
@@ -68,6 +81,7 @@ const ExportModal = ({
         storageItemId: exportRecord.storageItemId?._id || exportRecord.storageItemId || "",
         quantity: exportRecord.quantity || 0,
         reason: validReason,
+        destinationStore: exportRecord.destinationStore?._id || exportRecord.destinationStore || "",
         notes: exportRecord.notes || ""
       });
     } else if (mode === "create") {
@@ -77,10 +91,15 @@ const ExportModal = ({
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === "quantity" ? (parseFloat(value) || 0) : value
-    }));
+    setFormData(prev => {
+      if (name === "reason" && value !== "to_store") {
+        return { ...prev, reason: value, destinationStore: "" };
+      }
+      return {
+        ...prev,
+        [name]: name === "quantity" ? (parseFloat(value) || 0) : value
+      };
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -101,6 +120,12 @@ const ExportModal = ({
       return;
     }
 
+    if (formData.reason === "to_store" && !formData.destinationStore) {
+      setError("Please select the destination store");
+      setLoading(false);
+      return;
+    }
+
     // Check stock availability
     if (selectedItem && formData.quantity > selectedItem.currentStock) {
       setError(`Insufficient stock. Available: ${selectedItem.currentStock} ${selectedItem.unit}`);
@@ -113,6 +138,7 @@ const ExportModal = ({
         storageItemId: formData.storageItemId,
         quantity: formData.quantity,
         reason: formData.reason,
+        destinationStore: formData.reason === "to_store" ? formData.destinationStore : undefined,
         notes: formData.notes || undefined
       };
 
@@ -247,6 +273,17 @@ const ExportModal = ({
             </div>
           </div>
 
+          {isToStore && (
+            <RelatedStoreSelect
+              name="destinationStore"
+              value={formData.destinationStore}
+              onChange={handleInputChange}
+              stores={otherStores}
+              label="Destination Store"
+              placeholder="Select destination store"
+            />
+          )}
+
           {/* Notes */}
           <div>
             <label className="block text-[#ababab] text-sm mb-2">
@@ -275,7 +312,7 @@ const ExportModal = ({
             </button>
             <button
               type="submit"
-              disabled={loading || !formData.storageItemId || !formData.quantity || (selectedItem && formData.quantity > selectedItem.currentStock)}
+              disabled={loading || !formData.storageItemId || !formData.quantity || (isToStore && !formData.destinationStore) || (selectedItem && formData.quantity > selectedItem.currentStock)}
               className="px-6 py-2 bg-brand text-[#f5f5f5] rounded-lg hover:bg-brand-hover transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
             >
               <MdSave />

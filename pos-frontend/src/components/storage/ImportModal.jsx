@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { MdSave, MdCancel, MdInventory, MdAttachMoney, MdBusiness } from "react-icons/md";
+import { MdSave, MdCancel, MdInventory, MdAttachMoney, MdBusiness, MdInfo } from "react-icons/md";
 import { createStorageImportAction, editStorageImport } from "../../redux/slices/storageImportSlice";
 import { fetchStorageItems } from "../../redux/slices/storageItemSlice";
 import { fetchActiveSuppliers } from "../../redux/slices/supplierSlice";
+import { fetchAllStores } from "../../redux/slices/storeSlice";
+import RelatedStoreSelect from "./RelatedStoreSelect";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
 import BottomSheet from "../shared/BottomSheet";
@@ -13,6 +15,13 @@ import {
   filterStorageItemOption,
   renderStorageItemOption,
 } from "./storageItemAutocompleteUtils";
+
+const IMPORT_SOURCES = [
+  { value: "supplier", label: "Supplier" },
+  { value: "from_store", label: "From Store" },
+];
+
+const DEFAULT_IMPORT_SOURCE = "supplier";
 
 const ImportModal = ({ 
   isOpen, 
@@ -24,11 +33,14 @@ const ImportModal = ({
   const dispatch = useDispatch();
   const { items: storageItems } = useSelector((state) => state.storageItems);
   const { activeSuppliers } = useSelector((state) => state.suppliers);
+  const { allStores, activeStore } = useSelector((state) => state.store);
 
   const initialFormData = useMemo(() => ({
     storageItemId: "",
     quantity: 0,
     unitCost: 0,
+    source: DEFAULT_IMPORT_SOURCE,
+    sourceStore: "",
     supplierId: "",
     supplierInvoice: "",
     notes: ""
@@ -58,11 +70,18 @@ const ImportModal = ({
     [storageItems]
   );
 
+  const otherStores = useMemo(
+    () => (allStores || []).filter(
+      (store) => store.isActive !== false && store._id !== activeStore?._id
+    ),
+    [allStores, activeStore]
+  );
+
   useEffect(() => {
     if (isOpen) {
-      // Fetch storage items and suppliers when modal opens
       dispatch(fetchStorageItems({ isActive: true }));
       dispatch(fetchActiveSuppliers());
+      dispatch(fetchAllStores());
     }
   }, [isOpen, dispatch]);
 
@@ -72,6 +91,10 @@ const ImportModal = ({
         storageItemId: importRecord.storageItemId?._id || importRecord.storageItemId || "",
         quantity: importRecord.quantity || 0,
         unitCost: importRecord.unitCost || 0,
+        source: IMPORT_SOURCES.some((s) => s.value === importRecord.source)
+          ? importRecord.source
+          : DEFAULT_IMPORT_SOURCE,
+        sourceStore: importRecord.sourceStore?._id || importRecord.sourceStore || "",
         supplierId: importRecord.supplierId?._id || importRecord.supplierId || "",
         supplierInvoice: importRecord.supplierInvoice || "",
         notes: importRecord.notes || ""
@@ -81,14 +104,30 @@ const ImportModal = ({
     }
   }, [importRecord, mode, initialFormData]);
 
+  const isFromStore = formData.source === "from_store";
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === "quantity" || name === "unitCost" 
-        ? (parseFloat(value) || 0) 
-        : value
-    }));
+    setFormData(prev => {
+      const nextValue = name === "quantity" || name === "unitCost"
+        ? (parseFloat(value) || 0)
+        : value;
+
+      if (name === "source" && value === "from_store") {
+        return {
+          ...prev,
+          source: value,
+          supplierId: "",
+          supplierInvoice: ""
+        };
+      }
+
+      if (name === "source" && value !== "from_store") {
+        return { ...prev, source: value, sourceStore: "" };
+      }
+
+      return { ...prev, [name]: nextValue };
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -115,13 +154,21 @@ const ImportModal = ({
       return;
     }
 
+    if (isFromStore && !formData.sourceStore) {
+      setError("Please select the source store");
+      setLoading(false);
+      return;
+    }
+
     try {
       const submitData = {
         storageItemId: formData.storageItemId,
         quantity: formData.quantity,
         unitCost: formData.unitCost,
-        supplierId: formData.supplierId || undefined,
-        supplierInvoice: formData.supplierInvoice || undefined,
+        source: formData.source,
+        sourceStore: isFromStore ? formData.sourceStore : undefined,
+        supplierId: isFromStore ? undefined : (formData.supplierId || undefined),
+        supplierInvoice: isFromStore ? undefined : (formData.supplierInvoice || undefined),
         notes: formData.notes || undefined
       };
 
@@ -253,7 +300,48 @@ const ImportModal = ({
             </p>
           </div>
 
+          {/* Source */}
+          <div>
+            <label className="block text-[#ababab] text-sm mb-2">
+              Source <span className="text-red-500">*</span>
+            </label>
+            <div className="rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
+              <select
+                name="source"
+                value={formData.source}
+                onChange={handleInputChange}
+                required
+                className="bg-transparent w-full text-white focus:outline-none"
+              >
+                {IMPORT_SOURCES.map(({ value, label }) => (
+                  <option key={value} value={value} className="bg-[#1f1f1f]">
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {isFromStore && (
+              <div className="mt-2 flex items-start gap-2 text-xs text-[#ababab]">
+                <MdInfo className="mt-0.5 shrink-0 text-brand" size={14} />
+                <span>Internal transfer from another store. No expense will be created.</span>
+              </div>
+            )}
+          </div>
+
+          {isFromStore && (
+            <RelatedStoreSelect
+              name="sourceStore"
+              value={formData.sourceStore}
+              onChange={handleInputChange}
+              stores={otherStores}
+              label="From Store"
+              placeholder="Select source store"
+            />
+          )}
+
           {/* Supplier Selection */}
+          {!isFromStore && (
+          <>
           <div>
             <label className="block text-[#ababab] text-sm mb-2">
               <MdBusiness className="inline mr-1" size={16} />
@@ -298,6 +386,8 @@ const ImportModal = ({
               />
             </div>
           </div>
+          </>
+          )}
 
           {/* Notes */}
           <div>
@@ -327,7 +417,7 @@ const ImportModal = ({
             </button>
             <button
               type="submit"
-              disabled={loading || !formData.storageItemId || !formData.quantity || !formData.unitCost}
+              disabled={loading || !formData.storageItemId || !formData.quantity || !formData.unitCost || (isFromStore && !formData.sourceStore)}
               className="px-6 py-2 bg-brand text-[#f5f5f5] rounded-lg hover:bg-brand-hover transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
             >
               <MdSave />
