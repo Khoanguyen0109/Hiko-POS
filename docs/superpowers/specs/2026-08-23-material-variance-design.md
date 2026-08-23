@@ -2,6 +2,7 @@
 
 **Date:** 2026-08-23  
 **Status:** Approved  
+**Plan:** `docs/superpowers/plans/2026-08-23-material-variance.md`  
 **Repos:** Hiko-POS (`pos-backend`, `pos-frontend`)
 
 ---
