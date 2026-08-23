@@ -1,5 +1,13 @@
+import Order from "../models/orderModel.js";
+import DishRecipe from "../models/dishRecipeModel.js";
+import ToppingRecipe from "../models/toppingRecipeModel.js";
+import StorageExport from "../models/storageExportModel.js";
+import StorageItem from "../models/storageItemModel.js";
 import { getRecipeForSize } from "./recipeService.js";
 import { convertRecipeQtyToStockQty } from "../utils/unitConversion.js";
+import { getDateRangeVietnam } from "../utils/dateUtils.js";
+import type { AnalyticsStoreScope } from "../utils/analyticsStoreScope.js";
+import type { MongoFilter } from "../types/mongo.js";
 import type {
     MaterialVarianceData,
     MaterialVarianceInput,
@@ -255,4 +263,147 @@ export function buildMaterialVariance(input: MaterialVarianceInput): MaterialVar
         items,
         coverage: { missingRecipes, unitMismatches },
     };
+}
+
+export async function computeMaterialVariance(args: {
+    storeScope: AnalyticsStoreScope;
+    startDate?: string;
+    endDate?: string;
+}): Promise<MaterialVarianceData> {
+    const { storeScope, startDate, endDate } = args;
+    const stores = storeScope.stores.map((store) => ({
+        _id: String(store._id),
+        name: store.name,
+        code: store.code,
+    }));
+
+    if (!storeScope.storeMatch) {
+        return buildMaterialVariance({
+            scope: storeScope.scope,
+            stores,
+            orders: [],
+            dishRecipes: [],
+            toppingRecipes: [],
+            exports: [],
+            storageItems: [],
+        });
+    }
+
+    const { start, end } = getDateRangeVietnam(startDate, endDate);
+    const completedAt: MongoFilter = {};
+    if (start) completedAt.$gte = start;
+    if (end) completedAt.$lte = end;
+
+    const orderFilter: MongoFilter = {
+        store: storeScope.storeMatch,
+        orderStatus: "completed",
+    };
+    if (start || end) {
+        orderFilter.completedAt = completedAt;
+    }
+
+    const exportDate: MongoFilter = {};
+    if (start) exportDate.$gte = start;
+    if (end) exportDate.$lte = end;
+
+    const exportFilter: MongoFilter = {
+        store: storeScope.storeMatch,
+        status: "completed",
+        reason: "production",
+    };
+    if (start || end) {
+        exportFilter.exportDate = exportDate;
+    }
+
+    const [orders, dishRecipes, toppingRecipes, exports] = await Promise.all([
+        Order.find(orderFilter).select("store items orderStatus completedAt").lean(),
+        DishRecipe.find({ store: storeScope.storeMatch, isActive: true }).lean(),
+        ToppingRecipe.find({ store: storeScope.storeMatch, isActive: true }).lean(),
+        StorageExport.find(exportFilter).lean(),
+    ]);
+
+    const storageItemIds = [
+        ...dishRecipes.flatMap((recipe) => [
+            ...recipe.ingredients.map((line) => line.storageItemId),
+            ...recipe.sizeVariantRecipes.flatMap((variant) =>
+                variant.ingredients.map((line) => line.storageItemId)
+            ),
+        ]),
+        ...toppingRecipes.flatMap((recipe) =>
+            recipe.ingredients.map((line) => line.storageItemId)
+        ),
+        ...exports.map((row) => row.storageItemId),
+    ];
+
+    const storageItems = await StorageItem.find({
+        _id: { $in: storageItemIds },
+        store: storeScope.storeMatch,
+    }).lean();
+
+    return buildMaterialVariance({
+        scope: storeScope.scope,
+        stores,
+        orders: orders.map((order) => ({
+            storeId: String(order.store),
+            orderStatus: order.orderStatus,
+            completedAt: order.completedAt ?? null,
+            items: order.items.map((item) => ({
+                dishId: String(item.dishId),
+                name: item.name,
+                quantity: item.quantity,
+                size: item.variant?.size ?? null,
+                toppings: (item.toppings ?? []).map((topping) => ({
+                    toppingId: String(topping.toppingId),
+                    name: topping.name,
+                    quantity: topping.quantity,
+                })),
+            })),
+        })),
+        dishRecipes: dishRecipes.map((recipe) => ({
+            storeId: String(recipe.store),
+            dishId: String(recipe.dishId),
+            ingredients: recipe.ingredients.map((line) => ({
+                storageItemId: String(line.storageItemId),
+                quantity: line.quantity,
+                unit: line.unit,
+            })),
+            sizeVariantRecipes: recipe.sizeVariantRecipes.map((variant) => ({
+                size: variant.size,
+                ingredients: variant.ingredients.map((line) => ({
+                    storageItemId: String(line.storageItemId),
+                    quantity: line.quantity,
+                    unit: line.unit,
+                })),
+            })),
+            totalIngredientCost: recipe.totalIngredientCost,
+            otherCost: recipe.otherCost,
+        })),
+        toppingRecipes: toppingRecipes.map((recipe) => ({
+            storeId: String(recipe.store),
+            toppingId: String(recipe.toppingId),
+            ingredients: recipe.ingredients.map((line) => ({
+                storageItemId: String(line.storageItemId),
+                quantity: line.quantity,
+                unit: line.unit,
+            })),
+        })),
+        exports: exports.map((row) => ({
+            storeId: String(row.store),
+            storageItemId: String(row.storageItemId),
+            quantity: row.quantity,
+            status: row.status,
+            reason: row.reason,
+        })),
+        storageItems: storageItems.map((item) => ({
+            id: String(item._id),
+            storeId: String(item.store),
+            name: item.name,
+            code: item.code,
+            unit: item.unit,
+            averageCost: item.averageCost ?? 0,
+            isActive: item.isActive,
+            contentQuantity: item.contentQuantity,
+            contentUnit: item.contentUnit,
+        })),
+    });
 }
