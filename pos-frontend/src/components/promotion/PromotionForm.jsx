@@ -7,6 +7,8 @@ import PropTypes from 'prop-types';
 import { FormField, FormSelect, FormTextarea, Button } from '../ui';
 import BottomSheet from '../shared/BottomSheet';
 
+const DISH_SIZE_OPTIONS = ['Small', 'Medium', 'Large', 'Extra Large', 'Regular'];
+
 const PromotionForm = ({ promotion, onSubmit, onClose }) => {
   const dispatch = useDispatch();
   
@@ -30,6 +32,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
     specificDishes: [],
     categories: [],
     freeToppings: [],
+    applicableSizes: [],
     conditions: {
       minOrderAmount: '',
       maxOrderAmount: '',
@@ -65,6 +68,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
         specificDishes: promotion.specificDishes?.map(d => d._id) || [],
         categories: promotion.categories?.map(c => c._id) || [],
         freeToppings: promotion.freeToppings?.map(t => t._id || t) || [],
+        applicableSizes: promotion.applicableSizes || [],
         conditions: {
           minOrderAmount: promotion.conditions?.minOrderAmount || '',
           maxOrderAmount: promotion.conditions?.maxOrderAmount || '',
@@ -317,10 +321,9 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
     if (submitData.categories.length === 0) {
       delete submitData.categories;
     }
-    if (submitData.type !== 'free_topping' || submitData.freeToppings.length === 0) {
-      if (submitData.type !== 'free_topping') {
-        delete submitData.freeToppings;
-      }
+    if (submitData.type !== 'free_topping') {
+      delete submitData.freeToppings;
+      delete submitData.applicableSizes;
     }
 
     try {
@@ -631,6 +634,26 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                 )}
               </div>
               {errors.freeToppings && <p className="text-red-500 text-sm mt-1">{errors.freeToppings}</p>}
+
+              <label className="block text-sm font-medium text-[#f5f5f5] mb-2 mt-4">
+                Applicable Sizes
+              </label>
+              <p className="text-xs text-[#ababab] mb-2">
+                Leave empty to apply to every size. Select Large, Medium, etc. to limit the offer.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {DISH_SIZE_OPTIONS.map((size) => (
+                  <label key={size} className="flex items-center space-x-2 p-2 bg-[#262626] border border-[#343434] rounded-md hover:bg-[#2a2a2a] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.applicableSizes.includes(size)}
+                      onChange={(e) => handleArrayChange('applicableSizes', size, e.target.checked)}
+                      className="rounded border-[#343434] bg-[#262626] text-brand focus:ring-brand focus:ring-2"
+                    />
+                    <span className="text-sm text-[#f5f5f5]">{size}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           )}
 
@@ -873,6 +896,7 @@ PromotionForm.propTypes = {
         name: PropTypes.string
       })
     ])),
+    applicableSizes: PropTypes.arrayOf(PropTypes.string),
     conditions: PropTypes.shape({
       minOrderAmount: PropTypes.number,
       maxOrderAmount: PropTypes.number,

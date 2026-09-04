@@ -85,6 +85,11 @@ const promotionSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Topping'
   }],
+  // Optional size filter for Free Topping. Empty = all sizes.
+  applicableSizes: [{
+    type: String,
+    enum: ['Small', 'Medium', 'Large', 'Extra Large', 'Regular']
+  }],
   
   // Conditions
   conditions: {

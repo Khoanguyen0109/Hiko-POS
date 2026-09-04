@@ -295,6 +295,9 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
                 <th className="px-4 py-3 text-left text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider sticky left-0 bg-[#1a1a1a] z-10">
                   Member
                 </th>
+                <th className="px-4 py-3 text-right text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider whitespace-nowrap">
+                  Total Hours
+                </th>
                 {storeColumns.map((store) => (
                   <th
                     key={store.id}
@@ -304,9 +307,6 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
                     {store.name}
                   </th>
                 ))}
-                <th className="px-4 py-3 text-right text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider whitespace-nowrap">
-                  Total Hours
-                </th>
                 <th className="px-4 py-3 text-right text-xs sm:text-sm font-medium text-[#ababab] uppercase tracking-wider whitespace-nowrap">
                   Total Points
                 </th>
@@ -333,6 +333,11 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
                         {formatCurrency(row.member.hourlyRate || 0)}/hr
                       </p>
                     </td>
+                    <td className="px-4 py-3 sm:py-4 text-right whitespace-nowrap">
+                      <p className="text-sm font-medium text-[#f5f5f5]">
+                        {formatHours(row.totalHours)}
+                      </p>
+                    </td>
                     {storeColumns.map((store) => {
                       const storeId = String(store.id);
                       const salary = row.storeSalaries[storeId];
@@ -352,11 +357,6 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
                         </td>
                       );
                     })}
-                    <td className="px-4 py-3 sm:py-4 text-right whitespace-nowrap">
-                      <p className="text-sm font-medium text-[#f5f5f5]">
-                        {formatHours(row.totalHours)}
-                      </p>
-                    </td>
                     <td className="px-4 py-3 sm:py-4 text-right whitespace-nowrap">
                       <p className="text-sm font-medium text-[#f5f5f5]">
                         {row.totalTicketScore ?? 0}

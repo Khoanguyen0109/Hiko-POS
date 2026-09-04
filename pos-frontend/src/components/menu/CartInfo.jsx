@@ -191,7 +191,7 @@ const CartInfo = () => {
                         </div>
                         <div className="bg-[#262626] rounded-md p-1.5 space-y-1">
                           {item.toppings.map((topping, index) => {
-                            const toppingFree = isToppingFree(topping, appliedCoupon);
+                            const toppingFree = isToppingFree(topping, appliedCoupon, item);
                             const toppingPrice =
                               topping.totalPrice ??
                               (Number(topping.price) || 0) * (Number(topping.quantity) || 1);

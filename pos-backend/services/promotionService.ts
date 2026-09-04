@@ -104,6 +104,21 @@ class PromotionService {
     }
 
     /**
+     * Empty applicableSizes means every size (including items with no variant).
+     */
+    static isItemSizeEligibleForPromotion(item, promotion) {
+        const sizes = promotion?.applicableSizes || [];
+        if (sizes.length === 0) return true;
+
+        const itemSize = item?.variant?.size;
+        if (!itemSize) return false;
+
+        return sizes.some(
+            (size) => String(size).toLowerCase() === String(itemSize).toLowerCase()
+        );
+    }
+
+    /**
      * Discount for Free Topping: waive matching toppings on eligible items.
      * Matching topping cost = topping.price * topping.quantity * item.quantity
      */
@@ -121,6 +136,9 @@ class PromotionService {
 
         for (const item of items) {
             if (!this.isItemEligibleForPromotion(item, promotion)) {
+                continue;
+            }
+            if (!this.isItemSizeEligibleForPromotion(item, promotion)) {
                 continue;
             }
 

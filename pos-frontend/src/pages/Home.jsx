@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import HomeHeader from "../components/v2/HomeHeader";
 import { BsCashCoin } from "react-icons/bs";
 import { GrInProgress } from "react-icons/gr";
-import { MdRestaurantMenu, MdAccountBalance, MdMoney, MdStore, MdStorefront, MdAccessTime, MdWarning } from "react-icons/md";
+import { MdRestaurantMenu, MdAccountBalance, MdMoney, MdStore, MdStorefront, MdAccessTime, MdWarning, MdLocalOffer } from "react-icons/md";
 import MiniCard from "../components/home/MiniCard";
 import RecentOrders from "../components/home/RecentOrders";
 import { useV2Ui } from "../hooks/useV2Ui";
@@ -12,6 +12,7 @@ import { ROUTES } from "../constants";
 import { fetchOrders } from "../redux/slices/orderSlice";
 import { fetchLowStockItems } from "../redux/slices/storageItemSlice";
 import { getTodayDate, formatVND } from "../utils";
+import { getOrderRewardDiscount } from "../utils/orderBills";
 
 const Home = () => {
   const dispatch = useDispatch();
@@ -53,6 +54,10 @@ const Home = () => {
           BeFood: { earnings: 0, orders: 0 },
           XanhSM: { earnings: 0, orders: 0 },
         },
+        totalPromotionDiscount: 0,
+        totalRewardDiscount: 0,
+        totalDiscount: 0,
+        discountedOrders: 0,
       };
     }
 
@@ -118,6 +123,23 @@ const Home = () => {
       }
     });
 
+    const activeOrders = orders.filter(
+      (order) => order.orderStatus !== "cancelled"
+    );
+    const totalPromotionDiscount = activeOrders.reduce(
+      (sum, order) => sum + (order.bills?.promotionDiscount || 0),
+      0
+    );
+    const totalRewardDiscount = activeOrders.reduce(
+      (sum, order) => sum + getOrderRewardDiscount(order),
+      0
+    );
+    const discountedOrders = activeOrders.filter((order) => {
+      const promotionDiscount = order.bills?.promotionDiscount || 0;
+      const rewardDiscount = getOrderRewardDiscount(order);
+      return promotionDiscount > 0 || rewardDiscount > 0;
+    }).length;
+
     return {
       totalEarnings,
       totalOrders: orders.length,
@@ -128,6 +150,10 @@ const Home = () => {
       totalCash,
       totalBanking,
       vendorBreakdown,
+      totalPromotionDiscount,
+      totalRewardDiscount,
+      totalDiscount: totalPromotionDiscount + totalRewardDiscount,
+      discountedOrders,
     };
   }, [orders]);
 
@@ -171,6 +197,47 @@ const Home = () => {
             icon={<MdAccountBalance />}
             number={loading ? "..." : formatVND(todayStats.totalBanking)}
           />
+          <MiniCard
+            title="Total Discount"
+            icon={<MdLocalOffer />}
+            number={loading ? "..." : formatVND(todayStats.totalDiscount)}
+          />
+        </div>
+
+        <div className="px-4 sm:px-8 mt-3">
+          <div className="bg-[#262626] rounded-lg p-4 border border-[#343434]">
+            <div className="flex items-center gap-2 mb-3">
+              <MdLocalOffer className="text-green-400" size={18} />
+              <h2 className="text-[#f5f5f5] text-sm font-semibold">
+                Discount summary
+              </h2>
+              <span className="text-xs text-[#ababab] bg-[#343434] px-2 py-0.5 rounded-full ml-auto">
+                {loading
+                  ? "..."
+                  : `${todayStats.discountedOrders} order${todayStats.discountedOrders === 1 ? "" : "s"}`}
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-[#1f1f1f] rounded-lg p-3 border border-[#343434]">
+                <p className="text-xs text-[#ababab]">Promotions</p>
+                <p className="text-green-400 font-bold text-base mt-1">
+                  {loading ? "..." : formatVND(todayStats.totalPromotionDiscount)}
+                </p>
+              </div>
+              <div className="bg-[#1f1f1f] rounded-lg p-3 border border-[#343434]">
+                <p className="text-xs text-[#ababab]">Rewards</p>
+                <p className="text-green-400 font-bold text-base mt-1">
+                  {loading ? "..." : formatVND(todayStats.totalRewardDiscount)}
+                </p>
+              </div>
+              <div className="bg-[#1f1f1f] rounded-lg p-3 border border-[#343434]">
+                <p className="text-xs text-[#ababab]">Total given</p>
+                <p className="text-[#f5f5f5] font-bold text-base mt-1">
+                  {loading ? "..." : formatVND(todayStats.totalDiscount)}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Third Party Vendor Income Breakdown */}

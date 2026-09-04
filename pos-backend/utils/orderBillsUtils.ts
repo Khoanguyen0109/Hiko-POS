@@ -104,6 +104,7 @@ interface RawOrderLevelPromotion {
   appliedToItems?: unknown[];
   discount?: { percentage?: number; fixedAmount?: number };
   freeToppings?: unknown[];
+  applicableSizes?: string[];
   applicableItems?: string;
   specificDishes?: unknown[];
   categories?: unknown[];

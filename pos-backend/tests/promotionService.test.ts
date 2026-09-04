@@ -447,6 +447,52 @@ describe('PromotionService', () => {
       expect(result.discount).toBe(10000);
       expect(result.appliedToItems).toHaveLength(1);
     });
+
+    test('should only waive toppings on selected sizes', () => {
+      const promotion = {
+        type: 'free_topping',
+        freeToppings: [creamToppingId],
+        applicableItems: 'all_order',
+        applicableSizes: ['Large', 'Medium']
+      };
+
+      const items = [
+        {
+          dishId: new mongoose.Types.ObjectId(),
+          quantity: 1,
+          variant: { size: 'Large' },
+          toppings: [{ toppingId: creamToppingId, name: 'Kem', price: 10000, quantity: 1 }]
+        },
+        {
+          dishId: new mongoose.Types.ObjectId(),
+          quantity: 1,
+          variant: { size: 'Small' },
+          toppings: [{ toppingId: creamToppingId, name: 'Kem', price: 10000, quantity: 1 }]
+        }
+      ];
+
+      const result = PromotionService.calculateFreeToppingDiscount(items, promotion);
+      expect(result.discount).toBe(10000);
+      expect(result.appliedToItems).toHaveLength(1);
+    });
+
+    test('should skip items without a size when sizes are configured', () => {
+      const promotion = {
+        type: 'free_topping',
+        freeToppings: [creamToppingId],
+        applicableItems: 'all_order',
+        applicableSizes: ['Large']
+      };
+
+      const items = [{
+        dishId: new mongoose.Types.ObjectId(),
+        quantity: 1,
+        toppings: [{ toppingId: creamToppingId, name: 'Kem', price: 10000, quantity: 1 }]
+      }];
+
+      const result = PromotionService.calculateFreeToppingDiscount(items, promotion);
+      expect(result.discount).toBe(0);
+    });
   });
 });
 

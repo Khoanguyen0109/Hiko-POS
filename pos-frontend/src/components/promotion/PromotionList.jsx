@@ -76,7 +76,9 @@ const PromotionList = ({
       const names = (promotion.freeToppings || [])
         .map((topping) => topping?.name)
         .filter(Boolean);
-      return names.length ? `Free: ${names.join(', ')}` : 'Free Topping';
+      const sizes = promotion.applicableSizes || [];
+      const toppingLabel = names.length ? `Free: ${names.join(', ')}` : 'Free Topping';
+      return sizes.length ? `${toppingLabel} (${sizes.join(', ')})` : toppingLabel;
     }
     if (promotion.discount?.percentage) {
       return `${promotion.discount.percentage}% OFF`;

@@ -38,6 +38,26 @@ export function isItemEligibleForPromotion(item, promotion) {
   return false;
 }
 
+export function isItemSizeEligible(item, promotion) {
+  const sizes = promotion?.applicableSizes || [];
+  if (sizes.length === 0) return true;
+
+  const itemSize = item?.variant?.size;
+  if (!itemSize) return false;
+
+  return sizes.some(
+    (size) => String(size).toLowerCase() === String(itemSize).toLowerCase()
+  );
+}
+
+export function isItemEligibleForFreeTopping(item, promotion) {
+  if (!promotion || promotion.type !== "free_topping" || !item) return false;
+  return (
+    isItemEligibleForPromotion(item, promotion) &&
+    isItemSizeEligible(item, promotion)
+  );
+}
+
 export function calculateFreeToppingDiscount(items, promotion) {
   const promoIds = new Set(
     (promotion?.freeToppings || []).map((topping) => getToppingId(topping))
@@ -51,7 +71,7 @@ export function calculateFreeToppingDiscount(items, promotion) {
   const appliedToItems = [];
 
   for (const item of items) {
-    if (!isItemEligibleForPromotion(item, promotion)) continue;
+    if (!isItemEligibleForFreeTopping(item, promotion)) continue;
 
     let itemDiscount = 0;
     for (const topping of item.toppings || []) {
@@ -71,8 +91,8 @@ export function calculateFreeToppingDiscount(items, promotion) {
   return { discount, appliedToItems };
 }
 
-export function isToppingFree(topping, promotion) {
-  if (!promotion || promotion.type !== "free_topping") return false;
+export function isToppingFree(topping, promotion, item) {
+  if (!isItemEligibleForFreeTopping(item, promotion)) return false;
   const promoIds = new Set(
     (promotion.freeToppings || []).map((t) => getToppingId(t))
   );

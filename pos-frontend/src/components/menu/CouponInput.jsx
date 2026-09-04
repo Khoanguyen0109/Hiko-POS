@@ -46,7 +46,9 @@ const CouponSelector = () => {
       const names = (coupon.freeToppings || [])
         .map((topping) => topping?.name)
         .filter(Boolean);
-      return names.length ? `Free topping: ${names.join(', ')}` : 'Free topping';
+      const sizes = coupon.applicableSizes || [];
+      const toppingLabel = names.length ? `Free topping: ${names.join(', ')}` : 'Free topping';
+      return sizes.length ? `${toppingLabel} (${sizes.join(', ')})` : toppingLabel;
     }
     if (coupon.type === 'happy_hour') {
       if (coupon.discount?.percentage) {
