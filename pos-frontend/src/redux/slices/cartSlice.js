@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import { calculateFreeToppingDiscount } from "../../utils/promotionUtils";
 
 const initialState = {
     items: [],
@@ -127,8 +128,9 @@ const cartSlice = createSlice({
                 } else if (coupon.type === 'happy_hour') {
                     // Apply Happy Hour pricing to individual items and calculate discount
                     discount = cartSlice.caseReducers.applyHappyHourPricing(state, coupon);
+                } else if (coupon.type === 'free_topping') {
+                    discount = calculateFreeToppingDiscount(state.items, coupon).discount;
                 }
-                // Add other coupon types as needed
             }
 
             state.pricing.discount = discount;

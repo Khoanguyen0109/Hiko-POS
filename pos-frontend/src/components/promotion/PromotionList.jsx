@@ -72,11 +72,20 @@ const PromotionList = ({
 
   // Get discount display
   const getDiscountDisplay = (promotion) => {
-    if (promotion.discount.percentage) {
+    if (promotion.type === 'free_topping') {
+      const names = (promotion.freeToppings || [])
+        .map((topping) => topping?.name)
+        .filter(Boolean);
+      return names.length ? `Free: ${names.join(', ')}` : 'Free Topping';
+    }
+    if (promotion.discount?.percentage) {
       return `${promotion.discount.percentage}% OFF`;
     }
-    if (promotion.discount.fixedAmount) {
+    if (promotion.discount?.fixedAmount) {
       return `$${promotion.discount.fixedAmount} OFF`;
+    }
+    if (promotion.discount?.uniformPrice) {
+      return `${promotion.discount.uniformPrice}₫ each`;
     }
     return 'N/A';
   };

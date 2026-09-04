@@ -6,6 +6,7 @@ import Promotion from "../models/promotionModel.js";
 import Order from "../models/orderModel.js";
 import Dish from "../models/dishModel.js";
 import Category from "../models/categoryModel.js";
+import Topping from "../models/toppingModel.js";
 import mongoose from "mongoose";
 import { getCurrentVietnamTime, getDateRangeVietnam } from "../utils/dateUtils.js";
 
@@ -32,6 +33,22 @@ const createPromotion = async (req, res, next) => {
     if (promotionData.type.includes('fixed')) {
       if (!promotionData.discount?.fixedAmount || promotionData.discount.fixedAmount <= 0) {
         const error = createHttpError(400, "Valid fixed amount is required for fixed-amount promotions");
+        return next(error);
+      }
+    }
+
+    // Validate Free Topping configuration
+    if (promotionData.type === 'free_topping') {
+      if (!promotionData.freeToppings?.length) {
+        const error = createHttpError(400, "At least one topping is required for Free Topping promotions");
+        return next(error);
+      }
+
+      const toppingIds = promotionData.freeToppings.filter((id) => mongoose.Types.ObjectId.isValid(id));
+      const existingToppings = await Topping.find({ _id: { $in: toppingIds }, store: req.store._id });
+
+      if (existingToppings.length !== toppingIds.length) {
+        const error = createHttpError(400, "Some specified toppings do not exist");
         return next(error);
       }
     }
@@ -119,7 +136,8 @@ const createPromotion = async (req, res, next) => {
     // Populate references for response
     await promotion.populate([
       { path: 'specificDishes', select: 'name price category' },
-      { path: 'categories', select: 'name' }
+      { path: 'categories', select: 'name' },
+      { path: 'freeToppings', select: 'name price category' }
     ]);
 
     res.status(201).json({
@@ -172,6 +190,7 @@ const getPromotions = async (req, res, next) => {
     const promotions = await Promotion.find(filter)
       .populate('specificDishes', 'name price')
       .populate('categories', 'name')
+      .populate('freeToppings', 'name price category')
       .sort({ [sortBy]: sortDirection })
       .skip(skip)
       .limit(parseInt(limit));
@@ -211,7 +230,8 @@ const getPromotionById = async (req, res, next) => {
 
     const promotion = await Promotion.findOne({ _id: id, store: req.store._id })
       .populate('specificDishes', 'name price category')
-      .populate('categories', 'name');
+      .populate('categories', 'name')
+      .populate('freeToppings', 'name price category');
 
     if (!promotion) {
       const error = createHttpError(404, "Promotion not found");
@@ -250,6 +270,23 @@ const updatePromotion = async (req, res, next) => {
       }
     }
 
+    if (updateData.type === 'free_topping' || updateData.freeToppings) {
+      const toppingIds = (updateData.freeToppings || []).filter((id) =>
+        mongoose.Types.ObjectId.isValid(id)
+      );
+      if (updateData.type === 'free_topping' && toppingIds.length === 0) {
+        const error = createHttpError(400, "At least one topping is required for Free Topping promotions");
+        return next(error);
+      }
+      if (toppingIds.length > 0) {
+        const existingToppings = await Topping.find({ _id: { $in: toppingIds }, store: req.store._id });
+        if (existingToppings.length !== toppingIds.length) {
+          const error = createHttpError(400, "Some specified toppings do not exist");
+          return next(error);
+        }
+      }
+    }
+
     // Check for duplicate code if code is being updated
     if (updateData.code) {
       const existingPromotion = await Promotion.findOne({ 
@@ -270,7 +307,8 @@ const updatePromotion = async (req, res, next) => {
       { new: true, runValidators: true }
     ).populate([
       { path: 'specificDishes', select: 'name price category' },
-      { path: 'categories', select: 'name' }
+      { path: 'categories', select: 'name' },
+      { path: 'freeToppings', select: 'name price category' }
     ]);
 
     if (!promotion) {

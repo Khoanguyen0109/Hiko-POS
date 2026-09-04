@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchDishes } from '../../redux/slices/dishSlice';
 import { fetchCategories } from '../../redux/slices/categorySlice';
+import { fetchToppings } from '../../redux/slices/toppingSlice';
 import PropTypes from 'prop-types';
 import { FormField, FormSelect, FormTextarea, Button } from '../ui';
 import BottomSheet from '../shared/BottomSheet';
@@ -12,6 +13,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
   // Redux selectors
   const { items: dishes, loading: dishesLoading } = useSelector(state => state.dishes);
   const { items: categories, loading: categoriesLoading } = useSelector(state => state.categories);
+  const { toppings, loading: toppingsLoading } = useSelector(state => state.toppings);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -27,6 +29,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
     applicableItems: 'all_order',
     specificDishes: [],
     categories: [],
+    freeToppings: [],
     conditions: {
       minOrderAmount: '',
       maxOrderAmount: '',
@@ -61,6 +64,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
         applicableItems: promotion.applicableItems || 'all_order',
         specificDishes: promotion.specificDishes?.map(d => d._id) || [],
         categories: promotion.categories?.map(c => c._id) || [],
+        freeToppings: promotion.freeToppings?.map(t => t._id || t) || [],
         conditions: {
           minOrderAmount: promotion.conditions?.minOrderAmount || '',
           maxOrderAmount: promotion.conditions?.maxOrderAmount || '',
@@ -91,7 +95,10 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
     if (categories.length === 0 && !categoriesLoading) {
       dispatch(fetchCategories());
     }
-  }, [dispatch, dishes.length, categories.length, dishesLoading, categoriesLoading]);
+    if ((!toppings || toppings.length === 0) && !toppingsLoading) {
+      dispatch(fetchToppings());
+    }
+  }, [dispatch, dishes.length, categories.length, dishesLoading, categoriesLoading, toppings, toppingsLoading]);
 
   // Handle form input changes
   const handleInputChange = (path, value) => {
@@ -219,6 +226,10 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
           newErrors['discount.uniformPrice'] = 'Valid uniform price is required';
         }
       }
+    } else if (formData.type === 'free_topping') {
+      if (!formData.freeToppings.length) {
+        newErrors.freeToppings = 'At least one topping must be selected';
+      }
     } else {
       // Non-Happy Hour promotions
       if (formData.type.includes('percentage')) {
@@ -306,6 +317,11 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
     if (submitData.categories.length === 0) {
       delete submitData.categories;
     }
+    if (submitData.type !== 'free_topping' || submitData.freeToppings.length === 0) {
+      if (submitData.type !== 'free_topping') {
+        delete submitData.freeToppings;
+      }
+    }
 
     try {
       await onSubmit(submitData);
@@ -321,7 +337,8 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
     { value: 'order_fixed', label: 'Fixed Amount Off Order' },
     { value: 'item_percentage', label: '% Off Specific Items' },
     { value: 'item_fixed', label: 'Fixed Amount Off Items' },
-    { value: 'happy_hour', label: 'Happy Hour Discount' }
+    { value: 'happy_hour', label: 'Happy Hour Discount' },
+    { value: 'free_topping', label: 'Free Topping' }
   ];
 
   const discountTypes = [
@@ -398,6 +415,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
               />
             )}
 
+            {formData.type !== 'free_topping' && (
             <div>
               <label className="block text-sm font-medium text-[#f5f5f5] mb-2">
                 {formData.type === 'happy_hour' && formData.discountType === 'uniform_price' 
@@ -504,6 +522,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
               {errors['discount.fixedAmount'] && <p className="text-red-500 text-sm mt-1">{errors['discount.fixedAmount']}</p>}
               {errors['discount.uniformPrice'] && <p className="text-red-500 text-sm mt-1">{errors['discount.uniformPrice']}</p>}
             </div>
+            )}
           </div>
 
           {/* Applicable Items */}
@@ -577,6 +596,41 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                 )}
               </div>
               {errors.categories && <p className="text-red-500 text-sm mt-1">{errors.categories}</p>}
+            </div>
+          )}
+
+          {formData.type === 'free_topping' && (
+            <div>
+              <label className="block text-sm font-medium text-[#f5f5f5] mb-2">
+                Free Toppings *
+              </label>
+              <p className="text-xs text-[#ababab] mb-2">
+                Matching toppings on eligible items in the order become free
+              </p>
+              <div className="max-h-48 overflow-y-auto bg-[#262626] border border-[#343434] rounded-md p-3">
+                {toppingsLoading ? (
+                  <div className="text-[#ababab] text-sm py-4 text-center">Loading toppings...</div>
+                ) : !toppings || toppings.length === 0 ? (
+                  <div className="text-[#ababab] text-sm py-4 text-center">No toppings available</div>
+                ) : (
+                  toppings.map((topping) => (
+                    <label key={topping._id} className="flex items-center space-x-2 py-1">
+                      <input
+                        type="checkbox"
+                        checked={formData.freeToppings.includes(topping._id)}
+                        onChange={(e) => handleArrayChange('freeToppings', topping._id, e.target.checked)}
+                        className="rounded border-gray-300"
+                      />
+                      <span className="text-sm text-[#f5f5f5]">
+                        {topping.name}
+                        {topping.category ? ` (${topping.category})` : ''}
+                        {topping.price != null ? ` - ${topping.price}₫` : ''}
+                      </span>
+                    </label>
+                  ))
+                )}
+              </div>
+              {errors.freeToppings && <p className="text-red-500 text-sm mt-1">{errors.freeToppings}</p>}
             </div>
           )}
 
@@ -812,6 +866,13 @@ PromotionForm.propTypes = {
     categories: PropTypes.arrayOf(PropTypes.shape({
       _id: PropTypes.string
     })),
+    freeToppings: PropTypes.arrayOf(PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.shape({
+        _id: PropTypes.string,
+        name: PropTypes.string
+      })
+    ])),
     conditions: PropTypes.shape({
       minOrderAmount: PropTypes.number,
       maxOrderAmount: PropTypes.number,

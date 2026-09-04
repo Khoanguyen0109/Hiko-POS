@@ -20,6 +20,7 @@ import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "re
 import { useReactToPrint } from "react-to-print";
 import ThermalReceiptTemplate from "../print/ThermalReceiptTemplate";
 import { formatVND } from "../../utils";
+import { calculateFreeToppingDiscount } from "../../utils/promotionUtils";
 import { logger } from "../../utils/logger";
 import { useV2Ui } from "../../hooks/useV2Ui";
 import PropTypes from "prop-types";
@@ -199,9 +200,13 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false }, ref) => {
               type: appliedCoupon.type,
               discountAmount: discount,
               code: appliedCoupon.code,
-              appliedToItems: enhancedItems
-                .filter((item) => item.isHappyHourItem)
-                .map((item) => item.dishId),
+              appliedToItems:
+                appliedCoupon.type === "free_topping"
+                  ? calculateFreeToppingDiscount(enhancedItems, appliedCoupon)
+                      .appliedToItems
+                  : enhancedItems
+                      .filter((item) => item.isHappyHourItem)
+                      .map((item) => item.dishId),
             },
           ]
         : [],

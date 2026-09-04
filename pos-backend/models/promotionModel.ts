@@ -33,7 +33,7 @@ const promotionSchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: ['order_percentage', 'order_fixed', 'item_percentage', 'item_fixed', 'happy_hour']
+    enum: ['order_percentage', 'order_fixed', 'item_percentage', 'item_fixed', 'happy_hour', 'free_topping']
   },
   
   // Discount Configuration
@@ -79,6 +79,11 @@ const promotionSchema = new mongoose.Schema({
   categories: [{ 
     type: mongoose.Schema.Types.ObjectId, 
     ref: 'Category' 
+  }],
+  // Toppings waived by Free Topping promotions
+  freeToppings: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Topping'
   }],
   
   // Conditions

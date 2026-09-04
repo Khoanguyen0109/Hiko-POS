@@ -368,6 +368,86 @@ describe('PromotionService', () => {
       PromotionService.getCurrentVietnamTime.mockRestore();
     });
   });
+
+  describe('Free Topping discount calculation', () => {
+    const creamToppingId = new mongoose.Types.ObjectId();
+    const matchaToppingId = new mongoose.Types.ObjectId();
+
+    const freeCreamPromotion = {
+      type: 'free_topping',
+      freeToppings: [creamToppingId],
+      applicableItems: 'all_order'
+    };
+
+    test('should waive matching topping on an eligible item', () => {
+      const items = [{
+        dishId: new mongoose.Types.ObjectId(),
+        quantity: 1,
+        toppings: [
+          { toppingId: creamToppingId, name: 'Kem', price: 10000, quantity: 1 }
+        ]
+      }];
+
+      const result = PromotionService.calculateFreeToppingDiscount(items, freeCreamPromotion);
+      expect(result.discount).toBe(10000);
+      expect(result.appliedToItems).toHaveLength(1);
+    });
+
+    test('should multiply topping price by topping quantity and item quantity', () => {
+      const items = [{
+        dishId: new mongoose.Types.ObjectId(),
+        quantity: 2,
+        toppings: [
+          { toppingId: creamToppingId, name: 'Kem', price: 10000, quantity: 2 }
+        ]
+      }];
+
+      const result = PromotionService.calculateFreeToppingDiscount(items, freeCreamPromotion);
+      expect(result.discount).toBe(40000);
+    });
+
+    test('should ignore toppings that do not match the promotion', () => {
+      const items = [{
+        dishId: new mongoose.Types.ObjectId(),
+        quantity: 1,
+        toppings: [
+          { toppingId: matchaToppingId, name: 'Matcha', price: 15000, quantity: 1 }
+        ]
+      }];
+
+      const result = PromotionService.calculateFreeToppingDiscount(items, freeCreamPromotion);
+      expect(result.discount).toBe(0);
+      expect(result.appliedToItems).toHaveLength(0);
+    });
+
+    test('should skip items outside applicable dishes', () => {
+      const eligibleDishId = new mongoose.Types.ObjectId();
+      const otherDishId = new mongoose.Types.ObjectId();
+      const promotion = {
+        type: 'free_topping',
+        freeToppings: [creamToppingId],
+        applicableItems: 'specific_dishes',
+        specificDishes: [eligibleDishId]
+      };
+
+      const items = [
+        {
+          dishId: eligibleDishId,
+          quantity: 1,
+          toppings: [{ toppingId: creamToppingId, name: 'Kem', price: 10000, quantity: 1 }]
+        },
+        {
+          dishId: otherDishId,
+          quantity: 1,
+          toppings: [{ toppingId: creamToppingId, name: 'Kem', price: 10000, quantity: 1 }]
+        }
+      ];
+
+      const result = PromotionService.calculateFreeToppingDiscount(items, promotion);
+      expect(result.discount).toBe(10000);
+      expect(result.appliedToItems).toHaveLength(1);
+    });
+  });
 });
 
 

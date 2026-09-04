@@ -3,11 +3,13 @@ import { RiDeleteBin2Fill } from "react-icons/ri";
 import { FaNotesMedical } from "react-icons/fa6";
 import { MdAdd, MdRemove } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
-import { removeItem, updateItemQuantity } from "../../redux/slices/cartSlice";
+import { removeItem, updateItemQuantity, getAppliedCoupon } from "../../redux/slices/cartSlice";
 import { formatVND } from "../../utils";
+import { isToppingFree } from "../../utils/promotionUtils";
 
 const CartInfo = () => {
   const cartData = useSelector((state) => state.cart);
+  const appliedCoupon = useSelector(getAppliedCoupon);
   const scrolLRef = useRef();
   const dispatch = useDispatch();
 
@@ -188,7 +190,12 @@ const CartInfo = () => {
                           <div className="flex-1 h-px bg-[#343434]"></div>
                         </div>
                         <div className="bg-[#262626] rounded-md p-1.5 space-y-1">
-                          {item.toppings.map((topping, index) => (
+                          {item.toppings.map((topping, index) => {
+                            const toppingFree = isToppingFree(topping, appliedCoupon);
+                            const toppingPrice =
+                              topping.totalPrice ??
+                              (Number(topping.price) || 0) * (Number(topping.quantity) || 1);
+                            return (
                             <div key={index} className="flex items-center justify-between">
                               <div className="flex items-center gap-1.5">
                                 <div className="w-1 h-1 bg-brand rounded-full"></div>
@@ -199,11 +206,16 @@ const CartInfo = () => {
                                   ×{topping.quantity}
                                 </span>
                               </div>
-                              <span className="text-brand text-xs font-medium">
-                                {formatVND(topping.totalPrice)}
-                              </span>
+                              {toppingFree ? (
+                                <span className="text-green-400 text-xs font-medium">FREE</span>
+                              ) : (
+                                <span className="text-brand text-xs font-medium">
+                                  {formatVND(toppingPrice)}
+                                </span>
+                              )}
                             </div>
-                          ))}
+                            );
+                          })}
                           
                           {/* Total toppings price */}
                           {item.toppings.length > 1 && (

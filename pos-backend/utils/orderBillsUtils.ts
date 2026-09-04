@@ -1,3 +1,5 @@
+import PromotionService from "../services/promotionService.js";
+
 interface BillLineItem {
   originalPrice?: number;
   price: number;
@@ -25,6 +27,12 @@ interface AppliedPromotionForBill {
   discountAmount?: number;
 }
 
+const ORDER_LEVEL_PROMOTION_TYPES = [
+  "order_percentage",
+  "order_fixed",
+  "free_topping",
+];
+
 /**
  * Shared bill calculation for orders.
  * Used by addOrder, updateOrder, and updateOrderItems.
@@ -39,8 +47,8 @@ function calculateOrderBills(
     0
   );
 
-  const hasOrderLevelPromotions = appliedPromotions?.some(
-    (p) => p.type === "order_percentage" || p.type === "order_fixed"
+  const hasOrderLevelPromotions = appliedPromotions?.some((p) =>
+    ORDER_LEVEL_PROMOTION_TYPES.includes(p.type || "")
   );
   const hasItemLevelPromotions = appliedPromotions?.some(
     (p) =>
@@ -52,9 +60,7 @@ function calculateOrderBills(
   let total;
   if (hasOrderLevelPromotions && !hasItemLevelPromotions) {
     const orderLevelDiscount = appliedPromotions
-      .filter(
-        (p) => p.type === "order_percentage" || p.type === "order_fixed"
-      )
+      .filter((p) => ORDER_LEVEL_PROMOTION_TYPES.includes(p.type || ""))
       .reduce((sum, p) => sum + (p.discountAmount || 0), 0);
     total = Math.max(0, subtotal - orderLevelDiscount);
   } else if (hasItemLevelPromotions && !hasOrderLevelPromotions) {
@@ -65,9 +71,7 @@ function calculateOrderBills(
       0
     );
     const orderLevelDiscount = appliedPromotions
-      .filter(
-        (p) => p.type === "order_percentage" || p.type === "order_fixed"
-      )
+      .filter((p) => ORDER_LEVEL_PROMOTION_TYPES.includes(p.type || ""))
       .reduce((sum, p) => sum + (p.discountAmount || 0), 0);
     total = Math.max(0, itemLevelTotal - orderLevelDiscount);
   } else {
@@ -99,20 +103,42 @@ interface RawOrderLevelPromotion {
   code?: string;
   appliedToItems?: unknown[];
   discount?: { percentage?: number; fixedAmount?: number };
+  freeToppings?: unknown[];
+  applicableItems?: string;
+  specificDishes?: unknown[];
+  categories?: unknown[];
+}
+
+interface FreeToppingBillItem {
+  _id?: unknown;
+  dishId?: unknown;
+  quantity?: number;
+  category?: string;
+  toppings?: Array<{
+    toppingId?: unknown;
+    price?: number;
+    quantity?: number;
+  }>;
 }
 
 function formatOrderLevelPromotions(
   subtotal: number,
-  rawPromotions: RawOrderLevelPromotion[] | null | undefined
+  rawPromotions: RawOrderLevelPromotion[] | null | undefined,
+  items: FreeToppingBillItem[] = []
 ) {
   if (!rawPromotions || !Array.isArray(rawPromotions)) return [];
 
   return rawPromotions.map((promo) => {
     let discountAmount = 0;
+    let appliedToItems = promo.appliedToItems || [];
     if (promo.type === "order_percentage") {
       discountAmount = (subtotal * (promo.discount?.percentage || 0)) / 100;
     } else if (promo.type === "order_fixed") {
       discountAmount = promo.discount?.fixedAmount || 0;
+    } else if (promo.type === "free_topping") {
+      const result = PromotionService.calculateFreeToppingDiscount(items, promo);
+      discountAmount = result.discount;
+      appliedToItems = result.appliedToItems;
     }
     return {
       promotionId: promo.promotionId || promo._id,
@@ -120,7 +146,7 @@ function formatOrderLevelPromotions(
       type: promo.type,
       discountAmount,
       code: promo.code,
-      appliedToItems: promo.appliedToItems || [],
+      appliedToItems,
     };
   });
 }

@@ -428,6 +428,12 @@ const OrderDetail = () => {
   const formatDiscount = (coupon) => {
     if (!coupon) return '';
     
+    if (coupon.type === 'free_topping') {
+      const names = (coupon.freeToppings || [])
+        .map((topping) => topping?.name)
+        .filter(Boolean);
+      return names.length ? `Free topping: ${names.join(', ')}` : 'Free topping';
+    }
     if (coupon.type === 'happy_hour') {
       if (coupon.discount?.percentage) {
         return `${coupon.discount.percentage}% off (Happy Hour)`;
@@ -459,7 +465,8 @@ const OrderDetail = () => {
            now >= startDate && 
            now <= endDate &&
            (promotion.type === 'order_percentage' || 
-            promotion.type === 'order_fixed');
+            promotion.type === 'order_fixed' ||
+            promotion.type === 'free_topping');
   });
 
   if (loading && !currentOrder) return <FullScreenLoader />;

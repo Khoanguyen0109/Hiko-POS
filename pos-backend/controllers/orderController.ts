@@ -9,6 +9,7 @@ import Order from "../models/orderModel.js";
 import Dish from "../models/dishModel.js";
 import RewardProgram from "../models/rewardProgramModel.js";
 import PromotionService from "../services/promotionService.js";
+import Promotion from "../models/promotionModel.js";
 import mongoose from "mongoose";
 import { getDateRangeVietnam, getCurrentVietnamTime } from "../utils/dateUtils.js";
 import { calculateOrderBills, formatOrderLevelPromotions, calculateRewardDiscount, applyRewardDiscountToBills, removeRewardDiscountFromBills } from "../utils/orderBillsUtils.js";
@@ -620,7 +621,8 @@ const updateOrder = async (req, res, next) => {
         );
         const formattedPromotions = formatOrderLevelPromotions(
           subtotal,
-          appliedPromotions
+          appliedPromotions,
+          currentOrder.items
         );
         updateFields.appliedPromotions = formattedPromotions;
         updateFields.bills = calculateOrderBills(
@@ -949,18 +951,42 @@ const updateOrderItems = async (req, res, next) => {
       0
     );
     const hasOrderLevelPromotions = appliedPromotions.some(
-      (p) => p.type === "order_percentage" || p.type === "order_fixed"
+      (p) =>
+        p.type === "order_percentage" ||
+        p.type === "order_fixed" ||
+        p.type === "free_topping"
     );
     const oldSubtotal = currentOrder.items.reduce(
       (sum, item) => sum + (item.originalPrice || item.price),
       0
     );
-    if (hasOrderLevelPromotions && oldSubtotal > 0) {
+    if (hasOrderLevelPromotions) {
+      const freeToppingIds = appliedPromotions
+        .filter((p) => p.type === "free_topping" && p.promotionId)
+        .map((p) => p.promotionId);
+      const freeToppingPromos = freeToppingIds.length
+        ? await Promotion.find({ _id: { $in: freeToppingIds } })
+        : [];
+      const freeToppingById = new Map(
+        freeToppingPromos.map((p) => [p._id.toString(), p])
+      );
+
       appliedPromotions = appliedPromotions.map((promo) => {
         const raw = promo.toObject ? promo.toObject() : { ...promo };
-        if (promo.type === "order_percentage") {
+        if (promo.type === "order_percentage" && oldSubtotal > 0) {
           raw.discountAmount =
             (promo.discountAmount || 0) * (subtotal / oldSubtotal);
+        }
+        if (promo.type === "free_topping") {
+          const fullPromo = freeToppingById.get(String(promo.promotionId));
+          if (fullPromo) {
+            const result = PromotionService.calculateFreeToppingDiscount(
+              processedItems,
+              fullPromo
+            );
+            raw.discountAmount = result.discount;
+            raw.appliedToItems = result.appliedToItems.map(String);
+          }
         }
         return raw;
       });

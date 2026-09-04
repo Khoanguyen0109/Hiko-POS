@@ -139,7 +139,8 @@ const PromotionManager = () => {
       'order_fixed': 'Order Fixed Amount',
       'item_percentage': 'Item Percentage',
       'item_fixed': 'Item Fixed Amount',
-      'happy_hour': 'Happy Hour'
+      'happy_hour': 'Happy Hour',
+      'free_topping': 'Free Topping'
     };
     return typeMap[type] || type;
   };
@@ -294,6 +295,7 @@ const PromotionManager = () => {
                   <option value="item_percentage">Item Percentage</option>
                   <option value="item_fixed">Item Fixed Amount</option>
                   <option value="happy_hour">Happy Hour</option>
+                  <option value="free_topping">Free Topping</option>
                 </select>
               </div>
 

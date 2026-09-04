@@ -74,6 +74,17 @@ class PromotionService {
     }
 
     /**
+     * Normalize a topping or dish reference to a string id
+     */
+    static getRefId(ref) {
+        if (ref == null) return '';
+        if (typeof ref === 'object') {
+            return String(ref._id || ref.toppingId || '');
+        }
+        return String(ref);
+    }
+
+    /**
      * Check if an item is eligible for a specific promotion
      */
     static isItemEligibleForPromotion(item, promotion) {
@@ -90,6 +101,48 @@ class PromotionService {
             );
         }
         return false;
+    }
+
+    /**
+     * Discount for Free Topping: waive matching toppings on eligible items.
+     * Matching topping cost = topping.price * topping.quantity * item.quantity
+     */
+    static calculateFreeToppingDiscount(items, promotion) {
+        const promoIds = new Set(
+            (promotion?.freeToppings || []).map((topping) => this.getRefId(topping))
+        );
+
+        if (promoIds.size === 0 || !Array.isArray(items)) {
+            return { discount: 0, appliedToItems: [] };
+        }
+
+        let discount = 0;
+        const appliedToItems: Array<Types.ObjectId | string | undefined> = [];
+
+        for (const item of items) {
+            if (!this.isItemEligibleForPromotion(item, promotion)) {
+                continue;
+            }
+
+            let itemDiscount = 0;
+            for (const topping of item.toppings || []) {
+                const toppingId = this.getRefId(topping.toppingId);
+                if (!promoIds.has(toppingId)) {
+                    continue;
+                }
+                const unitPrice = Number(topping.price) || 0;
+                const toppingQty = Number(topping.quantity) || 1;
+                const itemQty = Number(item.quantity) || 1;
+                itemDiscount += unitPrice * toppingQty * itemQty;
+            }
+
+            if (itemDiscount > 0) {
+                discount += itemDiscount;
+                appliedToItems.push(item._id || item.dishId);
+            }
+        }
+
+        return { discount, appliedToItems };
     }
 
     /**
