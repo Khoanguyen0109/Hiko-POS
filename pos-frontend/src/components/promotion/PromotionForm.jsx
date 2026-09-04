@@ -6,8 +6,15 @@ import { fetchToppings } from '../../redux/slices/toppingSlice';
 import PropTypes from 'prop-types';
 import { FormField, FormSelect, FormTextarea, Button } from '../ui';
 import BottomSheet from '../shared/BottomSheet';
+import { formatDateForInputVietnam } from '../../utils/dateUtils';
 
 const DISH_SIZE_OPTIONS = ['Small', 'Medium', 'Large', 'Extra Large', 'Regular'];
+
+const toId = (value) => {
+  if (value == null) return '';
+  if (typeof value === 'object') return String(value._id || value);
+  return String(value);
+};
 
 const PromotionForm = ({ promotion, onSubmit, onClose }) => {
   const dispatch = useDispatch();
@@ -65,9 +72,9 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
         },
         discountType: promotion.discountType || 'percentage',
         applicableItems: promotion.applicableItems || 'all_order',
-        specificDishes: promotion.specificDishes?.map(d => d._id) || [],
-        categories: promotion.categories?.map(c => c._id) || [],
-        freeToppings: promotion.freeToppings?.map(t => t._id || t) || [],
+        specificDishes: (promotion.specificDishes || []).map(toId).filter(Boolean),
+        categories: (promotion.categories || []).map(toId).filter(Boolean),
+        freeToppings: (promotion.freeToppings || []).map(toId).filter(Boolean),
         applicableSizes: promotion.applicableSizes || [],
         conditions: {
           minOrderAmount: promotion.conditions?.minOrderAmount || '',
@@ -81,8 +88,8 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
           perCustomerLimit: promotion.conditions?.perCustomerLimit || ''
         },
         isActive: promotion.isActive !== undefined ? promotion.isActive : true,
-        startDate: promotion.startDate ? new Date(promotion.startDate).toISOString().split('T')[0] : '',
-        endDate: promotion.endDate ? new Date(promotion.endDate).toISOString().split('T')[0] : '',
+        startDate: formatDateForInputVietnam(promotion.startDate),
+        endDate: formatDateForInputVietnam(promotion.endDate),
         priority: promotion.priority || 0
       });
     }
@@ -131,14 +138,22 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
   // Handle array changes (for multi-select)
   const handleArrayChange = (path, value, checked) => {
     setFormData(prev => {
-      const current = path.split('.').reduce((obj, key) => obj[key], prev);
+      const keys = path.split('.');
+      const current = keys.reduce((obj, key) => obj?.[key], prev) || [];
       const newArray = checked
         ? [...current, value]
-        : current.filter(item => item !== value);
-      
+        : current.filter((item) => item !== value);
+
+      if (keys.length === 1) {
+        return { ...prev, [path]: newArray };
+      }
+
       return {
         ...prev,
-        [path]: newArray
+        [keys[0]]: {
+          ...prev[keys[0]],
+          [keys[1]]: newArray
+        }
       };
     });
   };
@@ -258,8 +273,8 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
       newErrors.endDate = 'End date is required';
     }
 
-    if (formData.startDate && formData.endDate && new Date(formData.endDate) <= new Date(formData.startDate)) {
-      newErrors.endDate = 'End date must be after start date';
+    if (formData.startDate && formData.endDate && formData.endDate < formData.startDate) {
+      newErrors.endDate = 'End date must be on or after start date';
     }
 
     // Validate specific items selection
@@ -278,8 +293,12 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
       }
     });
 
+    if (Object.keys(newErrors).length > 0) {
+      newErrors.form = 'Please fix the highlighted fields before saving';
+    }
+
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return Object.keys(newErrors).filter((key) => key !== 'form').length === 0;
   };
 
   // Handle form submission
@@ -324,6 +343,11 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
     if (submitData.type !== 'free_topping') {
       delete submitData.freeToppings;
       delete submitData.applicableSizes;
+    } else {
+      delete submitData.discountType;
+      if (!submitData.discount || Object.keys(submitData.discount).length === 0) {
+        delete submitData.discount;
+      }
     }
 
     try {
@@ -363,6 +387,11 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
       bodyClassName="p-4 sm:p-6"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
+          {errors.form && (
+            <div className="rounded-md border border-red-500/40 bg-red-900/20 px-3 py-2 text-sm text-red-300">
+              {errors.form}
+            </div>
+          )}
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
@@ -560,8 +589,8 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                     <label key={dish._id} className="flex items-center space-x-2 py-1">
                       <input
                         type="checkbox"
-                        checked={formData.specificDishes.includes(dish._id)}
-                        onChange={(e) => handleArrayChange('specificDishes', dish._id, e.target.checked)}
+                        checked={formData.specificDishes.includes(toId(dish._id))}
+                        onChange={(e) => handleArrayChange('specificDishes', toId(dish._id), e.target.checked)}
                         className="rounded border-gray-300"
                       />
                       <span className="text-sm text-[#f5f5f5]">{dish.name} - {dish.price ? `${dish.price}₫` : 'No price'}</span>
@@ -589,8 +618,8 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                     <label key={category._id} className="flex items-center space-x-2">
                       <input
                         type="checkbox"
-                        checked={formData.categories.includes(category._id)}
-                        onChange={(e) => handleArrayChange('categories', category._id, e.target.checked)}
+                        checked={formData.categories.includes(toId(category._id))}
+                        onChange={(e) => handleArrayChange('categories', toId(category._id), e.target.checked)}
                         className="rounded border-gray-300"
                       />
                       <span className="text-sm text-[#f5f5f5]">{category.name}</span>
@@ -620,8 +649,8 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                     <label key={topping._id} className="flex items-center space-x-2 py-1">
                       <input
                         type="checkbox"
-                        checked={formData.freeToppings.includes(topping._id)}
-                        onChange={(e) => handleArrayChange('freeToppings', topping._id, e.target.checked)}
+                        checked={formData.freeToppings.includes(toId(topping._id))}
+                        onChange={(e) => handleArrayChange('freeToppings', toId(topping._id), e.target.checked)}
                         className="rounded border-gray-300"
                       />
                       <span className="text-sm text-[#f5f5f5]">
@@ -646,7 +675,7 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
                   <label key={size} className="flex items-center space-x-2 p-2 bg-[#262626] border border-[#343434] rounded-md hover:bg-[#2a2a2a] cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={formData.applicableSizes.includes(size)}
+                      checked={(formData.applicableSizes || []).includes(size)}
                       onChange={(e) => handleArrayChange('applicableSizes', size, e.target.checked)}
                       className="rounded border-[#343434] bg-[#262626] text-brand focus:ring-brand focus:ring-2"
                     />

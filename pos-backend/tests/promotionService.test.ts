@@ -494,6 +494,49 @@ describe('PromotionService', () => {
       expect(result.discount).toBe(0);
     });
   });
+
+  describe('Promotion findOneAndUpdate (form payload)', () => {
+    test('should update a free topping promotion with sizes', async () => {
+      const storeId = new mongoose.Types.ObjectId();
+      const toppingId = new mongoose.Types.ObjectId();
+      const promo = new Promotion({
+        store: storeId,
+        name: 'Free Kem',
+        type: 'free_topping',
+        freeToppings: [toppingId],
+        applicableItems: 'all_order',
+        isActive: true,
+        startDate: new Date('2026-01-01'),
+        endDate: new Date('2026-12-31'),
+      });
+      await promo.save();
+
+      const updateData = {
+        name: 'Free Kem Large',
+        type: 'free_topping',
+        discount: {},
+        discountType: 'percentage',
+        applicableItems: 'all_order',
+        freeToppings: [String(toppingId)],
+        applicableSizes: ['Large', 'Medium'],
+        conditions: { timeSlots: [], daysOfWeek: [] },
+        isActive: true,
+        startDate: '2026-01-01',
+        endDate: '2026-12-31',
+        priority: 0
+      };
+
+      const updated = await Promotion.findOneAndUpdate(
+        { _id: promo._id, store: storeId },
+        updateData,
+        { new: true, runValidators: true }
+      );
+
+      expect(updated).toBeTruthy();
+      expect(updated.name).toBe('Free Kem Large');
+      expect(updated.applicableSizes).toEqual(['Large', 'Medium']);
+    });
+  });
 });
 
 

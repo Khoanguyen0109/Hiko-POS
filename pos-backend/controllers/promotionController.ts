@@ -8,7 +8,30 @@ import Dish from "../models/dishModel.js";
 import Category from "../models/categoryModel.js";
 import Topping from "../models/toppingModel.js";
 import mongoose from "mongoose";
-import { getCurrentVietnamTime, getDateRangeVietnam } from "../utils/dateUtils.js";
+import { getCurrentVietnamTime, getDateRangeVietnam, formatVietnamTime } from "../utils/dateUtils.js";
+
+const DISH_SIZES = ['Small', 'Medium', 'Large', 'Extra Large', 'Regular'];
+
+const toRefId = (value) => {
+  if (value == null) return '';
+  if (typeof value === 'object') {
+    return String(value._id || value.toppingId || '');
+  }
+  return String(value);
+};
+
+const normalizeRefIds = (values) => {
+  if (!Array.isArray(values)) return [];
+  return values
+    .map(toRefId)
+    .filter((id) => mongoose.Types.ObjectId.isValid(id));
+};
+
+const toVietnamDay = (value) => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return formatVietnamTime(date, 'yyyy-MM-dd');
+};
 
 // Create a new promotion
 const createPromotion = async (req, res, next) => {
@@ -251,46 +274,77 @@ const getPromotionById = async (req, res, next) => {
 const updatePromotion = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const updateData = { ...req.body };
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       const error = createHttpError(404, "Invalid promotion ID");
       return next(error);
     }
 
-    // Validate date range if dates are being updated
-    if (updateData.startDate || updateData.endDate) {
-      const existingPromotion = await Promotion.findOne({ _id: id, store: req.store._id });
-      const startDate = new Date(updateData.startDate || existingPromotion.startDate);
-      const endDate = new Date(updateData.endDate || existingPromotion.endDate);
-      
-      if (endDate <= startDate) {
-        const error = createHttpError(400, "End date must be after start date");
-        return next(error);
-      }
+    const promotion = await Promotion.findOne({ _id: id, store: req.store._id });
+    if (!promotion) {
+      const error = createHttpError(404, "Promotion not found");
+      return next(error);
     }
 
-    if (updateData.type === 'free_topping' || updateData.freeToppings) {
-      const toppingIds = (updateData.freeToppings || []).filter((id) =>
-        mongoose.Types.ObjectId.isValid(id)
+    delete updateData._id;
+    delete updateData.id;
+    delete updateData.store;
+    delete updateData.createdBy;
+    delete updateData.createdAt;
+    delete updateData.updatedAt;
+    delete updateData.__v;
+    delete updateData.isCurrentlyActive;
+    delete updateData.remainingUsage;
+
+    if (updateData.specificDishes) {
+      updateData.specificDishes = normalizeRefIds(updateData.specificDishes);
+    }
+    if (updateData.categories) {
+      updateData.categories = normalizeRefIds(updateData.categories);
+    }
+    if (updateData.freeToppings) {
+      updateData.freeToppings = normalizeRefIds(updateData.freeToppings);
+    }
+    if (updateData.applicableSizes) {
+      updateData.applicableSizes = (updateData.applicableSizes || []).filter((size) =>
+        DISH_SIZES.includes(size)
       );
-      if (updateData.type === 'free_topping' && toppingIds.length === 0) {
+    }
+
+    const nextType = updateData.type || promotion.type;
+    if (nextType === 'free_topping') {
+      const toppingIds = updateData.freeToppings ?? normalizeRefIds(promotion.freeToppings);
+      if (toppingIds.length === 0) {
         const error = createHttpError(400, "At least one topping is required for Free Topping promotions");
         return next(error);
       }
-      if (toppingIds.length > 0) {
-        const existingToppings = await Topping.find({ _id: { $in: toppingIds }, store: req.store._id });
-        if (existingToppings.length !== toppingIds.length) {
-          const error = createHttpError(400, "Some specified toppings do not exist");
-          return next(error);
-        }
+
+      const existingToppings = await Topping.find({ _id: { $in: toppingIds }, store: req.store._id });
+      if (existingToppings.length !== toppingIds.length) {
+        const error = createHttpError(400, "Some specified toppings do not exist");
+        return next(error);
+      }
+
+      updateData.freeToppings = toppingIds;
+      updateData.discountType = undefined;
+      if (!updateData.discount || Object.keys(updateData.discount).length === 0) {
+        delete updateData.discount;
       }
     }
 
-    // Check for duplicate code if code is being updated
+    if (updateData.startDate || updateData.endDate) {
+      const startDay = toVietnamDay(updateData.startDate || promotion.startDate);
+      const endDay = toVietnamDay(updateData.endDate || promotion.endDate);
+      if (!startDay || !endDay || endDay < startDay) {
+        const error = createHttpError(400, "End date must be on or after start date");
+        return next(error);
+      }
+    }
+
     if (updateData.code) {
       const existingPromotion = await Promotion.findOne({ 
-        code: updateData.code.toUpperCase(),
+        code: String(updateData.code).toUpperCase(),
         _id: { $ne: id },
         store: req.store._id
       });
@@ -301,20 +355,17 @@ const updatePromotion = async (req, res, next) => {
       }
     }
 
-    const promotion = await Promotion.findOneAndUpdate(
-      { _id: id, store: req.store._id },
-      updateData,
-      { new: true, runValidators: true }
-    ).populate([
+    promotion.set(updateData);
+    if (nextType === 'free_topping') {
+      promotion.discountType = undefined;
+    }
+    await promotion.save();
+
+    await promotion.populate([
       { path: 'specificDishes', select: 'name price category' },
       { path: 'categories', select: 'name' },
       { path: 'freeToppings', select: 'name price category' }
     ]);
-
-    if (!promotion) {
-      const error = createHttpError(404, "Promotion not found");
-      return next(error);
-    }
 
     res.status(200).json({
       success: true,
@@ -322,6 +373,9 @@ const updatePromotion = async (req, res, next) => {
       data: promotion
     });
   } catch (error) {
+    if (error?.name === 'ValidationError') {
+      return next(createHttpError(400, error.message));
+    }
     next(error);
   }
 };
