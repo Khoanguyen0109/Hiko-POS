@@ -15,6 +15,39 @@ import { getDateRangeVietnam, getCurrentVietnamTime } from "../utils/dateUtils.j
 import { calculateOrderBills, formatOrderLevelPromotions, calculateRewardDiscount, applyRewardDiscountToBills, removeRewardDiscountFromBills } from "../utils/orderBillsUtils.js";
 import RewardService from "../services/rewardService.js";
 
+function toRewardItems(orderItems = []) {
+  return orderItems.map((item) => ({
+    dishId: item.dishId,
+    quantity: item.quantity,
+    category: item.category,
+    pricePerQuantity: item.pricePerQuantity,
+    price: item.price,
+  }));
+}
+
+function getEarnableRewardPayload(orderItems, rewardType) {
+  return RewardService.getEarnableItems(toRewardItems(orderItems), rewardType);
+}
+
+async function adjustFreeDishProgress({
+  customerId,
+  orderId,
+  storeId,
+  staffId,
+  items,
+  direction,
+}) {
+  const exclusion = RewardService.getFreeDishExclusion(toRewardItems(items));
+  if (!exclusion || !customerId) return;
+
+  if (direction === "exclude") {
+    await RewardService.deductDishes(customerId, orderId, storeId, 1, staffId, [exclusion]);
+    return;
+  }
+
+  await RewardService.earnDishes(customerId, orderId, storeId, 1, staffId, [exclusion]);
+}
+
 const STATUS_LABELS = {
   pending: "Pending",
   progress: "In Progress",
@@ -228,9 +261,11 @@ const addOrder = async (req, res, next) => {
     );
 
     let rewardDiscount = 0;
+    let appliedRewardType = null;
     if (req.body.appliedReward?.rewardProgram) {
       const program = await RewardProgram.findById(req.body.appliedReward.rewardProgram);
       if (program) {
+        appliedRewardType = program.type;
         rewardDiscount = calculateRewardDiscount(
           program,
           finalProcessedItems,
@@ -334,21 +369,18 @@ const addOrder = async (req, res, next) => {
 
     // Reward integration: earn dishes and optionally redeem reward
     if (req.body.customer) {
-        const totalDishQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
-        const rewardItems = order.items.map(item => ({
-            dishId: item.dishId,
-            quantity: item.quantity,
-            category: item.category
-        }));
+        const earnable = getEarnableRewardPayload(order.items, appliedRewardType);
         try {
-            await RewardService.earnDishes(
-                String(req.body.customer),
-                String(order._id),
-                String(req.store._id),
-                totalDishQuantity,
-                String(req.user._id),
-                rewardItems
-            );
+            if (earnable.dishCount > 0) {
+                await RewardService.earnDishes(
+                    String(req.body.customer),
+                    String(order._id),
+                    String(req.store._id),
+                    earnable.dishCount,
+                    String(req.user._id),
+                    earnable.items
+                );
+            }
 
             if (req.body.appliedReward?.rewardProgram) {
                 const redeemResult = await RewardService.redeemReward(
@@ -635,25 +667,29 @@ const updateOrder = async (req, res, next) => {
     }
 
     // Handle customer assignment
+    let earnedWithFreeExcluded = false;
     if (customer !== undefined) {
+      const countingRewardType = appliedReward !== undefined
+        ? appliedReward?.type || null
+        : currentOrder.appliedReward?.type || null;
       if (customer === null) {
         // Removing customer — deduct dishes if previously assigned
         if (currentOrder.customer) {
           try {
-            const totalQty = currentOrder.items.reduce((sum, item) => sum + item.quantity, 0);
-            const deductItems = currentOrder.items.map(item => ({
-              dishId: item.dishId,
-              quantity: item.quantity,
-              category: item.category
-            }));
-            await RewardService.deductDishes(
-              String(currentOrder.customer),
-              String(currentOrder._id),
-              String(req.store._id),
-              totalQty,
-              String(req.user._id),
-              deductItems
+            const deductable = getEarnableRewardPayload(
+              currentOrder.items,
+              currentOrder.appliedReward?.type
             );
+            if (deductable.dishCount > 0) {
+              await RewardService.deductDishes(
+                String(currentOrder.customer),
+                String(currentOrder._id),
+                String(req.store._id),
+                deductable.dishCount,
+                String(req.user._id),
+                deductable.items
+              );
+            }
           } catch (rewardError: unknown) {
             console.error("Reward deduct on customer removal:", rewardError);
           }
@@ -664,20 +700,20 @@ const updateOrder = async (req, res, next) => {
         // New customer assigned — earn dishes for existing order items
         if (!currentOrder.customer || String(currentOrder.customer) !== String(customer)) {
           try {
-            const totalQty = currentOrder.items.reduce((sum, item) => sum + item.quantity, 0);
-            const earnItems = currentOrder.items.map(item => ({
-              dishId: item.dishId,
-              quantity: item.quantity,
-              category: item.category
-            }));
-            await RewardService.earnDishes(
-              String(customer),
-              String(currentOrder._id),
-              String(req.store._id),
-              totalQty,
-              String(req.user._id),
-              earnItems
-            );
+            const earnable = getEarnableRewardPayload(currentOrder.items, countingRewardType);
+            if (earnable.dishCount > 0) {
+              await RewardService.earnDishes(
+                String(customer),
+                String(currentOrder._id),
+                String(req.store._id),
+                earnable.dishCount,
+                String(req.user._id),
+                earnable.items
+              );
+            }
+            if (countingRewardType === "free_dish") {
+              earnedWithFreeExcluded = true;
+            }
           } catch (rewardError: unknown) {
             console.error("Reward earn on customer assignment:", rewardError);
           }
@@ -706,6 +742,17 @@ const updateOrder = async (req, res, next) => {
               String(currentOrder.appliedReward.rewardProgram),
               String(req.user._id)
             );
+            const customerStillAssigned = customer !== null && (customer || currentOrder.customer);
+            if (currentOrder.appliedReward.type === "free_dish" && customerStillAssigned) {
+              await adjustFreeDishProgress({
+                customerId: String(customer || currentOrder.customer),
+                orderId: String(currentOrder._id),
+                storeId: String(req.store._id),
+                staffId: String(req.user._id),
+                items: currentOrder.items,
+                direction: "restore",
+              });
+            }
           } catch (rewardError: unknown) {
             console.error("Reward restore error:", rewardError);
           }
@@ -746,6 +793,16 @@ const updateOrder = async (req, res, next) => {
               String(currentOrder.appliedReward.rewardProgram),
               String(req.user._id)
             );
+            if (currentOrder.appliedReward.type === "free_dish") {
+              await adjustFreeDishProgress({
+                customerId,
+                orderId: String(currentOrder._id),
+                storeId: String(req.store._id),
+                staffId: String(req.user._id),
+                items: currentOrder.items,
+                direction: "restore",
+              });
+            }
           }
 
           const redeemResult = await RewardService.redeemReward(
@@ -755,6 +812,16 @@ const updateOrder = async (req, res, next) => {
             String(appliedReward.rewardProgram),
             String(req.user._id)
           );
+          if (redeemResult.type === "free_dish" && !earnedWithFreeExcluded) {
+            await adjustFreeDishProgress({
+              customerId,
+              orderId: String(currentOrder._id),
+              storeId: String(req.store._id),
+              staffId: String(req.user._id),
+              items: currentOrder.items,
+              direction: "exclude",
+            });
+          }
           const rewardDiscount = calculateRewardDiscount(
             {
               type: redeemResult.type,
@@ -848,20 +915,20 @@ const updateOrder = async (req, res, next) => {
     // Reward reversal on cancellation
     if (orderStatus === "cancelled" && currentOrder.customer) {
         try {
-            const totalDishQuantity = currentOrder.items.reduce((sum, item) => sum + item.quantity, 0);
-            const cancelItems = currentOrder.items.map(item => ({
-                dishId: item.dishId,
-                quantity: item.quantity,
-                category: item.category
-            }));
-            await RewardService.deductDishes(
-                String(currentOrder.customer),
-                String(currentOrder._id),
-                String(req.store._id),
-                totalDishQuantity,
-                String(req.user._id),
-                cancelItems
+            const deductable = getEarnableRewardPayload(
+              currentOrder.items,
+              currentOrder.appliedReward?.type
             );
+            if (deductable.dishCount > 0) {
+              await RewardService.deductDishes(
+                  String(currentOrder.customer),
+                  String(currentOrder._id),
+                  String(req.store._id),
+                  deductable.dishCount,
+                  String(req.user._id),
+                  deductable.items
+              );
+            }
             if (currentOrder.appliedReward?.rewardProgram) {
                 await RewardService.restoreReward(
                     String(currentOrder.customer),

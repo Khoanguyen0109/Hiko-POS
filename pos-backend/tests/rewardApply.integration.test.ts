@@ -365,4 +365,84 @@ describe("Integration — Apply reward to order", () => {
     expect(unchanged.bills.total).toBe(81000);
     expect(unchanged.appliedReward?.rewardProgram).toBeFalsy();
   });
+
+  test("applying Free 1 does not count the complimentary dish toward the next reward", async () => {
+    const createRes = await request(app)
+      .post("/api/order")
+      .send(
+        buildOrderPayload(testDish, {
+          customer: testCustomer._id,
+        })
+      )
+      .expect(201);
+
+    const afterCreate = await Customer.findById(testCustomer._id);
+    expect(afterCreate.totalDishCount).toBe(12);
+
+    await request(app)
+      .put(`/api/order/${createRes.body.data._id}`)
+      .send({
+        appliedReward: {
+          rewardProgram: freeDishProgram._id,
+          type: "free_dish",
+          discountAmount: 38000,
+        },
+      })
+      .expect(200);
+
+    const afterFree = await Customer.findById(testCustomer._id);
+    expect(afterFree.totalDishCount).toBe(11);
+
+    await request(app)
+      .put(`/api/order/${createRes.body.data._id}`)
+      .send({ appliedReward: null })
+      .expect(200);
+
+    const afterRemove = await Customer.findById(testCustomer._id);
+    expect(afterRemove.totalDishCount).toBe(12);
+  });
+
+  test("creating an order with Free 1 does not increment loyalty progress", async () => {
+    const createRes = await request(app)
+      .post("/api/order")
+      .send({
+        customer: testCustomer._id,
+        customerDetails: { name: "Walk-in", phone: "0900000003", guests: 1 },
+        orderStatus: "progress",
+        bills: {
+          subtotal: 43000,
+          promotionDiscount: 0,
+          total: 0,
+          tax: 0,
+          totalWithTax: 0,
+        },
+        appliedPromotions: [],
+        appliedReward: {
+          rewardProgram: freeDishProgram._id,
+          type: "free_dish",
+          discountAmount: 43000,
+        },
+        items: [
+          {
+            id: "free-only",
+            dishId: testDish._id,
+            name: "Matcha Latte (Large)",
+            pricePerQuantity: 43000,
+            quantity: 1,
+            price: 43000,
+            category: "Matcha",
+            originalPricePerQuantity: 43000,
+            originalPrice: 43000,
+          },
+        ],
+        thirdPartyVendor: "None",
+      })
+      .expect(201);
+
+    expect(createRes.body.data.appliedReward.type).toBe("free_dish");
+    expect(createRes.body.data.bills.total).toBe(0);
+
+    const afterCreate = await Customer.findById(testCustomer._id);
+    expect(afterCreate.totalDishCount).toBe(10);
+  });
 });

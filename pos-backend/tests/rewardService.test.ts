@@ -7,6 +7,56 @@ import Dish from "../models/dishModel.js";
 import RewardProgram from "../models/rewardProgramModel.js";
 import RewardLog from "../models/rewardLogModel.js";
 
+describe("RewardService.getEarnableItems — Free 1 is excluded from the chain", () => {
+  const matcha = {
+    dishId: "matcha-1",
+    quantity: 1,
+    category: "Matcha",
+    pricePerQuantity: 45000,
+  };
+  const cheaperTea = {
+    dishId: "tea-1",
+    quantity: 1,
+    category: "Tea",
+    pricePerQuantity: 35000,
+  };
+
+  test("percentage_discount still counts every dish", () => {
+    const result = RewardService.getEarnableItems(
+      [matcha, cheaperTea],
+      "percentage_discount"
+    );
+    expect(result.dishCount).toBe(2);
+    expect(result.items).toHaveLength(2);
+  });
+
+  test("free_dish excludes the cheapest complimentary dish", () => {
+    const result = RewardService.getEarnableItems(
+      [matcha, cheaperTea],
+      "free_dish"
+    );
+    expect(result.dishCount).toBe(1);
+    expect(result.items).toEqual([
+      expect.objectContaining({ dishId: "matcha-1", quantity: 1 }),
+    ]);
+  });
+
+  test("a single Free 1 item contributes zero progress", () => {
+    const result = RewardService.getEarnableItems([cheaperTea], "free_dish");
+    expect(result.dishCount).toBe(0);
+    expect(result.items).toHaveLength(0);
+  });
+
+  test("quantity 2 with Free 1 still counts the paid dish", () => {
+    const result = RewardService.getEarnableItems(
+      [{ ...matcha, quantity: 2 }],
+      "free_dish"
+    );
+    expect(result.dishCount).toBe(1);
+    expect(result.items[0].quantity).toBe(1);
+  });
+});
+
 describe("RewardService.getDishCountForProgram", () => {
   test("uses totalDishCount when program has no eligible categories", () => {
     const count = RewardService.getDishCountForProgram({}, 10, {
@@ -176,5 +226,62 @@ describe("RewardService.earnDishes — buy 10 Matcha get 1 free", () => {
     expect(result.newRewards).toHaveLength(0);
     expect(available).toHaveLength(0);
     expect(unlocked).toBe(0);
+  });
+});
+
+describe("RewardService.earnDishes — Free 1 does not start the next chain", () => {
+  test("redeeming the free dish does not increment progress toward the next reward", async () => {
+    const matchaCategory = await Category.create({ name: "Matcha Free Chain" });
+    const matchaDish = await Dish.create({
+      name: "Matcha Latte",
+      price: 45000,
+      category: matchaCategory._id,
+      isAvailable: true,
+    });
+
+    const customer = await Customer.create({
+      phone: "0901112233",
+      name: "Free Chain Guest",
+      totalDishCount: 10,
+      categoryDishCounts: new Map([[String(matchaCategory._id), 10]]),
+    });
+
+    await RewardProgram.create({
+      name: "Buy 10 Matcha get 1 free",
+      type: "free_dish",
+      dishThreshold: 10,
+      isActive: true,
+      eligibleCategories: [matchaCategory._id],
+    });
+
+    const orderId = new mongoose.Types.ObjectId();
+    const storeId = new mongoose.Types.ObjectId();
+    const staffId = new mongoose.Types.ObjectId();
+    const freeItem = {
+      dishId: matchaDish._id,
+      quantity: 1,
+      pricePerQuantity: 45000,
+    };
+    const earnable = RewardService.getEarnableItems([freeItem], "free_dish");
+
+    const result = await RewardService.earnDishes(
+      String(customer._id),
+      String(orderId),
+      String(storeId),
+      earnable.dishCount,
+      String(staffId),
+      earnable.items
+    );
+
+    const updated = await Customer.findById(customer._id);
+    const progress = await RewardService.getProgramProgress(updated);
+    const available = await RewardService.calculateAvailableRewards(String(customer._id));
+
+    expect(earnable.dishCount).toBe(0);
+    expect(result.newTotal).toBe(10);
+    expect(updated.totalDishCount).toBe(10);
+    expect(updated.categoryDishCounts.get(String(matchaCategory._id))).toBe(10);
+    expect(progress[0].dishCount).toBe(10);
+    expect(available).toHaveLength(1);
   });
 });
