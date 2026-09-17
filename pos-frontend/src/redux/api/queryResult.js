@@ -1,6 +1,7 @@
 export const unwrapList = (result) => {
   if (Array.isArray(result)) return result;
   if (Array.isArray(result?.data)) return result.data;
+  if (Array.isArray(result?.promotions)) return result.promotions;
   return [];
 };
 

@@ -59,7 +59,7 @@ const OrderDetail = () => {
     isActive: true,
     limit: 50,
   });
-  const promotions = unwrapList(promotionsResult?.promotions ?? promotionsResult);
+  const promotions = unwrapList(promotionsResult);
   const customerId = currentOrder?.customer?._id;
   const {
     data: customerRewards,

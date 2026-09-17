@@ -70,7 +70,6 @@ const CouponSelector = () => {
     return 'Discount';
   };
 
-  console.log('appliedCoupon', appliedCoupon)
   return (
     <div className="bg-[#262626] rounded-lg border border-[#343434]">
       {/* Applied Coupon Display */}

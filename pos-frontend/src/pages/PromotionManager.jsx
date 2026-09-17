@@ -35,9 +35,7 @@ const PromotionManager = () => {
   const [editingPromotion, setEditingPromotion] = useState(null);
 
   const { data: promotionsResult, isLoading: loading } = useGetPromotionsQuery(filters);
-  const promotions = Array.isArray(promotionsResult?.promotions)
-    ? promotionsResult.promotions
-    : unwrapList(promotionsResult);
+  const promotions = unwrapList(promotionsResult);
   const pagination = promotionsResult?.pagination ?? {};
   const [addPromotion] = useAddPromotionMutation();
   const [updatePromotion] = useUpdatePromotionMutation();

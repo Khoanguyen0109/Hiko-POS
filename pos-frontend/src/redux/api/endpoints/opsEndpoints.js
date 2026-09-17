@@ -172,6 +172,15 @@ export const opsApi = baseApi.injectEndpoints({
         method: "GET",
         params: cleanParams(params),
       }),
+      transformResponse: (result) => {
+        if (Array.isArray(result)) {
+          return { data: result, pagination: null };
+        }
+        return {
+          data: result?.promotions ?? result?.data ?? [],
+          pagination: result?.pagination ?? null,
+        };
+      },
       providesTags: (result) => providesList("Promotion", result),
     }),
     getPromotionById: build.query({

@@ -3,7 +3,9 @@ export const providesList = (type, result, idKey = "_id") => {
     ? result
     : Array.isArray(result?.data)
       ? result.data
-      : [];
+      : Array.isArray(result?.promotions)
+        ? result.promotions
+        : [];
 
   return [
     ...items.map((item) => ({ type, id: item[idKey] })),
