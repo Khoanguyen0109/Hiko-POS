@@ -1,7 +1,7 @@
 import QRCode from "qrcode";
 import hikoLogo from "../assets/images/hiko-matcha-logo.png";
 
-export const SPIN_BASE_URL = "https://hikomatcha.vn/spin";
+export const SPIN_BASE_URL = "https://hikomatcha.com/spin";
 
 const QR_SIZE = 1024;
 const LOGO_RATIO = 0.2;

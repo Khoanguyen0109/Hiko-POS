@@ -130,7 +130,7 @@ const CampaignManager = () => {
                   Campaign Manager
                 </h1>
                 <p className="text-[#ababab] text-sm">
-                  Create and manage spin-game campaigns for hikomatcha.vn
+                  Create and manage spin-game campaigns for hikomatcha.com
                 </p>
               </div>
             </div>

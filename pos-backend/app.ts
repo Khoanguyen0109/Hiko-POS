@@ -63,6 +63,8 @@ app.use(
       "http://localhost:5173",
       "https://hiko-pos.vercel.app",
       "http://localhost:4321",
+      "https://hikomatcha.com",
+      "https://www.hikomatcha.com",
       "https://hikomatcha.vn",
       "https://www.hikomatcha.vn",
     ],
