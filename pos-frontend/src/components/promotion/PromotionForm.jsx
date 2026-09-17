@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchDishes } from '../../redux/slices/dishSlice';
-import { fetchCategories } from '../../redux/slices/categorySlice';
-import { fetchToppings } from '../../redux/slices/toppingSlice';
+import { useGetDishesQuery, useGetCategoriesQuery, useGetToppingsQuery } from '../../redux/api/endpoints';
+import { unwrapList } from '../../redux/api/queryResult';
 import PropTypes from 'prop-types';
 import { FormField, FormSelect, FormTextarea, Button } from '../ui';
 import BottomSheet from '../shared/BottomSheet';
@@ -17,12 +15,12 @@ const toId = (value) => {
 };
 
 const PromotionForm = ({ promotion, onSubmit, onClose }) => {
-  const dispatch = useDispatch();
-  
-  // Redux selectors
-  const { items: dishes, loading: dishesLoading } = useSelector(state => state.dishes);
-  const { items: categories, loading: categoriesLoading } = useSelector(state => state.categories);
-  const { toppings, loading: toppingsLoading } = useSelector(state => state.toppings);
+  const { data: dishesResult, isLoading: dishesLoading } = useGetDishesQuery();
+  const { data: categoriesResult, isLoading: categoriesLoading } = useGetCategoriesQuery();
+  const { data: toppingsResult, isLoading: toppingsLoading } = useGetToppingsQuery();
+  const dishes = unwrapList(dishesResult);
+  const categories = unwrapList(categoriesResult);
+  const toppings = unwrapList(toppingsResult);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -94,22 +92,6 @@ const PromotionForm = ({ promotion, onSubmit, onClose }) => {
       });
     }
   }, [promotion]);
-
-  // Fetch dishes and categories from Redux
-  useEffect(() => {
-    console.log('PromotionForm - Current dishes:', dishes.length, 'categories:', categories.length);
-    
-    // Only fetch if data is not loaded
-    if (dishes.length === 0 && !dishesLoading) {
-      dispatch(fetchDishes());
-    }
-    if (categories.length === 0 && !categoriesLoading) {
-      dispatch(fetchCategories());
-    }
-    if ((!toppings || toppings.length === 0) && !toppingsLoading) {
-      dispatch(fetchToppings());
-    }
-  }, [dispatch, dishes.length, categories.length, dishesLoading, categoriesLoading, toppings, toppingsLoading]);
 
   // Handle form input changes
   const handleInputChange = (path, value) => {

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
+import { skipToken } from "@reduxjs/toolkit/query/react";
 import { useNavigate, useParams } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
 import {
@@ -23,16 +24,16 @@ import RenameNodeModal from "../components/docs/RenameNodeModal";
 import DocsActionsMenu from "../components/docs/DocsActionsMenu";
 import DocsCreateMenu from "../components/docs/DocsCreateMenu";
 import {
-  fetchDocTree,
-  fetchDoc,
-  createFolder,
-  createDoc,
-  updateDoc,
-  publishDoc,
-  unpublishDoc,
-  deleteNode,
-  clearSelectedDoc,
-} from "../redux/slices/docsSlice";
+  useGetDocTreeQuery,
+  useGetDocByIdQuery,
+  useCreateFolderMutation,
+  useCreateDocMutation,
+  useUpdateDocMutation,
+  usePublishDocMutation,
+  useUnpublishDocMutation,
+  useDeleteDocNodeMutation,
+} from "../redux/api/endpoints";
+import { unwrapList } from "../redux/api/queryResult";
 import { ROUTES } from "../constants";
 import {
   DOCS_ROOT_ID,
@@ -53,21 +54,27 @@ const findNodeById = (nodes, id) => {
 };
 
 const Docs = () => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const { docId } = useParams();
   const { role } = useSelector((state) => state.user);
   const isAdmin = role === "Admin";
 
+  const { data: treeResult, isLoading: treeLoading } = useGetDocTreeQuery();
+  const tree = Array.isArray(treeResult) ? treeResult : unwrapList(treeResult);
   const {
-    tree,
-    selectedDoc,
-    treeLoading,
-    docLoading,
-    saveLoading,
-    deleteLoading,
-    error,
-  } = useSelector((state) => state.docs);
+    data: docResult,
+    isLoading: docLoading,
+    isFetching: docFetching,
+  } = useGetDocByIdQuery(docId ?? skipToken);
+  const selectedDoc = docId ? getDocApiNode(docResult) : null;
+  const [createFolder] = useCreateFolderMutation();
+  const [createDoc] = useCreateDocMutation();
+  const [updateDoc, { isLoading: saveLoading }] = useUpdateDocMutation();
+  const [publishDoc] = usePublishDocMutation();
+  const [unpublishDoc] = useUnpublishDocMutation();
+  const [deleteDocNode, { isLoading: deleteLoading }] = useDeleteDocNodeMutation();
+  const updateDocRef = useRef(updateDoc);
+  updateDocRef.current = updateDoc;
 
   const [selectedFolderId, setSelectedFolderId] = useState(DOCS_ROOT_ID);
   const [selectedFolderTitle, setSelectedFolderTitle] = useState("Root");
@@ -107,37 +114,25 @@ const Docs = () => {
   }, []);
 
   useEffect(() => {
-    dispatch(fetchDocTree());
-  }, [dispatch]);
-
-  useEffect(() => {
     if (docId) {
       setEditTitle("");
       setEditContent("");
       setIsDirty(false);
-      dispatch(fetchDoc(docId));
-    } else {
-      dispatch(clearSelectedDoc());
     }
-  }, [dispatch, docId]);
+  }, [docId]);
 
   useEffect(() => {
     if (
       selectedDoc &&
       docId &&
-      String(selectedDoc._id) === String(docId)
+      String(selectedDoc._id) === String(docId) &&
+      !docFetching
     ) {
       setEditTitle(selectedDoc.title || "");
       setEditContent(selectedDoc.content || "");
       setIsDirty(false);
     }
-  }, [selectedDoc, docId]);
-
-  useEffect(() => {
-    if (error) {
-      enqueueSnackbar(error, { variant: "error" });
-    }
-  }, [error]);
+  }, [selectedDoc, docId, docFetching]);
 
   useEffect(() => {
     const leavingDocId = docId;
@@ -148,14 +143,12 @@ const Docs = () => {
       if (String(pending.docId) !== String(leavingDocId)) return;
       if (String(pending.selectedDocId) !== String(leavingDocId)) return;
 
-      dispatch(
-        updateDoc({
-          id: leavingDocId,
-          data: { title: pending.editTitle, content: pending.editContent },
-        })
-      );
+      updateDocRef.current({
+        id: leavingDocId,
+        data: { title: pending.editTitle, content: pending.editContent },
+      });
     };
-  }, [dispatch, docId]);
+  }, [docId]);
 
   const persistDocContent = async ({ force = false } = {}) => {
     if (!isAdmin || !docId || !selectedDoc?._id) return false;
@@ -172,12 +165,10 @@ const Docs = () => {
     if (!force && !isDirty) return true;
 
     try {
-      await dispatch(
-        updateDoc({
-          id: docId,
-          data: { title, content },
-        })
-      ).unwrap();
+      await updateDoc({
+        id: docId,
+        data: { title, content },
+      }).unwrap();
       setEditContent(content);
       setIsDirty(false);
       pendingSaveRef.current = {
@@ -187,12 +178,12 @@ const Docs = () => {
       };
       return true;
     } catch (err) {
-      enqueueSnackbar(err || "Failed to save", { variant: "error" });
+      enqueueSnackbar(err?.data || "Failed to save", { variant: "error" });
       return false;
     }
   };
 
-  const saveDoc = async ({ silent = false, refresh = false } = {}) => {
+  const saveDoc = async ({ silent = false } = {}) => {
     if (!isAdmin || !docId || !selectedDoc?._id) return false;
     if (String(selectedDoc._id) !== String(docId)) return false;
     if (!isDocNode(selectedDoc)) return false;
@@ -204,17 +195,14 @@ const Docs = () => {
       if (!silent) {
         enqueueSnackbar("Saved", { variant: "success" });
       }
-      if (refresh) {
-        await refreshTree();
-      }
       return true;
     } catch (err) {
-      enqueueSnackbar(err || "Failed to save", { variant: "error" });
+      enqueueSnackbar(err?.data || "Failed to save", { variant: "error" });
       return false;
     }
   };
 
-  const autoSaveIfDirty = () => saveDoc({ silent: true, refresh: false });
+  const autoSaveIfDirty = () => saveDoc({ silent: true });
 
   const handleBackToBrowse = async () => {
     await autoSaveIfDirty();
@@ -250,26 +238,18 @@ const Docs = () => {
     if (!renameNode?._id) return;
     setRenameLoading(true);
     try {
-      await dispatch(
-        updateDoc({
-          id: renameNode._id,
-          data: { title: newTitle },
-        })
-      ).unwrap();
+      await updateDoc({
+        id: renameNode._id,
+        data: { title: newTitle },
+      }).unwrap();
       enqueueSnackbar("Renamed successfully", { variant: "success" });
       setRenameNode(null);
 
       if (renameNode._id === selectedFolderId) {
         setSelectedFolderTitle(newTitle);
       }
-
-      if (docId === renameNode._id) {
-        dispatch(fetchDoc(renameNode._id));
-      }
-
-      await refreshTree();
     } catch (err) {
-      enqueueSnackbar(err || "Failed to rename", { variant: "error" });
+      enqueueSnackbar(err?.data || "Failed to rename", { variant: "error" });
     } finally {
       setRenameLoading(false);
     }
@@ -285,40 +265,27 @@ const Docs = () => {
     }
   };
 
-  const refreshTree = async () => {
-    try {
-      await dispatch(fetchDocTree()).unwrap();
-    } catch (err) {
-      enqueueSnackbar(err || "Failed to refresh documentation tree", {
-        variant: "error",
-      });
-    }
-  };
-
   const handleCreate = async (title) => {
     setCreateLoading(true);
     try {
       const parentId = getParentId();
       if (createModal === "folder") {
-        await dispatch(createFolder({ title, parentId })).unwrap();
+        await createFolder({ title, parentId }).unwrap();
         enqueueSnackbar("Folder created", { variant: "success" });
       } else {
-        const result = await dispatch(
-          createDoc({ title, parentId, content: "" })
-        ).unwrap();
+        const result = await createDoc({ title, parentId, content: "" }).unwrap();
         enqueueSnackbar("Document created", { variant: "success" });
         navigate(`${ROUTES.DOCS}/${getDocApiNode(result)._id}`);
       }
       setCreateModal(null);
-      await refreshTree();
     } catch (err) {
-      enqueueSnackbar(err || "Failed to create", { variant: "error" });
+      enqueueSnackbar(err?.data || "Failed to create", { variant: "error" });
     } finally {
       setCreateLoading(false);
     }
   };
 
-  const handleSave = async () => saveDoc({ silent: false, refresh: true });
+  const handleSave = async () => saveDoc({ silent: false });
 
   const handlePublish = async () => {
     if (!docId || !selectedDoc?._id) return;
@@ -328,16 +295,14 @@ const Docs = () => {
     if (!saved) return;
 
     try {
-      await dispatch(publishDoc(docId)).unwrap();
-      const refreshed = await dispatch(fetchDoc(docId)).unwrap();
+      const refreshed = await publishDoc(docId).unwrap();
       const node = getDocApiNode(refreshed);
       setEditTitle(node.title || "");
       setEditContent(node.content || "");
       setIsDirty(false);
       enqueueSnackbar("Document published", { variant: "success" });
-      await refreshTree();
     } catch (err) {
-      enqueueSnackbar(err || "Failed to publish", { variant: "error" });
+      enqueueSnackbar(err?.data || "Failed to publish", { variant: "error" });
     }
   };
 
@@ -346,16 +311,14 @@ const Docs = () => {
     if (String(selectedDoc._id) !== String(docId)) return;
 
     try {
-      await dispatch(unpublishDoc(docId)).unwrap();
-      const refreshed = await dispatch(fetchDoc(docId)).unwrap();
+      const refreshed = await unpublishDoc(docId).unwrap();
       const node = getDocApiNode(refreshed);
       setEditTitle(node.title || "");
       setEditContent(node.content || "");
       setIsDirty(false);
       enqueueSnackbar("Document unpublished", { variant: "success" });
-      await refreshTree();
     } catch (err) {
-      enqueueSnackbar(err || "Failed to unpublish", { variant: "error" });
+      enqueueSnackbar(err?.data || "Failed to unpublish", { variant: "error" });
     }
   };
 
@@ -373,7 +336,7 @@ const Docs = () => {
     if (!window.confirm(message)) return;
 
     try {
-      await dispatch(deleteNode(target._id)).unwrap();
+      await deleteDocNode(target._id).unwrap();
       enqueueSnackbar(
         isFolder ? "Folder deleted" : "Document deleted",
         { variant: "success" }
@@ -386,10 +349,8 @@ const Docs = () => {
       if (docId === target._id || isFolder) {
         navigate(ROUTES.DOCS);
       }
-
-      await refreshTree();
     } catch (err) {
-      enqueueSnackbar(err || "Failed to delete", { variant: "error" });
+      enqueueSnackbar(err?.data || "Failed to delete", { variant: "error" });
     }
   };
 

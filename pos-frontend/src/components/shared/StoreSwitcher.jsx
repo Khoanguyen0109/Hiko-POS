@@ -1,26 +1,24 @@
 import { useState, useRef, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { setActiveStore, fetchAllStores, fetchMyStores } from "../../redux/slices/storeSlice";
+import { setActiveStore } from "../../redux/slices/storeSlice";
+import { useGetAllStoresQuery, useGetMyStoresQuery } from "../../redux/api/endpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 import { MdStore, MdKeyboardArrowDown, MdCheck } from "react-icons/md";
 
 const StoreSwitcher = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { stores, allStores, activeStore } = useSelector((state) => state.store);
+  const { activeStore } = useSelector((state) => state.store);
   const { role } = useSelector((state) => state.user);
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   const isAdmin = role === "Admin";
-
-  useEffect(() => {
-    if (isAdmin && allStores.length === 0) {
-      dispatch(fetchAllStores());
-    } else if (!isAdmin && stores.length === 0) {
-      dispatch(fetchMyStores());
-    }
-  }, [dispatch, isAdmin, allStores.length, stores.length]);
+  const { data: allStoresResult } = useGetAllStoresQuery(undefined, { skip: !isAdmin });
+  const { data: myStoresResult } = useGetMyStoresQuery(undefined, { skip: isAdmin });
+  const allStores = unwrapList(allStoresResult);
+  const stores = unwrapList(myStoresResult);
 
   useEffect(() => {
     const handleClickOutside = (event) => {

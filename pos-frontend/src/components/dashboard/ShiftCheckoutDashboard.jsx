@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useMemo, useState } from "react";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
 import {
@@ -11,11 +10,11 @@ import {
   MdDelete,
 } from "react-icons/md";
 import {
-  fetchShiftCheckoutList,
-  deleteShiftCheckout,
-  clearShiftCheckoutError,
-} from "../../redux/slices/shiftCheckoutSlice";
-import { fetchMembers } from "../../redux/slices/memberSlice";
+  useGetShiftCheckoutListQuery,
+  useGetAllMembersQuery,
+  useDeleteShiftCheckoutMutation,
+} from "../../redux/api/endpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 import { formatVND, getTodayDate } from "../../utils";
 import { getDateRangeByPeriodVietnam, getLocalDateString } from "../../utils/dateUtils";
 import LoadingState from "../shared/LoadingState";
@@ -39,14 +38,11 @@ const statusBadge = (status) => {
 };
 
 const ShiftCheckoutDashboard = ({ dateFilter, customDateRange }) => {
-  const dispatch = useDispatch();
-  const { listCheckouts, listSummary, listLoading, listError, deleteLoading } =
-    useSelector((state) => state.shiftCheckout);
-  const { members } = useSelector((state) => state.members);
-  const activeMembers = (members || []).filter((member) => member.isActive !== false);
-
   const [statusFilter, setStatusFilter] = useState("all");
   const [memberFilter, setMemberFilter] = useState("all");
+  const { data: membersResult } = useGetAllMembersQuery({ isActive: true });
+  const members = unwrapList(membersResult);
+  const activeMembers = (members || []).filter((member) => member.isActive !== false);
 
   const dateRange = useMemo(() => {
     const today = getTodayDate();
@@ -84,27 +80,25 @@ const ShiftCheckoutDashboard = ({ dateFilter, customDateRange }) => {
     return { startDate, endDate };
   }, [dateFilter, customDateRange]);
 
-  useEffect(() => {
-    dispatch(fetchMembers({ isActive: true }));
-  }, [dispatch]);
-
-  useEffect(() => {
+  const listParams = useMemo(() => {
     const params = {
       startDate: dateRange.startDate,
       endDate: dateRange.endDate,
     };
     if (statusFilter !== "all") params.status = statusFilter;
     if (memberFilter !== "all") params.memberId = memberFilter;
+    return params;
+  }, [dateRange, statusFilter, memberFilter]);
 
-    dispatch(fetchShiftCheckoutList(params));
-  }, [dispatch, dateRange, statusFilter, memberFilter]);
-
-  useEffect(() => {
-    if (listError) {
-      enqueueSnackbar(listError, { variant: "error" });
-      dispatch(clearShiftCheckoutError());
-    }
-  }, [listError, dispatch]);
+  const {
+    data: listResult,
+    isLoading: listLoading,
+    error: listError,
+  } = useGetShiftCheckoutListQuery(listParams);
+  const listCheckouts = listResult?.checkouts || [];
+  const listSummary = listResult?.summary || null;
+  const [deleteCheckout, { isLoading: deleteLoading }] =
+    useDeleteShiftCheckoutMutation();
 
   const handleDelete = async (checkout) => {
     const memberName = checkout.member?.name || "this member";
@@ -118,14 +112,14 @@ const ShiftCheckoutDashboard = ({ dateFilter, customDateRange }) => {
     }
 
     try {
-      await dispatch(deleteShiftCheckout(checkout._id)).unwrap();
+      await deleteCheckout(checkout._id).unwrap();
       enqueueSnackbar("Shift checkout deleted", { variant: "success" });
-    } catch {
-      // error via listError
+    } catch (err) {
+      enqueueSnackbar(err?.data || err || "Failed to delete checkout", { variant: "error" });
     }
   };
 
-  if (listLoading || deleteLoading) {
+  if (listLoading) {
     return (
       <div className="container mx-auto px-4 py-12 md:px-6">
         <LoadingState message="Loading shift checkouts..." />
@@ -138,7 +132,7 @@ const ShiftCheckoutDashboard = ({ dateFilter, customDateRange }) => {
       <div className="container mx-auto px-4 md:px-6 text-center py-12">
         <MdAnalytics className="mx-auto text-6xl text-red-500 mb-4" />
         <p className="text-red-400 text-lg mb-2">Error loading shift checkouts</p>
-        <p className="text-[#ababab] text-sm">{listError}</p>
+        <p className="text-[#ababab] text-sm">{listError?.data || listError}</p>
       </div>
     );
   }

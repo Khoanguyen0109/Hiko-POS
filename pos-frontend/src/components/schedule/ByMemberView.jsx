@@ -1,8 +1,8 @@
-import { useEffect, useMemo } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useMemo } from "react";
 import { MdPerson, MdStore } from "react-icons/md";
 import PropTypes from "prop-types";
-import { fetchAllMembersWeek } from "../../redux/slices/scheduleSlice";
+import { useGetAllMembersWeekQuery } from "../../redux/api/endpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 import { getWeekDates, formatDate, getDayName, getLocalDateString } from "../../utils/dateUtils";
 
 const STORE_COLORS = [
@@ -15,12 +15,8 @@ const STORE_COLORS = [
 ];
 
 const ByMemberView = ({ year, week }) => {
-  const dispatch = useDispatch();
-  const { allMembersSchedules, allMembersLoading } = useSelector((state) => state.schedules);
-
-  useEffect(() => {
-    dispatch(fetchAllMembersWeek({ year, week }));
-  }, [dispatch, year, week]);
+  const { data: weekResult, isLoading } = useGetAllMembersWeekQuery({ year, week });
+  const allMembersSchedules = unwrapList(weekResult);
 
   const weekDates = getWeekDates(year, week);
 
@@ -78,7 +74,7 @@ const ByMemberView = ({ year, week }) => {
     return { memberRows: rows, storeColorMap: colorMap };
   }, [allMembersSchedules]);
 
-  if (allMembersLoading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4ECDC4]"></div>

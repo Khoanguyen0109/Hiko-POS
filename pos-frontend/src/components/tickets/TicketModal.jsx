@@ -1,14 +1,16 @@
 import { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { MdStar, MdPerson } from "react-icons/md";
 import BottomSheet from "../shared/BottomSheet";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
-import { addTicket, editTicket, clearTicketError } from "../../redux/slices/ticketSlice";
+import {
+  useCreateTicketMutation,
+  useUpdateTicketMutation,
+} from "../../redux/api/endpoints";
 
 const TicketModal = ({ isOpen, onClose, ticket, members }) => {
-  const dispatch = useDispatch();
-  const { createLoading, updateLoading, error } = useSelector((s) => s.tickets);
+  const [createTicket, { isLoading: createLoading }] = useCreateTicketMutation();
+  const [updateTicket, { isLoading: updateLoading }] = useUpdateTicketMutation();
   const isEdit = Boolean(ticket);
 
   const [form, setForm] = useState({ memberId: "", title: "", score: "", note: "" });
@@ -27,13 +29,6 @@ const TicketModal = ({ isOpen, onClose, ticket, members }) => {
     }
     setErrors({});
   }, [ticket, isOpen]);
-
-  useEffect(() => {
-    if (error) {
-      enqueueSnackbar(error, { variant: "error" });
-      dispatch(clearTicketError());
-    }
-  }, [error, dispatch]);
 
   const validate = () => {
     const e = {};
@@ -62,18 +57,17 @@ const TicketModal = ({ isOpen, onClose, ticket, members }) => {
       note: form.note.trim(),
     };
 
-    if (isEdit) {
-      const result = await dispatch(editTicket({ ticketId: ticket._id, ...payload }));
-      if (!result.error) {
+    try {
+      if (isEdit) {
+        await updateTicket({ ticketId: ticket._id, ...payload }).unwrap();
         enqueueSnackbar("Ticket updated!", { variant: "success" });
-        onClose();
-      }
-    } else {
-      const result = await dispatch(addTicket({ memberId: form.memberId, ...payload }));
-      if (!result.error) {
+      } else {
+        await createTicket({ memberId: form.memberId, ...payload }).unwrap();
         enqueueSnackbar("Ticket created!", { variant: "success" });
-        onClose();
       }
+      onClose();
+    } catch (err) {
+      enqueueSnackbar(err?.data || "Failed to save ticket", { variant: "error" });
     }
   };
 

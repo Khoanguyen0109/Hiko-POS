@@ -1,10 +1,14 @@
 import { useState, useEffect, useMemo } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { MdSave, MdCancel, MdInventory, MdAttachMoney, MdBusiness, MdInfo } from "react-icons/md";
-import { createStorageImportAction, editStorageImport } from "../../redux/slices/storageImportSlice";
-import { fetchStorageItems } from "../../redux/slices/storageItemSlice";
-import { fetchActiveSuppliers } from "../../redux/slices/supplierSlice";
-import { fetchAllStores } from "../../redux/slices/storeSlice";
+import {
+  useGetStorageItemsQuery,
+  useGetActiveSuppliersQuery,
+  useGetAllStoresQuery,
+  useCreateStorageImportMutation,
+  useUpdateStorageImportMutation,
+} from "../../redux/api/endpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 import RelatedStoreSelect from "./RelatedStoreSelect";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
@@ -30,10 +34,15 @@ const ImportModal = ({
   importRecord = null, 
   onSuccess 
 }) => {
-  const dispatch = useDispatch();
-  const { items: storageItems } = useSelector((state) => state.storageItems);
-  const { activeSuppliers } = useSelector((state) => state.suppliers);
-  const { allStores, activeStore } = useSelector((state) => state.store);
+  const { activeStore } = useSelector((state) => state.store);
+  const { data: itemsResult } = useGetStorageItemsQuery({ isActive: true }, { skip: !isOpen });
+  const { data: suppliersResult } = useGetActiveSuppliersQuery(undefined, { skip: !isOpen });
+  const { data: storesResult } = useGetAllStoresQuery(undefined, { skip: !isOpen });
+  const storageItems = unwrapList(itemsResult);
+  const activeSuppliers = unwrapList(suppliersResult);
+  const allStores = unwrapList(storesResult);
+  const [createStorageImport] = useCreateStorageImportMutation();
+  const [updateStorageImport] = useUpdateStorageImportMutation();
 
   const initialFormData = useMemo(() => ({
     storageItemId: "",
@@ -76,14 +85,6 @@ const ImportModal = ({
     ),
     [allStores, activeStore]
   );
-
-  useEffect(() => {
-    if (isOpen) {
-      dispatch(fetchStorageItems({ isActive: true }));
-      dispatch(fetchActiveSuppliers());
-      dispatch(fetchAllStores());
-    }
-  }, [isOpen, dispatch]);
 
   useEffect(() => {
     if (importRecord && mode !== "create") {
@@ -172,28 +173,21 @@ const ImportModal = ({
         notes: formData.notes || undefined
       };
 
-      let result;
-      if (mode === "create") {
-        result = await dispatch(createStorageImportAction(submitData));
-      } else {
-        result = await dispatch(editStorageImport({ id: importRecord._id, ...submitData }));
-      }
+      const result = mode === "create"
+        ? await createStorageImport(submitData).unwrap()
+        : await updateStorageImport({ id: importRecord._id, ...submitData }).unwrap();
 
-      if (result.meta.requestStatus === 'fulfilled') {
-        if (mode === "create") {
-          setFormData(initialFormData);
-          setError("");
-          enqueueSnackbar("Import created successfully!", { variant: "success" });
-        } else {
-          enqueueSnackbar("Import updated successfully!", { variant: "success" });
-        }
-        onSuccess?.(result.payload);
-        onClose();
+      if (mode === "create") {
+        setFormData(initialFormData);
+        setError("");
+        enqueueSnackbar("Import created successfully!", { variant: "success" });
       } else {
-        throw new Error(result.payload || `Failed to ${mode} import`);
+        enqueueSnackbar("Import updated successfully!", { variant: "success" });
       }
+      onSuccess?.(result);
+      onClose();
     } catch (err) {
-      const errorMsg = err.message || err.response?.data?.message || `Failed to ${mode} import`;
+      const errorMsg = err?.data || err.message || `Failed to ${mode} import`;
       setError(errorMsg);
       enqueueSnackbar(errorMsg, { variant: "error" });
     } finally {

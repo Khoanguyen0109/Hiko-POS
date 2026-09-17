@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { skipToken } from "@reduxjs/toolkit/query/react";
 import PropTypes from "prop-types";
 import { MdClose, MdAdd, MdDelete, MdCalculate } from "react-icons/md";
 import Autocomplete from "../shared/Autocomplete";
@@ -9,12 +9,12 @@ import {
   renderRecipeStorageItemOption,
 } from "../storage/storageItemAutocompleteUtils";
 import {
-  saveToppingRecipe,
-  fetchToppingRecipeByToppingId,
-  clearCurrentToppingRecipe,
-} from "../../redux/slices/toppingRecipeSlice";
-import { fetchStorageItems } from "../../redux/slices/storageItemSlice";
-import { fetchToppings } from "../../redux/slices/toppingSlice";
+  useGetStorageItemsQuery,
+  useGetToppingsQuery,
+  useGetToppingRecipeByToppingIdQuery,
+  useCreateOrUpdateToppingRecipeMutation,
+} from "../../redux/api/endpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 import { enqueueSnackbar } from "notistack";
 import { formatVND } from "../../utils";
 import {
@@ -37,12 +37,34 @@ const processLines = (lines = []) =>
   }));
 
 const ToppingRecipeModal = ({ isOpen, onClose, topping, onSuccess }) => {
-  const dispatch = useDispatch();
-  const { items: storageItems } = useSelector((state) => state.storageItems);
-  const { toppings } = useSelector((state) => state.toppings);
-  const { currentRecipe, saving } = useSelector((state) => state.toppingRecipes);
-
   const [selectedTopping, setSelectedTopping] = useState(null);
+  const activeTopping = selectedTopping || topping;
+  const toppingId = activeTopping?._id;
+
+  const { data: itemsResult } = useGetStorageItemsQuery(
+    { isActive: true, limit: 1000 },
+    { skip: !isOpen }
+  );
+  const { data: toppingsResult } = useGetToppingsQuery({}, { skip: !isOpen || Boolean(topping) });
+  const {
+    data: recipeResult,
+    isSuccess: recipeSuccess,
+    isError: recipeError,
+    error: recipeQueryError,
+    isLoading: recipeLoading,
+  } = useGetToppingRecipeByToppingIdQuery(isOpen && toppingId ? toppingId : skipToken);
+  const [createOrUpdateToppingRecipe, { isLoading: saving }] =
+    useCreateOrUpdateToppingRecipeMutation();
+  const storageItems = unwrapList(itemsResult);
+  const toppings = unwrapList(toppingsResult);
+
+  const currentRecipe = !isOpen || !toppingId || recipeLoading
+    ? undefined
+    : recipeError
+      ? (recipeQueryError?.status === 404 ? null : undefined)
+      : recipeSuccess
+        ? (recipeResult || null)
+        : undefined;
   const [formData, setFormData] = useState({
     toppingId: "",
     ingredients: [emptyLine()],
@@ -53,8 +75,6 @@ const ToppingRecipeModal = ({ isOpen, onClose, topping, onSuccess }) => {
     otherCost: 0,
   });
   const [ingredientCost, setIngredientCost] = useState(0);
-
-  const activeTopping = selectedTopping || topping;
 
   const storageItemOptions = useMemo(
     () => buildRecipeStorageItemOptions(storageItems, formatVND),
@@ -79,29 +99,12 @@ const ToppingRecipeModal = ({ isOpen, onClose, topping, onSuccess }) => {
   }, [formData.ingredients, storageItems]);
 
   useEffect(() => {
-    if (isOpen) {
-      dispatch(fetchStorageItems({ isActive: true, limit: 1000 }));
-      if (!topping) {
-        dispatch(fetchToppings({}));
-      }
-    }
-    return () => {
-      if (!isOpen) {
-        dispatch(clearCurrentToppingRecipe());
-      }
-    };
-  }, [isOpen, topping, dispatch]);
-
-  useEffect(() => {
     if (topping && isOpen) {
       setSelectedTopping(topping);
-      dispatch(clearCurrentToppingRecipe());
-      dispatch(fetchToppingRecipeByToppingId(topping._id));
     } else if (!topping && isOpen) {
       setSelectedTopping(null);
-      dispatch(clearCurrentToppingRecipe());
     }
-  }, [topping, isOpen, dispatch]);
+  }, [topping, isOpen]);
 
   useEffect(() => {
     if (!activeTopping || !isOpen) return;
@@ -146,12 +149,10 @@ const ToppingRecipeModal = ({ isOpen, onClose, topping, onSuccess }) => {
 
   const totalCost = getRecipeTotalCost(ingredientCost, formData.otherCost);
 
-  const handleToppingSelect = (toppingId) => {
-    const selected = toppings.find((entry) => entry._id === toppingId);
+  const handleToppingSelect = (nextToppingId) => {
+    const selected = toppings.find((entry) => entry._id === nextToppingId);
     if (selected) {
       setSelectedTopping(selected);
-      dispatch(clearCurrentToppingRecipe());
-      dispatch(fetchToppingRecipeByToppingId(toppingId));
     }
   };
 
@@ -196,12 +197,12 @@ const ToppingRecipeModal = ({ isOpen, onClose, topping, onSuccess }) => {
     }
 
     try {
-      await dispatch(saveToppingRecipe(formData)).unwrap();
+      await createOrUpdateToppingRecipe(formData).unwrap();
       enqueueSnackbar("Topping recipe saved and cost updated", { variant: "success" });
       onSuccess?.();
       onClose();
     } catch (error) {
-      enqueueSnackbar(error || "Failed to save topping recipe", { variant: "error" });
+      enqueueSnackbar(error?.data || "Failed to save topping recipe", { variant: "error" });
     }
   };
 

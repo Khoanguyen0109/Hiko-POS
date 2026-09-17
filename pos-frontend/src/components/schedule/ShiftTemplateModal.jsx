@@ -1,21 +1,19 @@
 import { BRAND_PRIMARY } from "../../constants/colors.js";
 import { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { MdSave, MdAccessTime, MdColorLens } from "react-icons/md";
 import BottomSheet from "../shared/BottomSheet";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
 import {
-  createNewShiftTemplate,
-  updateExistingShiftTemplate,
-  clearError
-} from "../../redux/slices/shiftTemplateSlice";
+  useCreateShiftTemplateMutation,
+  useUpdateShiftTemplateMutation,
+} from "../../redux/api/endpoints";
 
 const ShiftTemplateModal = ({ isOpen, onClose, mode, template }) => {
-  const dispatch = useDispatch();
-  const { createLoading, updateLoading, error } = useSelector(
-    (state) => state.shiftTemplates
-  );
+  const [createShiftTemplate, { isLoading: createLoading }] =
+    useCreateShiftTemplateMutation();
+  const [updateShiftTemplate, { isLoading: updateLoading }] =
+    useUpdateShiftTemplateMutation();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -53,13 +51,6 @@ const ShiftTemplateModal = ({ isOpen, onClose, mode, template }) => {
     }
     setErrors({});
   }, [isEditMode, template, isOpen]);
-
-  useEffect(() => {
-    if (error) {
-      enqueueSnackbar(error, { variant: "error" });
-      dispatch(clearError());
-    }
-  }, [error, dispatch]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -102,20 +93,18 @@ const ShiftTemplateModal = ({ isOpen, onClose, mode, template }) => {
 
     try {
       if (isEditMode) {
-        await dispatch(
-          updateExistingShiftTemplate({
-            id: template._id,
-            data: formData
-          })
-        ).unwrap();
+        await updateShiftTemplate({
+          id: template._id,
+          ...formData
+        }).unwrap();
         enqueueSnackbar("Shift template updated successfully!", { variant: "success" });
       } else {
-        await dispatch(createNewShiftTemplate(formData)).unwrap();
+        await createShiftTemplate(formData).unwrap();
         enqueueSnackbar("Shift template created successfully!", { variant: "success" });
       }
       onClose();
     } catch (error) {
-      enqueueSnackbar(error || "Operation failed", { variant: "error" });
+      enqueueSnackbar(error?.data || error || "Operation failed", { variant: "error" });
     }
   };
 

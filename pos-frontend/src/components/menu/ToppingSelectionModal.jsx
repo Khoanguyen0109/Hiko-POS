@@ -3,12 +3,15 @@ import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
 import { MdAdd, MdRemove } from "react-icons/md";
 import BottomSheet from "../shared/BottomSheet";
-import { fetchToppingsByCategory, addToppingToItem, removeToppingFromItem } from "../../redux/slices/toppingSlice";
+import { addToppingToItem, removeToppingFromItem } from "../../redux/slices/toppingSlice";
+import { useGetToppingsByCategoryQuery } from "../../redux/api/endpoints/catalogEndpoints";
 import { formatVND } from "../../utils";
 
 const ToppingSelectionModal = ({ isOpen, onClose, dish, onConfirm }) => {
   const dispatch = useDispatch();
-  const { toppingsByCategory, loading, error } = useSelector((state) => state.toppings);
+  const { data: toppingsByCategoryData, isLoading: loading, error } =
+    useGetToppingsByCategoryQuery(undefined, { skip: !isOpen });
+  const toppingsByCategory = toppingsByCategoryData ?? {};
   const selectedToppings = useSelector((state) => state.toppings.selectedToppings[dish?._id] || []);
 
   const [localToppings, setLocalToppings] = useState({});
@@ -16,8 +19,6 @@ const ToppingSelectionModal = ({ isOpen, onClose, dish, onConfirm }) => {
 
   useEffect(() => {
     if (isOpen) {
-      dispatch(fetchToppingsByCategory());
-      
       // Initialize local toppings from Redux state
       const initialToppings = {};
       selectedToppings.forEach(({ toppingId, quantity }) => {
@@ -25,7 +26,7 @@ const ToppingSelectionModal = ({ isOpen, onClose, dish, onConfirm }) => {
       });
       setLocalToppings(initialToppings);
     }
-  }, [isOpen, dispatch, selectedToppings]);
+  }, [isOpen, selectedToppings]);
 
   useEffect(() => {
     // Calculate total toppings price
@@ -158,7 +159,7 @@ const ToppingSelectionModal = ({ isOpen, onClose, dish, onConfirm }) => {
 
           {error && (
             <div className="text-center py-8">
-              <div className="text-red-400">Error: {error}</div>
+              <div className="text-red-400">Error: {error?.data || error}</div>
             </div>
           )}
 

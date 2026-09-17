@@ -1,23 +1,20 @@
 import { BRAND_PRIMARY } from "../../constants/colors.js";
-import { useEffect, useMemo } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useMemo } from "react";
+import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { MdStore, MdAccessTime, MdCalendarToday, MdAccountBalanceWallet } from "react-icons/md";
 import PropTypes from "prop-types";
-import { fetchMySchedulesAllStores } from "../../redux/slices/scheduleSlice";
+import { useGetMySchedulesAllStoresQuery } from "../../redux/api/endpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 import { getWeekDates, getDayName, formatDate, getLocalDateString } from "../../utils/dateUtils";
 import { ROUTES } from "../../constants";
 import LoadingState from "../shared/LoadingState";
 
 const MyScheduleView = ({ year, week }) => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { myAllStoresSchedules, myAllStoresLoading } = useSelector((state) => state.schedules);
+  const { data: schedulesResult, isLoading } = useGetMySchedulesAllStoresQuery({ year, week });
+  const myAllStoresSchedules = unwrapList(schedulesResult);
   const activeStoreId = useSelector((state) => state.store.activeStore?._id || "");
-
-  useEffect(() => {
-    dispatch(fetchMySchedulesAllStores({ year, week }));
-  }, [dispatch, year, week]);
 
   const weekDates = getWeekDates(year, week);
 
@@ -63,7 +60,7 @@ const MyScheduleView = ({ year, week }) => {
     });
   };
 
-  if (myAllStoresLoading) {
+  if (isLoading) {
     return <LoadingState centered className="py-20" />;
   }
 

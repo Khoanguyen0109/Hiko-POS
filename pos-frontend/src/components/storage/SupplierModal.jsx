@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import { useDispatch } from "react-redux";
 import { MdSave, MdCancel, MdBusiness, MdEmail, MdPhone, MdLocationOn, MdDescription } from "react-icons/md";
 import BottomSheet from "../shared/BottomSheet";
-import { createSupplierAction, editSupplier } from "../../redux/slices/supplierSlice";
+import {
+  useCreateSupplierMutation,
+  useUpdateSupplierMutation,
+} from "../../redux/api/endpoints";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
 
@@ -13,7 +15,8 @@ const SupplierModal = ({
   supplier = null, 
   onSuccess 
 }) => {
-  const dispatch = useDispatch();
+  const [createSupplier] = useCreateSupplierMutation();
+  const [updateSupplier] = useUpdateSupplierMutation();
   const initialFormData = useMemo(() => ({
     name: "",
     code: "",
@@ -82,28 +85,21 @@ const SupplierModal = ({
         }
       });
 
-      let result;
-      if (mode === "create") {
-        result = await dispatch(createSupplierAction(submitData));
-      } else {
-        result = await dispatch(editSupplier({ id: supplier._id, ...submitData }));
-      }
+      const result = mode === "create"
+        ? await createSupplier(submitData).unwrap()
+        : await updateSupplier({ id: supplier._id, ...submitData }).unwrap();
 
-      if (result.meta.requestStatus === 'fulfilled') {
-        if (mode === "create") {
-          setFormData(initialFormData);
-          setError("");
-          enqueueSnackbar("Supplier created successfully!", { variant: "success" });
-        } else {
-          enqueueSnackbar("Supplier updated successfully!", { variant: "success" });
-        }
-        onSuccess?.(result.payload);
-        onClose();
+      if (mode === "create") {
+        setFormData(initialFormData);
+        setError("");
+        enqueueSnackbar("Supplier created successfully!", { variant: "success" });
       } else {
-        throw new Error(result.payload || `Failed to ${mode} supplier`);
+        enqueueSnackbar("Supplier updated successfully!", { variant: "success" });
       }
+      onSuccess?.(result);
+      onClose();
     } catch (err) {
-      const errorMsg = err.message || err.response?.data?.message || `Failed to ${mode} supplier`;
+      const errorMsg = err?.data || err.message || `Failed to ${mode} supplier`;
       setError(errorMsg);
       enqueueSnackbar(errorMsg, { variant: "error" });
     } finally {

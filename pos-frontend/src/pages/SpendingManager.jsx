@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { useSelector } from "react-redux";
 import PropTypes from "prop-types";
+import { enqueueSnackbar } from "notistack";
 import { 
   MdAdd, 
   MdSearch, 
@@ -18,17 +19,16 @@ import {
   MdRadioButtonUnchecked
 } from "react-icons/md";
 import {
-  fetchSpending,
-  fetchSpendingCategories,
-  fetchVendors,
-  fetchSpendingDashboard,
-  removeSpending,
-  removeSpendingCategory,
-  removeVendor,
-  editSpending,
-  setFilters,
-  setPagination
-} from "../redux/slices/spendingSlice";
+  useGetSpendingQuery,
+  useGetSpendingCategoriesQuery,
+  useGetVendorsQuery,
+  useGetSpendingDashboardQuery,
+  useDeleteSpendingMutation,
+  useDeleteSpendingCategoryMutation,
+  useDeleteVendorMutation,
+  useUpdateSpendingMutation,
+} from "../redux/api/endpoints";
+import { unwrapList, unwrapPaginated } from "../redux/api/queryResult";
 import { formatVND, getTodayDate } from "../utils";
 import SpendingModal from "../components/spending/SpendingModal";
 import CategoryModal from "../components/spending/CategoryModal";
@@ -39,32 +39,14 @@ import EmptyState from "../components/shared/EmptyState";
 import HeaderActionButton from "../components/shared/HeaderActionButton";
 
 const SpendingManager = () => {
-  const dispatch = useDispatch();
-  
-  // Redux state
-  const {
-    items: spending,
-    categories,
-    vendors,
-    dashboardData,
-    loading,
-    error,
-    filters: reduxFilters,
-    pagination: reduxPagination,
-    filterSummary
-  } = useSelector((state) => state.spending);
-
-  // Get user role
   const { role } = useSelector((state) => state.user);
   const isAdmin = role === "Admin";
 
-  // Local UI state
   const [activeTab, setActiveTab] = useState("spending");
-  
-  // Get today's date for default filtering
   const today = getTodayDate();
-  
-  // Local filter state (for form inputs before applying to Redux)
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 10;
+
   const [localFilters, setLocalFilters] = useState({
     startDate: today,
     endDate: today,
@@ -73,64 +55,72 @@ const SpendingManager = () => {
     paymentStatus: "all",
     search: ""
   });
+  const [appliedFilters, setAppliedFilters] = useState({
+    startDate: today,
+    endDate: today,
+    category: null,
+    vendor: null,
+    paymentStatus: null,
+  });
 
-  // Modals
   const [showSpendingModal, setShowSpendingModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showVendorModal, setShowVendorModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalMode, setModalMode] = useState("create"); // create, edit, view
 
-  // const user = getStoredUser();
+  const spendingParams = useMemo(() => {
+    const params = {
+      page,
+      limit: itemsPerPage,
+      ...appliedFilters,
+    };
+    Object.keys(params).forEach((key) => {
+      const value = params[key];
+      if (
+        value === "" ||
+        value === "all" ||
+        value === null ||
+        value === undefined ||
+        (Array.isArray(value) && value.length === 0)
+      ) {
+        delete params[key];
+      }
+    });
+    return params;
+  }, [page, appliedFilters]);
 
-  // Define callback functions first
-  const loadInitialData = useCallback(async () => {
-    try {
-      console.log("🔄 Loading initial spending data...");
-      const results = await Promise.all([
-        dispatch(fetchSpendingCategories()),
-        dispatch(fetchVendors())
-      ]);
-      console.log("✅ Initial data loaded:", results);
-    } catch (err) {
-      console.error("❌ Error loading initial data:", err);
-    }
-  }, [dispatch]);
+  const { data: spendingResult, isLoading: spendingLoading, error } =
+    useGetSpendingQuery(spendingParams, { skip: activeTab !== "spending" });
+  const { items: spending, pagination: spendingPagination } = unwrapPaginated(spendingResult);
+  const { data: categoriesResult, isLoading: categoriesLoading } = useGetSpendingCategoriesQuery();
+  const { data: vendorsResult, isLoading: vendorsLoading } = useGetVendorsQuery();
+  const { data: dashboardData, isLoading: dashboardLoading } = useGetSpendingDashboardQuery(
+    undefined,
+    { skip: activeTab !== "analytics" }
+  );
+  const categories = unwrapList(categoriesResult);
+  const vendors = unwrapList(vendorsResult);
+  const [deleteSpending] = useDeleteSpendingMutation();
+  const [deleteSpendingCategory] = useDeleteSpendingCategoryMutation();
+  const [deleteVendor] = useDeleteVendorMutation();
+  const [updateSpending] = useUpdateSpendingMutation();
 
-  const loadSpending = useCallback(async () => {
-    try {
-      const params = {
-        page: reduxPagination.currentPage,
-        limit: reduxPagination.itemsPerPage,
-        ...reduxFilters
-      };
-      
-      // Remove empty filters
-      Object.keys(params).forEach(key => {
-        const value = params[key];
-        if (
-          value === "" ||
-          value === "all" ||
-          value === null ||
-          (Array.isArray(value) && value.length === 0)
-        ) {
-          delete params[key];
-        }
-      });
+  const pagination = {
+    currentPage: spendingPagination?.currentPage ?? page,
+    totalPages: spendingPagination?.totalPages ?? 1,
+    totalCount: spendingPagination?.totalCount ?? spendingPagination?.totalItems ?? 0,
+    limit: spendingPagination?.limit ?? itemsPerPage,
+  };
+  const filterSummary = {
+    totalAmount: spendingResult?.summary?.totalAmount ?? 0,
+    totalCount: pagination.totalCount,
+  };
+  const loading = spendingLoading || categoriesLoading || vendorsLoading;
 
-      await dispatch(fetchSpending(params));
-    } catch (err) {
-      console.error("Error loading spending:", err);
-    }
-  }, [dispatch, reduxPagination.currentPage, reduxPagination.itemsPerPage, reduxFilters]);
-
-  const loadDashboard = useCallback(async () => {
-    try {
-      await dispatch(fetchSpendingDashboard());
-    } catch (err) {
-      console.error("Error loading dashboard:", err);
-    }
-  }, [dispatch]);
+  useEffect(() => {
+    document.title = "POS | Spending Management";
+  }, []);
 
   const handleFilterChange = (key, value) => {
     setLocalFilters(prev => ({ ...prev, [key]: value }));
@@ -149,35 +139,15 @@ const SpendingManager = () => {
   };
 
   const applyFilters = useCallback(() => {
-    // Convert local filters to Redux format
-    const reduxFilterFormat = {
+    setAppliedFilters({
       startDate: localFilters.startDate || null,
       endDate: localFilters.endDate || null,
       category: localFilters.categories.length > 0 ? localFilters.categories.join(",") : null,
       vendor: localFilters.vendor !== "all" ? localFilters.vendor : null,
       paymentStatus: localFilters.paymentStatus !== "all" ? localFilters.paymentStatus : null
-    };
-    
-    dispatch(setFilters(reduxFilterFormat));
-    dispatch(setPagination({ currentPage: 1 }));
-  }, [localFilters, dispatch]);
-
-  // Effects after callback definitions
-  useEffect(() => {
-    document.title = "POS | Spending Management";
-    loadInitialData();
-    
-    // Apply default filters (today's date) on mount
-    applyFilters();
-  }, [loadInitialData, applyFilters]);
-
-  useEffect(() => {
-    if (activeTab === "spending") {
-      loadSpending();
-    } else if (activeTab === "analytics") {
-      loadDashboard();
-    }
-  }, [activeTab, reduxFilters, reduxPagination.currentPage, loadSpending, loadDashboard]);
+    });
+    setPage(1);
+  }, [localFilters]);
 
   const handleDelete = async (id, type = "spending") => {
     const confirmMessage =
@@ -188,33 +158,29 @@ const SpendingManager = () => {
 
     try {
       if (type === "spending") {
-        await dispatch(removeSpending(id));
+        await deleteSpending(id).unwrap();
       } else if (type === "category") {
-        await dispatch(removeSpendingCategory(id));
-        await loadSpending();
+        await deleteSpendingCategory(id).unwrap();
       } else if (type === "vendor") {
-        await dispatch(removeVendor(id));
+        await deleteVendor(id).unwrap();
       }
+      enqueueSnackbar("Deleted successfully", { variant: "success" });
     } catch (err) {
-      console.error(`Error deleting ${type}:`, err);
+      enqueueSnackbar(err?.data || `Failed to delete ${type}`, { variant: "error" });
     }
   };
 
   const handleTogglePaid = async (spending) => {
     try {
       const newStatus = spending.paymentStatus === "paid" ? "pending" : "paid";
-      const updateData = {
+      await updateSpending({
         spendingId: spending._id,
         paymentStatus: newStatus,
         paymentDate: newStatus === "paid" ? new Date().toISOString() : spending.paymentDate
-      };
-      
-      await dispatch(editSpending(updateData)).unwrap();
-      // Reload spending to refresh the list
-      await loadSpending();
+      }).unwrap();
+      enqueueSnackbar("Payment status updated", { variant: "success" });
     } catch (err) {
-      console.error("Error toggling payment status:", err);
-      alert(err || "Failed to update payment status");
+      enqueueSnackbar(err?.data || "Failed to update payment status", { variant: "error" });
     }
   };
 
@@ -297,7 +263,7 @@ const SpendingManager = () => {
 
       {error ? (
         <div className="container mx-auto px-4 md:px-6 pt-4">
-          <div className="rounded-lg bg-red-500 p-4 text-white">{error}</div>
+          <div className="rounded-lg bg-red-500 p-4 text-white">{error?.data || "Failed to load spending"}</div>
         </div>
       ) : null}
 
@@ -308,14 +274,14 @@ const SpendingManager = () => {
             categories={categories}
             vendors={vendors}
             filters={localFilters}
-            pagination={reduxPagination}
+            pagination={pagination}
             filterSummary={filterSummary}
-            loading={loading}
+            loading={spendingLoading}
             isAdmin={isAdmin}
             onFilterChange={handleFilterChange}
             onCategoryToggle={handleCategoryToggle}
             onApplyFilters={applyFilters}
-            onPageChange={(page) => dispatch(setPagination({ currentPage: page }))}
+            onPageChange={setPage}
             onEdit={(item) => openModal("edit", item, "spending")}
             onView={(item) => openModal("view", item, "spending")}
             onDelete={(id) => handleDelete(id, "spending")}
@@ -344,7 +310,7 @@ const SpendingManager = () => {
         {activeTab === "analytics" && (
           <AnalyticsTab
             dashboardData={dashboardData}
-            loading={loading}
+            loading={dashboardLoading}
           />
         )}
       </div>
@@ -358,7 +324,6 @@ const SpendingManager = () => {
         categories={categories}
         vendors={vendors}
         onSuccess={() => {
-          loadSpending();
           closeModals();
         }}
       />
@@ -369,7 +334,6 @@ const SpendingManager = () => {
         mode={modalMode}
         category={selectedItem}
         onSuccess={() => {
-          loadInitialData();
           closeModals();
         }}
       />
@@ -380,7 +344,6 @@ const SpendingManager = () => {
         mode={modalMode}
         vendor={selectedItem}
         onSuccess={() => {
-          loadInitialData();
           closeModals();
         }}
       />

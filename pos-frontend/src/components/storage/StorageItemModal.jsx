@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import { useDispatch } from "react-redux";
 import { MdSave, MdCancel, MdInventory, MdCategory, MdScale, MdTrendingUp } from "react-icons/md";
 import BottomSheet from "../shared/BottomSheet";
-import { createStorageItemAction, editStorageItem } from "../../redux/slices/storageItemSlice";
+import {
+  useCreateStorageItemMutation,
+  useUpdateStorageItemMutation,
+} from "../../redux/api/endpoints";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
 import { PACKAGING_UNITS } from "../../utils/recipeCost";
@@ -17,7 +19,8 @@ const StorageItemModal = ({
   item = null, 
   onSuccess 
 }) => {
-  const dispatch = useDispatch();
+  const [createStorageItem] = useCreateStorageItemMutation();
+  const [updateStorageItem] = useUpdateStorageItemMutation();
   const initialFormData = useMemo(() => ({
     name: "",
     code: "",
@@ -122,28 +125,21 @@ const StorageItemModal = ({
         }
       });
 
-      let result;
-      if (mode === "create") {
-        result = await dispatch(createStorageItemAction(submitData));
-      } else {
-        result = await dispatch(editStorageItem({ id: item._id, ...submitData }));
-      }
+      const result = mode === "create"
+        ? await createStorageItem(submitData).unwrap()
+        : await updateStorageItem({ id: item._id, ...submitData }).unwrap();
 
-      if (result.meta.requestStatus === 'fulfilled') {
-        if (mode === "create") {
-          setFormData(initialFormData);
-          setError("");
-          enqueueSnackbar("Storage item created successfully!", { variant: "success" });
-        } else {
-          enqueueSnackbar("Storage item updated successfully!", { variant: "success" });
-        }
-        onSuccess?.(result.payload);
-        onClose();
+      if (mode === "create") {
+        setFormData(initialFormData);
+        setError("");
+        enqueueSnackbar("Storage item created successfully!", { variant: "success" });
       } else {
-        throw new Error(result.payload || `Failed to ${mode} storage item`);
+        enqueueSnackbar("Storage item updated successfully!", { variant: "success" });
       }
+      onSuccess?.(result);
+      onClose();
     } catch (err) {
-      const errorMsg = err.message || err.response?.data?.message || `Failed to ${mode} storage item`;
+      const errorMsg = err?.data || err.message || `Failed to ${mode} storage item`;
       setError(errorMsg);
       enqueueSnackbar(errorMsg, { variant: "error" });
     } finally {

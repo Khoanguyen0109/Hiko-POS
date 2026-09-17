@@ -41,6 +41,8 @@ interface OrderItem {
     dishId: string | Types.ObjectId;
     quantity: number;
     category?: string;
+    pricePerQuantity?: number;
+    price?: number;
 }
 
 type CategoryBreakdown = Record<string, number>;
@@ -67,6 +69,82 @@ class RewardService {
             }
         }
         return breakdown;
+    }
+
+    /**
+     * Unit price used to pick the complimentary dish (matches bill discount).
+     */
+    static unitPrice(item: OrderItem): number {
+        if (item.pricePerQuantity != null) return item.pricePerQuantity;
+        const quantity = item.quantity && item.quantity > 0 ? item.quantity : 1;
+        if (item.price != null) return item.price / quantity;
+        return 0;
+    }
+
+    /**
+     * Drop one quantity of the cheapest item — the dish made free by a free_dish reward.
+     * That complimentary dish must not earn progress toward the next reward.
+     */
+    static excludeOneFreeDish(items: OrderItem[]): OrderItem[] {
+        if (items.length === 0) return [];
+
+        let cheapestIndex = 0;
+        let cheapestPrice = RewardService.unitPrice(items[0]);
+        for (let i = 1; i < items.length; i++) {
+            const price = RewardService.unitPrice(items[i]);
+            if (price < cheapestPrice) {
+                cheapestPrice = price;
+                cheapestIndex = i;
+            }
+        }
+
+        return items
+            .map((item, index) => (
+                index === cheapestIndex
+                    ? { ...item, quantity: item.quantity - 1 }
+                    : { ...item }
+            ))
+            .filter((item) => item.quantity > 0);
+    }
+
+    /**
+     * Items and quantity that should increment loyalty progress.
+     * A redeemed free_dish ("Free 1") is excluded from the chain.
+     */
+    static getEarnableItems(
+        items: OrderItem[],
+        rewardType?: string | null
+    ): { items: OrderItem[]; dishCount: number } {
+        const countable = rewardType === "free_dish"
+            ? RewardService.excludeOneFreeDish(items)
+            : items.map((item) => ({ ...item }));
+        const dishCount = countable.reduce((sum, item) => sum + item.quantity, 0);
+        return { items: countable, dishCount };
+    }
+
+    /**
+     * The single complimentary dish excluded from progress when Free 1 is used.
+     */
+    static getFreeDishExclusion(items: OrderItem[]): OrderItem | null {
+        if (items.length === 0) return null;
+
+        let cheapest = items[0];
+        let cheapestPrice = RewardService.unitPrice(items[0]);
+        for (let i = 1; i < items.length; i++) {
+            const price = RewardService.unitPrice(items[i]);
+            if (price < cheapestPrice) {
+                cheapest = items[i];
+                cheapestPrice = price;
+            }
+        }
+
+        return {
+            dishId: cheapest.dishId,
+            quantity: 1,
+            category: cheapest.category,
+            pricePerQuantity: cheapest.pricePerQuantity,
+            price: cheapest.price
+        };
     }
 
     static categoryIdKey(category: EligibleCategoryRef): string {

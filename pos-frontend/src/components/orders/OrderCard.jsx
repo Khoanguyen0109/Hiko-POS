@@ -1,7 +1,7 @@
 import { formatDateAndTime, formatVND } from "../../utils/index";
 import { useNavigate } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
-import { removeOrder } from "../../redux/slices/orderSlice";
+import { useSelector } from "react-redux";
+import { useDeleteOrderMutation } from "../../redux/api/endpoints";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
 import { Card, StatusBadge } from "../ui";
@@ -25,7 +25,7 @@ import {
 
 const OrderCard = ({ order }) => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
+  const [deleteOrder] = useDeleteOrderMutation();
   const { role } = useSelector((state) => state.user);
   const { v2UiEnabled } = useV2Ui();
   const isAdmin = role === "Admin";
@@ -60,10 +60,10 @@ const OrderCard = ({ order }) => {
 
     if (confirmDelete) {
       try {
-        await dispatch(removeOrder(order._id)).unwrap();
+        await deleteOrder(order._id).unwrap();
         enqueueSnackbar("Order deleted successfully!", { variant: "success" });
       } catch (error) {
-        enqueueSnackbar(error || "Failed to delete order", {
+        enqueueSnackbar(error?.data || error || "Failed to delete order", {
           variant: "error",
         });
       }

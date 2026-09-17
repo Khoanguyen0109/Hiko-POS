@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { useLocation } from "react-router-dom";
 import { enqueueSnackbar } from "notistack";
 import {
@@ -18,11 +18,11 @@ import ShiftCheckoutCard from "../components/shiftcheckout/ShiftCheckoutCard";
 import LoadingState from "../components/shared/LoadingState";
 import EmptyState from "../components/shared/EmptyState";
 import {
-  fetchMyShiftCheckouts,
-  fetchDayShiftCheckouts,
-  deleteShiftCheckout,
-  clearShiftCheckoutError,
-} from "../redux/slices/shiftCheckoutSlice";
+  useGetMyShiftCheckoutsTodayQuery,
+  useGetDayShiftCheckoutsQuery,
+  useDeleteShiftCheckoutMutation,
+} from "../redux/api/endpoints";
+import { unwrapList } from "../redux/api/queryResult";
 import {
   CheckoutStatusBadge,
   getTotalBill,
@@ -200,7 +200,6 @@ DayCheckoutRow.propTypes = {
 };
 
 const ShiftCheckout = () => {
-  const dispatch = useDispatch();
   const location = useLocation();
   const { role, _id: userId } = useSelector((state) => state.user);
   const activeStore = useSelector((state) => state.store.activeStore);
@@ -209,16 +208,6 @@ const ShiftCheckout = () => {
   const canViewDay =
     isAdmin || storeRole === "Owner" || storeRole === "Manager";
   const canEditCheckout = canViewDay;
-
-  const {
-    myShifts,
-    loading,
-    dayCheckouts,
-    dayLoading,
-    error,
-    deleteLoading,
-    checkInLoading,
-  } = useSelector((state) => state.shiftCheckout);
 
   const [activeTab, setActiveTab] = useState(TABS.MY_SHIFT);
   const [selectedDate, setSelectedDate] = useState(getTodayDate());
@@ -229,6 +218,32 @@ const ShiftCheckout = () => {
   const [selectedMemberId, setSelectedMemberId] = useState(null);
   const [selectedMemberName, setSelectedMemberName] = useState("");
   const [selectedShiftName, setSelectedShiftName] = useState("");
+
+  const {
+    data: myShiftsResult,
+    isLoading,
+    error: myError,
+    refetch: refetchMyShifts,
+  } = useGetMyShiftCheckoutsTodayQuery(
+    { date: selectedDate },
+    { skip: activeTab !== TABS.MY_SHIFT }
+  );
+  const myShifts = unwrapList(myShiftsResult);
+
+  const {
+    data: dayResult,
+    isLoading: dayLoading,
+    error: dayError,
+    refetch: refetchDay,
+  } = useGetDayShiftCheckoutsQuery(dayDate, {
+    skip: activeTab !== TABS.DAY || !canViewDay,
+  });
+  const dayCheckouts = unwrapList(dayResult);
+
+  const [deleteCheckout, { isLoading: deleteLoading }] =
+    useDeleteShiftCheckoutMutation();
+
+  const error = myError || dayError;
 
   useEffect(() => {
     document.title = "POS | Shift Checkout";
@@ -245,23 +260,10 @@ const ShiftCheckout = () => {
   }, [location.state]);
 
   useEffect(() => {
-    if (activeTab === TABS.MY_SHIFT) {
-      dispatch(fetchMyShiftCheckouts({ date: selectedDate }));
-    }
-  }, [dispatch, activeTab, selectedDate]);
-
-  useEffect(() => {
-    if (activeTab === TABS.DAY && canViewDay) {
-      dispatch(fetchDayShiftCheckouts(dayDate));
-    }
-  }, [dispatch, activeTab, dayDate, canViewDay]);
-
-  useEffect(() => {
     if (error) {
-      enqueueSnackbar(error, { variant: "error" });
-      dispatch(clearShiftCheckoutError());
+      enqueueSnackbar(error?.data || error, { variant: "error" });
     }
-  }, [error, dispatch]);
+  }, [error]);
 
   const openCheckIn = (row) => {
     const tpl = row.schedule?.shiftTemplate;
@@ -319,11 +321,11 @@ const ShiftCheckout = () => {
       return;
     }
     try {
-      await dispatch(deleteShiftCheckout(checkout._id)).unwrap();
+      await deleteCheckout(checkout._id).unwrap();
       enqueueSnackbar("Shift checkout deleted", { variant: "success" });
-      dispatch(fetchDayShiftCheckouts(dayDate));
-    } catch {
-      // error handled via slice
+      refetchDay();
+    } catch (err) {
+      enqueueSnackbar(err?.data || err || "Failed to delete checkout", { variant: "error" });
     }
   };
 
@@ -337,8 +339,7 @@ const ShiftCheckout = () => {
   const activeDate = activeTab === TABS.DAY ? dayDate : selectedDate;
   const setActiveDate =
     activeTab === TABS.DAY ? setDayDate : setSelectedDate;
-  const isListLoading =
-    activeTab === TABS.DAY ? dayLoading : loading || checkInLoading;
+  const isListLoading = activeTab === TABS.DAY ? dayLoading : isLoading;
 
   return (
     <section className="min-h-[calc(100vh-80px)] bg-[#1f1f1f] pb-24">
@@ -487,9 +488,7 @@ const ShiftCheckout = () => {
         memberName={selectedMemberName}
         shiftName={selectedShiftName}
         refreshDate={selectedDate}
-        onSuccess={() =>
-          dispatch(fetchMyShiftCheckouts({ date: selectedDate }))
-        }
+        onSuccess={() => refetchMyShifts()}
       />
 
       <ShiftCheckoutModal
@@ -504,9 +503,9 @@ const ShiftCheckout = () => {
         refreshDate={activeTab === TABS.DAY ? dayDate : selectedDate}
         canEditCheckout={canEditCheckout}
         onSuccess={() => {
-          dispatch(fetchMyShiftCheckouts({ date: selectedDate }));
+          refetchMyShifts();
           if (activeTab === TABS.DAY && canViewDay) {
-            dispatch(fetchDayShiftCheckouts(dayDate));
+            refetchDay();
           }
         }}
       />

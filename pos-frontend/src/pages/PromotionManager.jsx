@@ -1,20 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useState } from 'react';
 import { useSnackbar } from 'notistack';
 import PromotionList from '../components/promotion/PromotionList';
 import PromotionForm from '../components/promotion/PromotionForm';
 import PromotionAnalytics from '../components/promotion/PromotionAnalytics';
-import { 
-  fetchPromotions,
-  fetchAnalytics,
-  createPromotion,
-  editPromotion,
-  removePromotion,
-  toggleStatus,
-  setFilters,
-  clearError,
-  clearAnalyticsError
-} from '../redux/slices/promotionSlice';
+import {
+  useGetPromotionsQuery,
+  useAddPromotionMutation,
+  useUpdatePromotionMutation,
+  useDeletePromotionMutation,
+  useTogglePromotionStatusMutation,
+} from '../redux/api/endpoints';
+import { unwrapList } from '../redux/api/queryResult';
 import { 
   MdAdd as PlusIcon, 
   MdBarChart as ChartBarIcon, 
@@ -25,110 +21,80 @@ import {
 } from 'react-icons/md';
 
 const PromotionManager = () => {
-  const dispatch = useDispatch();
   const { enqueueSnackbar } = useSnackbar();
-  
-  // Redux state
-  const {
-    items: promotions,
-    loading,
-    error,
-    filters,
-    totalPages,
-    currentPage,
-    totalItems,
-    analytics,
-    analyticsLoading,
-    analyticsError
-  } = useSelector(state => state.promotions);
-  
-  // Local UI state
+
+  const [filters, setFilters] = useState({
+    search: '',
+    isActive: '',
+    type: '',
+    page: 1,
+    limit: 10
+  });
   const [showForm, setShowForm] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [editingPromotion, setEditingPromotion] = useState(null);
 
-  // Effects
-  useEffect(() => {
-    dispatch(fetchPromotions(filters));
-  }, [dispatch, filters]);
+  const { data: promotionsResult, isLoading: loading } = useGetPromotionsQuery(filters);
+  const promotions = Array.isArray(promotionsResult?.promotions)
+    ? promotionsResult.promotions
+    : unwrapList(promotionsResult);
+  const pagination = promotionsResult?.pagination ?? {};
+  const [addPromotion] = useAddPromotionMutation();
+  const [updatePromotion] = useUpdatePromotionMutation();
+  const [deletePromotion] = useDeletePromotionMutation();
+  const [togglePromotionStatus] = useTogglePromotionStatusMutation();
 
-  useEffect(() => {
-    if (showAnalytics && !analytics) {
-      dispatch(fetchAnalytics());
-    }
-  }, [dispatch, showAnalytics, analytics]);
-
-  // Handle errors
-  useEffect(() => {
-    if (error) {
-      enqueueSnackbar(error, { variant: 'error' });
-      dispatch(clearError());
-    }
-  }, [error, enqueueSnackbar, dispatch]);
-
-  useEffect(() => {
-    if (analyticsError) {
-      enqueueSnackbar(analyticsError, { variant: 'error' });
-      dispatch(clearAnalyticsError());
-    }
-  }, [analyticsError, enqueueSnackbar, dispatch]);
-
-  // Handle create/update promotion
   const handlePromotionSubmit = async (promotionData) => {
     try {
-      let result;
       if (editingPromotion) {
-        result = await dispatch(editPromotion({ 
+        await updatePromotion({ 
           promotionId: editingPromotion._id, 
           ...promotionData 
-        })).unwrap();
+        }).unwrap();
         enqueueSnackbar('Promotion updated successfully!', { variant: 'success' });
       } else {
-        result = await dispatch(createPromotion(promotionData)).unwrap();
+        await addPromotion(promotionData).unwrap();
         enqueueSnackbar('Promotion created successfully!', { variant: 'success' });
       }
       setShowForm(false);
       setEditingPromotion(null);
-    } catch (error) {
-      // Error is already handled by Redux and useEffect
+    } catch (err) {
+      enqueueSnackbar(err?.data || 'Failed to save promotion', { variant: 'error' });
     }
   };
 
-  // Handle delete promotion
   const handleDeletePromotion = async (promotionId) => {
     if (!window.confirm('Are you sure you want to delete this promotion?')) {
       return;
     }
 
     try {
-      await dispatch(removePromotion(promotionId)).unwrap();
+      await deletePromotion(promotionId).unwrap();
       enqueueSnackbar('Promotion deleted successfully!', { variant: 'success' });
-    } catch (error) {
-      // Error is already handled by Redux and useEffect
+    } catch (err) {
+      enqueueSnackbar(err?.data || 'Failed to delete promotion', { variant: 'error' });
     }
   };
 
-  // Handle toggle promotion status
   const handleToggleStatus = async (promotionId) => {
     try {
-      await dispatch(toggleStatus(promotionId)).unwrap();
+      await togglePromotionStatus(promotionId).unwrap();
       enqueueSnackbar('Promotion status updated successfully!', { variant: 'success' });
-    } catch (error) {
-      // Error is already handled by Redux and useEffect
+    } catch (err) {
+      enqueueSnackbar(err?.data || 'Failed to update promotion status', { variant: 'error' });
     }
   };
 
-  // Handle edit promotion
   const handleEditPromotion = (promotion) => {
     setEditingPromotion(promotion);
     setShowForm(true);
   };
 
-  // Handle filter changes
   const handleFilterChange = (key, value) => {
-    dispatch(setFilters({
+    setFilters((prev) => ({
+      ...prev,
       [key]: value,
-      page: key !== 'page' ? 1 : value // Reset page when other filters change
+      page: key !== 'page' ? 1 : value
     }));
   };
 
@@ -240,10 +206,7 @@ const PromotionManager = () => {
         {/* Analytics Section */}
         {showAnalytics && (
           <div className="mb-6">
-            <PromotionAnalytics 
-              analytics={analytics}
-              loading={analyticsLoading}
-            />
+            <PromotionAnalytics />
           </div>
         )}
 
@@ -322,9 +285,9 @@ const PromotionManager = () => {
             promotions={promotions}
             loading={loading}
             pagination={{
-              totalPages,
-              currentPage,
-              totalItems
+              totalPages: pagination.totalPages || 1,
+              currentPage: pagination.currentPage || filters.page || 1,
+              totalItems: pagination.totalItems || pagination.totalCount || promotions.length
             }}
             onEdit={handleEditPromotion}
             onDelete={handleDeletePromotion}

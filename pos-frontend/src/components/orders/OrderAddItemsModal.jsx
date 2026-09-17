@@ -1,25 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { MdRestaurantMenu } from "react-icons/md";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchCategories } from "../../redux/slices/categorySlice";
-import { fetchDishes } from "../../redux/slices/dishSlice";
+import { useGetCategoriesQuery, useGetDishesQuery } from "../../redux/api/endpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 import DishSelectionModal from "../menu/DishSelectionModal";
 import BottomSheet from "../shared/BottomSheet";
 import defaultDishImage from "../../assets/images/hyderabadibiryani.jpg";
 import PropTypes from "prop-types";
 
 const OrderAddItemsModal = ({ onClose, onAddItem }) => {
-  const dispatch = useDispatch();
-  const { items: categories } = useSelector((state) => state.categories);
-  const { items: dishes } = useSelector((state) => state.dishes);
+  const { data: categoriesResult } = useGetCategoriesQuery();
+  const { data: dishesResult } = useGetDishesQuery();
+  const categories = unwrapList(categoriesResult);
+  const dishes = unwrapList(dishesResult);
 
   const [selectedDish, setSelectedDish] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
-
-  useEffect(() => {
-    dispatch(fetchCategories());
-    dispatch(fetchDishes());
-  }, [dispatch]);
 
   const activeCategories = categories.filter((cat) => cat.isActive);
   const filteredDishes =

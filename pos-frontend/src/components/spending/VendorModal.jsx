@@ -1,8 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
-import { useDispatch } from "react-redux";
 import { MdSave, MdCancel, MdBusiness, MdPhone } from "react-icons/md";
 import BottomSheet from "../shared/BottomSheet";
-import { createVendor, editVendor } from "../../redux/slices/spendingSlice";
+import { enqueueSnackbar } from "notistack";
+import {
+  useAddVendorMutation,
+  useUpdateVendorMutation,
+} from "../../redux/api/endpoints";
 import PropTypes from "prop-types";
 
 const VendorModal = ({ 
@@ -12,7 +15,8 @@ const VendorModal = ({
   vendor = null, 
   onSuccess 
 }) => {
-  const dispatch = useDispatch();
+  const [addVendor] = useAddVendorMutation();
+  const [updateVendor] = useUpdateVendorMutation();
   const initialFormData = useMemo(() => ({
     name: "",
     phone: "",
@@ -60,26 +64,23 @@ const VendorModal = ({
         }
       });
 
-      let result;
-      if (mode === "create") {
-        result = await dispatch(createVendor(submitData));
-      } else {
-        result = await dispatch(editVendor({ vendorId: vendor._id, ...submitData }));
-      }
+      const result = mode === "create"
+        ? await addVendor(submitData).unwrap()
+        : await updateVendor({ vendorId: vendor._id, ...submitData }).unwrap();
 
-      if (result.meta.requestStatus === 'fulfilled') {
-        // Reset form only for create mode
-        if (mode === "create") {
-          setFormData(initialFormData);
-          setError("");
-        }
-        onSuccess?.(result.payload);
-        onClose();
+      if (mode === "create") {
+        setFormData(initialFormData);
+        setError("");
+        enqueueSnackbar("Vendor created!", { variant: "success" });
       } else {
-        throw new Error(result.payload?.message || `Failed to ${mode} vendor`);
+        enqueueSnackbar("Vendor updated!", { variant: "success" });
       }
+      onSuccess?.(result);
+      onClose();
     } catch (err) {
-      setError(err.message || err.response?.data?.message || `Failed to ${mode} vendor`);
+      const errorMsg = err?.data || err.message || `Failed to ${mode} vendor`;
+      setError(errorMsg);
+      enqueueSnackbar(errorMsg, { variant: "error" });
     } finally {
       setLoading(false);
     }

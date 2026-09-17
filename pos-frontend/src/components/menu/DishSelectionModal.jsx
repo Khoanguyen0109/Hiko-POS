@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { IoMdArrowDown, IoMdArrowUp } from "react-icons/io";
 import { MdAdd, MdRemove } from "react-icons/md";
 import { FaShoppingCart } from "react-icons/fa";
 import BottomSheet from "../shared/BottomSheet";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { addItems } from "../../redux/slices/cartSlice";
-import { fetchToppingsByCategory } from "../../redux/slices/toppingSlice";
+import { useGetToppingsByCategoryQuery } from "../../redux/api/endpoints/catalogEndpoints";
 import { formatVND } from "../../utils";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
@@ -13,7 +13,9 @@ import defaultDishImage from "../../assets/images/hyderabadibiryani.jpg";
 
 const DishSelectionModal = ({ dish, selectedCategory, onClose, onAddToOrder }) => {
   const dispatch = useDispatch();
-  const { toppingsByCategory, loading: toppingsLoading } = useSelector((state) => state.toppings);
+  const { data: toppingsByCategoryData, isLoading: toppingsLoading } =
+    useGetToppingsByCategoryQuery();
+  const toppingsByCategory = toppingsByCategoryData ?? {};
   
   const [selectedVariant, setSelectedVariant] = useState(() => {
     if (dish.hasSizeVariants && dish.sizeVariants?.length > 0) {
@@ -25,11 +27,6 @@ const DishSelectionModal = ({ dish, selectedCategory, onClose, onAddToOrder }) =
   const [note, setNote] = useState("");
   const [selectedToppings, setSelectedToppings] = useState({});
   const [expandedCategories, setExpandedCategories] = useState({});
-
-  // Fetch toppings when modal opens
-  useEffect(() => {
-    dispatch(fetchToppingsByCategory());
-  }, [dispatch]);
 
   const getCurrentPrice = () => {
     if (selectedVariant) {

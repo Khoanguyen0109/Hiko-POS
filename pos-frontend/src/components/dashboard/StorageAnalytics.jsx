@@ -1,6 +1,5 @@
-import { useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { fetchStorageAnalytics } from "../../redux/slices/storageAnalyticsSlice";
+import { useMemo } from "react";
+import { useGetStorageAnalyticsQuery } from "../../redux/api/endpoints";
 import { MdStorage, MdWarning, MdTrendingUp, MdTrendingDown } from "react-icons/md";
 import { formatVND } from "../../utils";
 import { getTodayDateVietnam, getDateRangeByPeriodVietnam } from "../../utils/dateUtils";
@@ -8,32 +7,29 @@ import LoadingState from "../shared/LoadingState";
 import StoreSummariesTable from "./StoreSummariesTable";
 
 const StorageAnalytics = ({ dateFilter, customDateRange }) => {
-    const dispatch = useDispatch();
-    const { summary, items, storeSummaries, scope, loading, error } = useSelector((state) => state.storageAnalytics);
-
-    useEffect(() => {
-        const params = {};
+    const params = useMemo(() => {
+        const next = { scope: "all" };
         const today = getTodayDateVietnam();
 
         if (dateFilter === "custom" && customDateRange.startDate && customDateRange.endDate) {
-            params.startDate = customDateRange.startDate;
-            params.endDate = customDateRange.endDate;
+            next.startDate = customDateRange.startDate;
+            next.endDate = customDateRange.endDate;
         } else if (dateFilter && dateFilter !== "custom") {
             switch (dateFilter) {
                 case "today":
-                    params.startDate = today;
-                    params.endDate = today;
+                    next.startDate = today;
+                    next.endDate = today;
                     break;
                 case "week": {
                     const { start } = getDateRangeByPeriodVietnam('thisWeek');
-                    params.startDate = start;
-                    params.endDate = today;
+                    next.startDate = start;
+                    next.endDate = today;
                     break;
                 }
                 case "month": {
                     const { start } = getDateRangeByPeriodVietnam('thisMonth');
-                    params.startDate = start;
-                    params.endDate = today;
+                    next.startDate = start;
+                    next.endDate = today;
                     break;
                 }
                 default:
@@ -41,8 +37,14 @@ const StorageAnalytics = ({ dateFilter, customDateRange }) => {
             }
         }
 
-        dispatch(fetchStorageAnalytics({ ...params, scope: "all" }));
-    }, [dispatch, dateFilter, customDateRange]);
+        return next;
+    }, [dateFilter, customDateRange]);
+
+    const { data: analytics, isLoading: loading, error } = useGetStorageAnalyticsQuery(params);
+    const summary = analytics?.summary;
+    const items = analytics?.items || [];
+    const storeSummaries = analytics?.storeSummaries;
+    const scope = analytics?.scope;
 
     if (loading) {
         return <LoadingState message="Loading storage analytics..." />;
@@ -53,7 +55,7 @@ const StorageAnalytics = ({ dateFilter, customDateRange }) => {
             <div className="text-center py-12">
                 <MdStorage className="mx-auto text-6xl text-red-500 mb-4" />
                 <p className="text-red-400 text-lg mb-2">Error loading analytics</p>
-                <p className="text-[#ababab] text-sm">{error}</p>
+                <p className="text-[#ababab] text-sm">{error?.data || "Failed to load storage analytics"}</p>
             </div>
         );
     }

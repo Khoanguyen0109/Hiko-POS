@@ -1,13 +1,11 @@
 import { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { createTable } from "../../redux/slices/tableSlice";
+import { useCreateTableMutation } from "../../redux/api/endpoints";
 import { enqueueSnackbar } from "notistack"
 import PropTypes from "prop-types";
 import BottomSheet from "../shared/BottomSheet";
 
 const Modal = ({ setIsTableModalOpen }) => {
-  const dispatch = useDispatch();
-  const { loading } = useSelector((state) => state.tables);
+  const [createTable, { isLoading: loading }] = useCreateTableMutation();
   
   const [tableData, setTableData] = useState({
     tableNo: "",
@@ -23,14 +21,14 @@ const Modal = ({ setIsTableModalOpen }) => {
     e.preventDefault();
     console.log(tableData);
     
-    dispatch(createTable(tableData))
+    createTable(tableData)
       .unwrap()
       .then(() => {
         setIsTableModalOpen(false);
         enqueueSnackbar("Table created successfully!", { variant: "success" });
       })
       .catch((error) => {
-        enqueueSnackbar(error, { variant: "error" });
+        enqueueSnackbar(error?.data || error, { variant: "error" });
         console.log(error);
       });
   };

@@ -1,11 +1,18 @@
 import { FaSearch, FaClock } from "react-icons/fa";
 import OrderList from "./OrderList";
 import { useMemo } from "react";
-import { useSelector } from "react-redux";
 import { ROUTES } from "../../constants";
+import { useGetOrdersQuery } from "../../redux/api/endpoints";
+import { unwrapList } from "../../redux/api/queryResult";
+import { getTodayDate } from "../../utils";
 
 const RecentOrders = () => {
-  const { items, loading } = useSelector((state) => state.orders);
+  const today = getTodayDate();
+  const { data: ordersResult, isLoading: loading } = useGetOrdersQuery({
+    startDate: today,
+    endDate: today,
+  });
+  const items = unwrapList(ordersResult);
 
   const ordersInProgress = useMemo(() => {
     return items?.filter(order => order.orderStatus === 'progress') || [];

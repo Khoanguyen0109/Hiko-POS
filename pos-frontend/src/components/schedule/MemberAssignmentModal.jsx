@@ -1,20 +1,27 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useSelector } from "react-redux";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
 import { MdPerson, MdCheck, MdAccessTime, MdWarning, MdBlock, MdStore } from "react-icons/md";
 import BottomSheet from "../shared/BottomSheet";
-import { fetchMembers } from "../../redux/slices/memberSlice";
-import { batchAssignMembers } from "../../redux/slices/scheduleSlice";
-import { checkScheduleConflicts } from "../../https/scheduleApi";
+import {
+  useGetAllMembersQuery,
+  useBatchAssignMembersMutation,
+  useCheckScheduleConflictsMutation,
+} from "../../redux/api/endpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 import FullScreenLoader from "../shared/FullScreenLoader";
 import { isShiftOver } from "../../utils/dateUtils";
 
 const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, store, onLogExtraWork, onSaved }) => {
-  const dispatch = useDispatch();
-  const { members, loading: membersLoading } = useSelector((state) => state.members);
-  const { assignLoading } = useSelector((state) => state.schedules);
   const { activeStore } = useSelector((state) => state.store);
+  const { data: membersResult, isLoading: membersLoading } = useGetAllMembersQuery(
+    { isActive: true },
+    { skip: !isOpen }
+  );
+  const members = useMemo(() => unwrapList(membersResult), [membersResult]);
+  const [batchAssignMembers, { isLoading: assignLoading }] = useBatchAssignMembersMutation();
+  const [checkScheduleConflicts] = useCheckScheduleConflictsMutation();
 
   // Store this shift belongs to. Defaults to the active store; when assigning
   // from the all-stores view, `store` targets a different store than the active one.
@@ -48,10 +55,6 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, store
     initialMembersRef.current = ids;
     setSelectedMembers(ids);
 
-    if (!members || members.length === 0) {
-      dispatch(fetchMembers({ isActive: true }));
-    }
-
     const loadConflicts = async () => {
       setConflictsLoading(true);
       try {
@@ -61,15 +64,16 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, store
         if (activeIds.length === 0) { setConflictsLoading(false); return; }
 
         const shiftTemplateId = typeof shiftTemplate === 'object' ? shiftTemplate._id : shiftTemplate;
-        const { data } = await checkScheduleConflicts({
+        const result = await checkScheduleConflicts({
           memberIds: activeIds,
           date: schedule.date,
           shiftTemplateId,
           excludeScheduleId: schedule._id
-        });
+        }).unwrap();
 
+        const conflictList = Array.isArray(result) ? result : unwrapList(result);
         const map = {};
-        for (const c of data.data || []) {
+        for (const c of conflictList || []) {
           map[c.memberId] = c;
         }
         setConflicts(map);
@@ -83,7 +87,7 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, store
     if (members && members.length > 0) {
       loadConflicts();
     }
-  }, [isOpen, schedule, shiftTemplate, dispatch, getAssignedMemberIds, members]);
+  }, [isOpen, schedule, shiftTemplate, getAssignedMemberIds, members, checkScheduleConflicts]);
 
   // Get store members (members assigned to the target store)
   const storeMembers = members?.filter(m => {
@@ -123,20 +127,21 @@ const MemberAssignmentModal = ({ isOpen, onClose, schedule, shiftTemplate, store
     if (!hasChanges()) { onClose(); return; }
 
     try {
-      await dispatch(batchAssignMembers({
+      await batchAssignMembers({
         scheduleId: schedule._id,
         memberIds: selectedMembers,
         storeId: targetStore?._id
-      })).unwrap();
+      }).unwrap();
       enqueueSnackbar("Member assignments updated", { variant: "success" });
       setSearchQuery("");
       if (onSaved) onSaved();
       onClose();
     } catch (error) {
-      if (typeof error === 'string' && error.includes('conflict')) {
-        enqueueSnackbar(error, { variant: "warning" });
+      const message = error?.data || error;
+      if (typeof message === 'string' && message.includes('conflict')) {
+        enqueueSnackbar(message, { variant: "warning" });
       } else {
-        enqueueSnackbar(error || "Failed to update assignments", { variant: "error" });
+        enqueueSnackbar(message || "Failed to update assignments", { variant: "error" });
       }
     }
   };

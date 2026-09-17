@@ -1,7 +1,9 @@
-import { useSelector } from "react-redux";
+import { useGetDishesQuery } from "../../redux/api/endpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 
 const PopularDishes = () => {
-  const { items: dishes } = useSelector((state) => state.dishes);
+  const { data: dishesResult } = useGetDishesQuery();
+  const dishes = unwrapList(dishesResult);
 
   return (
     <div className="mt-6 pr-6">
@@ -19,7 +21,7 @@ const PopularDishes = () => {
           {dishes.map((dish, index) => {
             return (
               <div
-                key={dish.id}
+                key={dish._id || dish.id}
                 className="flex items-center gap-4 bg-[#1f1f1f] rounded-[15px] px-6 py-4 mt-4 mx-6"
               >
                 <h1 className="text-[#f5f5f5] font-bold text-xl mr-4">{index + 1}</h1>

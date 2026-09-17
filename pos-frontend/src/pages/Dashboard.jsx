@@ -4,7 +4,6 @@ import { MdCategory, MdDateRange, MdToday, MdCalendarMonth, MdLocalOffer, MdAcco
 import { BiSolidDish } from "react-icons/bi";
 import { MdAddCircle } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
 import { ROUTES } from "../constants";
 import Metrics from "../components/dashboard/Metrics";
 import PromotionMetrics from "../components/dashboard/PromotionMetrics";
@@ -18,7 +17,7 @@ import CategoryModal from "../components/dashboard/CategoryModal";
 import DishModal from "../components/dashboard/DishModal";
 import { getStoredUser } from "../utils/auth";
 import { formatVND } from "../utils";
-import { fetchSpendingDashboard } from "../redux/slices/spendingSlice";
+import { useGetSpendingDashboardQuery } from "../redux/api/endpoints";
 import DateFilterBar from "../components/shared/DateFilterBar";
 import LoadingState from "../components/shared/LoadingState";
 import EmptyState from "../components/shared/EmptyState";
@@ -235,13 +234,17 @@ SpendingAnalytics.propTypes = {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const user = getStoredUser();
   const isAdmin = user?.role === "Admin";
-  
+  const [activeTab, setActiveTab] = useState("Metrics");
 
-  // Redux state for spending analytics
-  const { dashboardData, dashboardLoading, dashboardError } = useSelector((state) => state.spending);
+  const {
+    data: dashboardData,
+    isLoading: dashboardLoading,
+    error: dashboardError,
+  } = useGetSpendingDashboardQuery(undefined, {
+    skip: !isAdmin || activeTab !== "Spending",
+  });
 
   // Memoize buttons array to prevent recreation on every render
   const buttons = useMemo(() => [
@@ -272,7 +275,6 @@ const Dashboard = () => {
   
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isDishesModalOpen, setIsDishesModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("Metrics");
   const [dateFilter, setDateFilter] = useState("today");
   const [customDateRange, setCustomDateRange] = useState({
     startDate: "",
@@ -282,24 +284,6 @@ const Dashboard = () => {
   useEffect(() => {
     document.title = "POS | Admin Dashboard";
   }, []);
-
-  // Load spending dashboard data when Spending tab is active and user is admin
-  useEffect(() => {
-    if (isAdmin && activeTab === "Spending") {
-      // Prepare date filter parameters
-      const params = {};
-      
-      if (dateFilter === "custom" && customDateRange.startDate && customDateRange.endDate) {
-        params.startDate = customDateRange.startDate;
-        params.endDate = customDateRange.endDate;
-      } else if (dateFilter !== "custom") {
-        params.period = dateFilter; // today, week, month
-      }
-      params.scope = "all";
-      
-      dispatch(fetchSpendingDashboard(params));
-    }
-  }, [dispatch, isAdmin, activeTab, dateFilter, customDateRange]);
 
   // Memoize callback functions to prevent unnecessary re-renders
   const handleOpenModal = useCallback((action) => {
@@ -409,7 +393,7 @@ const Dashboard = () => {
         <SpendingAnalytics 
           dashboardData={dashboardData}
           loading={dashboardLoading}
-          error={dashboardError}
+          error={dashboardError?.data || (dashboardError ? "Failed to load analytics" : undefined)}
         />
       )}
       {activeTab === "Shift Checkout" && isAdmin && (

@@ -1,26 +1,26 @@
 import { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { MdStore, MdCheck, MdLocationOn } from "react-icons/md";
 import { Modal } from "../ui";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
-import { fetchAllStores } from "../../redux/slices/storeSlice";
-import { updateMemberStores as updateMemberStoresApi } from "../../https";
+import {
+  useGetAllStoresQuery,
+  useUpdateMemberStoresMutation,
+} from "../../redux/api/endpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 
 const STORE_ROLES = ["Staff", "Manager", "Owner"];
 
 const StoreAssignmentModal = ({ isOpen, onClose, member, onUpdated }) => {
-  const dispatch = useDispatch();
-  const { allStores, allStoresLoading } = useSelector((state) => state.store);
+  const { data: storesResult, isLoading: allStoresLoading } = useGetAllStoresQuery(
+    undefined,
+    { skip: !isOpen }
+  );
+  const allStores = unwrapList(storesResult);
+  const [updateMemberStores] = useUpdateMemberStoresMutation();
 
   const [selections, setSelections] = useState({});
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    if (isOpen && allStores.length === 0) {
-      dispatch(fetchAllStores());
-    }
-  }, [isOpen, allStores.length, dispatch]);
 
   useEffect(() => {
     if (!member) return;
@@ -57,13 +57,16 @@ const StoreAssignmentModal = ({ isOpen, onClose, member, onUpdated }) => {
       const assignments = Object.entries(selections).map(
         ([storeId, role]) => ({ storeId, role })
       );
-      const { data } = await updateMemberStoresApi(member._id, assignments);
+      const updatedStores = await updateMemberStores({
+        id: member._id,
+        assignments,
+      }).unwrap();
       enqueueSnackbar("Store assignments updated!", { variant: "success" });
-      if (onUpdated) onUpdated(member._id, data.data);
+      if (onUpdated) onUpdated(member._id, updatedStores);
       onClose();
     } catch (error) {
       enqueueSnackbar(
-        error.response?.data?.message || "Failed to update store assignments",
+        error?.data || "Failed to update store assignments",
         { variant: "error" }
       );
     } finally {

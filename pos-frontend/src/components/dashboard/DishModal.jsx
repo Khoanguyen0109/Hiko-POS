@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { IoMdAdd, IoMdRemove } from "react-icons/io";
-import { useSelector, useDispatch } from "react-redux";
-import { fetchCategories } from "../../redux/slices/categorySlice";
-import { createDish, editDish } from "../../redux/slices/dishSlice";
+import {
+  useGetCategoriesQuery,
+  useCreateDishMutation,
+  useUpdateDishMutation,
+} from "../../redux/api/endpoints/catalogEndpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 import { enqueueSnackbar } from "notistack"
 import PropTypes from "prop-types";
 import BottomSheet from "../shared/BottomSheet";
@@ -10,9 +13,12 @@ import BottomSheet from "../shared/BottomSheet";
 const SIZE_OPTIONS = ['Small', 'Medium', 'Large', 'Extra Large', 'Regular'];
 
 const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) => {
-  const dispatch = useDispatch();
-  const { items: categories, loading: categoriesLoading } = useSelector((state) => state.categories);
-  const { loading: dishLoading } = useSelector((state) => state.dishes);
+  const { data: categoriesResult, isLoading: categoriesLoading } =
+    useGetCategoriesQuery();
+  const categories = unwrapList(categoriesResult);
+  const [createDish, { isLoading: isCreating }] = useCreateDishMutation();
+  const [updateDish, { isLoading: isUpdating }] = useUpdateDishMutation();
+  const dishLoading = isCreating || isUpdating;
   
   const [dishData, setDishData] = useState({
     name: "",
@@ -74,13 +80,6 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
       setIsDishesModalOpen(false);
     }
   }, [setIsDishModalOpen, setIsDishesModalOpen]);
-
-  // Fetch categories when component mounts
-  useEffect(() => {
-    if (categories.length === 0) {
-      dispatch(fetchCategories());
-    }
-  }, [dispatch, categories.length]);
 
   // Handle Escape key to close modal
   useEffect(() => {
@@ -179,52 +178,28 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
     }
     
     try {
-      let resultAction;
-      
       if (editingDish) {
-        // Edit existing dish
-        resultAction = await dispatch(editDish({ 
-          dishId: editingDish._id, 
-          ...submitData 
-        }));
-        
-        if (editDish.fulfilled.match(resultAction)) {
-          // Use the correct close function based on which prop is provided
-          if (setIsDishModalOpen) {
-            setIsDishModalOpen(false);
-          } else if (setIsDishesModalOpen) {
-            setIsDishesModalOpen(false);
-          }
-          enqueueSnackbar("Dish updated successfully!", { variant: "success" });
-        } else {
-          const errorMessage = resultAction.payload || "Failed to update dish";
-          enqueueSnackbar(errorMessage, { variant: "error" });
-        }
+        await updateDish({
+          dishId: editingDish._id,
+          ...submitData,
+        }).unwrap();
+        handleCloseModal();
+        enqueueSnackbar("Dish updated successfully!", { variant: "success" });
       } else {
-        // Create new dish
-        resultAction = await dispatch(createDish(submitData));
-        
-        if (createDish.fulfilled.match(resultAction)) {
-          // Use the correct close function based on which prop is provided
-          if (setIsDishModalOpen) {
-            setIsDishModalOpen(false);
-          } else if (setIsDishesModalOpen) {
-            setIsDishesModalOpen(false);
-          }
-          enqueueSnackbar("Dish created successfully!", { variant: "success" });
-          // Reset form
-          setDishData({ 
-            name: "", price: "", category: "", note: "", 
-            image: "", hasSizeVariants: false, isAvailable: true 
-          });
-          setSizeVariants([{ size: 'Medium', price: '', isDefault: true }]);
-        } else {
-          const errorMessage = resultAction.payload || "Failed to create dish";
-          enqueueSnackbar(errorMessage, { variant: "error" });
-        }
+        await createDish(submitData).unwrap();
+        handleCloseModal();
+        enqueueSnackbar("Dish created successfully!", { variant: "success" });
+        setDishData({ 
+          name: "", price: "", category: "", note: "", 
+          image: "", hasSizeVariants: false, isAvailable: true 
+        });
+        setSizeVariants([{ size: 'Medium', price: '', isDefault: true }]);
       }
     } catch (error) {
-      enqueueSnackbar("An unexpected error occurred", { variant: "error" });
+      enqueueSnackbar(
+        error?.data || error || (editingDish ? "Failed to update dish" : "Failed to create dish"),
+        { variant: "error" }
+      );
       console.log(error);
     }
   };

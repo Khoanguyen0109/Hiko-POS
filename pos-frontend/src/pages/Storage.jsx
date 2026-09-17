@@ -1,17 +1,17 @@
 import { useState, useEffect, useMemo, memo, useCallback } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
+import { skipToken } from "@reduxjs/toolkit/query/react";
 import PropTypes from "prop-types";
 import { IoMdAdd } from "react-icons/io";
 import { MdInput, MdOutput, MdSettings, MdBusiness, MdInventory, MdToday, MdDateRange, MdCalendarMonth, MdFilterList, MdSearch, MdSwapHoriz } from "react-icons/md";
 import {
-  fetchStorageImports,
-  cancelStorageImportAction,
-} from "../redux/slices/storageImportSlice";
-import {
-  fetchStorageExports,
-  cancelStorageExportAction,
-} from "../redux/slices/storageExportSlice";
-import { fetchStorageItems } from "../redux/slices/storageItemSlice";
+  useGetStorageItemsQuery,
+  useGetStorageImportsQuery,
+  useGetStorageExportsQuery,
+  useCancelStorageImportMutation,
+  useCancelStorageExportMutation,
+} from "../redux/api/endpoints";
+import { unwrapList } from "../redux/api/queryResult";
 import { enqueueSnackbar } from "notistack";
 import ImportModal from "../components/storage/ImportModal";
 import ExportModal from "../components/storage/ExportModal";
@@ -342,15 +342,10 @@ StorageMobileFab.propTypes = {
 };
 
 const Storage = () => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const { v2UiEnabled } = useV2Ui();
   const user = getStoredUser();
   const isAdmin = user?.role === "Admin";
-
-  const { items: imports, loading: importsLoading, error: importsError } = useSelector((state) => state.storageImports);
-  const { items: exports, loading: exportsLoading, error: exportsError } = useSelector((state) => state.storageExports);
-  const { items: storageItems, loading: storageItemsLoading, error: storageItemsError } = useSelector((state) => state.storageItems);
   const { activeStore } = useSelector((state) => state.store);
 
   const [activeTab, setActiveTab] = useState("stock");
@@ -397,7 +392,33 @@ const Storage = () => {
     return `${new Date(`${dateParams.startDate}T12:00:00`).toLocaleDateString("vi-VN")} – ${new Date(`${dateParams.endDate}T12:00:00`).toLocaleDateString("vi-VN")}`;
   }, [dateParams]);
 
-  useEffect(() => { dispatch(fetchStorageItems({ isActive: true })); }, [dispatch]);
+  const { data: itemsResult, isLoading: storageItemsLoading, error: storageItemsError } =
+    useGetStorageItemsQuery({ isActive: true });
+  const storageItems = unwrapList(itemsResult);
+
+  const importQueryArg = !dateParams
+    ? skipToken
+    : activeTab === "imports"
+      ? dateParams
+      : activeTab === "transfers"
+        ? { ...dateParams, source: "from_store", limit: 200 }
+        : skipToken;
+  const exportQueryArg = !dateParams
+    ? skipToken
+    : activeTab === "exports"
+      ? dateParams
+      : activeTab === "transfers"
+        ? { ...dateParams, reason: "to_store", limit: 200 }
+        : skipToken;
+
+  const { data: importsResult, isLoading: importsLoading, error: importsError } =
+    useGetStorageImportsQuery(importQueryArg);
+  const { data: exportsResult, isLoading: exportsLoading, error: exportsError } =
+    useGetStorageExportsQuery(exportQueryArg);
+  const imports = unwrapList(importsResult);
+  const exports = unwrapList(exportsResult);
+  const [cancelStorageImport] = useCancelStorageImportMutation();
+  const [cancelStorageExport] = useCancelStorageExportMutation();
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -415,16 +436,6 @@ const Storage = () => {
       return name.includes(query) || code.includes(query);
     });
   }, [storageItems, debouncedStockSearch]);
-
-  useEffect(() => {
-    if (!dateParams) return;
-    if (activeTab === "imports") dispatch(fetchStorageImports(dateParams));
-    if (activeTab === "exports") dispatch(fetchStorageExports(dateParams));
-    if (activeTab === "transfers") {
-      dispatch(fetchStorageImports({ ...dateParams, source: "from_store", limit: 200 }));
-      dispatch(fetchStorageExports({ ...dateParams, reason: "to_store", limit: 200 }));
-    }
-  }, [dispatch, dateParams, activeTab]);
 
   const transferRows = useMemo(() => {
     const incoming = imports
@@ -483,40 +494,26 @@ const Storage = () => {
   const handleCancelImport = useCallback(async (id) => {
     if (!window.confirm("Are you sure you want to cancel this import?")) return;
     try {
-      const result = await dispatch(cancelStorageImportAction(id));
-      if (cancelStorageImportAction.fulfilled.match(result)) {
-        enqueueSnackbar("Import cancelled successfully!", { variant: "success" });
-        if (dateParams) dispatch(fetchStorageImports(dateParams));
-      } else {
-        enqueueSnackbar(result.payload || "Failed to cancel import", { variant: "error" });
-      }
+      await cancelStorageImport(id).unwrap();
+      enqueueSnackbar("Import cancelled successfully!", { variant: "success" });
     } catch (err) {
       logger.error("Error cancelling import:", err);
-      enqueueSnackbar("An unexpected error occurred", { variant: "error" });
+      enqueueSnackbar(err?.data || "Failed to cancel import", { variant: "error" });
     }
-  }, [dispatch, dateParams]);
+  }, [cancelStorageImport]);
 
   const handleCancelExport = useCallback(async (id) => {
     if (!window.confirm("Are you sure you want to cancel this export?")) return;
     try {
-      const result = await dispatch(cancelStorageExportAction(id));
-      if (cancelStorageExportAction.fulfilled.match(result)) {
-        enqueueSnackbar("Export cancelled successfully!", { variant: "success" });
-        if (dateParams) dispatch(fetchStorageExports(dateParams));
-      } else {
-        enqueueSnackbar(result.payload || "Failed to cancel export", { variant: "error" });
-      }
+      await cancelStorageExport(id).unwrap();
+      enqueueSnackbar("Export cancelled successfully!", { variant: "success" });
     } catch (err) {
       logger.error("Error cancelling export:", err);
-      enqueueSnackbar("An unexpected error occurred", { variant: "error" });
+      enqueueSnackbar(err?.data || "Failed to cancel export", { variant: "error" });
     }
-  }, [dispatch, dateParams]);
+  }, [cancelStorageExport]);
 
-  const handleModalSuccess = useCallback(() => {
-    if (!dateParams) return;
-    if (activeTab === "imports") dispatch(fetchStorageImports(dateParams));
-    else if (activeTab === "exports") dispatch(fetchStorageExports(dateParams));
-  }, [dispatch, activeTab, dateParams]);
+  const handleModalSuccess = useCallback(() => {}, []);
 
   if (storageItemsLoading && storageItems.length === 0 && activeTab === "stock") return <FullScreenLoader />;
   if (importsLoading && imports.length === 0 && activeTab === "imports") return <FullScreenLoader />;
@@ -612,10 +609,10 @@ const Storage = () => {
 
       <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6">
 
-        {storageItemsError && activeTab === "stock" && <ErrorBanner message={storageItemsError} />}
-        {importsError && activeTab === "imports" && <ErrorBanner message={importsError} />}
-        {exportsError && activeTab === "exports" && <ErrorBanner message={exportsError} />}
-        {transfersError && activeTab === "transfers" && <ErrorBanner message={transfersError} />}
+        {storageItemsError && activeTab === "stock" && <ErrorBanner message={storageItemsError?.data || "Failed to load stock"} />}
+        {importsError && activeTab === "imports" && <ErrorBanner message={importsError?.data || "Failed to load imports"} />}
+        {exportsError && activeTab === "exports" && <ErrorBanner message={exportsError?.data || "Failed to load exports"} />}
+        {transfersError && activeTab === "transfers" && <ErrorBanner message={transfersError?.data || "Failed to load transfers"} />}
 
         {activeTab === "stock" && v2UiEnabled ? (
           <>

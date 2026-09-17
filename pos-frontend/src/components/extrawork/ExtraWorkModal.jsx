@@ -1,20 +1,27 @@
-import { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useState, useEffect, useMemo } from "react";
+import { useSelector } from "react-redux";
 import { enqueueSnackbar } from "notistack";
 import { MdAccessTime, MdAttachMoney, MdStore } from "react-icons/md";
 import BottomSheet from "../shared/BottomSheet";
-import { createExtraWork, clearError } from "../../redux/slices/extraWorkSlice";
-import { fetchMembers } from "../../redux/slices/memberSlice";
-import { fetchAllStores } from "../../redux/slices/storeSlice";
+import {
+  useGetAllMembersQuery,
+  useGetAllStoresQuery,
+  useCreateExtraWorkMutation,
+} from "../../redux/api/endpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 import FullScreenLoader from "../shared/FullScreenLoader";
 import { getLocalDateString } from "../../utils/dateUtils";
 
 const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
-  const dispatch = useDispatch();
-  const { members } = useSelector((state) => state.members);
-  const { createLoading, error } = useSelector((state) => state.extraWork);
-  const { allStores } = useSelector((state) => state.store);
   const activeStoreId = useSelector((state) => state.store.activeStore?._id || "");
+  const { data: membersResult } = useGetAllMembersQuery(
+    { isActive: true },
+    { skip: !isOpen }
+  );
+  const members = useMemo(() => unwrapList(membersResult), [membersResult]);
+  const { data: storesResult } = useGetAllStoresQuery(undefined, { skip: !isOpen });
+  const allStores = useMemo(() => unwrapList(storesResult), [storesResult]);
+  const [createExtraWork, { isLoading: createLoading }] = useCreateExtraWorkMutation();
   
   const [formData, setFormData] = useState({
     memberId: memberId || "",
@@ -29,13 +36,6 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
 
   useEffect(() => {
     if (isOpen) {
-      if (!members || members.length === 0) {
-        dispatch(fetchMembers({ isActive: true }));
-      }
-      if (!allStores || allStores.length === 0) {
-        dispatch(fetchAllStores());
-      }
-      
       setFormData({
         memberId: memberId || "",
         storeId: activeStoreId,
@@ -58,7 +58,7 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
         notes: ""
       });
     }
-  }, [isOpen, memberId, date, members, allStores, dispatch, activeStoreId]);
+  }, [isOpen, memberId, date, activeStoreId]);
 
   useEffect(() => {
     // Set default hourly rate from member's salary if member is selected
@@ -69,13 +69,6 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
       }
     }
   }, [isOpen, memberId, members]);
-
-  useEffect(() => {
-    if (error) {
-      enqueueSnackbar(error, { variant: "error" });
-      dispatch(clearError());
-    }
-  }, [error, dispatch]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -122,11 +115,11 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
         notes: formData.notes
       };
 
-      await dispatch(createExtraWork(submitData)).unwrap();
+      await createExtraWork(submitData).unwrap();
       enqueueSnackbar("Extra work entry created successfully!", { variant: "success" });
       onClose();
     } catch (error) {
-      enqueueSnackbar(error || "Failed to create extra work entry", { variant: "error" });
+      enqueueSnackbar(error?.data || error || "Failed to create extra work entry", { variant: "error" });
     }
   };
 

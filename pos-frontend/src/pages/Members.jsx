@@ -1,10 +1,15 @@
-import { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useState, useEffect, useMemo } from "react";
+import { useSelector } from "react-redux";
 import { MdAdd, MdEdit, MdDelete, MdSearch, MdRefresh, MdToggleOn, MdToggleOff, MdAttachMoney, MdStore } from "react-icons/md";
 import { FaUser, FaEnvelope, FaPhone } from "react-icons/fa";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
-import { fetchMembers, removeMember, toggleActiveStatus, clearError, updateMemberInList } from "../redux/slices/memberSlice";
+import {
+  useGetAllMembersQuery,
+  useDeleteMemberMutation,
+  useToggleMemberActiveStatusMutation,
+} from "../redux/api/endpoints";
+import { unwrapList } from "../redux/api/queryResult";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import FeaturePageHeader from "../components/shared/FeaturePageHeader";
 import HeaderActionButton from "../components/shared/HeaderActionButton";
@@ -13,10 +18,21 @@ import DeleteConfirmationModal from "../components/shared/DeleteConfirmationModa
 import StoreAssignmentModal from "../components/members/StoreAssignmentModal";
 
 const Members = () => {
-  const dispatch = useDispatch();
-  const { members, loading, error, deleteLoading, toggleLoading } = useSelector((state) => state.members);
   const { role } = useSelector((state) => state.user);
-  
+  const isAdmin = role === "Admin";
+
+  const {
+    data: membersResult,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useGetAllMembersQuery(undefined, { skip: !isAdmin });
+  const members = unwrapList(membersResult);
+  const [deleteMember, { isLoading: deleteLoading }] = useDeleteMemberMutation();
+  const [toggleActiveStatus, { isLoading: toggleLoading }] =
+    useToggleMemberActiveStatusMutation();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all"); // all, active, inactive
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -24,44 +40,34 @@ const Members = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showStoreModal, setShowStoreModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
-  const [filteredMembers, setFilteredMembers] = useState([]);
-
-  const isAdmin = role === "Admin";
 
   useEffect(() => {
     document.title = "POS | Members";
-    if (isAdmin) {
-      dispatch(fetchMembers());
-    }
-  }, [dispatch, isAdmin]);
+  }, []);
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar(error, { variant: "error" });
-      dispatch(clearError());
+      enqueueSnackbar(error?.data || error, { variant: "error" });
     }
-  }, [error, dispatch]);
+  }, [error]);
 
-  useEffect(() => {
-    if (members.length > 0) {
-      let filtered = members.filter(member =>
-        member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        member.phone.includes(searchTerm) ||
-        member.role.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+  const filteredMembers = useMemo(() => {
+    if (members.length === 0) return [];
 
-      // Apply status filter
-      if (statusFilter === "active") {
-        filtered = filtered.filter(member => member.isActive !== false);
-      } else if (statusFilter === "inactive") {
-        filtered = filtered.filter(member => member.isActive === false);
-      }
+    let filtered = members.filter(member =>
+      member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.phone.includes(searchTerm) ||
+      member.role.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
-      setFilteredMembers(filtered);
-    } else {
-      setFilteredMembers([]);
+    if (statusFilter === "active") {
+      filtered = filtered.filter(member => member.isActive !== false);
+    } else if (statusFilter === "inactive") {
+      filtered = filtered.filter(member => member.isActive === false);
     }
+
+    return filtered;
   }, [members, searchTerm, statusFilter]);
 
   const handleCreateMember = () => {
@@ -81,23 +87,23 @@ const Members = () => {
 
   const handleToggleActiveStatus = async (member) => {
     try {
-      await dispatch(toggleActiveStatus(member._id)).unwrap();
+      await toggleActiveStatus(member._id).unwrap();
       const statusText = member.isActive === false ? "activated" : "deactivated";
       enqueueSnackbar(`Member ${statusText} successfully!`, { variant: "success" });
-    } catch (error) {
-      enqueueSnackbar(error || "Failed to toggle member status", { variant: "error" });
+    } catch (err) {
+      enqueueSnackbar(err?.data || err || "Failed to toggle member status", { variant: "error" });
     }
   };
 
   const handleConfirmDelete = async () => {
     if (selectedMember) {
       try {
-        await dispatch(removeMember(selectedMember._id)).unwrap();
+        await deleteMember(selectedMember._id).unwrap();
         enqueueSnackbar("Member deleted successfully!", { variant: "success" });
         setShowDeleteModal(false);
         setSelectedMember(null);
-      } catch (error) {
-        enqueueSnackbar(error || "Failed to delete member", { variant: "error" });
+      } catch (err) {
+        enqueueSnackbar(err?.data || err || "Failed to delete member", { variant: "error" });
       }
     }
   };
@@ -105,13 +111,6 @@ const Members = () => {
   const handleManageStores = (member) => {
     setSelectedMember(member);
     setShowStoreModal(true);
-  };
-
-  const handleStoreAssignmentUpdated = (memberId, updatedStores) => {
-    dispatch(updateMemberInList({
-      _id: memberId,
-      assignedStores: updatedStores
-    }));
   };
 
   const handleModalClose = () => {
@@ -122,7 +121,7 @@ const Members = () => {
   };
 
   const handleRefresh = () => {
-    dispatch(fetchMembers());
+    refetch();
   };
 
   if (!isAdmin) {
@@ -143,7 +142,7 @@ const Members = () => {
         subtitle={
           <span className="flex items-center gap-2">
             <span>{filteredMembers.length} members found</span>
-            {loading ? <span className="text-brand">• Loading...</span> : null}
+            {isFetching ? <span className="text-brand">• Loading...</span> : null}
           </span>
         }
         actions={
@@ -157,9 +156,9 @@ const Members = () => {
             </HeaderActionButton>
             <HeaderActionButton
               variant="secondary"
-              icon={<MdRefresh size={16} className={loading ? "animate-spin" : ""} />}
+              icon={<MdRefresh size={16} className={isFetching ? "animate-spin" : ""} />}
               onClick={handleRefresh}
-              disabled={loading}
+              disabled={isFetching}
             >
               Refresh
             </HeaderActionButton>
@@ -193,7 +192,7 @@ const Members = () => {
 
       {/* Members Grid */}
       <div className="px-4 sm:px-10 py-6">
-        {loading ? (
+        {isLoading ? (
           <FullScreenLoader />
         ) : filteredMembers.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -267,7 +266,6 @@ const Members = () => {
           isOpen={showStoreModal}
           onClose={handleModalClose}
           member={selectedMember}
-          onUpdated={handleStoreAssignmentUpdated}
         />
       )}
     </div>
@@ -467,4 +465,4 @@ MemberCard.propTypes = {
   toggleLoading: PropTypes.bool.isRequired
 };
 
-export default Members; 
+export default Members;

@@ -1,5 +1,4 @@
 import { useEffect, useMemo } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import HomeHeader from "../components/v2/HomeHeader";
 import { BsCashCoin } from "react-icons/bs";
@@ -9,25 +8,26 @@ import MiniCard from "../components/home/MiniCard";
 import RecentOrders from "../components/home/RecentOrders";
 import { useV2Ui } from "../hooks/useV2Ui";
 import { ROUTES } from "../constants";
-import { fetchOrders } from "../redux/slices/orderSlice";
-import { fetchLowStockItems } from "../redux/slices/storageItemSlice";
+import { useGetOrdersQuery, useGetLowStockItemsQuery } from "../redux/api/endpoints";
+import { unwrapList } from "../redux/api/queryResult";
 import { getTodayDate, formatVND } from "../utils";
 import { getOrderRewardDiscount } from "../utils/orderBills";
 
 const Home = () => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const { v2UiEnabled } = useV2Ui();
-  const { items: orders, loading } = useSelector((state) => state.orders);
-  const { lowStockItems } = useSelector((state) => state.storageItems);
+  const today = getTodayDate();
+  const { data: ordersResult, isLoading: loading } = useGetOrdersQuery({
+    startDate: today,
+    endDate: today,
+  });
+  const { data: lowStockResult } = useGetLowStockItemsQuery();
+  const orders = unwrapList(ordersResult);
+  const lowStockItems = unwrapList(lowStockResult);
 
   useEffect(() => {
     document.title = "POS | Home";
-
-    const today = getTodayDate();
-    dispatch(fetchOrders({ startDate: today, endDate: today }));
-    dispatch(fetchLowStockItems());
-  }, [dispatch]);
+  }, []);
 
   const sortedLowStock = useMemo(() => {
     if (!lowStockItems || lowStockItems.length === 0) return [];

@@ -1,17 +1,48 @@
-import { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useEffect, useMemo } from "react";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
-import { fetchOrders, updateOrder } from "../../redux/slices/orderSlice";
+import { useGetOrdersQuery, useUpdateOrderMutation } from "../../redux/api/endpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 import { formatDateAndTime, getTodayDate, formatVND } from "../../utils";
 import { getDateRangeByPeriodVietnam } from "../../utils/dateUtils";
 
 const RecentOrders = ({ dateFilter = "today", customDateRange = { startDate: "", endDate: "" } }) => {
-  const dispatch = useDispatch();
-  const { recentOrders, loading, error } = useSelector((state) => state.orders);
-  
+  const [updateOrder] = useUpdateOrderMutation();
+
+  const { startDate, endDate } = useMemo(() => {
+    const today = getTodayDate();
+    switch (dateFilter) {
+      case "week": {
+        const { start } = getDateRangeByPeriodVietnam('thisWeek');
+        return { startDate: start, endDate: today };
+      }
+      case "month": {
+        const { start } = getDateRangeByPeriodVietnam('thisMonth');
+        return { startDate: start, endDate: today };
+      }
+      case "custom": {
+        if (customDateRange.startDate && customDateRange.endDate) {
+          return {
+            startDate: customDateRange.startDate,
+            endDate: customDateRange.endDate,
+          };
+        }
+        return { startDate: today, endDate: today };
+      }
+      default:
+        return { startDate: today, endDate: today };
+    }
+  }, [dateFilter, customDateRange]);
+
+  const { data: ordersResult, isLoading: loading, error } = useGetOrdersQuery({
+    startDate,
+    endDate,
+  });
+  const orders = unwrapList(ordersResult);
+  const recentOrders = orders.slice(0, 5);
+
   const handleStatusChange = ({orderId, orderStatus}) => {
-    dispatch(updateOrder({orderId, orderStatus}))
+    updateOrder({orderId, orderStatus})
       .unwrap()
       .then(() => {
         enqueueSnackbar("Order status updated successfully!", { variant: "success" });
@@ -22,48 +53,8 @@ const RecentOrders = ({ dateFilter = "today", customDateRange = { startDate: "",
   };
 
   useEffect(() => {
-    // Fetch data based on selected date range
-    const today = getTodayDate();
-    let startDate, endDate;
-    
-    switch (dateFilter) {
-      case "today": {
-        startDate = endDate = today;
-        break;
-      }
-      case "week": {
-        const { start } = getDateRangeByPeriodVietnam('thisWeek');
-        startDate = start;
-        endDate = today;
-        break;
-      }
-      case "month": {
-        const { start } = getDateRangeByPeriodVietnam('thisMonth');
-        startDate = start;
-        endDate = today;
-        break;
-      }
-      case "custom": {
-        if (customDateRange.startDate && customDateRange.endDate) {
-          startDate = customDateRange.startDate;
-          endDate = customDateRange.endDate;
-        } else {
-          // Fallback to today if custom range is incomplete
-          startDate = endDate = today;
-        }
-        break;
-      }
-      default: {
-        startDate = endDate = today;
-      }
-    }
-
-    dispatch(fetchOrders({ startDate, endDate }));
-  }, [dispatch, dateFilter, customDateRange]);
-
-  useEffect(() => {
     if (error) {
-      enqueueSnackbar(error, { variant: "error" });
+      enqueueSnackbar(error?.data || error, { variant: "error" });
     }
   }, [error]);
 

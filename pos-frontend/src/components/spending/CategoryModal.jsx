@@ -1,8 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
-import { useDispatch } from "react-redux";
 import { MdSave, MdCancel, MdColorLens } from "react-icons/md";
 import BottomSheet from "../shared/BottomSheet";
-import { createSpendingCategory, editSpendingCategory } from "../../redux/slices/spendingSlice";
+import { enqueueSnackbar } from "notistack";
+import {
+  useAddSpendingCategoryMutation,
+  useUpdateSpendingCategoryMutation,
+} from "../../redux/api/endpoints";
 import PropTypes from "prop-types";
 
 const CategoryModal = ({ 
@@ -12,7 +15,8 @@ const CategoryModal = ({
   category = null, 
   onSuccess 
 }) => {
-  const dispatch = useDispatch();
+  const [addSpendingCategory] = useAddSpendingCategoryMutation();
+  const [updateSpendingCategory] = useUpdateSpendingCategoryMutation();
   const initialFormData = useMemo(() => ({
     name: "",
     description: "",
@@ -76,26 +80,23 @@ const CategoryModal = ({
     setError("");
 
     try {
-      let result;
-      if (mode === "create") {
-        result = await dispatch(createSpendingCategory(formData));
-      } else {
-        result = await dispatch(editSpendingCategory({ categoryId: category._id, ...formData }));
-      }
+      const result = mode === "create"
+        ? await addSpendingCategory(formData).unwrap()
+        : await updateSpendingCategory({ categoryId: category._id, ...formData }).unwrap();
 
-      if (result.meta.requestStatus === 'fulfilled') {
-        // Reset form only for create mode
-        if (mode === "create") {
-          setFormData(initialFormData);
-          setError("");
-        }
-        onSuccess?.(result.payload);
-        onClose();
+      if (mode === "create") {
+        setFormData(initialFormData);
+        setError("");
+        enqueueSnackbar("Category created!", { variant: "success" });
       } else {
-        throw new Error(result.payload?.message || `Failed to ${mode} category`);
+        enqueueSnackbar("Category updated!", { variant: "success" });
       }
+      onSuccess?.(result);
+      onClose();
     } catch (err) {
-      setError(err.message || err.response?.data?.message || `Failed to ${mode} category`);
+      const errorMsg = err?.data || err.message || `Failed to ${mode} category`;
+      setError(errorMsg);
+      enqueueSnackbar(errorMsg, { variant: "error" });
     } finally {
       setLoading(false);
     }

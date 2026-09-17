@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { MdAdd, MdRemove } from "react-icons/md";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { addItems } from "../../redux/slices/cartSlice";
-import { fetchToppingsByCategory } from "../../redux/slices/toppingSlice";
+import { useGetToppingsByCategoryQuery } from "../../redux/api/endpoints/catalogEndpoints";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
 import defaultDishImage from "../../assets/images/hyderabadibiryani.jpg";
@@ -29,9 +29,9 @@ const DishBottomSheet = ({
   onAddToOrder,
 }) => {
   const dispatch = useDispatch();
-  const { toppingsByCategory, loading: toppingsLoading } = useSelector(
-    (state) => state.toppings,
-  );
+  const { data: toppingsByCategoryData, isLoading: toppingsLoading } =
+    useGetToppingsByCategoryQuery();
+  const toppingsByCategory = toppingsByCategoryData ?? {};
 
   const [selectedVariant, setSelectedVariant] = useState(() => {
     if (initialVariant) return initialVariant;
@@ -42,10 +42,6 @@ const DishBottomSheet = ({
   });
   const [selectedToppings, setSelectedToppings] = useState({});
   const [quantity, setQuantity] = useState(1);
-
-  useEffect(() => {
-    dispatch(fetchToppingsByCategory());
-  }, [dispatch]);
 
   const getCurrentPrice = () => {
     return selectedVariant ? selectedVariant.price : dish.price;

@@ -1,13 +1,13 @@
-import { useState, useEffect, useCallback, memo } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useState, useCallback, memo } from "react";
 import PropTypes from "prop-types";
 import { IoMdAdd, IoMdMedkit, IoMdTrash } from "react-icons/io";
 import { MdInventory, MdToggleOn, MdToggleOff } from "react-icons/md";
 import {
-  fetchStorageItems,
-  removeStorageItem,
-  editStorageItem,
-} from "../redux/slices/storageItemSlice";
+  useGetStorageItemsQuery,
+  useDeleteStorageItemMutation,
+  useUpdateStorageItemMutation,
+} from "../redux/api/endpoints";
+import { unwrapList } from "../redux/api/queryResult";
 import { enqueueSnackbar } from "notistack";
 import StorageItemModal from "../components/storage/StorageItemModal";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
@@ -56,18 +56,16 @@ const STATUS_OPTIONS = [
 ];
 
 const StorageItems = () => {
-  const dispatch = useDispatch();
-  const { items: storageItems, loading, error } = useSelector((state) => state.storageItems);
+  const { data: itemsResult, isLoading: loading, error } = useGetStorageItemsQuery({ isActive: "all" });
+  const storageItems = unwrapList(itemsResult);
+  const [deleteStorageItem] = useDeleteStorageItemMutation();
+  const [updateStorageItem] = useUpdateStorageItemMutation();
 
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [filterStock, setFilterStock] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-
-  useEffect(() => {
-    dispatch(fetchStorageItems({ isActive: "all" }));
-  }, [dispatch]);
 
   const handleAddItem = useCallback(() => {
     setEditingItem(null);
@@ -82,33 +80,23 @@ const StorageItems = () => {
   const handleDeleteItem = useCallback(async (item) => {
     if (!window.confirm(`Are you sure you want to delete "${item.name}"? This action cannot be undone.`)) return;
     try {
-      const result = await dispatch(removeStorageItem(item._id));
-      if (removeStorageItem.fulfilled.match(result)) {
-        enqueueSnackbar("Storage item deleted successfully!", { variant: "success" });
-      } else {
-        enqueueSnackbar(result.payload || "Failed to delete storage item", { variant: "error" });
-      }
-    } catch {
-      enqueueSnackbar("An unexpected error occurred", { variant: "error" });
+      await deleteStorageItem(item._id).unwrap();
+      enqueueSnackbar("Storage item deleted successfully!", { variant: "success" });
+    } catch (err) {
+      enqueueSnackbar(err?.data || "Failed to delete storage item", { variant: "error" });
     }
-  }, [dispatch]);
+  }, [deleteStorageItem]);
 
   const handleToggleStatus = useCallback(async (item) => {
     try {
-      const result = await dispatch(editStorageItem({ id: item._id, ...item, isActive: !item.isActive }));
-      if (editStorageItem.fulfilled.match(result)) {
-        enqueueSnackbar(`Item ${result.payload.isActive ? "activated" : "deactivated"}!`, { variant: "success" });
-      } else {
-        enqueueSnackbar(result.payload || "Failed to update status", { variant: "error" });
-      }
-    } catch {
-      enqueueSnackbar("An unexpected error occurred", { variant: "error" });
+      const result = await updateStorageItem({ id: item._id, ...item, isActive: !item.isActive }).unwrap();
+      enqueueSnackbar(`Item ${result.isActive ? "activated" : "deactivated"}!`, { variant: "success" });
+    } catch (err) {
+      enqueueSnackbar(err?.data || "Failed to update status", { variant: "error" });
     }
-  }, [dispatch]);
+  }, [updateStorageItem]);
 
-  const handleModalSuccess = useCallback(() => {
-    dispatch(fetchStorageItems({ isActive: "all" }));
-  }, [dispatch]);
+  const handleModalSuccess = useCallback(() => {}, []);
 
   const handleCloseModal = useCallback(() => {
     setIsItemModalOpen(false);
@@ -157,7 +145,7 @@ const StorageItems = () => {
           <FilterGroup options={STOCK_OPTIONS} value={filterStock} onChange={setFilterStock} />
         </div>
 
-        {error ? <ErrorBanner message={error} /> : null}
+        {error ? <ErrorBanner message={error?.data || "Failed to load storage items"} /> : null}
 
         {/* Items Table */}
         {filteredItems.length === 0 ? (

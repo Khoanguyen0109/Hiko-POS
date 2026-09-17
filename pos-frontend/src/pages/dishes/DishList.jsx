@@ -1,16 +1,12 @@
-import { useEffect, useMemo } from "react";
-import { fetchDishes } from "../../redux/slices/dishSlice";
-import { useDispatch, useSelector } from "react-redux";
+import { useMemo } from "react";
 import Dish from "../../components/dishes/Dish";
 import PropTypes from "prop-types";
+import { useGetDishesQuery } from "../../redux/api/endpoints/catalogEndpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 
 const DishList = ({ filterStatus, onEditDish, onRecipeDish }) => {
-  const { items, loading } = useSelector((state) => state.dishes);
-  const dispatch = useDispatch();
-
-  useEffect(() => {
-    dispatch(fetchDishes());
-  }, [dispatch]);
+  const { data: dishesResult, isLoading } = useGetDishesQuery();
+  const items = unwrapList(dishesResult);
 
   // Filter dishes based on the filterStatus prop
   const filteredDishes = useMemo(() => {
@@ -27,7 +23,7 @@ const DishList = ({ filterStatus, onEditDish, onRecipeDish }) => {
     }
   }, [items, filterStatus]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center py-8">
         <div className="text-[#ababab] text-lg">Loading dishes...</div>

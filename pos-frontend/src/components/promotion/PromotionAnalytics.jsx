@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useDispatch } from 'react-redux';
-import { fetchAnalytics } from '../../redux/slices/promotionSlice';
+import { useGetPromotionAnalyticsQuery } from '../../redux/api/endpoints';
 import { 
   MdBarChart as ChartBarIcon, 
   MdTrendingUp as TrendingUpIcon, 
@@ -8,23 +7,18 @@ import {
   MdLocalOffer as TagIcon 
 } from 'react-icons/md';
 
-const PromotionAnalytics = ({ analytics, loading }) => {
-  const dispatch = useDispatch();
+const PromotionAnalytics = () => {
   const [dateRange, setDateRange] = useState({
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days ago
     endDate: new Date().toISOString().split('T')[0] // today
   });
+  const { data: analytics, isLoading: loading } = useGetPromotionAnalyticsQuery(dateRange);
 
-  // Handle date range change
   const handleDateRangeChange = (field, value) => {
-    const newDateRange = {
-      ...dateRange,
+    setDateRange((prev) => ({
+      ...prev,
       [field]: value
-    };
-    setDateRange(newDateRange);
-    
-    // Fetch new analytics with updated date range
-    dispatch(fetchAnalytics(newDateRange));
+    }));
   };
 
   // Get type color

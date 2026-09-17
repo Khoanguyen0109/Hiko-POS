@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { IoMdAdd, IoMdMedkit, IoMdTrash } from "react-icons/io";
 import { MdBusiness, MdToggleOn, MdToggleOff, MdEmail, MdPhone, MdLocationOn } from "react-icons/md";
 import {
-  fetchSuppliers,
-  removeSupplier,
-  editSupplier,
-} from "../redux/slices/supplierSlice";
+  useGetSuppliersQuery,
+  useDeleteSupplierMutation,
+  useUpdateSupplierMutation,
+} from "../redux/api/endpoints";
+import { unwrapList } from "../redux/api/queryResult";
 import { enqueueSnackbar } from "notistack";
 import SupplierModal from "../components/storage/SupplierModal";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
@@ -154,21 +154,17 @@ SupplierCard.propTypes = {
 };
 
 const Suppliers = () => {
-  const dispatch = useDispatch();
-  const {
-    items: suppliers,
-    loading,
-    error,
-  } = useSelector((state) => state.suppliers);
-
   const [isSupplierModalOpen, setIsSupplierModalOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all"); // all, active, inactive
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    dispatch(fetchSuppliers({ isActive: filterStatus === "all" ? undefined : filterStatus === "active" }));
-  }, [dispatch, filterStatus]);
+  const { data: suppliersResult, isLoading: loading, error } = useGetSuppliersQuery({
+    isActive: filterStatus === "all" ? undefined : filterStatus === "active",
+  });
+  const suppliers = unwrapList(suppliersResult);
+  const [deleteSupplier] = useDeleteSupplierMutation();
+  const [updateSupplier] = useUpdateSupplierMutation();
 
   const handleAddSupplier = () => {
     setEditingSupplier(null);
@@ -187,47 +183,34 @@ const Suppliers = () => {
       )
     ) {
       try {
-        const resultAction = await dispatch(removeSupplier(supplier._id));
-        if (removeSupplier.fulfilled.match(resultAction)) {
-          enqueueSnackbar("Supplier deleted successfully!", {
-            variant: "success",
-          });
-        } else {
-          const errorMessage =
-            resultAction.payload || "Failed to delete supplier";
-          enqueueSnackbar(errorMessage, { variant: "error" });
-        }
-      } catch {
-        enqueueSnackbar("An unexpected error occurred", { variant: "error" });
+        await deleteSupplier(supplier._id).unwrap();
+        enqueueSnackbar("Supplier deleted successfully!", {
+          variant: "success",
+        });
+      } catch (err) {
+        enqueueSnackbar(err?.data || "Failed to delete supplier", { variant: "error" });
       }
     }
   };
 
   const handleToggleStatus = async (supplier) => {
     try {
-      const resultAction = await dispatch(
-        editSupplier({ id: supplier._id, isActive: !supplier.isActive })
+      const result = await updateSupplier({
+        id: supplier._id,
+        isActive: !supplier.isActive,
+      }).unwrap();
+      enqueueSnackbar(
+        `Supplier ${result.isActive ? "activated" : "deactivated"} successfully!`,
+        { variant: "success" }
       );
-
-      if (editSupplier.fulfilled.match(resultAction)) {
-        const newStatus = resultAction.payload.isActive;
-        enqueueSnackbar(
-          `Supplier ${newStatus ? "activated" : "deactivated"} successfully!`,
-          { variant: "success" }
-        );
-      } else {
-        const errorMessage =
-          resultAction.payload || "Failed to update supplier status";
-        enqueueSnackbar(errorMessage, { variant: "error" });
-      }
-    } catch {
-      enqueueSnackbar("An unexpected error occurred", { variant: "error" });
+    } catch (err) {
+      enqueueSnackbar(err?.data || "Failed to update supplier status", {
+        variant: "error",
+      });
     }
   };
 
-  const handleModalSuccess = () => {
-    dispatch(fetchSuppliers({ isActive: filterStatus === "all" ? undefined : filterStatus === "active" }));
-  };
+  const handleModalSuccess = () => {};
 
   const handleCloseModal = () => {
     setIsSupplierModalOpen(false);
@@ -319,7 +302,7 @@ const Suppliers = () => {
         </div>
 
         {/* Error Message */}
-        {error ? <ErrorBanner message={error} /> : null}
+        {error ? <ErrorBanner message={error?.data || "Failed to load suppliers"} /> : null}
 
         {/* Suppliers Grid */}
         {filteredSuppliers.length === 0 ? (

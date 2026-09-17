@@ -1,70 +1,32 @@
 import { configureStore } from "@reduxjs/toolkit";
-import customerSlice from "./slices/customerSlice"
+import { setupListeners } from "@reduxjs/toolkit/query";
+import { baseApi } from "./api/baseApi";
+import { cacheResetListener } from "./api/cacheResetListener";
+import customerSlice from "./slices/customerSlice";
 import cartSlice from "./slices/cartSlice";
 import userSlice from "./slices/userSlice";
-import categoriesReducer from "./slices/categorySlice";
-import dishesReducer from "./slices/dishSlice";
-import customersDataReducer from "./slices/customersSlice";
-import memberReducer from "./slices/memberSlice";
-import ordersReducer from "./slices/orderSlice";
-import tablesReducer from "./slices/tableSlice";
 import toppingReducer from "./slices/toppingSlice";
-import promotionReducer from "./slices/promotionSlice";
-import spendingReducer from "./slices/spendingSlice";
-import shiftTemplateReducer from "./slices/shiftTemplateSlice";
-import scheduleReducer from "./slices/scheduleSlice";
-import extraWorkReducer from "./slices/extraWorkSlice";
-import shiftCheckoutReducer from "./slices/shiftCheckoutSlice";
-import salaryReducer from "./slices/salarySlice";
-import supplierReducer from "./slices/supplierSlice";
-import storageItemReducer from "./slices/storageItemSlice";
-import storageImportReducer from "./slices/storageImportSlice";
-import storageExportReducer from "./slices/storageExportSlice";
-import storageAnalyticsReducer from "./slices/storageAnalyticsSlice";
-import storageVarianceReducer from "./slices/storageVarianceSlice";
-import recipeReducer from "./slices/recipeSlice";
-import toppingRecipeReducer from "./slices/toppingRecipeSlice";
-import ticketReducer from "./slices/ticketSlice";
 import storeReducer from "./slices/storeSlice";
 import rewardReducer from "./slices/rewardSlice";
-import campaignReducer from "./slices/campaignSlice";
-import docsReducer from "./slices/docsSlice";
+import "./api/endpoints";
 
 const store = configureStore({
-    reducer: {
-        customer: customerSlice,
-        cart : cartSlice,
-        user : userSlice,
-        categories: categoriesReducer,
-        dishes: dishesReducer,
-        customersData: customersDataReducer,
-        members: memberReducer,
-        orders: ordersReducer,
-        tables: tablesReducer,
-        toppings: toppingReducer,
-        promotions: promotionReducer,
-        spending: spendingReducer,
-        shiftTemplates: shiftTemplateReducer,
-        schedules: scheduleReducer,
-        extraWork: extraWorkReducer,
-        shiftCheckout: shiftCheckoutReducer,
-        salary: salaryReducer,
-        suppliers: supplierReducer,
-        storageItems: storageItemReducer,
-        storageImports: storageImportReducer,
-        storageExports: storageExportReducer,
-        storageAnalytics: storageAnalyticsReducer,
-        storageVariance: storageVarianceReducer,
-        recipes: recipeReducer,
-        toppingRecipes: toppingRecipeReducer,
-        tickets: ticketReducer,
-        store: storeReducer,
-        rewards: rewardReducer,
-        campaigns: campaignReducer,
-        docs: docsReducer
-    },
-
-    devTools: import.meta.env.NODE_ENV !== "production",
+  reducer: {
+    [baseApi.reducerPath]: baseApi.reducer,
+    customer: customerSlice,
+    cart: cartSlice,
+    user: userSlice,
+    toppings: toppingReducer,
+    store: storeReducer,
+    rewards: rewardReducer,
+  },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware()
+      .concat(baseApi.middleware)
+      .prepend(cacheResetListener.middleware),
+  devTools: import.meta.env.MODE !== "production",
 });
+
+setupListeners(store.dispatch);
 
 export default store;

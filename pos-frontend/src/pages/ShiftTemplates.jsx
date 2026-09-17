@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import {
   MdAdd,
   MdEdit,
@@ -16,20 +16,30 @@ import ShiftTemplateModal from "../components/schedule/ShiftTemplateModal";
 import DeleteConfirmationModal from "../components/shared/DeleteConfirmationModal";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import {
-  fetchShiftTemplates,
-  removeShiftTemplate,
-  toggleShiftTemplateStatus,
-  clearError
-} from "../redux/slices/shiftTemplateSlice";
+  useGetAllShiftTemplatesQuery,
+  useDeleteShiftTemplateMutation,
+  useToggleShiftTemplateActiveStatusMutation,
+} from "../redux/api/endpoints";
+import { unwrapList } from "../redux/api/queryResult";
 
 const ShiftTemplates = () => {
-  const dispatch = useDispatch();
-  const { shiftTemplates, loading, error, deleteLoading } = useSelector(
-    (state) => state.shiftTemplates
-  );
   const { activeStore } = useSelector((state) => state.store);
   const { role } = useSelector((state) => state.user);
   const isAdmin = role === "Admin";
+  const canLoad = isAdmin && Boolean(activeStore?._id);
+
+  const {
+    data: templatesResult,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useGetAllShiftTemplatesQuery(undefined, { skip: !canLoad });
+  const shiftTemplates = unwrapList(templatesResult);
+  const [deleteShiftTemplate, { isLoading: deleteLoading }] =
+    useDeleteShiftTemplateMutation();
+  const [toggleShiftTemplateStatus] =
+    useToggleShiftTemplateActiveStatusMutation();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -38,17 +48,13 @@ const ShiftTemplates = () => {
 
   useEffect(() => {
     document.title = "POS | Shift Templates";
-    if (isAdmin && activeStore?._id) {
-      dispatch(fetchShiftTemplates());
-    }
-  }, [dispatch, isAdmin, activeStore?._id]);
+  }, []);
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar(error, { variant: "error" });
-      dispatch(clearError());
+      enqueueSnackbar(error?.data || error, { variant: "error" });
     }
-  }, [error, dispatch]);
+  }, [error]);
 
   const handleCreateClick = () => {
     setSelectedTemplate(null);
@@ -68,14 +74,14 @@ const ShiftTemplates = () => {
   const handleConfirmDelete = async () => {
     if (selectedTemplate) {
       try {
-        await dispatch(removeShiftTemplate(selectedTemplate._id)).unwrap();
+        await deleteShiftTemplate(selectedTemplate._id).unwrap();
         enqueueSnackbar("Shift template deleted successfully!", {
           variant: "success"
         });
         setShowDeleteModal(false);
         setSelectedTemplate(null);
-      } catch (error) {
-        enqueueSnackbar(error || "Failed to delete shift template", {
+      } catch (err) {
+        enqueueSnackbar(err?.data || err || "Failed to delete shift template", {
           variant: "error"
         });
       }
@@ -84,13 +90,13 @@ const ShiftTemplates = () => {
 
   const handleToggleStatus = async (template) => {
     try {
-      await dispatch(toggleShiftTemplateStatus(template._id)).unwrap();
+      await toggleShiftTemplateStatus(template._id).unwrap();
       const statusText = template.isActive ? "deactivated" : "activated";
       enqueueSnackbar(`Shift template ${statusText} successfully!`, {
         variant: "success"
       });
-    } catch (error) {
-      enqueueSnackbar(error || "Failed to toggle status", { variant: "error" });
+    } catch (err) {
+      enqueueSnackbar(err?.data || err || "Failed to toggle status", { variant: "error" });
     }
   };
 
@@ -101,7 +107,7 @@ const ShiftTemplates = () => {
   };
 
   const handleRefresh = () => {
-    dispatch(fetchShiftTemplates());
+    refetch();
   };
 
   if (!isAdmin) {
@@ -160,10 +166,10 @@ const ShiftTemplates = () => {
           </button>
           <button
             onClick={handleRefresh}
-            disabled={loading}
+            disabled={isFetching}
             className="px-3 sm:px-4 py-2 bg-[#262626] text-[#f5f5f5] rounded-lg font-medium hover:bg-[#343434] transition-colors flex items-center justify-center gap-2 text-sm whitespace-nowrap"
           >
-            <MdRefresh size={16} className={loading ? "animate-spin" : ""} />{" "}
+            <MdRefresh size={16} className={isFetching ? "animate-spin" : ""} />{" "}
             Refresh
           </button>
         </div>
@@ -171,7 +177,7 @@ const ShiftTemplates = () => {
 
       {/* Content */}
       <div className="px-4 sm:px-10 py-6">
-        {loading ? (
+        {isLoading ? (
           <FullScreenLoader />
         ) : shiftTemplates.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -351,4 +357,3 @@ ShiftTemplateCard.propTypes = {
 };
 
 export default ShiftTemplates;
-

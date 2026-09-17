@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { MdSearch, MdClose, MdRestaurantMenu } from "react-icons/md";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchCategories } from "../../redux/slices/categorySlice";
-import { fetchDishes } from "../../redux/slices/dishSlice";
 import defaultDishImage from "../../assets/images/hyderabadibiryani.jpg";
 import DishBottomSheet from "./DishBottomSheet";
 import { formatPriceK } from "../../utils";
 import LoadingState from "../shared/LoadingState";
+import {
+  useGetCategoriesQuery,
+  useGetDishesQuery,
+} from "../../redux/api/endpoints/catalogEndpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 
 const CATEGORY_EMOJIS = {
   matcha: "🍵",
@@ -41,14 +43,11 @@ const getCategoryEmoji = (name) => {
 const getDishBgColor = (index) => DISH_BG_COLORS[index % DISH_BG_COLORS.length];
 
 const MenuContainer = () => {
-  const dispatch = useDispatch();
-
-  const { items: categories, loading: categoriesLoading } = useSelector(
-    (state) => state.categories
-  );
-  const { items: dishes, loading: dishesLoading } = useSelector(
-    (state) => state.dishes
-  );
+  const { data: categoriesResult, isLoading: categoriesLoading } =
+    useGetCategoriesQuery();
+  const { data: dishesResult, isLoading: dishesLoading } = useGetDishesQuery();
+  const categories = unwrapList(categoriesResult);
+  const dishes = unwrapList(dishesResult);
 
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [filteredDishes, setFilteredDishes] = useState([]);
@@ -56,11 +55,6 @@ const MenuContainer = () => {
   const [initialVariant, setInitialVariant] = useState(null);
   const [isDishModalOpen, setIsDishModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-
-  useEffect(() => {
-    dispatch(fetchCategories());
-    dispatch(fetchDishes());
-  }, [dispatch]);
 
   useEffect(() => {
     if (dishes.length > 0) {

@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import { useSnackbar } from "notistack";
+import { skipToken } from "@reduxjs/toolkit/query/react";
 import {
   MdCasino,
   MdEmojiEvents,
@@ -14,28 +14,25 @@ import {
   MdDeleteOutline,
 } from "react-icons/md";
 import {
-  fetchCampaignDashboardAnalytics,
-  fetchCampaigns,
-} from "../../redux/slices/campaignSlice";
-import { clearCampaignParticipation } from "../../https";
+  useGetCampaignsQuery,
+  useGetCampaignDashboardAnalyticsQuery,
+  useClearCampaignParticipationMutation,
+} from "../../redux/api/endpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 import { getTodayDateVietnam, getDateRangeByPeriodVietnam } from "../../utils/dateUtils";
 import LoadingState from "../shared/LoadingState";
 import EmptyState from "../shared/EmptyState";
 import StoreSummariesTable from "./StoreSummariesTable";
 
 const RedeemRewardDashboard = ({ dateFilter, customDateRange }) => {
-  const dispatch = useDispatch();
   const { enqueueSnackbar } = useSnackbar();
-  const { dashboardAnalytics, dashboardLoading, campaigns, campaignsLoading } =
-    useSelector((state) => state.campaigns);
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
   const [clearingId, setClearingId] = useState("");
 
-  useEffect(() => {
-    dispatch(fetchCampaigns());
-  }, [dispatch]);
+  const { data: campaignsResult, isLoading: campaignsLoading } = useGetCampaignsQuery();
+  const campaigns = unwrapList(campaignsResult);
 
-  const refreshAnalytics = useCallback(() => {
+  const analyticsParams = useMemo(() => {
     const today = getTodayDateVietnam();
     let startDate;
     let endDate;
@@ -68,20 +65,17 @@ const RedeemRewardDashboard = ({ dateFilter, customDateRange }) => {
         endDate = today;
     }
 
-    if (startDate && endDate) {
-      dispatch(
-        fetchCampaignDashboardAnalytics({
-          startDate,
-          endDate,
-          campaignId: selectedCampaignId || undefined,
-        })
-      );
-    }
-  }, [dispatch, dateFilter, customDateRange, selectedCampaignId]);
+    if (!startDate || !endDate) return skipToken;
+    return {
+      startDate,
+      endDate,
+      campaignId: selectedCampaignId || undefined,
+    };
+  }, [dateFilter, customDateRange, selectedCampaignId]);
 
-  useEffect(() => {
-    refreshAnalytics();
-  }, [refreshAnalytics]);
+  const { data: dashboardAnalytics, isLoading: dashboardLoading } =
+    useGetCampaignDashboardAnalyticsQuery(analyticsParams);
+  const [clearCampaignParticipation] = useClearCampaignParticipationMutation();
 
   const handleClearParticipation = async (participant) => {
     const message = participant.hasActiveVoucher
@@ -94,12 +88,11 @@ const RedeemRewardDashboard = ({ dateFilter, customDateRange }) => {
 
     setClearingId(participant.participationId);
     try {
-      await clearCampaignParticipation(participant.participationId);
+      await clearCampaignParticipation(participant.participationId).unwrap();
       enqueueSnackbar("Phone cleared successfully", { variant: "success" });
-      refreshAnalytics();
     } catch (error) {
       enqueueSnackbar(
-        error.response?.data?.message || "Failed to clear phone",
+        error?.data || "Failed to clear phone",
         { variant: "error" }
       );
     } finally {

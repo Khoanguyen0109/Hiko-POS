@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { skipToken } from "@reduxjs/toolkit/query/react";
 import PropTypes from "prop-types";
 import { MdClose, MdAdd, MdDelete, MdCalculate } from "react-icons/md";
 import Autocomplete from "../shared/Autocomplete";
@@ -8,9 +8,13 @@ import {
   filterStorageItemOption,
   renderRecipeStorageItemOption,
 } from "../storage/storageItemAutocompleteUtils";
-import { saveRecipe, fetchRecipeByDishId, clearCurrentRecipe } from "../../redux/slices/recipeSlice";
-import { fetchStorageItems } from "../../redux/slices/storageItemSlice";
-import { fetchDishes } from "../../redux/slices/dishSlice";
+import {
+  useGetStorageItemsQuery,
+  useGetDishesQuery,
+  useGetRecipeByDishIdQuery,
+  useCreateOrUpdateRecipeMutation,
+} from "../../redux/api/endpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 import { enqueueSnackbar } from "notistack";
 import { formatVND } from "../../utils";
 import {
@@ -33,12 +37,33 @@ const processLines = (lines = []) =>
   }));
 
 const RecipeModal = ({ isOpen, onClose, dish, onSuccess }) => {
-  const dispatch = useDispatch();
-  const { items: storageItems } = useSelector((state) => state.storageItems);
-  const { items: dishes } = useSelector((state) => state.dishes);
-  const { currentRecipe, saving } = useSelector((state) => state.recipes);
-
   const [selectedDish, setSelectedDish] = useState(null);
+  const activeDish = selectedDish || dish;
+  const dishId = activeDish?._id;
+
+  const { data: itemsResult } = useGetStorageItemsQuery(
+    { isActive: true, limit: 1000 },
+    { skip: !isOpen }
+  );
+  const { data: dishesResult } = useGetDishesQuery(undefined, { skip: !isOpen || Boolean(dish) });
+  const {
+    data: recipeResult,
+    isSuccess: recipeSuccess,
+    isError: recipeError,
+    error: recipeQueryError,
+    isLoading: recipeLoading,
+  } = useGetRecipeByDishIdQuery(isOpen && dishId ? dishId : skipToken);
+  const [createOrUpdateRecipe, { isLoading: saving }] = useCreateOrUpdateRecipeMutation();
+  const storageItems = unwrapList(itemsResult);
+  const dishes = unwrapList(dishesResult);
+
+  const currentRecipe = !isOpen || !dishId || recipeLoading
+    ? undefined
+    : recipeError
+      ? (recipeQueryError?.status === 404 ? null : undefined)
+      : recipeSuccess
+        ? (recipeResult || null)
+        : undefined;
   const [formData, setFormData] = useState({
     dishId: "",
     ingredients: [],
@@ -52,8 +77,6 @@ const RecipeModal = ({ isOpen, onClose, dish, onSuccess }) => {
   const [ingredientCost, setIngredientCost] = useState(0);
   const [variantCosts, setVariantCosts] = useState([]);
   const [useVariants, setUseVariants] = useState(false);
-
-  const activeDish = selectedDish || dish;
 
   const storageItemOptions = useMemo(
     () => buildRecipeStorageItemOptions(storageItems, formatVND),
@@ -101,30 +124,13 @@ const RecipeModal = ({ isOpen, onClose, dish, onSuccess }) => {
   }, [formData.ingredients, formData.sizeVariantRecipes, storageItems, useVariants]);
 
   useEffect(() => {
-    if (isOpen) {
-      dispatch(fetchStorageItems({ isActive: true, limit: 1000 }));
-      if (!dish) {
-        dispatch(fetchDishes());
-      }
-    }
-    return () => {
-      if (!isOpen) {
-        dispatch(clearCurrentRecipe());
-      }
-    };
-  }, [isOpen, dish, dispatch]);
-
-  useEffect(() => {
     if (dish && isOpen) {
       setSelectedDish(dish);
-      dispatch(clearCurrentRecipe());
-      dispatch(fetchRecipeByDishId(dish._id));
       setUseVariants(Boolean(dish.hasSizeVariants && dish.sizeVariants?.length > 0));
     } else if (!dish && isOpen) {
       setSelectedDish(null);
-      dispatch(clearCurrentRecipe());
     }
-  }, [dish, isOpen, dispatch]);
+  }, [dish, isOpen]);
 
   useEffect(() => {
     if (!activeDish || !isOpen) return;
@@ -201,12 +207,10 @@ const RecipeModal = ({ isOpen, onClose, dish, onSuccess }) => {
     });
   };
 
-  const handleDishSelect = (dishId) => {
-    const selected = dishes.find((entry) => entry._id === dishId);
+  const handleDishSelect = (nextDishId) => {
+    const selected = dishes.find((entry) => entry._id === nextDishId);
     if (selected) {
       setSelectedDish(selected);
-      dispatch(clearCurrentRecipe());
-      dispatch(fetchRecipeByDishId(dishId));
       setUseVariants(Boolean(selected.hasSizeVariants && selected.sizeVariants?.length > 0));
     }
   };
@@ -288,12 +292,12 @@ const RecipeModal = ({ isOpen, onClose, dish, onSuccess }) => {
     }
 
     try {
-      await dispatch(saveRecipe(formData)).unwrap();
+      await createOrUpdateRecipe(formData).unwrap();
       enqueueSnackbar("Recipe saved and dish cost updated", { variant: "success" });
       onSuccess?.();
       onClose();
     } catch (error) {
-      enqueueSnackbar(error || "Failed to save recipe", { variant: "error" });
+      enqueueSnackbar(error?.data || "Failed to save recipe", { variant: "error" });
     }
   };
 

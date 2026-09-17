@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { skipToken } from "@reduxjs/toolkit/query/react";
 import {
-  searchCustomers,
-  createCustomer,
-  clearSearchResults,
-} from "../../redux/slices/customersSlice";
+  useSearchCustomersQuery,
+  useGetCustomerRewardsQuery,
+  useAddCustomerMutation,
+} from "../../redux/api/endpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 import {
   fetchCustomerRewards,
   clearCustomerRewards,
@@ -16,27 +18,38 @@ import RewardCategoryCounts from "./RewardCategoryCounts";
 
 const CustomerLookup = () => {
   const dispatch = useDispatch();
-  const { searchResults, searchLoading } = useSelector(
-    (state) => state.customersData
-  );
-
-  const customerRewards = useSelector((state) => state.rewards.customerRewards);
+  const sliceCustomerRewards = useSelector((state) => state.rewards.customerRewards);
 
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
 
-  const debounceRef = useRef(null);
   const wrapperRef = useRef(null);
 
   useEffect(() => {
-    if (!customerRewards) {
+    const timer = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const { data: searchResult, isLoading: searchLoading } = useSearchCustomersQuery(
+    debouncedQuery,
+    { skip: debouncedQuery.length < 2 }
+  );
+  const searchResults = unwrapList(searchResult);
+  const { data: queriedRewards } = useGetCustomerRewardsQuery(
+    selectedCustomer?._id ?? skipToken
+  );
+  const customerRewards = queriedRewards || sliceCustomerRewards;
+  const [addCustomer] = useAddCustomerMutation();
+
+  useEffect(() => {
+    if (!sliceCustomerRewards) {
       setSelectedCustomer(null);
       setQuery("");
       setShowDropdown(false);
-      dispatch(clearSearchResults());
     }
-  }, [customerRewards, dispatch]);
+  }, [sliceCustomerRewards]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -48,18 +61,6 @@ const CustomerLookup = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (query.length >= 2) {
-      debounceRef.current = setTimeout(() => {
-        dispatch(searchCustomers(query));
-      }, 300);
-    } else {
-      dispatch(clearSearchResults());
-    }
-    return () => clearTimeout(debounceRef.current);
-  }, [query, dispatch]);
-
   const isValidPhone = /^\d{10}$/.test(query);
   const showNewRow =
     isValidPhone && !searchLoading && searchResults.length === 0;
@@ -68,7 +69,6 @@ const CustomerLookup = () => {
     setSelectedCustomer(customer);
     setShowDropdown(false);
     setQuery("");
-    dispatch(clearSearchResults());
     dispatch(
       setCustomer({
         name: customer.name || "",
@@ -76,15 +76,16 @@ const CustomerLookup = () => {
         guests: 0,
       })
     );
+    // Keep reward slice populated for RewardSelector/Bill (client session).
     dispatch(fetchCustomerRewards(customer._id));
   };
 
   const handleCreateAndSelect = async () => {
     try {
-      const result = await dispatch(createCustomer({ phone: query })).unwrap();
+      const result = await addCustomer({ phone: query }).unwrap();
       handleSelect(result);
     } catch {
-      /* createCustomer thunk already handles errors */
+      /* mutation error surfaced by query cache */
     }
   };
 
@@ -94,7 +95,6 @@ const CustomerLookup = () => {
     setShowDropdown(false);
     dispatch(removeCustomer());
     dispatch(clearCustomerRewards());
-    dispatch(clearSearchResults());
   };
 
   if (selectedCustomer) {
@@ -144,7 +144,6 @@ const CustomerLookup = () => {
           <button
             onClick={() => {
               setQuery("");
-              dispatch(clearSearchResults());
               setShowDropdown(false);
             }}
             className="text-[#ababab] hover:text-[#f5f5f5]"

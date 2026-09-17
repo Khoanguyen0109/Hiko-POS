@@ -2,26 +2,21 @@ import { useState, useEffect } from "react";
 import BackButton from "../components/shared/BackButton";
 import TableCard from "../components/tables/TableCard";
 import { enqueueSnackbar } from "notistack";
-import { useSelector, useDispatch } from "react-redux";
-import { fetchTables } from "../redux/slices/tableSlice";
+import { useGetTablesQuery } from "../redux/api/endpoints";
+import { unwrapList } from "../redux/api/queryResult";
 
 const Tables = () => {
-  const dispatch = useDispatch();
-  const {
-    items: tables,
-    loading,
-    error,
-  } = useSelector((state) => state.tables);
+  const { data: tablesResult, isLoading: loading, error } = useGetTablesQuery();
+  const tables = unwrapList(tablesResult);
   const [status, setStatus] = useState("all");
 
   useEffect(() => {
     document.title = "POS | Tables";
-    dispatch(fetchTables());
-  }, [dispatch]);
+  }, []);
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar(error, { variant: "error" });
+      enqueueSnackbar(error?.data || error, { variant: "error" });
     }
   }, [error]);
 

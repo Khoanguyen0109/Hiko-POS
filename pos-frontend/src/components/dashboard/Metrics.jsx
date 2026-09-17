@@ -1,10 +1,7 @@
 import { BRAND_PRIMARY } from "../../constants/colors.js";
-import { useEffect, useMemo, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchOrders } from "../../redux/slices/orderSlice";
-import { fetchDishes } from "../../redux/slices/dishSlice";
-import { fetchCategories } from "../../redux/slices/categorySlice";
-import { fetchSpendingAnalytics } from "../../redux/slices/spendingSlice";
+import { useMemo, useState } from "react";
+import { useGetOrdersQuery, useGetDishesQuery, useGetCategoriesQuery, useGetSpendingAnalyticsQuery } from "../../redux/api/endpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 import { getTodayDate, formatVND } from "../../utils";
 import { getDateRangeByPeriodVietnam } from "../../utils/dateUtils";
 import PropTypes from "prop-types";
@@ -39,64 +36,50 @@ const CATEGORY_CARD_COLORS = [
 ];
 
 const Metrics = ({ dateFilter = "today", customDateRange = { startDate: "", endDate: "" } }) => {
-  const dispatch = useDispatch();
-  
-  // Redux state
-  const { items: orders, loading: ordersLoading } = useSelector((state) => state.orders);
-  const { items: dishes, loading: dishesLoading } = useSelector((state) => state.dishes);
-  const { items: categories, loading: categoriesLoading } = useSelector((state) => state.categories);
-  const { analyticsData: spendingData, analyticsLoading: spendingLoading } = useSelector((state) => state.spending);
-  
+  const { startDate, endDate } = useMemo(() => {
+    const today = getTodayDate();
+    switch (dateFilter) {
+      case "week": {
+        const { start } = getDateRangeByPeriodVietnam('thisWeek');
+        return { startDate: start, endDate: today };
+      }
+      case "month": {
+        const { start } = getDateRangeByPeriodVietnam('thisMonth');
+        return { startDate: start, endDate: today };
+      }
+      case "custom": {
+        if (customDateRange.startDate && customDateRange.endDate) {
+          return {
+            startDate: customDateRange.startDate,
+            endDate: customDateRange.endDate,
+          };
+        }
+        return { startDate: today, endDate: today };
+      }
+      default:
+        return { startDate: today, endDate: today };
+    }
+  }, [dateFilter, customDateRange]);
+
+  const { data: ordersResult, isLoading: ordersLoading } = useGetOrdersQuery({
+    startDate,
+    endDate,
+  });
+  const { data: dishesResult, isLoading: dishesLoading } = useGetDishesQuery();
+  const { data: categoriesResult, isLoading: categoriesLoading } = useGetCategoriesQuery();
+  const { data: spendingData, isLoading: spendingLoading } = useGetSpendingAnalyticsQuery({
+    startDate,
+    endDate,
+  });
+  const orders = unwrapList(ordersResult);
+  const dishes = unwrapList(dishesResult);
+  const categories = unwrapList(categoriesResult);
+
   // Local state for dish filters
   const [selectedDishId, setSelectedDishId] = useState("all");
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("all");
   const [selectedStatusFilter, setSelectedStatusFilter] = useState("all");
   const [dishSortBy, setDishSortBy] = useState("quantity");
-
-  useEffect(() => {
-    // Compute a single date range used by both orders and spending
-    const today = getTodayDate();
-    let startDate, endDate;
-    
-    switch (dateFilter) {
-      case "today": {
-        startDate = endDate = today;
-        break;
-      }
-      case "week": {
-        // Current calendar week (Monday → today), matching button label "This Week"
-        const { start } = getDateRangeByPeriodVietnam('thisWeek');
-        startDate = start;
-        endDate = today;
-        break;
-      }
-      case "month": {
-        // Current calendar month (1st → today), matching button label "This Month"
-        const { start } = getDateRangeByPeriodVietnam('thisMonth');
-        startDate = start;
-        endDate = today;
-        break;
-      }
-      case "custom": {
-        if (customDateRange.startDate && customDateRange.endDate) {
-          startDate = customDateRange.startDate;
-          endDate = customDateRange.endDate;
-        } else {
-          startDate = endDate = today;
-        }
-        break;
-      }
-      default: {
-        startDate = endDate = today;
-      }
-    }
-
-    dispatch(fetchOrders({ startDate, endDate }));
-    dispatch(fetchDishes());
-    dispatch(fetchCategories());
-    // Use the same startDate/endDate for spending so both datasets cover the identical range
-    dispatch(fetchSpendingAnalytics({ startDate, endDate }));
-  }, [dispatch, dateFilter, customDateRange]);
 
   // Helper function to calculate number of days in the selected period
   const calculateDaysInPeriod = useMemo(() => {

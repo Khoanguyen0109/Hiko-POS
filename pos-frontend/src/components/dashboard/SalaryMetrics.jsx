@@ -1,6 +1,5 @@
-import React, { useEffect, useMemo } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchSalarySummary } from '../../redux/slices/salarySlice';
+import React, { useMemo } from 'react';
+import { useGetAllMembersSalarySummaryQuery } from '../../redux/api/endpoints';
 import { 
   MdPeople as PeopleIcon, 
   MdAttachMoney as MoneyIcon,
@@ -16,32 +15,20 @@ const calcFinalSalary = (totalSalary, totalPoints) =>
   (totalSalary || 0) - POINT_COST * (totalPoints || 0);
 
 const SalaryMetrics = ({ dateFilter, customDateRange }) => {
-  const dispatch = useDispatch();
-  const { summaryData, loading, error } = useSelector(state => state.salary);
-  
-  // Prepare API parameters based on date filter
-  const getApiParams = () => {
-    const params = {};
-    
+  const params = useMemo(() => {
     if (dateFilter === "custom" && customDateRange.startDate && customDateRange.endDate) {
-      // Use explicit date range for custom filter
-      params.startDate = customDateRange.startDate;
-      params.endDate = customDateRange.endDate;
-    } else if (dateFilter !== "custom") {
-      // Use period-based filtering (today, week, month)
-      params.period = dateFilter;
-    } else {
-      // Fallback to current month if custom range is incomplete
-      params.period = "month";
+      return {
+        startDate: customDateRange.startDate,
+        endDate: customDateRange.endDate,
+      };
     }
-    
-    return params;
-  };
+    if (dateFilter !== "custom") {
+      return { period: dateFilter };
+    }
+    return { period: "month" };
+  }, [dateFilter, customDateRange]);
 
-  useEffect(() => {
-    const params = getApiParams();
-    dispatch(fetchSalarySummary(params));
-  }, [dispatch, dateFilter, customDateRange]);
+  const { data: summaryData, isLoading: loading, error } = useGetAllMembersSalarySummaryQuery(params);
 
   const stores = summaryData?.stores;
   const membersSummary = summaryData?.membersSummary;
@@ -125,7 +112,7 @@ const SalaryMetrics = ({ dateFilter, customDateRange }) => {
         <div className="text-center py-8">
           <MoneyIcon size={48} className="text-red-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-[#f5f5f5] mb-2">Error loading salary data</h3>
-          <p className="text-[#ababab]">{error}</p>
+          <p className="text-[#ababab]">{error?.data || error}</p>
         </div>
       </div>
     );

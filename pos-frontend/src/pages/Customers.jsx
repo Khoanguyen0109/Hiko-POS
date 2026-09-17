@@ -1,30 +1,22 @@
-import { useState, useEffect, useMemo } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useState, useMemo } from "react";
 import { MdPeople, MdSearch, MdEdit } from "react-icons/md";
 import { enqueueSnackbar } from "notistack";
-import { fetchCustomers, editCustomer } from "../redux/slices/customersSlice";
+import {
+  useGetCustomersQuery,
+  useUpdateCustomerMutation,
+} from "../redux/api/endpoints";
+import { unwrapList } from "../redux/api/queryResult";
 import BottomSheet from "../components/shared/BottomSheet";
 
 const Customers = () => {
-  const dispatch = useDispatch();
-  const { items: customers, loading, error } = useSelector(
-    (s) => s.customersData
-  );
+  const { data: customersResult, isLoading: loading } = useGetCustomersQuery();
+  const customers = unwrapList(customersResult);
+  const [updateCustomer] = useUpdateCustomerMutation();
 
   const [search, setSearch] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [editForm, setEditForm] = useState({ name: "", nickname: "" });
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    dispatch(fetchCustomers());
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (error) {
-      enqueueSnackbar(error, { variant: "error" });
-    }
-  }, [error]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return customers;
@@ -59,19 +51,18 @@ const Customers = () => {
   const handleSave = async () => {
     if (!selectedCustomer) return;
     setSaving(true);
-    const result = await dispatch(
-      editCustomer({
+    try {
+      await updateCustomer({
         customerId: selectedCustomer._id,
         name: editForm.name.trim(),
         nickname: editForm.nickname.trim(),
-      })
-    );
-    setSaving(false);
-    if (!result.error) {
+      }).unwrap();
       enqueueSnackbar("Customer updated!", { variant: "success" });
       setSelectedCustomer({ ...selectedCustomer, ...editForm });
-    } else {
-      enqueueSnackbar(result.payload || "Update failed", { variant: "error" });
+    } catch (err) {
+      enqueueSnackbar(err?.data || "Update failed", { variant: "error" });
+    } finally {
+      setSaving(false);
     }
   };
 

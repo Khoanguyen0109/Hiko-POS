@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { MdSettings, MdAccessTime, MdFilterList, MdPeople, MdPerson, MdStore, MdDelete } from "react-icons/md";
 import { enqueueSnackbar } from "notistack";
@@ -19,15 +19,15 @@ import ScheduleViewSwitcher from "../components/v2/ScheduleViewSwitcher";
 import { useV2Ui } from "../hooks/useV2Ui";
 import { getCurrentWeekInfo, getWeekDates, formatDate, getWeekNumber, getLocalDateString, isShiftOver } from "../utils/dateUtils";
 import {
-  fetchAllMembersWeek,
-  createNewSchedule,
-  clearError
-} from "../redux/slices/scheduleSlice";
-import { deleteExtraWork } from "../redux/slices/extraWorkSlice";
-import { fetchAllActiveShiftTemplates } from "../redux/slices/shiftTemplateSlice";
-import { fetchMembers } from "../redux/slices/memberSlice";
-import { fetchExtraWork } from "../redux/slices/extraWorkSlice";
-import { fetchAllStores } from "../redux/slices/storeSlice";
+  useGetActiveShiftTemplatesAllStoresQuery,
+  useGetAllMembersWeekQuery,
+  useGetAllStoresQuery,
+  useGetAllMembersQuery,
+  useGetAllExtraWorkQuery,
+  useCreateScheduleMutation,
+  useDeleteExtraWorkMutation,
+} from "../redux/api/endpoints";
+import { unwrapList } from "../redux/api/queryResult";
 import { ROUTES } from "../constants";
 
 const TABS = {
@@ -71,15 +71,8 @@ function getMonthGridDays(year, month) {
 }
 
 const WeeklySchedule = () => {
-  const dispatch = useDispatch();
   const { v2UiEnabled } = useV2Ui();
-  const { allMembersSchedules, allMembersLoading, error, createLoading } = useSelector((state) => state.schedules);
-  const { activeShiftTemplates, loading: templatesLoading } = useSelector(
-    (state) => state.shiftTemplates
-  );
-  const { members } = useSelector((state) => state.members);
-  const { allStores, activeStore, allStoresLoading } = useSelector((state) => state.store);
-  const { extraWorkEntries, totalHours, totalPayment, loading: extraWorkLoading } = useSelector((state) => state.extraWork);
+  const { activeStore } = useSelector((state) => state.store);
   const { role } = useSelector((state) => state.user);
   const isAdmin = role === "Admin";
 
@@ -100,38 +93,60 @@ const WeeklySchedule = () => {
   const [scheduleViewMode, setScheduleViewMode] = useState(SCHEDULE_VIEW_MODES.COMPACT);
   const [selectedCalendarDay, setSelectedCalendarDay] = useState(null);
 
-  useEffect(() => {
-    document.title = "POS | Weekly Schedule";
-    dispatch(fetchAllActiveShiftTemplates());
-    if (activeTab === TABS.BY_STORE) {
-      dispatch(fetchAllMembersWeek(currentWeek));
-      if (allStores.length === 0) dispatch(fetchAllStores());
-    }
-    if (isAdmin) {
-      dispatch(fetchMembers({ isActive: true }));
-    }
-  }, [dispatch, isAdmin, currentWeek, activeTab, allStores.length, activeStore?._id]);
+  const extraWorkParams = useMemo(() => {
+    const filters = {};
+    if (extraWorkFilters.memberId) filters.memberId = extraWorkFilters.memberId;
+    if (extraWorkFilters.startDate) filters.startDate = extraWorkFilters.startDate;
+    if (extraWorkFilters.endDate) filters.endDate = extraWorkFilters.endDate;
+    return filters;
+  }, [extraWorkFilters]);
+
+  const { data: templatesResult, isLoading: templatesLoading, error: templatesError } =
+    useGetActiveShiftTemplatesAllStoresQuery();
+  const activeShiftTemplates = unwrapList(templatesResult);
+
+  const {
+    data: weekResult,
+    isLoading: allMembersLoading,
+    error: weekError,
+    refetch: refetchAdminWeek,
+  } = useGetAllMembersWeekQuery(currentWeek, { skip: activeTab !== TABS.BY_STORE });
+  const allMembersSchedules = unwrapList(weekResult);
+
+  const { data: storesResult, isLoading: allStoresLoading, error: storesError } =
+    useGetAllStoresQuery(undefined, { skip: activeTab !== TABS.BY_STORE });
+  const allStores = unwrapList(storesResult);
+
+  const { data: membersResult } = useGetAllMembersQuery(
+    { isActive: true },
+    { skip: !isAdmin }
+  );
+  const members = unwrapList(membersResult);
+
+  const { data: extraWorkResult, isLoading: extraWorkLoading, error: extraWorkError } =
+    useGetAllExtraWorkQuery(extraWorkParams, { skip: !isAdmin });
+  const extraWorkEntries = unwrapList(extraWorkResult);
+  const totalHours = extraWorkEntries.reduce((sum, entry) => sum + (entry.durationHours || 0), 0);
+  const totalPayment = extraWorkEntries.reduce((sum, entry) => sum + (entry.paymentAmount || 0), 0);
+
+  const [createSchedule, { isLoading: createLoading }] = useCreateScheduleMutation();
+  const [deleteExtraWork] = useDeleteExtraWorkMutation();
+
+  const queryError = templatesError || weekError || storesError || extraWorkError;
 
   useEffect(() => {
-    if (isAdmin) {
-      const filters = {};
-      if (extraWorkFilters.memberId) filters.memberId = extraWorkFilters.memberId;
-      if (extraWorkFilters.startDate) filters.startDate = extraWorkFilters.startDate;
-      if (extraWorkFilters.endDate) filters.endDate = extraWorkFilters.endDate;
-      dispatch(fetchExtraWork(filters));
-    }
-  }, [dispatch, isAdmin, extraWorkFilters]);
+    document.title = "POS | Weekly Schedule";
+  }, []);
 
   useEffect(() => {
     setSelectedCalendarDay(null);
   }, [currentWeek.year, currentWeek.week]);
 
   useEffect(() => {
-    if (error) {
-      enqueueSnackbar(error, { variant: "error" });
-      dispatch(clearError());
+    if (queryError) {
+      enqueueSnackbar(queryError?.data || queryError, { variant: "error" });
     }
-  }, [error, dispatch]);
+  }, [queryError]);
 
   const handleWeekChange = (year, week) => {
     setCurrentWeek({ year, week });
@@ -175,28 +190,28 @@ const WeeklySchedule = () => {
         const year = scheduleDate.getFullYear();
         const weekNumber = getWeekNumber(scheduleDate);
 
-        const result = await dispatch(createNewSchedule({
+        const result = await createSchedule({
           date: dateStr,
           shiftTemplateId: shiftTemplate._id,
           memberIds: [],
           year,
           weekNumber,
           storeId: store._id
-        })).unwrap();
+        }).unwrap();
 
-        setSelectedSchedule(result.data);
+        setSelectedSchedule(result);
         setSelectedShiftTemplate(shiftTemplate);
         setSelectedStore(store);
         setShowAssignmentModal(true);
       }
     } catch (err) {
-      enqueueSnackbar(err || "Failed to access schedule", { variant: "error" });
+      enqueueSnackbar(err?.data || err || "Failed to access schedule", { variant: "error" });
     }
   };
 
   // Refresh the cross-store week data after an edit so the combined grid updates.
   const refreshAdminWeek = () => {
-    dispatch(fetchAllMembersWeek(currentWeek));
+    refetchAdminWeek();
   };
 
   const handleCloseModal = () => {
@@ -230,10 +245,10 @@ const WeeklySchedule = () => {
   const handleDeleteExtraWork = async (id) => {
     if (!window.confirm("Are you sure you want to delete this extra work entry?")) return;
     try {
-      await dispatch(deleteExtraWork(id)).unwrap();
+      await deleteExtraWork(id).unwrap();
       enqueueSnackbar("Extra work entry deleted", { variant: "success" });
     } catch (err) {
-      enqueueSnackbar(err || "Failed to delete extra work entry", { variant: "error" });
+      enqueueSnackbar(err?.data || err || "Failed to delete extra work entry", { variant: "error" });
     }
   };
 

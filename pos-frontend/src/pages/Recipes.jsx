@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useMemo, useState } from "react";
 import {
   MdMenuBook,
   MdCalculate,
@@ -16,14 +15,14 @@ import ErrorBanner from "../components/shared/ErrorBanner";
 import HeaderActionButton from "../components/shared/HeaderActionButton";
 import RecipeModal from "../components/dishes/RecipeModal";
 import ToppingRecipeModal from "../components/toppings/ToppingRecipeModal";
-import { fetchRecipes, recalculateRecipeCosts } from "../redux/slices/recipeSlice";
 import {
-  fetchToppingRecipes,
-  recalculateToppingRecipeCosts,
-} from "../redux/slices/toppingRecipeSlice";
-import { fetchDishes } from "../redux/slices/dishSlice";
-import { fetchCategories } from "../redux/slices/categorySlice";
-import { fetchToppings } from "../redux/slices/toppingSlice";
+  useGetAllRecipesQuery,
+  useGetAllToppingRecipesQuery,
+  useRecalculateAllCostsMutation,
+  useRecalculateAllToppingCostsMutation,
+  useGetCategoriesQuery,
+} from "../redux/api/endpoints";
+import { unwrapList } from "../redux/api/queryResult";
 import { enqueueSnackbar } from "notistack";
 import { formatVND } from "../utils";
 import { getRecipeTotalCost } from "../utils/recipeCost";
@@ -190,16 +189,16 @@ const getToppingFoodCostPercent = (recipe) => {
 };
 
 const Recipes = () => {
-  const dispatch = useDispatch();
-  const { items: dishRecipes, loading: dishLoading, error: dishError } = useSelector(
-    (state) => state.recipes
-  );
-  const {
-    items: toppingRecipes,
-    loading: toppingLoading,
-    error: toppingError,
-  } = useSelector((state) => state.toppingRecipes);
-  const { items: categories } = useSelector((state) => state.categories);
+  const { data: dishResult, isLoading: dishLoading, error: dishError } =
+    useGetAllRecipesQuery({ limit: 100 });
+  const { data: toppingResult, isLoading: toppingLoading, error: toppingError } =
+    useGetAllToppingRecipesQuery({ limit: 100 });
+  const { data: categoriesResult } = useGetCategoriesQuery();
+  const dishRecipes = unwrapList(dishResult);
+  const toppingRecipes = unwrapList(toppingResult);
+  const categories = unwrapList(categoriesResult);
+  const [recalculateAllCosts] = useRecalculateAllCostsMutation();
+  const [recalculateAllToppingCosts] = useRecalculateAllToppingCostsMutation();
 
   const [activeTab, setActiveTab] = useState("dishes");
   const [search, setSearch] = useState("");
@@ -207,12 +206,6 @@ const Recipes = () => {
   const [isToppingModalOpen, setIsToppingModalOpen] = useState(false);
   const [selectedDish, setSelectedDish] = useState(null);
   const [selectedTopping, setSelectedTopping] = useState(null);
-
-  useEffect(() => {
-    dispatch(fetchRecipes({ limit: 100 }));
-    dispatch(fetchToppingRecipes({ limit: 100 }));
-    dispatch(fetchCategories());
-  }, [dispatch]);
 
   const categoryById = useMemo(
     () => new Map(categories.map((category) => [String(category._id), category])),
@@ -279,18 +272,14 @@ const Recipes = () => {
   const handleRecalculateAll = async () => {
     try {
       if (activeTab === "dishes") {
-        const result = await dispatch(recalculateRecipeCosts()).unwrap();
-        enqueueSnackbar(result.message || "Dish costs recalculated", { variant: "success" });
-        dispatch(fetchRecipes({ limit: 100 }));
-        dispatch(fetchDishes());
+        const result = await recalculateAllCosts().unwrap();
+        enqueueSnackbar(result?.message || "Dish costs recalculated", { variant: "success" });
       } else {
-        const result = await dispatch(recalculateToppingRecipeCosts()).unwrap();
-        enqueueSnackbar(result.message || "Topping costs recalculated", { variant: "success" });
-        dispatch(fetchToppingRecipes({ limit: 100 }));
-        dispatch(fetchToppings({}));
+        const result = await recalculateAllToppingCosts().unwrap();
+        enqueueSnackbar(result?.message || "Topping costs recalculated", { variant: "success" });
       }
     } catch (err) {
-      enqueueSnackbar(err || "Failed to recalculate costs", { variant: "error" });
+      enqueueSnackbar(err?.data || "Failed to recalculate costs", { variant: "error" });
     }
   };
 
@@ -305,7 +294,9 @@ const Recipes = () => {
   };
 
   const loading = activeTab === "dishes" ? dishLoading : toppingLoading;
-  const error = activeTab === "dishes" ? dishError : toppingError;
+  const error = activeTab === "dishes"
+    ? (dishError?.data || (dishError ? "Failed to load recipes" : null))
+    : (toppingError?.data || (toppingError ? "Failed to load topping recipes" : null));
 
   return (
     <section className="bg-[#1f1f1f] min-h-screen pb-20">
@@ -593,10 +584,7 @@ const Recipes = () => {
           setSelectedDish(null);
         }}
         dish={selectedDish}
-        onSuccess={() => {
-          dispatch(fetchRecipes({ limit: 100 }));
-          dispatch(fetchDishes());
-        }}
+        onSuccess={() => {}}
       />
 
       <ToppingRecipeModal
@@ -606,10 +594,7 @@ const Recipes = () => {
           setSelectedTopping(null);
         }}
         topping={selectedTopping}
-        onSuccess={() => {
-          dispatch(fetchToppingRecipes({ limit: 100 }));
-          dispatch(fetchToppings({}));
-        }}
+        onSuccess={() => {}}
       />
     </section>
   );

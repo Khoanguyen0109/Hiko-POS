@@ -18,13 +18,15 @@ axiosInstance.interceptors.request.use(
       config.headers["Authorization"] = `Bearer ${token}`;
     }
 
-    try {
-      const activeStore = JSON.parse(localStorage.getItem("activeStore"));
-      if (activeStore?._id) {
-        config.headers["X-Store-Id"] = activeStore._id;
+    if (!config.skipStoreHeader) {
+      try {
+        const activeStore = JSON.parse(localStorage.getItem("activeStore"));
+        if (activeStore?._id) {
+          config.headers["X-Store-Id"] = activeStore._id;
+        }
+      } catch {
+        // ignore parse errors
       }
-    } catch {
-      // ignore parse errors
     }
     return config;
   },

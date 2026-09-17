@@ -1,13 +1,13 @@
-import { useState, useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { IoMdAdd, IoMdMedkit, IoMdTrash } from "react-icons/io";
 import { MdCategory, MdToggleOn, MdToggleOff } from "react-icons/md";
 import {
-  fetchCategories,
-  removeCategory,
-  editCategory,
-} from "../redux/slices/categorySlice";
+  useGetCategoriesQuery,
+  useUpdateCategoryMutation,
+  useDeleteCategoryMutation,
+} from "../redux/api/endpoints/catalogEndpoints";
+import { unwrapList } from "../redux/api/queryResult";
 import { enqueueSnackbar } from "notistack";
 import CategoryModal from "../components/dashboard/CategoryModal";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
@@ -135,20 +135,19 @@ CategoryCard.propTypes = {
 };
 
 const Categories = () => {
-  const dispatch = useDispatch();
   const {
-    items: categories,
-    loading,
+    data: categoriesResult,
+    isLoading,
     error,
-  } = useSelector((state) => state.categories);
+    refetch,
+  } = useGetCategoriesQuery();
+  const categories = unwrapList(categoriesResult);
+  const [updateCategory] = useUpdateCategoryMutation();
+  const [deleteCategory] = useDeleteCategoryMutation();
 
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [filterStatus, setFilterStatus] = useState("all"); // all, active, inactive
-
-  useEffect(() => {
-    dispatch(fetchCategories());
-  }, [dispatch]);
 
   const handleAddCategory = () => {
     setEditingCategory(null);
@@ -167,42 +166,38 @@ const Categories = () => {
       )
     ) {
       try {
-        const resultAction = await dispatch(removeCategory(category._id));
-        if (removeCategory.fulfilled.match(resultAction)) {
-          enqueueSnackbar("Category deleted successfully!", {
-            variant: "success",
-          });
-        } else {
-          const errorMessage =
-            resultAction.payload || "Failed to delete category";
-          enqueueSnackbar(errorMessage, { variant: "error" });
-        }
-      } catch {
-        enqueueSnackbar("An unexpected error occurred", { variant: "error" });
+        await deleteCategory(category._id).unwrap();
+        enqueueSnackbar("Category deleted successfully!", {
+          variant: "success",
+        });
+      } catch (err) {
+        enqueueSnackbar(
+          err?.data || err || "Failed to delete category",
+          { variant: "error" }
+        );
       }
     }
   };
 
   const handleToggleStatus = async (category) => {
     try {
-      const updatedData = { ...category, isActive: !category.isActive };
-      const resultAction = await dispatch(
-        editCategory({ id: category._id, categoryData: updatedData })
+      const result = await updateCategory({
+        categoryId: category._id,
+        name: category.name,
+        description: category.description,
+        color: category.color,
+        isActive: !category.isActive,
+      }).unwrap();
+      const newStatus = result.isActive;
+      enqueueSnackbar(
+        `Category ${newStatus ? "activated" : "deactivated"} successfully!`,
+        { variant: "success" }
       );
-
-      if (editCategory.fulfilled.match(resultAction)) {
-        const newStatus = resultAction.payload.isActive;
-        enqueueSnackbar(
-          `Category ${newStatus ? "activated" : "deactivated"} successfully!`,
-          { variant: "success" }
-        );
-      } else {
-        const errorMessage =
-          resultAction.payload || "Failed to toggle category status";
-        enqueueSnackbar(errorMessage, { variant: "error" });
-      }
-    } catch {
-      enqueueSnackbar("An unexpected error occurred", { variant: "error" });
+    } catch (err) {
+      enqueueSnackbar(
+        err?.data || err || "Failed to toggle category status",
+        { variant: "error" }
+      );
     }
   };
 
@@ -221,17 +216,17 @@ const Categories = () => {
 
   const statusCounts = getStatusCounts();
 
-  if (loading && categories.length === 0) {
+  if (isLoading) {
     return <FullScreenLoader />;
   }
 
-  if (error) {
+  if (error && categories.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <p className="text-red-400 text-lg mb-4">Error loading categories</p>
           <button
-            onClick={() => dispatch(fetchCategories())}
+            onClick={() => refetch()}
             className="px-4 py-2 bg-brand text-[#f5f5f5] rounded-lg font-semibold hover:bg-brand-hover transition-colors"
           >
             Retry
@@ -370,16 +365,6 @@ const Categories = () => {
           </div>
         )}
       </div>
-
-      {/* Loading Overlay */}
-      {loading && categories.length > 0 && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-40">
-          <div className="bg-[#1f1f1f] p-4 rounded-lg">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand mx-auto"></div>
-            <p className="text-[#f5f5f5] text-sm mt-2">Loading...</p>
-          </div>
-        </div>
-      )}
 
       {/* Category Modal */}
       {isCategoryModalOpen && (

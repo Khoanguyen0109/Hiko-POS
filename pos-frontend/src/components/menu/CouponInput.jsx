@@ -1,14 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchPromotions } from '../../redux/slices/promotionSlice';
 import { applyCoupon, removeCoupon, getAppliedCoupon } from '../../redux/slices/cartSlice';
+import { useGetPromotionsQuery } from '../../redux/api/endpoints';
+import { unwrapList } from '../../redux/api/queryResult';
 import { MdLocalOffer as TagIcon, MdCheck as CheckIcon, MdClose as XIcon, MdPercent as PercentIcon, MdExpandMore as ExpandMoreIcon, MdExpandLess as ExpandLessIcon, MdAccessTime as ClockIcon } from 'react-icons/md';
 
 const CouponSelector = () => {
   const dispatch = useDispatch();
   const [isAccordionOpen, setIsAccordionOpen] = useState(false);
   
-  const { items: promotions, loading } = useSelector(state => state.promotions);
+  const { data: promotionsResult, isLoading: loading } = useGetPromotionsQuery({
+    isActive: true,
+    limit: 50,
+  });
+  const promotions = unwrapList(promotionsResult);
   const appliedCoupon = useSelector(getAppliedCoupon);
   
   // Filter active coupons that are currently valid (including happy hour)
@@ -25,12 +30,6 @@ const CouponSelector = () => {
             promotion.type === 'happy_hour' ||
             promotion.type === 'free_topping');
   });
-
-  useEffect(() => {
-    if (promotions.length === 0 && !loading) {
-      dispatch(fetchPromotions({ isActive: true, limit: 50 }));
-    }
-  }, []);
 
   const handleSelectCoupon = (coupon) => {
     dispatch(applyCoupon(coupon));

@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import {
   MdSave,
   MdStore,
@@ -12,17 +11,14 @@ import { FormField, Button } from "../ui";
 import BottomSheet from "../shared/BottomSheet";
 import { enqueueSnackbar } from "notistack";
 import {
-  createNewStore,
-  updateExistingStore,
-  clearStoreError,
-} from "../../redux/slices/storeSlice";
+  useCreateStoreMutation,
+  useUpdateStoreMutation,
+} from "../../redux/api/endpoints";
 import PropTypes from "prop-types";
 
 const StoreModal = ({ isOpen, onClose, mode, store }) => {
-  const dispatch = useDispatch();
-  const { createLoading, updateLoading, error } = useSelector(
-    (state) => state.store
-  );
+  const [createStore, { isLoading: createLoading }] = useCreateStoreMutation();
+  const [updateStore, { isLoading: updateLoading }] = useUpdateStoreMutation();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -39,12 +35,6 @@ const StoreModal = ({ isOpen, onClose, mode, store }) => {
 
   const isEditMode = mode === "edit";
   const isLoading = createLoading || updateLoading;
-
-  useEffect(() => {
-    if (error) {
-      dispatch(clearStoreError());
-    }
-  }, [error, dispatch]);
 
   useEffect(() => {
     if (isEditMode && store) {
@@ -142,7 +132,7 @@ const StoreModal = ({ isOpen, onClose, mode, store }) => {
           return;
         }
 
-        await dispatch(updateExistingStore(updateData)).unwrap();
+        await updateStore(updateData).unwrap();
         enqueueSnackbar("Store updated successfully!", { variant: "success" });
       } else {
         const createData = {
@@ -158,13 +148,13 @@ const StoreModal = ({ isOpen, onClose, mode, store }) => {
           },
         };
 
-        await dispatch(createNewStore(createData)).unwrap();
+        await createStore(createData).unwrap();
         enqueueSnackbar("Store created successfully!", { variant: "success" });
       }
 
       onClose();
     } catch (err) {
-      enqueueSnackbar(err || "Operation failed", { variant: "error" });
+      enqueueSnackbar(err?.data || err || "Operation failed", { variant: "error" });
     }
   };
 

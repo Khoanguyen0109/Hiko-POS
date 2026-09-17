@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useState, useEffect, useMemo } from "react";
+import { useSelector } from "react-redux";
 import {
   MdAdd,
   MdEdit,
@@ -17,11 +17,11 @@ import {
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
 import {
-  fetchAllStores,
-  removeStore,
-  updateExistingStore,
-  clearStoreError,
-} from "../redux/slices/storeSlice";
+  useGetAllStoresQuery,
+  useDeleteStoreMutation,
+  useUpdateStoreMutation,
+} from "../redux/api/endpoints";
+import { unwrapList } from "../redux/api/queryResult";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import FeaturePageHeader from "../components/shared/FeaturePageHeader";
 import HeaderActionButton from "../components/shared/HeaderActionButton";
@@ -29,15 +29,19 @@ import StoreModal from "../components/stores/StoreModal";
 import DeleteConfirmationModal from "../components/shared/DeleteConfirmationModal";
 
 const Stores = () => {
-  const dispatch = useDispatch();
-  const {
-    allStores,
-    allStoresLoading: loading,
-    error,
-    deleteLoading,
-    updateLoading,
-  } = useSelector((state) => state.store);
   const { role } = useSelector((state) => state.user);
+  const isAdmin = role === "Admin";
+
+  const {
+    data: storesResult,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+  } = useGetAllStoresQuery(undefined, { skip: !isAdmin });
+  const allStores = unwrapList(storesResult);
+  const [deleteStore, { isLoading: deleteLoading }] = useDeleteStoreMutation();
+  const [updateStore, { isLoading: updateLoading }] = useUpdateStoreMutation();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -45,43 +49,34 @@ const Stores = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedStore, setSelectedStore] = useState(null);
-  const [filteredStores, setFilteredStores] = useState([]);
-
-  const isAdmin = role === "Admin";
 
   useEffect(() => {
     document.title = "POS | Stores";
-    if (isAdmin) {
-      dispatch(fetchAllStores());
-    }
-  }, [dispatch, isAdmin]);
+  }, []);
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar(error, { variant: "error" });
-      dispatch(clearStoreError());
+      enqueueSnackbar(error?.data || error, { variant: "error" });
     }
-  }, [error, dispatch]);
+  }, [error]);
 
-  useEffect(() => {
-    if (allStores.length > 0) {
-      let filtered = allStores.filter(
-        (store) =>
-          store.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          store.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          (store.address || "").toLowerCase().includes(searchTerm.toLowerCase())
-      );
+  const filteredStores = useMemo(() => {
+    if (allStores.length === 0) return [];
 
-      if (statusFilter === "active") {
-        filtered = filtered.filter((s) => s.isActive !== false);
-      } else if (statusFilter === "inactive") {
-        filtered = filtered.filter((s) => s.isActive === false);
-      }
+    let filtered = allStores.filter(
+      (store) =>
+        store.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        store.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (store.address || "").toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
-      setFilteredStores(filtered);
-    } else {
-      setFilteredStores([]);
+    if (statusFilter === "active") {
+      filtered = filtered.filter((s) => s.isActive !== false);
+    } else if (statusFilter === "inactive") {
+      filtered = filtered.filter((s) => s.isActive === false);
     }
+
+    return filtered;
   }, [allStores, searchTerm, statusFilter]);
 
   const handleCreateStore = () => {
@@ -101,18 +96,16 @@ const Stores = () => {
 
   const handleToggleActive = async (store) => {
     try {
-      await dispatch(
-        updateExistingStore({
-          id: store._id,
-          isActive: !store.isActive,
-        })
-      ).unwrap();
+      await updateStore({
+        id: store._id,
+        isActive: !store.isActive,
+      }).unwrap();
       const statusText = store.isActive ? "deactivated" : "activated";
       enqueueSnackbar(`Store ${statusText} successfully!`, {
         variant: "success",
       });
     } catch (err) {
-      enqueueSnackbar(err || "Failed to toggle store status", {
+      enqueueSnackbar(err?.data || err || "Failed to toggle store status", {
         variant: "error",
       });
     }
@@ -121,12 +114,12 @@ const Stores = () => {
   const handleConfirmDelete = async () => {
     if (selectedStore) {
       try {
-        await dispatch(removeStore(selectedStore._id)).unwrap();
+        await deleteStore(selectedStore._id).unwrap();
         enqueueSnackbar("Store deleted successfully!", { variant: "success" });
         setShowDeleteModal(false);
         setSelectedStore(null);
       } catch (err) {
-        enqueueSnackbar(err || "Failed to delete store", { variant: "error" });
+        enqueueSnackbar(err?.data || err || "Failed to delete store", { variant: "error" });
       }
     }
   };
@@ -138,7 +131,7 @@ const Stores = () => {
   };
 
   const handleRefresh = () => {
-    dispatch(fetchAllStores());
+    refetch();
   };
 
   if (!isAdmin) {
@@ -163,7 +156,7 @@ const Stores = () => {
         subtitle={
           <span className="flex items-center gap-2">
             <span>{filteredStores.length} stores found</span>
-            {loading ? <span className="text-brand">• Loading...</span> : null}
+            {isFetching ? <span className="text-brand">• Loading...</span> : null}
           </span>
         }
         actions={
@@ -177,9 +170,9 @@ const Stores = () => {
             </HeaderActionButton>
             <HeaderActionButton
               variant="secondary"
-              icon={<MdRefresh size={16} className={loading ? "animate-spin" : ""} />}
+              icon={<MdRefresh size={16} className={isFetching ? "animate-spin" : ""} />}
               onClick={handleRefresh}
-              disabled={loading}
+              disabled={isFetching}
             >
               Refresh
             </HeaderActionButton>
@@ -216,7 +209,7 @@ const Stores = () => {
 
       {/* Stores Grid */}
       <div className="px-4 sm:px-10 py-6">
-        {loading ? (
+        {isLoading ? (
           <FullScreenLoader />
         ) : filteredStores.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

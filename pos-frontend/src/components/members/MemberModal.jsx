@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import {
   MdSave,
   MdPerson,
@@ -12,18 +11,15 @@ import { FormField, FormSelect, Button } from "../ui";
 import BottomSheet from "../shared/BottomSheet";
 import { enqueueSnackbar } from "notistack";
 import {
-  createNewMember,
-  updateExistingMember,
-  clearError,
-} from "../../redux/slices/memberSlice";
+  useCreateMemberMutation,
+  useUpdateMemberMutation,
+} from "../../redux/api/endpoints";
 import PropTypes from "prop-types";
 import { FaUserTag } from "react-icons/fa";
 
 const MemberModal = ({ isOpen, onClose, mode, member }) => {
-  const dispatch = useDispatch();
-  const { createLoading, updateLoading, error } = useSelector(
-    (state) => state.members
-  );
+  const [createMember, { isLoading: createLoading }] = useCreateMemberMutation();
+  const [updateMember, { isLoading: updateLoading }] = useUpdateMemberMutation();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -38,12 +34,6 @@ const MemberModal = ({ isOpen, onClose, mode, member }) => {
 
   const isEditMode = mode === "edit";
   const isLoading = createLoading || updateLoading;
-
-  // useEffect(() => {
-  //   if (error) {
-  //     dispatch(clearError());
-  //   }
-  // }, [error, dispatch]);
 
   useEffect(() => {
     if (isEditMode && member) {
@@ -143,12 +133,10 @@ const MemberModal = ({ isOpen, onClose, mode, member }) => {
           return;
         }
 
-        await dispatch(
-          updateExistingMember({
-            id: member._id,
-            memberData: updateData,
-          })
-        ).unwrap();
+        await updateMember({
+          id: member._id,
+          ...updateData,
+        }).unwrap();
 
         enqueueSnackbar("Member updated successfully!", { variant: "success" });
       } else {
@@ -162,14 +150,14 @@ const MemberModal = ({ isOpen, onClose, mode, member }) => {
           salary: formData.salary || 0,
         };
 
-        await dispatch(createNewMember(createData)).unwrap();
+        await createMember(createData).unwrap();
 
         enqueueSnackbar("Member created successfully!", { variant: "success" });
       }
 
       onClose();
     } catch (error) {
-      enqueueSnackbar(error || "Operation failed", { variant: "error" });
+      enqueueSnackbar(error?.data || error || "Operation failed", { variant: "error" });
     }
   };
 

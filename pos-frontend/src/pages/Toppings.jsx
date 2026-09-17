@@ -1,24 +1,20 @@
 import { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { enqueueSnackbar } from "notistack";
 import { MdAdd, MdEdit, MdDelete, MdToggleOn, MdToggleOff, MdMenuBook } from "react-icons/md";
 import {
-  fetchToppings,
-  createTopping,
-  updateToppingThunk,
-  deleteToppingThunk,
-  toggleToppingAvailabilityThunk,
-  clearError
-} from "../redux/slices/toppingSlice";
+  useGetToppingsQuery,
+  useCreateToppingMutation,
+  useUpdateToppingMutation,
+  useDeleteToppingMutation,
+  useToggleToppingAvailabilityMutation,
+} from "../redux/api/endpoints/catalogEndpoints";
+import { unwrapList } from "../redux/api/queryResult";
 import { formatVND } from "../utils";
 import Modal from "../components/shared/Modal";
 import DeleteConfirmationModal from "../components/shared/DeleteConfirmationModal";
 import ToppingRecipeModal from "../components/toppings/ToppingRecipeModal";
 
 const Toppings = () => {
-  const dispatch = useDispatch();
-  const { toppings, loading, error } = useSelector((state) => state.toppings);
-
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showRecipeModal, setShowRecipeModal] = useState(false);
@@ -36,19 +32,21 @@ const Toppings = () => {
 
   const categories = ["Kem", "Matcha"];
 
-  useEffect(() => {
-    dispatch(fetchToppings({ 
-      category: filterCategory || undefined, 
-      available: filterAvailable || undefined 
-    }));
-  }, [dispatch, filterCategory, filterAvailable]);
+  const { data: toppingsResult, isLoading, error } = useGetToppingsQuery({
+    category: filterCategory || undefined,
+    available: filterAvailable || undefined,
+  });
+  const toppings = unwrapList(toppingsResult);
+  const [createTopping] = useCreateToppingMutation();
+  const [updateTopping] = useUpdateToppingMutation();
+  const [deleteTopping] = useDeleteToppingMutation();
+  const [toggleToppingAvailability] = useToggleToppingAvailabilityMutation();
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar(error, { variant: "error" });
-      dispatch(clearError());
+      enqueueSnackbar(error?.data || "Failed to load toppings", { variant: "error" });
     }
-  }, [error, dispatch]);
+  }, [error]);
 
   const handleOpenModal = (topping = null) => {
     if (topping) {
@@ -91,41 +89,41 @@ const Toppings = () => {
 
     try {
       if (isEditing) {
-        await dispatch(updateToppingThunk({ 
-          toppingId: selectedTopping._id, 
-          toppingData 
-        })).unwrap();
+        await updateTopping({
+          toppingId: selectedTopping._id,
+          ...toppingData,
+        }).unwrap();
         enqueueSnackbar("Topping updated successfully!", { variant: "success" });
       } else {
-        await dispatch(createTopping(toppingData)).unwrap();
+        await createTopping(toppingData).unwrap();
         enqueueSnackbar("Topping created successfully!", { variant: "success" });
       }
       handleCloseModal();
     } catch (error) {
-      enqueueSnackbar(error || "Operation failed", { variant: "error" });
+      enqueueSnackbar(error?.data || error || "Operation failed", { variant: "error" });
     }
   };
 
   const handleDelete = async () => {
     try {
-      await dispatch(deleteToppingThunk(selectedTopping._id)).unwrap();
+      await deleteTopping(selectedTopping._id).unwrap();
       enqueueSnackbar("Topping deleted successfully!", { variant: "success" });
       setShowDeleteModal(false);
       setSelectedTopping(null);
     } catch (error) {
-      enqueueSnackbar(error || "Delete failed", { variant: "error" });
+      enqueueSnackbar(error?.data || error || "Delete failed", { variant: "error" });
     }
   };
 
   const handleToggleAvailability = async (topping) => {
     try {
-      await dispatch(toggleToppingAvailabilityThunk(topping._id)).unwrap();
+      await toggleToppingAvailability(topping._id).unwrap();
       enqueueSnackbar(
         `Topping ${topping.isAvailable ? 'disabled' : 'enabled'} successfully!`,
         { variant: "success" }
       );
     } catch (error) {
-      enqueueSnackbar(error || "Toggle failed", { variant: "error" });
+      enqueueSnackbar(error?.data || error || "Toggle failed", { variant: "error" });
     }
   };
 
@@ -176,7 +174,7 @@ const Toppings = () => {
       </div>
 
       {/* Toppings Grid */}
-      {loading ? (
+      {isLoading ? (
         <div className="text-center py-8 text-[#ababab]">Loading toppings...</div>
       ) : filteredToppings.length === 0 ? (
         <div className="text-center py-8 text-[#ababab]">No toppings found</div>
@@ -344,10 +342,6 @@ const Toppings = () => {
           setSelectedTopping(null);
         }}
         topping={showRecipeModal ? selectedTopping : null}
-        onSuccess={() => dispatch(fetchToppings({
-          category: filterCategory || undefined,
-          available: filterAvailable || undefined,
-        }))}
       />
 
     </section>

@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useState } from "react";
 import { MdPeople, MdCardGiftcard, MdTrendingUp, MdLocalOffer } from "react-icons/md";
-import { fetchRewardAnalytics } from "../../redux/slices/rewardSlice";
+import { useGetRewardAnalyticsQuery } from "../../redux/api/endpoints";
 import LoadingState from "../shared/LoadingState";
 import EmptyState from "../shared/EmptyState";
 import StoreSummariesTable from "./StoreSummariesTable";
@@ -15,13 +14,11 @@ const PERIODS = [
 ];
 
 const RewardsDashboard = () => {
-  const dispatch = useDispatch();
-  const { analytics, analyticsLoading } = useSelector((s) => s.rewards);
   const [period, setPeriod] = useState("30d");
-
-  useEffect(() => {
-    dispatch(fetchRewardAnalytics({ period, scope: "all" }));
-  }, [dispatch, period]);
+  const { data: analytics, isLoading: analyticsLoading } = useGetRewardAnalyticsQuery({
+    period,
+    scope: "all",
+  });
 
   if (analyticsLoading) {
     return <LoadingState message="Loading rewards analytics…" />;

@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { skipToken } from "@reduxjs/toolkit/query/react";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
 import { MdLogin } from "react-icons/md";
 import BottomSheet from "../shared/BottomSheet";
 import {
-  submitShiftCheckIn,
-  fetchMyShiftCheckouts,
-  clearShiftCheckoutError,
-} from "../../redux/slices/shiftCheckoutSlice";
+  useSubmitShiftCheckInMutation,
+  useGetMyShiftCheckoutsTodayQuery,
+} from "../../redux/api/endpoints";
 import { formatVND } from "../../utils";
 import FullScreenLoader from "../shared/FullScreenLoader";
 
@@ -22,8 +21,11 @@ const ShiftCheckInModal = ({
   refreshDate,
   onSuccess,
 }) => {
-  const dispatch = useDispatch();
-  const { checkInLoading, error } = useSelector((state) => state.shiftCheckout);
+  const [submitCheckIn, { isLoading: checkInLoading }] =
+    useSubmitShiftCheckInMutation();
+  const { refetch: refetchMyShifts } = useGetMyShiftCheckoutsTodayQuery(
+    refreshDate ? { date: refreshDate } : skipToken
+  );
 
   const [openingCash, setOpeningCash] = useState("");
   const [notes, setNotes] = useState("");
@@ -35,13 +37,6 @@ const ShiftCheckInModal = ({
     }
   }, [isOpen, scheduleId]);
 
-  useEffect(() => {
-    if (error) {
-      enqueueSnackbar(error, { variant: "error" });
-      dispatch(clearShiftCheckoutError());
-    }
-  }, [error, dispatch]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     const amount = parseFloat(openingCash);
@@ -51,25 +46,23 @@ const ShiftCheckInModal = ({
     }
 
     try {
-      await dispatch(
-        submitShiftCheckIn({
-          scheduleId,
-          memberId: memberId || undefined,
-          openingCash: amount,
-          notes: notes.trim(),
-        })
-      ).unwrap();
+      await submitCheckIn({
+        scheduleId,
+        memberId: memberId || undefined,
+        openingCash: amount,
+        notes: notes.trim(),
+      }).unwrap();
 
       enqueueSnackbar("Checked in — opening cash recorded", {
         variant: "success",
       });
       if (refreshDate) {
-        await dispatch(fetchMyShiftCheckouts({ date: refreshDate })).unwrap();
+        await refetchMyShifts();
       }
       onSuccess?.();
       onClose();
-    } catch {
-      // handled via slice
+    } catch (error) {
+      enqueueSnackbar(error?.data || error || "Failed to check in", { variant: "error" });
     }
   };
 

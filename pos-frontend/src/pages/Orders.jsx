@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { MdFilterList, MdPerson, MdPayment, MdStore, MdChevronLeft, MdChevronRight } from "react-icons/md";
 import OrderCard from "../components/orders/OrderCard";
 import FeaturePageHeader from "../components/shared/FeaturePageHeader";
@@ -8,22 +8,13 @@ import EmptyState from "../components/shared/EmptyState";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import { enqueueSnackbar } from "notistack";
 import { getTodayDate } from "../utils";
-import { useSelector, useDispatch } from "react-redux";
-import { fetchOrders, setFilters } from "../redux/slices/orderSlice";
-import { fetchMembers } from "../redux/slices/memberSlice";
+import { useSelector } from "react-redux";
+import { useGetOrdersQuery, useGetAllMembersQuery } from "../redux/api/endpoints";
+import { unwrapList, unwrapPaginated } from "../redux/api/queryResult";
 
 const Orders = () => {
-  const dispatch = useDispatch();
   const { role } = useSelector((state) => state.user);
-  const {
-    items: orders,
-    loading,
-    error,
-    pagination,
-  } = useSelector((state) => state.orders);
-  const { members } = useSelector((state) => state.members);
   const isAdmin = role === "Admin";
-  const activeMembers = members.filter((member) => member.isActive !== false);
 
   // Scroll container ref for scroll position persistence
   const scrollContainerRef = useRef(null);
@@ -42,18 +33,39 @@ const Orders = () => {
   const [page, setPage] = useState(1);
   const LIMIT = 50;
 
+  const params = useMemo(() => {
+    const next = { status, paginate: true, page, limit: LIMIT };
+    if (isAdmin) {
+      next.startDate = startDate;
+      next.endDate = endDate;
+      next.createdBy = createdBy;
+      next.paymentMethod = paymentMethod;
+      next.thirdPartyVendor = thirdPartyVendor;
+    } else {
+      const today = getTodayDate();
+      next.startDate = today;
+      next.endDate = today;
+    }
+    return next;
+  }, [status, startDate, endDate, createdBy, paymentMethod, thirdPartyVendor, isAdmin, page]);
+
+  const { data: ordersResult, isLoading, isFetching, error } = useGetOrdersQuery(params);
+  const { items: orders, pagination } = unwrapPaginated(ordersResult);
+  const { data: membersResult } = useGetAllMembersQuery(
+    { isActive: true },
+    { skip: !isAdmin }
+  );
+  const members = unwrapList(membersResult);
+  const activeMembers = members.filter((member) => member.isActive !== false);
+
   useEffect(() => {
     document.title = "POS | Orders";
     hasRestoredScroll.current = false;
-    
-    if (isAdmin) {
-      dispatch(fetchMembers({ isActive: true }));
-    }
-  }, [dispatch, isAdmin]);
+  }, [isAdmin]);
 
   // Separate effect for scroll position restoration after data loads
   useEffect(() => {
-    if (!loading && orders.length > 0 && scrollContainerRef.current && !hasRestoredScroll.current) {
+    if (!isLoading && orders.length > 0 && scrollContainerRef.current && !hasRestoredScroll.current) {
       const savedScrollPosition = sessionStorage.getItem('orders-scroll-position');
       if (savedScrollPosition) {
         // Use requestAnimationFrame to ensure DOM is fully rendered
@@ -67,7 +79,7 @@ const Orders = () => {
         });
       }
     }
-  }, [loading, orders.length]);
+  }, [isLoading, orders.length]);
 
 
   // Save scroll position when component unmounts
@@ -85,29 +97,10 @@ const Orders = () => {
     setPage(1);
   }, [status, startDate, endDate, createdBy, paymentMethod, thirdPartyVendor]);
 
-  // Fetch orders when filters or page changes
-  useEffect(() => {
-    const params = { status, paginate: true, page, limit: LIMIT };
-    if (isAdmin) {
-      params.startDate = startDate;
-      params.endDate = endDate;
-      params.createdBy = createdBy;
-      params.paymentMethod = paymentMethod;
-      params.thirdPartyVendor = thirdPartyVendor;
-    } else {
-      const today = getTodayDate();
-      params.startDate = today;
-      params.endDate = today;
-    }
-
-    dispatch(setFilters(params));
-    dispatch(fetchOrders(params));
-  }, [dispatch, status, startDate, endDate, createdBy, paymentMethod, thirdPartyVendor, isAdmin, page]);
-
   // Show error message if there's an error
   useEffect(() => {
     if (error) {
-      enqueueSnackbar(error, { variant: "error" });
+      enqueueSnackbar(error?.data || error, { variant: "error" });
     }
   }, [error]);
 
@@ -141,7 +134,7 @@ const Orders = () => {
       if (!document.hidden && !hasRestoredScroll.current) {
         // Page became visible again, try to restore scroll position
         setTimeout(() => {
-          if (!loading && scrollContainerRef.current) {
+          if (!isLoading && scrollContainerRef.current) {
             const savedScrollPosition = sessionStorage.getItem('orders-scroll-position');
             if (savedScrollPosition) {
               scrollContainerRef.current.scrollTop = parseInt(savedScrollPosition, 10);
@@ -157,7 +150,7 @@ const Orders = () => {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [loading]);
+  }, [isLoading]);
 
   const handleDateChange = ({
     startDate: newStartDate,
@@ -196,7 +189,7 @@ const Orders = () => {
     },
   ];
 
-  if (loading && !orders.length) {
+  if (isLoading && !orders.length) {
     return <FullScreenLoader />;
   }
 
@@ -502,7 +495,7 @@ const Orders = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={!pagination.hasPrev || loading}
+              disabled={!pagination.hasPrev || isFetching}
               className="p-1.5 rounded-lg bg-[#262626] border border-[#343434] text-[#ababab] hover:text-[#f5f5f5] hover:bg-[#343434] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               <MdChevronLeft size={18} />
@@ -522,7 +515,7 @@ const Orders = () => {
                   <button
                     key={item}
                     onClick={() => setPage(item)}
-                    disabled={loading}
+                    disabled={isFetching}
                     className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
                       item === pagination.page
                         ? 'bg-brand text-[#f5f5f5]'
@@ -536,7 +529,7 @@ const Orders = () => {
 
             <button
               onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
-              disabled={!pagination.hasNext || loading}
+              disabled={!pagination.hasNext || isFetching}
               className="p-1.5 rounded-lg bg-[#262626] border border-[#343434] text-[#ababab] hover:text-[#f5f5f5] hover:bg-[#343434] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               <MdChevronRight size={18} />

@@ -1,19 +1,22 @@
 import PropTypes from "prop-types";
 import { useState } from "react";
-import { useDispatch } from "react-redux";
 import {
   IoMdInformationCircleOutline,
   IoMdPricetag,
   IoMdTrash,
 } from "react-icons/io";
 import { MdOutlineInventory, MdToggleOn, MdToggleOff, MdEdit, MdMenuBook } from "react-icons/md";
-import { removeDish, toggleAvailability } from "../../redux/slices/dishSlice";
+import {
+  useDeleteDishMutation,
+  useToggleDishAvailabilityMutation,
+} from "../../redux/api/endpoints/catalogEndpoints";
 import { enqueueSnackbar } from "notistack";
 import biryani from "../../assets/images/hyderabadibiryani.jpg";
 import { formatVND } from "../../utils";
 
 const Dish = ({ dish, onEdit, onRecipe }) => {
-  const dispatch = useDispatch();
+  const [deleteDish] = useDeleteDishMutation();
+  const [toggleDishAvailability] = useToggleDishAvailabilityMutation();
   const [selectedVariant, setSelectedVariant] = useState(() => {
     if (dish.hasSizeVariants && dish.sizeVariants?.length > 0) {
       return dish.sizeVariants.find((v) => v.isDefault) || dish.sizeVariants[0];
@@ -34,16 +37,13 @@ const Dish = ({ dish, onEdit, onRecipe }) => {
       )
     ) {
       try {
-        const resultAction = await dispatch(removeDish(dish._id));
-
-        if (removeDish.fulfilled.match(resultAction)) {
-          enqueueSnackbar("Dish deleted successfully!", { variant: "success" });
-        } else {
-          const errorMessage = resultAction.payload || "Failed to delete dish";
-          enqueueSnackbar(errorMessage, { variant: "error" });
-        }
-      } catch {
-        enqueueSnackbar("An unexpected error occurred", { variant: "error" });
+        await deleteDish(dish._id).unwrap();
+        enqueueSnackbar("Dish deleted successfully!", { variant: "success" });
+      } catch (error) {
+        enqueueSnackbar(
+          error?.data || error || "Failed to delete dish",
+          { variant: "error" }
+        );
       }
     }
   };
@@ -67,21 +67,17 @@ const Dish = ({ dish, onEdit, onRecipe }) => {
     e.stopPropagation();
 
     try {
-      const resultAction = await dispatch(toggleAvailability(dish._id));
-
-      if (toggleAvailability.fulfilled.match(resultAction)) {
-        const newStatus = resultAction.payload.isAvailable;
-        enqueueSnackbar(
-          `Dish ${newStatus ? "enabled" : "disabled"} successfully!`,
-          { variant: "success" }
-        );
-      } else {
-        const errorMessage =
-          resultAction.payload || "Failed to toggle availability";
-        enqueueSnackbar(errorMessage, { variant: "error" });
-      }
-    } catch {
-      enqueueSnackbar("An unexpected error occurred", { variant: "error" });
+      const result = await toggleDishAvailability(dish._id).unwrap();
+      const newStatus = result.isAvailable;
+      enqueueSnackbar(
+        `Dish ${newStatus ? "enabled" : "disabled"} successfully!`,
+        { variant: "success" }
+      );
+    } catch (error) {
+      enqueueSnackbar(
+        error?.data || error || "Failed to toggle availability",
+        { variant: "error" }
+      );
     }
   };
 

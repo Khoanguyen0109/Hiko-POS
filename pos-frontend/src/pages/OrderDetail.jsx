@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import { skipToken } from "@reduxjs/toolkit/query/react";
 import {
   MdReceipt,
   MdLocalOffer,
@@ -27,15 +27,16 @@ import {
   FaMoneyBillWave,
 } from "react-icons/fa";
 import {
-  fetchOrderById,
-  updateOrder,
-  updateOrderItems,
-  clearCurrentOrder,
-  removeOrder,
-} from "../redux/slices/orderSlice";
-import { fetchPromotions } from "../redux/slices/promotionSlice";
-import { fetchCustomerRewards, clearCustomerRewards } from "../redux/slices/rewardSlice";
-import { searchCustomers, createCustomer, clearSearchResults } from "../redux/slices/customersSlice";
+  useGetOrderByIdQuery,
+  useUpdateOrderMutation,
+  useUpdateOrderItemsMutation,
+  useDeleteOrderMutation,
+  useGetPromotionsQuery,
+  useSearchCustomersQuery,
+  useGetCustomerRewardsQuery,
+  useAddCustomerMutation,
+} from "../redux/api/endpoints";
+import { unwrapList } from "../redux/api/queryResult";
 import { enqueueSnackbar } from "notistack";
 import { formatVND, getAvatarName, getOrderDisplayTotal, getOrderRewardDiscount } from "../utils";
 import { getStoredUser } from "../utils/auth";
@@ -49,46 +50,44 @@ import PropTypes from "prop-types";
 const OrderDetail = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const { currentOrder, loading, error } = useSelector((state) => state.orders);
-  const { items: promotions, loading: promotionsLoading } = useSelector(state => state.promotions);
-  const { customerRewards, rewardsLoading } = useSelector(state => state.rewards);
-  const { searchResults, searchLoading } = useSelector(state => state.customersData);
+  const { data: currentOrder, isLoading, error } = useGetOrderByIdQuery(orderId ?? skipToken);
+  const [updateOrder, { isLoading: isUpdating }] = useUpdateOrderMutation();
+  const [updateOrderItems, { isLoading: isUpdatingItems }] = useUpdateOrderItemsMutation();
+  const [deleteOrder, { isLoading: isDeleting }] = useDeleteOrderMutation();
+  const [addCustomer] = useAddCustomerMutation();
+  const { data: promotionsResult, isLoading: promotionsLoading } = useGetPromotionsQuery({
+    isActive: true,
+    limit: 50,
+  });
+  const promotions = unwrapList(promotionsResult?.promotions ?? promotionsResult);
+  const customerId = currentOrder?.customer?._id;
+  const {
+    data: customerRewards,
+    isLoading: rewardsLoading,
+    refetch: refetchCustomerRewards,
+  } = useGetCustomerRewardsQuery(customerId ?? skipToken);
   const [selectedVendor, setSelectedVendor] = useState("");
   const [isCouponAccordionOpen, setIsCouponAccordionOpen] = useState(false);
   const [isRewardAccordionOpen, setIsRewardAccordionOpen] = useState(false);
   const [customerQuery, setCustomerQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
-  const customerDebounceRef = useRef(null);
   const customerWrapperRef = useRef(null);
   const [selectedPromotion, setSelectedPromotion] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editableItems, setEditableItems] = useState([]);
   const [showAddItemsModal, setShowAddItemsModal] = useState(false);
+  const loading = isUpdating || isUpdatingItems || isDeleting;
 
   // Get user role for admin checking
   const user = getStoredUser();
   const isAdmin = user?.role === "Admin";
 
-  useEffect(() => {
-    if (orderId) {
-      dispatch(fetchOrderById(orderId));
-    }
-    
-    // Fetch available promotions
-    dispatch(fetchPromotions({ isActive: true, limit: 50 }));
-
-    // Cleanup on unmount
-    return () => {
-      dispatch(clearCurrentOrder());
-    };
-  }, [dispatch, orderId]);
-
-  useEffect(() => {
-    if (currentOrder?.customer?._id) {
-      dispatch(fetchCustomerRewards(currentOrder.customer._id));
-    }
-  }, [dispatch, currentOrder?.customer?._id]);
+  const { data: searchResult, isFetching: searchLoading } = useSearchCustomersQuery(
+    debouncedQuery,
+    { skip: !debouncedQuery }
+  );
+  const searchResults = unwrapList(searchResult);
 
   useEffect(() => {
     if (customerRewards?.rewards?.length > 0 && !currentOrder?.appliedReward?.rewardProgram) {
@@ -122,51 +121,42 @@ const OrderDetail = () => {
   }, []);
 
   useEffect(() => {
-    if (customerDebounceRef.current) clearTimeout(customerDebounceRef.current);
-    if (customerQuery.length >= 2) {
-      customerDebounceRef.current = setTimeout(() => {
-        dispatch(searchCustomers(customerQuery));
-      }, 300);
-    } else {
-      dispatch(clearSearchResults());
-    }
-    return () => clearTimeout(customerDebounceRef.current);
-  }, [customerQuery, dispatch]);
+    const timeoutId = setTimeout(() => {
+      setDebouncedQuery(customerQuery.length >= 2 ? customerQuery : "");
+    }, 300);
+    return () => clearTimeout(timeoutId);
+  }, [customerQuery]);
 
   const handleAssignCustomer = (customer) => {
     setShowCustomerDropdown(false);
     setCustomerQuery("");
-    dispatch(clearSearchResults());
-    dispatch(updateOrder({ orderId, customer: customer._id }))
+    updateOrder({ orderId, customer: customer._id })
       .unwrap()
       .then(() => {
         enqueueSnackbar("Customer assigned!", { variant: "success" });
-        dispatch(fetchOrderById(orderId));
       })
       .catch((err) => {
-        enqueueSnackbar(err || "Failed to assign customer", { variant: "error" });
+        enqueueSnackbar(err?.data || err || "Failed to assign customer", { variant: "error" });
       });
   };
 
   const handleCreateAndAssign = async () => {
     try {
-      const result = await dispatch(createCustomer({ phone: customerQuery })).unwrap();
+      const result = await addCustomer({ phone: customerQuery }).unwrap();
       handleAssignCustomer(result);
-    } catch {
-      /* errors handled by thunk */
+    } catch (err) {
+      enqueueSnackbar(err?.data || err || "Failed to create customer", { variant: "error" });
     }
   };
 
   const handleRemoveCustomer = () => {
-    dispatch(updateOrder({ orderId, customer: null, appliedReward: null }))
+    updateOrder({ orderId, customer: null, appliedReward: null })
       .unwrap()
       .then(() => {
         enqueueSnackbar("Customer removed!", { variant: "success" });
-        dispatch(clearCustomerRewards());
-        dispatch(fetchOrderById(orderId));
       })
       .catch((err) => {
-        enqueueSnackbar(err || "Failed to remove customer", { variant: "error" });
+        enqueueSnackbar(err?.data || err || "Failed to remove customer", { variant: "error" });
       });
   };
 
@@ -236,22 +226,21 @@ const OrderDetail = () => {
       return;
     }
     const apiItems = editableItems.map(toApiItem);
-    dispatch(updateOrderItems({ orderId, items: apiItems }))
+    updateOrderItems({ orderId, items: apiItems })
       .unwrap()
       .then(() => {
         enqueueSnackbar("Order updated successfully!", { variant: "success" });
         setIsEditMode(false);
         setShowAddItemsModal(false);
-        dispatch(fetchOrderById(orderId)); // Refetch to ensure orderHistory is loaded
       })
       .catch((err) => {
-        enqueueSnackbar(err || "Failed to update order", { variant: "error" });
+        enqueueSnackbar(err?.data || err || "Failed to update order", { variant: "error" });
       });
   };
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar(error, { variant: "error" });
+      enqueueSnackbar(error?.data || error, { variant: "error" });
     }
   }, [error]);
 
@@ -287,7 +276,7 @@ const OrderDetail = () => {
       updateData.thirdPartyVendor = targetVendor;
     }
 
-    dispatch(updateOrder(updateData))
+    updateOrder(updateData)
       .unwrap()
       .then(() => {
         let message = "Order updated successfully!";
@@ -301,10 +290,9 @@ const OrderDetail = () => {
         }
 
         enqueueSnackbar(message, { variant: "success" });
-        dispatch(fetchOrderById(orderId)); // Refetch to ensure orderHistory is loaded
       })
       .catch((error) => {
-        enqueueSnackbar(error, { variant: "error" });
+        enqueueSnackbar(error?.data || error, { variant: "error" });
       });
   };
 
@@ -323,11 +311,11 @@ const OrderDetail = () => {
 
     if (confirmDelete) {
       try {
-        await dispatch(removeOrder(currentOrder._id)).unwrap();
+        await deleteOrder(currentOrder._id).unwrap();
         enqueueSnackbar("Order deleted successfully!", { variant: "success" });
         navigate("/orders"); // Navigate back to orders list
       } catch (error) {
-        enqueueSnackbar(error || "Failed to delete order", { variant: "error" });
+        enqueueSnackbar(error?.data || error || "Failed to delete order", { variant: "error" });
       }
     }
   };
@@ -337,17 +325,16 @@ const OrderDetail = () => {
     setIsCouponAccordionOpen(false);
     
     // Immediately apply the coupon
-    dispatch(updateOrder({ 
+    updateOrder({ 
       orderId, 
       appliedPromotions: [promotion]
-    }))
+    })
       .unwrap()
       .then(() => {
         enqueueSnackbar("Coupon applied successfully!", { variant: "success" });
-        dispatch(fetchOrderById(orderId));
       })
       .catch((error) => {
-        enqueueSnackbar(error, { variant: "error" });
+        enqueueSnackbar(error?.data || error, { variant: "error" });
         // Revert on error
         setSelectedPromotion(null);
       });
@@ -357,17 +344,16 @@ const OrderDetail = () => {
     setSelectedPromotion(null);
     
     // Immediately remove the coupon
-    dispatch(updateOrder({ 
+    updateOrder({ 
       orderId, 
       appliedPromotions: []
-    }))
+    })
       .unwrap()
       .then(() => {
         enqueueSnackbar("Coupon removed successfully!", { variant: "success" });
-        dispatch(fetchOrderById(orderId));
       })
       .catch((error) => {
-        enqueueSnackbar(error, { variant: "error" });
+        enqueueSnackbar(error?.data || error, { variant: "error" });
         // Revert on error
         if (currentOrder?.appliedPromotions?.[0]) {
           setSelectedPromotion(currentOrder.appliedPromotions[0]);
@@ -386,42 +372,40 @@ const OrderDetail = () => {
       discountAmount = prices.length > 0 ? Math.min(...prices) : 0;
     }
 
-    dispatch(updateOrder({
+    updateOrder({
       orderId,
       appliedReward: {
         rewardProgram: reward.rewardProgramId,
         type: reward.type,
         discountAmount,
       }
-    }))
+    })
       .unwrap()
       .then(() => {
         enqueueSnackbar("Reward applied!", { variant: "success" });
-        dispatch(fetchOrderById(orderId));
-        if (currentOrder?.customer?._id) {
-          dispatch(fetchCustomerRewards(currentOrder.customer._id));
+        if (customerId) {
+          refetchCustomerRewards();
         }
       })
       .catch((err) => {
-        enqueueSnackbar(err || "Failed to apply reward", { variant: "error" });
+        enqueueSnackbar(err?.data || err || "Failed to apply reward", { variant: "error" });
       });
   };
 
   const handleRemoveReward = () => {
-    dispatch(updateOrder({
+    updateOrder({
       orderId,
       appliedReward: null,
-    }))
+    })
       .unwrap()
       .then(() => {
         enqueueSnackbar("Reward removed!", { variant: "success" });
-        dispatch(fetchOrderById(orderId));
-        if (currentOrder?.customer?._id) {
-          dispatch(fetchCustomerRewards(currentOrder.customer._id));
+        if (customerId) {
+          refetchCustomerRewards();
         }
       })
       .catch((err) => {
-        enqueueSnackbar(err || "Failed to remove reward", { variant: "error" });
+        enqueueSnackbar(err?.data || err || "Failed to remove reward", { variant: "error" });
       });
   };
 
@@ -471,7 +455,7 @@ const OrderDetail = () => {
             promotion.type === 'free_topping');
   });
 
-  if (loading && !currentOrder) return <FullScreenLoader />;
+  if (isLoading && !currentOrder) return <FullScreenLoader />;
 
   if (error && !currentOrder) {
     return (
@@ -480,7 +464,7 @@ const OrderDetail = () => {
           <h2 className="text-[#f5f5f5] text-xl font-semibold mb-4">
             Error Loading Order
           </h2>
-          <p className="text-[#ababab] mb-4">{error || "Order not found"}</p>
+          <p className="text-[#ababab] mb-4">{error?.data || error || "Order not found"}</p>
           <button
             onClick={() => navigate("/orders")}
             className="px-4 py-2 bg-brand text-[#f5f5f5] rounded-lg font-medium hover:bg-brand-hover transition-colors"
@@ -763,7 +747,6 @@ const OrderDetail = () => {
                     <button
                       onClick={() => {
                         setCustomerQuery("");
-                        dispatch(clearSearchResults());
                         setShowCustomerDropdown(false);
                       }}
                       className="text-[#ababab] hover:text-[#f5f5f5]"

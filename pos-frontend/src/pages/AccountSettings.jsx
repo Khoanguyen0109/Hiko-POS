@@ -1,16 +1,20 @@
 import { useState, useEffect, useCallback } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { MdPerson, MdEmail, MdPhone, MdLock, MdSave, MdVisibility, MdVisibilityOff, MdAttachMoney, MdCalendarToday, MdAccessTime, MdCheckCircle, MdCancel, MdStar } from "react-icons/md";
 import { enqueueSnackbar } from "notistack";
-import { fetchOwnProfile, updateProfile, updatePassword, clearError } from "../redux/slices/memberSlice";
+import {
+  useGetOwnProfileQuery,
+  useUpdateOwnProfileMutation,
+  useChangePasswordMutation,
+} from "../redux/api/endpoints";
 import { getMonthlySalary } from "../https/salaryApi";
 import { getMyTickets } from "../https/ticketApi";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import BackButton from "../components/shared/BackButton";
 
 const AccountSettings = () => {
-  const dispatch = useDispatch();
-  const { profile, profileLoading, profileError, passwordLoading } = useSelector((state) => state.members);
+  const { data: profile, isLoading: profileLoading, error: profileError } = useGetOwnProfileQuery();
+  const [updateOwnProfile, { isLoading: updateProfileLoading }] = useUpdateOwnProfileMutation();
+  const [changePassword, { isLoading: passwordLoading }] = useChangePasswordMutation();
   
   const [profileData, setProfileData] = useState({
     name: "",
@@ -50,8 +54,7 @@ const AccountSettings = () => {
 
   useEffect(() => {
     document.title = "POS | Account Settings";
-    dispatch(fetchOwnProfile());
-  }, [dispatch]);
+  }, []);
 
   const fetchSalaryData = useCallback(async () => {
     try {
@@ -91,10 +94,9 @@ const AccountSettings = () => {
 
   useEffect(() => {
     if (profileError) {
-      enqueueSnackbar(profileError, { variant: "error" });
-      dispatch(clearError());
+      enqueueSnackbar(profileError?.data || profileError, { variant: "error" });
     }
-  }, [profileError, dispatch]);
+  }, [profileError]);
 
   useEffect(() => {
     if (profile) {
@@ -209,11 +211,11 @@ const AccountSettings = () => {
         return;
       }
 
-      await dispatch(updateProfile(updateData)).unwrap();
+      await updateOwnProfile(updateData).unwrap();
       enqueueSnackbar("Profile updated successfully!", { variant: "success" });
       setIsEditing(false);
     } catch (error) {
-      enqueueSnackbar(error || "Failed to update profile", { variant: "error" });
+      enqueueSnackbar(error?.data || error || "Failed to update profile", { variant: "error" });
     }
   };
 
@@ -225,10 +227,10 @@ const AccountSettings = () => {
     }
 
     try {
-      await dispatch(updatePassword({
+      await changePassword({
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword
-      })).unwrap();
+      }).unwrap();
       
       enqueueSnackbar("Password changed successfully!", { variant: "success" });
       
@@ -239,7 +241,7 @@ const AccountSettings = () => {
         confirmPassword: ""
       });
     } catch (error) {
-      enqueueSnackbar(error || "Failed to change password", { variant: "error" });
+      enqueueSnackbar(error?.data || error || "Failed to change password", { variant: "error" });
     }
   };
 
@@ -816,10 +818,10 @@ const AccountSettings = () => {
                 <>
                   <button
                     type="submit"
-                    disabled={profileLoading}
+                    disabled={updateProfileLoading}
                     className="px-4 sm:px-6 py-2.5 sm:py-3 bg-brand text-[#f5f5f5] rounded-lg font-medium hover:bg-brand-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm sm:text-base"
                   >
-                    {profileLoading ? (
+                    {updateProfileLoading ? (
                       <>
                         <div className="w-3.5 h-3.5 sm:w-4 sm:h-4 border-2 border-[#1f1f1f] border-t-transparent rounded-full animate-spin"></div>
                         Saving...
@@ -834,7 +836,7 @@ const AccountSettings = () => {
                   <button
                     type="button"
                     onClick={handleCancelEdit}
-                    disabled={profileLoading}
+                    disabled={updateProfileLoading}
                     className="px-4 sm:px-6 py-2.5 sm:py-3 bg-[#262626] text-[#f5f5f5] rounded-lg font-medium hover:bg-[#343434] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                   >
                     Cancel

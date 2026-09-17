@@ -1,6 +1,7 @@
 import { useDispatch, useSelector } from "react-redux";
 import { MdStore, MdStorefront } from "react-icons/md";
 import { setThirdPartyVendor } from "../../redux/slices/cartSlice";
+import { useCreateOrderMutation, PLACE_ORDER_CACHE_KEY } from "../../redux/api/endpoints";
 
 const VENDOR_OPTIONS = [
   {
@@ -43,7 +44,9 @@ const VENDOR_OPTIONS = [
 const OrderTypePicker = () => {
   const dispatch = useDispatch();
   const selectedVendor = useSelector((state) => state.cart.thirdPartyVendor);
-  const { loading } = useSelector((state) => state.orders);
+  const [, { isLoading: loading }] = useCreateOrderMutation({
+    fixedCacheKey: PLACE_ORDER_CACHE_KEY,
+  });
 
   return (
     <div className="flex flex-col gap-2">

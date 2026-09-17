@@ -9,11 +9,14 @@ import OrderTypePicker from "./OrderTypePicker";
 import PaymentButtons from "./PaymentButtons";
 import { useV2Ui } from "../../hooks/useV2Ui";
 import { useSelector } from "react-redux";
+import { useCreateOrderMutation, PLACE_ORDER_CACHE_KEY } from "../../redux/api/endpoints";
 
 const CartDrawer = ({ isOpen, onClose }) => {
   const billRef = useRef(null);
   const { v2UiEnabled } = useV2Ui();
-  const { loading } = useSelector((state) => state.orders);
+  const [, { isLoading: loading }] = useCreateOrderMutation({
+    fixedCacheKey: PLACE_ORDER_CACHE_KEY,
+  });
   const cartItems = useSelector((state) => state.cart.items);
   const cartEmpty = !cartItems?.length;
 

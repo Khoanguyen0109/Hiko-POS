@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { MdSave, MdCancel, MdInventory, MdInfo } from "react-icons/md";
 import BottomSheet from "../shared/BottomSheet";
 import Autocomplete from "../shared/Autocomplete";
@@ -8,9 +8,13 @@ import {
   filterStorageItemOption,
   renderStorageItemOption,
 } from "./storageItemAutocompleteUtils";
-import { createStorageExportAction, editStorageExport } from "../../redux/slices/storageExportSlice";
-import { fetchStorageItems } from "../../redux/slices/storageItemSlice";
-import { fetchAllStores } from "../../redux/slices/storeSlice";
+import {
+  useGetStorageItemsQuery,
+  useGetAllStoresQuery,
+  useCreateStorageExportMutation,
+  useUpdateStorageExportMutation,
+} from "../../redux/api/endpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 import RelatedStoreSelect from "./RelatedStoreSelect";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
@@ -29,9 +33,13 @@ const ExportModal = ({
   exportRecord = null, 
   onSuccess 
 }) => {
-  const dispatch = useDispatch();
-  const { items: storageItems } = useSelector((state) => state.storageItems);
-  const { allStores, activeStore } = useSelector((state) => state.store);
+  const { activeStore } = useSelector((state) => state.store);
+  const { data: itemsResult } = useGetStorageItemsQuery({ isActive: true }, { skip: !isOpen });
+  const { data: storesResult } = useGetAllStoresQuery(undefined, { skip: !isOpen });
+  const storageItems = unwrapList(itemsResult);
+  const allStores = unwrapList(storesResult);
+  const [createStorageExport] = useCreateStorageExportMutation();
+  const [updateStorageExport] = useUpdateStorageExportMutation();
 
   const initialFormData = useMemo(() => ({
     storageItemId: "",
@@ -63,13 +71,6 @@ const ExportModal = ({
   );
 
   const isToStore = formData.reason === "to_store";
-
-  useEffect(() => {
-    if (isOpen) {
-      dispatch(fetchStorageItems({ isActive: true }));
-      dispatch(fetchAllStores());
-    }
-  }, [isOpen, dispatch]);
 
   useEffect(() => {
     if (exportRecord && mode !== "create") {
@@ -142,28 +143,21 @@ const ExportModal = ({
         notes: formData.notes || undefined
       };
 
-      let result;
-      if (mode === "create") {
-        result = await dispatch(createStorageExportAction(submitData));
-      } else {
-        result = await dispatch(editStorageExport({ id: exportRecord._id, ...submitData }));
-      }
+      const result = mode === "create"
+        ? await createStorageExport(submitData).unwrap()
+        : await updateStorageExport({ id: exportRecord._id, ...submitData }).unwrap();
 
-      if (result.meta.requestStatus === 'fulfilled') {
-        if (mode === "create") {
-          setFormData(initialFormData);
-          setError("");
-          enqueueSnackbar("Export created successfully!", { variant: "success" });
-        } else {
-          enqueueSnackbar("Export updated successfully!", { variant: "success" });
-        }
-        onSuccess?.(result.payload);
-        onClose();
+      if (mode === "create") {
+        setFormData(initialFormData);
+        setError("");
+        enqueueSnackbar("Export created successfully!", { variant: "success" });
       } else {
-        throw new Error(result.payload || `Failed to ${mode} export`);
+        enqueueSnackbar("Export updated successfully!", { variant: "success" });
       }
+      onSuccess?.(result);
+      onClose();
     } catch (err) {
-      const errorMsg = err.message || err.response?.data?.message || `Failed to ${mode} export`;
+      const errorMsg = err?.data || err.message || `Failed to ${mode} export`;
       setError(errorMsg);
       enqueueSnackbar(errorMsg, { variant: "error" });
     } finally {

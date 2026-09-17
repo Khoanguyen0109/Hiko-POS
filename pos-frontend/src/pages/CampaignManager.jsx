@@ -1,5 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useState, useMemo } from "react";
 import { useSnackbar } from "notistack";
 import {
   MdAdd,
@@ -10,37 +9,28 @@ import {
 import CampaignList from "../components/campaign/CampaignList";
 import CampaignForm from "../components/campaign/CampaignForm";
 import {
-  fetchCampaigns,
-  createCampaign,
-  editCampaign,
-  deactivateCampaignAction,
-  clearError,
-} from "../redux/slices/campaignSlice";
+  useGetCampaignsQuery,
+  useAddCampaignMutation,
+  useUpdateCampaignMutation,
+  useDeactivateCampaignMutation,
+} from "../redux/api/endpoints";
+import { unwrapList } from "../redux/api/queryResult";
 import { downloadSpinQr } from "../utils/spinQr";
 
 const CampaignManager = () => {
-  const dispatch = useDispatch();
   const { enqueueSnackbar } = useSnackbar();
 
-  const { campaigns, campaignsLoading: loading, campaignsError: error } =
-    useSelector((state) => state.campaigns);
+  const { data: campaignsResult, isLoading: loading } = useGetCampaignsQuery();
+  const campaigns = unwrapList(campaignsResult);
+  const [addCampaign] = useAddCampaignMutation();
+  const [updateCampaign] = useUpdateCampaignMutation();
+  const [deactivateCampaign] = useDeactivateCampaignMutation();
 
   const [showForm, setShowForm] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [downloadingSlug, setDownloadingSlug] = useState("");
-
-  useEffect(() => {
-    dispatch(fetchCampaigns());
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (error) {
-      enqueueSnackbar(error, { variant: "error" });
-      dispatch(clearError());
-    }
-  }, [error, enqueueSnackbar, dispatch]);
 
   const filteredCampaigns = useMemo(() => {
     return campaigns.filter((campaign) => {
@@ -69,18 +59,19 @@ const CampaignManager = () => {
   const handleSubmit = async (campaignData) => {
     try {
       if (editingCampaign) {
-        await dispatch(
-          editCampaign({ campaignId: editingCampaign._id, ...campaignData })
-        ).unwrap();
+        await updateCampaign({
+          campaignId: editingCampaign._id,
+          ...campaignData,
+        }).unwrap();
         enqueueSnackbar("Campaign updated successfully!", { variant: "success" });
       } else {
-        await dispatch(createCampaign(campaignData)).unwrap();
+        await addCampaign(campaignData).unwrap();
         enqueueSnackbar("Campaign created successfully!", { variant: "success" });
       }
       setShowForm(false);
       setEditingCampaign(null);
-    } catch {
-      // Error handled via Redux + snackbar effect
+    } catch (err) {
+      enqueueSnackbar(err?.data || "Failed to save campaign", { variant: "error" });
     }
   };
 
@@ -118,10 +109,12 @@ const CampaignManager = () => {
     }
 
     try {
-      await dispatch(deactivateCampaignAction(campaignId)).unwrap();
+      await deactivateCampaign(campaignId).unwrap();
       enqueueSnackbar("Campaign deactivated!", { variant: "success" });
-    } catch {
-      // Error handled via Redux + snackbar effect
+    } catch (err) {
+      enqueueSnackbar(err?.data || "Failed to deactivate campaign", {
+        variant: "error",
+      });
     }
   };
 

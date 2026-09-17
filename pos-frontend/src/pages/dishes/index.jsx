@@ -5,12 +5,9 @@ import BackButton from "../../components/shared/BackButton";
 import DishList from "./DishList";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants";
-import { fetchDishes } from "../../redux/slices/dishSlice";
-import { useDispatch } from "react-redux";
 
 const Dishes = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const [isDishModalOpen, setIsDishModalOpen] = useState(false);
   const [isRecipeModalOpen, setIsRecipeModalOpen] = useState(false);
   const [editingDish, setEditingDish] = useState(null);
@@ -40,10 +37,6 @@ const Dishes = () => {
   const handleCloseRecipeModal = () => {
     setIsRecipeModalOpen(false);
     setRecipeDish(null);
-  };
-
-  const handleRecipeSuccess = () => {
-    dispatch(fetchDishes());
   };
 
   return (
@@ -116,7 +109,6 @@ const Dishes = () => {
           isOpen={isRecipeModalOpen}
           onClose={handleCloseRecipeModal}
           dish={recipeDish}
-          onSuccess={handleRecipeSuccess}
         />
       )}
     </>

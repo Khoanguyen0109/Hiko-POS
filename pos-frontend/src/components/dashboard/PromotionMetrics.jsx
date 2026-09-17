@@ -1,6 +1,6 @@
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchAnalytics } from '../../redux/slices/promotionSlice';
+import React, { useMemo } from 'react';
+import { skipToken } from '@reduxjs/toolkit/query/react';
+import { useGetPromotionAnalyticsQuery } from '../../redux/api/endpoints';
 import { 
   MdLocalOffer as TagIcon, 
   MdTrendingUp as TrendingUpIcon, 
@@ -11,12 +11,10 @@ import {
 import { getTodayDateVietnam, getDateRangeByPeriodVietnam } from '../../utils/dateUtils';
 
 const PromotionMetrics = ({ dateFilter, customDateRange }) => {
-  const dispatch = useDispatch();
-  const { analytics, loading } = useSelector(state => state.promotions);
-
-  useEffect(() => {
+  const analyticsParams = useMemo(() => {
     const today = getTodayDateVietnam();
-    let startDate, endDate;
+    let startDate;
+    let endDate;
 
     switch (dateFilter) {
       case 'today':
@@ -44,10 +42,10 @@ const PromotionMetrics = ({ dateFilter, customDateRange }) => {
         startDate = endDate = today;
     }
 
-    if (startDate && endDate) {
-      dispatch(fetchAnalytics({ startDate, endDate }));
-    }
-  }, [dispatch, dateFilter, customDateRange]);
+    return startDate && endDate ? { startDate, endDate } : skipToken;
+  }, [dateFilter, customDateRange]);
+
+  const { data: analytics, isLoading: loading } = useGetPromotionAnalyticsQuery(analyticsParams);
 
   // Format currency
   const formatVND = (amount) => {

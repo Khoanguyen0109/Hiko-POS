@@ -1,8 +1,10 @@
 import { BRAND_PRIMARY } from "../../constants/colors.js";
 import { useState, useEffect } from "react";
 import { MdCategory, MdColorLens } from "react-icons/md";
-import { useSelector, useDispatch } from "react-redux";
-import { createCategory, editCategory } from "../../redux/slices/categorySlice";
+import {
+  useCreateCategoryMutation,
+  useUpdateCategoryMutation,
+} from "../../redux/api/endpoints/catalogEndpoints";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
 import BottomSheet from "../shared/BottomSheet";
@@ -22,8 +24,9 @@ const COLOR_OPTIONS = [
 ];
 
 const CategoryModal = ({ setIsCategoryModalOpen, editingCategory }) => {
-  const dispatch = useDispatch();
-  const { loading: categoryLoading } = useSelector((state) => state.categories);
+  const [createCategory, { isLoading: isCreating }] = useCreateCategoryMutation();
+  const [updateCategory, { isLoading: isUpdating }] = useUpdateCategoryMutation();
+  const categoryLoading = isCreating || isUpdating;
 
   const [categoryData, setCategoryData] = useState({
     name: "",
@@ -81,47 +84,33 @@ const CategoryModal = ({ setIsCategoryModalOpen, editingCategory }) => {
     };
 
     try {
-      let resultAction;
-      
       if (editingCategory) {
-        // Edit existing category
-        resultAction = await dispatch(editCategory({ 
-          id: editingCategory._id, 
-          categoryData: submitData 
-        }));
-        
-        if (editCategory.fulfilled.match(resultAction)) {
-          setIsCategoryModalOpen(false);
-          enqueueSnackbar("Category updated successfully!", {
-            variant: "success",
-          });
-        } else {
-          const errorMessage = resultAction.payload || "Failed to update category";
-          enqueueSnackbar(errorMessage, { variant: "error" });
-        }
+        await updateCategory({
+          categoryId: editingCategory._id,
+          ...submitData,
+        }).unwrap();
+        setIsCategoryModalOpen(false);
+        enqueueSnackbar("Category updated successfully!", {
+          variant: "success",
+        });
       } else {
-        // Create new category
-        resultAction = await dispatch(createCategory(submitData));
-
-        if (createCategory.fulfilled.match(resultAction)) {
-          setIsCategoryModalOpen(false);
-          enqueueSnackbar("Category created successfully!", {
-            variant: "success",
-          });
-          // Reset form
-          setCategoryData({
-            name: "",
-            description: "",
-            color: COLOR_OPTIONS[0].value,
-            isActive: true,
-          });
-        } else {
-          const errorMessage = resultAction.payload || "Failed to create category";
-          enqueueSnackbar(errorMessage, { variant: "error" });
-        }
+        await createCategory(submitData).unwrap();
+        setIsCategoryModalOpen(false);
+        enqueueSnackbar("Category created successfully!", {
+          variant: "success",
+        });
+        setCategoryData({
+          name: "",
+          description: "",
+          color: COLOR_OPTIONS[0].value,
+          isActive: true,
+        });
       }
-    } catch {
-      enqueueSnackbar("An unexpected error occurred", { variant: "error" });
+    } catch (error) {
+      enqueueSnackbar(
+        error?.data || error || (editingCategory ? "Failed to update category" : "Failed to create category"),
+        { variant: "error" }
+      );
     }
   };
 

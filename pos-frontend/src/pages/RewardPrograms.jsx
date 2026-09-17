@@ -1,5 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useState, useCallback } from "react";
 import {
   MdAdd,
   MdEdit,
@@ -8,13 +7,14 @@ import {
 } from "react-icons/md";
 import { enqueueSnackbar } from "notistack";
 import {
-  fetchRewardPrograms,
-  createRewardProgram,
-  editRewardProgram,
-  removeRewardProgram,
-  toggleProgramStatus,
-} from "../redux/slices/rewardSlice";
-import { fetchCategories } from "../redux/slices/categorySlice";
+  useGetRewardProgramsQuery,
+  useAddRewardProgramMutation,
+  useUpdateRewardProgramMutation,
+  useDeleteRewardProgramMutation,
+  useToggleRewardProgramStatusMutation,
+  useGetCategoriesQuery,
+} from "../redux/api/endpoints";
+import { unwrapList } from "../redux/api/queryResult";
 import BottomSheet from "../components/shared/BottomSheet";
 
 const EMPTY_FORM = {
@@ -30,27 +30,20 @@ const EMPTY_FORM = {
 };
 
 const RewardPrograms = () => {
-  const dispatch = useDispatch();
-  const { programs, programsLoading, programsError } = useSelector(
-    (s) => s.rewards
-  );
-  const categories = useSelector((s) => s.categories?.items || []);
+  const { data: programsResult, isLoading: programsLoading } =
+    useGetRewardProgramsQuery();
+  const programs = unwrapList(programsResult);
+  const { data: categoriesResult } = useGetCategoriesQuery();
+  const categories = unwrapList(categoriesResult);
+  const [addRewardProgram] = useAddRewardProgramMutation();
+  const [updateRewardProgram] = useUpdateRewardProgramMutation();
+  const [deleteRewardProgram] = useDeleteRewardProgramMutation();
+  const [toggleRewardProgramStatus] = useToggleRewardProgramStatusMutation();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [editingId, setEditingId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    dispatch(fetchRewardPrograms());
-    dispatch(fetchCategories());
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (programsError) {
-      enqueueSnackbar(programsError, { variant: "error" });
-    }
-  }, [programsError]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -107,56 +100,48 @@ const RewardPrograms = () => {
       payload.maxFreeDishValue = Number(form.maxFreeDishValue);
     }
 
-    let result;
-    if (editingId) {
-      result = await dispatch(editRewardProgram({ id: editingId, ...payload }));
-    } else {
-      result = await dispatch(createRewardProgram(payload));
-    }
-
-    setSubmitting(false);
-
-    if (!result.error) {
+    try {
+      if (editingId) {
+        await updateRewardProgram({ id: editingId, ...payload }).unwrap();
+      } else {
+        await addRewardProgram(payload).unwrap();
+      }
       enqueueSnackbar(
         editingId ? "Program updated!" : "Program created!",
         { variant: "success" }
       );
       closeModal();
-    } else {
-      enqueueSnackbar(result.payload || "Operation failed", {
+    } catch (err) {
+      enqueueSnackbar(err?.data || "Operation failed", {
         variant: "error",
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleToggle = useCallback(
-    async (id) => {
-      const result = await dispatch(toggleProgramStatus(id));
-      if (!result.error) {
-        enqueueSnackbar("Status toggled!", { variant: "success" });
-      } else {
-        enqueueSnackbar(result.payload || "Toggle failed", {
-          variant: "error",
-        });
-      }
-    },
-    [dispatch]
-  );
+  const handleToggle = useCallback(async (id) => {
+    try {
+      await toggleRewardProgramStatus(id).unwrap();
+      enqueueSnackbar("Status toggled!", { variant: "success" });
+    } catch (err) {
+      enqueueSnackbar(err?.data || "Toggle failed", {
+        variant: "error",
+      });
+    }
+  }, [toggleRewardProgramStatus]);
 
-  const handleDelete = useCallback(
-    async (id) => {
-      if (!window.confirm("Delete this reward program?")) return;
-      const result = await dispatch(removeRewardProgram(id));
-      if (!result.error) {
-        enqueueSnackbar("Program deleted!", { variant: "success" });
-      } else {
-        enqueueSnackbar(result.payload || "Delete failed", {
-          variant: "error",
-        });
-      }
-    },
-    [dispatch]
-  );
+  const handleDelete = useCallback(async (id) => {
+    if (!window.confirm("Delete this reward program?")) return;
+    try {
+      await deleteRewardProgram(id).unwrap();
+      enqueueSnackbar("Program deleted!", { variant: "success" });
+    } catch (err) {
+      enqueueSnackbar(err?.data || "Delete failed", {
+        variant: "error",
+      });
+    }
+  }, [deleteRewardProgram]);
 
   return (
     <div className="bg-[#1f1f1f] min-h-screen pb-20">

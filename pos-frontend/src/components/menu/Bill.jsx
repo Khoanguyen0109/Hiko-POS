@@ -8,9 +8,9 @@ import {
   calculatePricing,
 } from "../../redux/slices/cartSlice";
 import { removeCustomer } from "../../redux/slices/customerSlice";
-import { createOrder } from "../../redux/slices/orderSlice";
-import { fetchPromotions } from "../../redux/slices/promotionSlice";
 import { removeAppliedReward, clearCustomerRewards } from "../../redux/slices/rewardSlice";
+import { useCreateOrderMutation, useGetPromotionsQuery, PLACE_ORDER_CACHE_KEY } from "../../redux/api/endpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 import { enqueueSnackbar } from "notistack";
 import Invoice from "../invoice/Invoice";
 import CouponSelector from "./CouponInput";
@@ -36,10 +36,14 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false }, ref) => {
   const discount = useSelector(getDiscount);
   const total = useSelector(getTotalPrice);
   const appliedCoupon = useSelector(getAppliedCoupon);
-  const { loading } = useSelector((state) => state.orders);
-  const { items: promotions } = useSelector(
-    (state) => state.promotions
-  );
+  const [createOrder, { isLoading: loading }] = useCreateOrderMutation({
+    fixedCacheKey: PLACE_ORDER_CACHE_KEY,
+  });
+  const { data: promotionsResult } = useGetPromotionsQuery({
+    isActive: true,
+    limit: 50,
+  });
+  const promotions = unwrapList(promotionsResult);
   const appliedReward = useSelector((state) => state.rewards.appliedReward);
   const customerRewards = useSelector((state) => state.rewards.customerRewards);
 
@@ -75,10 +79,6 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false }, ref) => {
   // Note: isItemEligibleForPromotion removed - no longer needed for manual coupon selection
 
   // Note: findActiveHappyHourPromotion removed - happy hour is now manually selectable
-
-  useEffect(() => {
-    dispatch(fetchPromotions({ isActive: true, limit: 50 }));
-  }, [dispatch]);
 
   // Note: Happy Hour promotions are now manually selectable via coupon selector
   // Auto-application has been removed to give users control over promotion usage
@@ -223,7 +223,7 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false }, ref) => {
         : {}),
     };
 
-    dispatch(createOrder(orderData))
+    createOrder(orderData)
       .unwrap()
       .then((data) => {
         logger.debug("Order created:", data);
@@ -251,7 +251,7 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false }, ref) => {
       })
       .catch((error) => {
         logger.error("Order creation failed:", error);
-        const errorMessage = error || "Failed to place order";
+        const errorMessage = error?.data || error || "Failed to place order";
         enqueueSnackbar(errorMessage, {
           variant: "error",
         });

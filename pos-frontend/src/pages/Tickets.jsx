@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useState } from "react";
+import { useSelector } from "react-redux";
+import { skipToken } from "@reduxjs/toolkit/query/react";
 import {
   MdStar,
   MdAdd,
@@ -11,8 +12,13 @@ import {
 } from "react-icons/md";
 import { enqueueSnackbar } from "notistack";
 import TicketModal from "../components/tickets/TicketModal";
-import { fetchTickets, fetchTicketSummary, removeTicket, clearTicketError } from "../redux/slices/ticketSlice";
-import { fetchStoreMembers } from "../redux/slices/storeSlice";
+import {
+  useGetTicketsQuery,
+  useGetTicketSummaryQuery,
+  useDeleteTicketMutation,
+  useGetStoreMembersQuery,
+} from "../redux/api/endpoints";
+import { unwrapList, unwrapPaginated } from "../redux/api/queryResult";
 
 const MONTHS = [
   "January","February","March","April","May","June",
@@ -23,11 +29,8 @@ const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: 3 }, (_, i) => currentYear - i);
 
 const Tickets = () => {
-  const dispatch = useDispatch();
   const { role } = useSelector((s) => s.user);
   const activeStore = useSelector((s) => s.store.activeStore);
-  const storeMembers = useSelector((s) => s.store.storeMembers);
-  const { tickets, pagination, loading, error, summary, summaryLoading, summaryError } = useSelector((s) => s.tickets);
 
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -41,6 +44,8 @@ const Tickets = () => {
   const storeRole = activeStore?.role || activeStore?.storeRole || "";
   const canManage = role === "Admin" || storeRole === "Owner" || storeRole === "Manager";
 
+  const { data: membersResult } = useGetStoreMembersQuery(activeStore?._id ?? skipToken);
+  const storeMembers = unwrapList(membersResult);
   const members = storeMembers
     ?.filter((sm) => sm.isActive && sm.user?.isActive)
     .map((sm) => ({
@@ -51,53 +56,30 @@ const Tickets = () => {
     }))
     .filter((m) => m._id) || [];
 
-  useEffect(() => {
-    if (activeStore?._id) {
-      dispatch(fetchStoreMembers(activeStore._id));
-    }
-  }, [dispatch, activeStore?._id]);
-
-  const loadData = useCallback(() => {
-    dispatch(fetchTicketSummary({ month, year }));
-    if (activeTab === "tickets") {
-      dispatch(fetchTickets({ month, year }));
-    }
-  }, [dispatch, month, year, activeTab]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  // Surface fetch errors via snackbar
-  useEffect(() => {
-    if (error) {
-      enqueueSnackbar(error, { variant: "error" });
-      dispatch(clearTicketError());
-    }
-  }, [error, dispatch]);
-
-  useEffect(() => {
-    if (summaryError) {
-      enqueueSnackbar(summaryError, { variant: "error" });
-      dispatch(clearTicketError());
-    }
-  }, [summaryError, dispatch]);
+  const { data: summary, isLoading: summaryLoading } = useGetTicketSummaryQuery({ month, year });
+  const { data: ticketsResult, isLoading: loading } = useGetTicketsQuery(
+    { month, year },
+    { skip: activeTab !== "tickets" }
+  );
+  const { items: tickets, pagination } = unwrapPaginated(ticketsResult);
+  const [deleteTicket] = useDeleteTicketMutation();
 
   const handleDelete = async (ticketId) => {
     if (!window.confirm("Delete this ticket?")) return;
     setDeletingId(ticketId);
-    const result = await dispatch(removeTicket(ticketId));
-    setDeletingId(null);
-    if (!result.error) {
+    try {
+      await deleteTicket(ticketId).unwrap();
       enqueueSnackbar("Ticket deleted!", { variant: "success" });
-    } else {
-      enqueueSnackbar(result.payload || "Failed to delete", { variant: "error" });
+    } catch (err) {
+      enqueueSnackbar(err?.data || "Failed to delete", { variant: "error" });
+    } finally {
+      setDeletingId(null);
     }
   };
 
   const openCreate = () => { setSelectedTicket(null); setModalOpen(true); };
   const openEdit   = (t) => { setSelectedTicket(t);   setModalOpen(true); };
-  const closeModal = () => { setModalOpen(false); setSelectedTicket(null); loadData(); };
+  const closeModal = () => { setModalOpen(false); setSelectedTicket(null); };
 
   if (!canManage) {
     return (
@@ -190,7 +172,6 @@ const Tickets = () => {
             key={tab.key}
             onClick={() => {
               setActiveTab(tab.key);
-              if (tab.key === "tickets") dispatch(fetchTickets({ month, year }));
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
               activeTab === tab.key

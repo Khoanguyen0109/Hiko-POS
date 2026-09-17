@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import PropTypes from "prop-types";
-import { useDispatch, useSelector } from "react-redux";
 import { MdWarning, MdTrendingUp, MdTrendingDown, MdInventory, MdReceipt, MdStore } from "react-icons/md";
-import { fetchStorageVariance } from "../../redux/slices/storageVarianceSlice";
+import { useGetStorageVarianceQuery } from "../../redux/api/endpoints";
 import { formatVND } from "../../utils";
 import { getTodayDateVietnam, getDateRangeByPeriodVietnam } from "../../utils/dateUtils";
 import LoadingState from "../shared/LoadingState";
@@ -22,35 +21,30 @@ const varianceClass = (value) => {
 };
 
 const MaterialVariance = ({ dateFilter, customDateRange }) => {
-    const dispatch = useDispatch();
-    const { summary, items, storeSummaries, stores, coverage, scope, loading, error } = useSelector(
-        (state) => state.storageVariance
-    );
     const [storeFilter, setStoreFilter] = useState("");
-
-    useEffect(() => {
-        const params = {};
+    const params = useMemo(() => {
+        const next = { scope: "all" };
         const today = getTodayDateVietnam();
 
         if (dateFilter === "custom" && customDateRange.startDate && customDateRange.endDate) {
-            params.startDate = customDateRange.startDate;
-            params.endDate = customDateRange.endDate;
+            next.startDate = customDateRange.startDate;
+            next.endDate = customDateRange.endDate;
         } else if (dateFilter && dateFilter !== "custom") {
             switch (dateFilter) {
                 case "today":
-                    params.startDate = today;
-                    params.endDate = today;
+                    next.startDate = today;
+                    next.endDate = today;
                     break;
                 case "week": {
                     const { start } = getDateRangeByPeriodVietnam("thisWeek");
-                    params.startDate = start;
-                    params.endDate = today;
+                    next.startDate = start;
+                    next.endDate = today;
                     break;
                 }
                 case "month": {
                     const { start } = getDateRangeByPeriodVietnam("thisMonth");
-                    params.startDate = start;
-                    params.endDate = today;
+                    next.startDate = start;
+                    next.endDate = today;
                     break;
                 }
                 default:
@@ -58,8 +52,16 @@ const MaterialVariance = ({ dateFilter, customDateRange }) => {
             }
         }
 
-        dispatch(fetchStorageVariance({ ...params, scope: "all" }));
-    }, [dispatch, dateFilter, customDateRange]);
+        return next;
+    }, [dateFilter, customDateRange]);
+
+    const { data: variance, isLoading: loading, error } = useGetStorageVarianceQuery(params);
+    const summary = variance?.summary;
+    const items = variance?.items || [];
+    const storeSummaries = variance?.storeSummaries || [];
+    const stores = variance?.stores;
+    const coverage = variance?.coverage;
+    const scope = variance?.scope;
 
     const storeOptions = useMemo(() => {
         if (stores?.length) {
@@ -153,7 +155,7 @@ const MaterialVariance = ({ dateFilter, customDateRange }) => {
                 <div className="text-center py-12">
                     <MdWarning className="mx-auto text-6xl text-red-500 mb-4" />
                     <p className="text-red-400 text-lg mb-2">Error loading variance</p>
-                    <p className="text-[#ababab] text-sm">{error}</p>
+                    <p className="text-[#ababab] text-sm">{error?.data || "Failed to load variance"}</p>
                 </div>
             </div>
         );

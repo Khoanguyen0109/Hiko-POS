@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { skipToken } from "@reduxjs/toolkit/query/react";
 import { enqueueSnackbar } from "notistack";
 import PropTypes from "prop-types";
 import {
@@ -10,13 +10,11 @@ import {
 } from "react-icons/md";
 import BottomSheet from "../shared/BottomSheet";
 import {
-  fetchShiftCheckoutPreview,
-  submitShiftCheckout,
-  updateShiftCheckout,
-  fetchMyShiftCheckouts,
-  clearShiftCheckoutError,
-  clearPreview,
-} from "../../redux/slices/shiftCheckoutSlice";
+  useGetShiftCheckoutPreviewQuery,
+  useSubmitShiftCheckoutMutation,
+  useUpdateShiftCheckoutMutation,
+  useGetMyShiftCheckoutsTodayQuery,
+} from "../../redux/api/endpoints";
 import {
   CheckoutFullDetail,
   DiffPill,
@@ -46,9 +44,20 @@ const ShiftCheckoutModal = ({
   onSuccess,
   canEditCheckout = false,
 }) => {
-  const dispatch = useDispatch();
-  const { preview, previewLoading, submitLoading, updateLoading, error } =
-    useSelector((state) => state.shiftCheckout);
+  const previewArg = isOpen && scheduleId ? { scheduleId, memberId } : skipToken;
+  const {
+    data: preview,
+    isLoading: previewLoading,
+    error,
+    refetch: refetchPreview,
+  } = useGetShiftCheckoutPreviewQuery(previewArg);
+  const [submitCheckout, { isLoading: submitLoading }] =
+    useSubmitShiftCheckoutMutation();
+  const [updateCheckout, { isLoading: updateLoading }] =
+    useUpdateShiftCheckoutMutation();
+  const { refetch: refetchMyShifts } = useGetMyShiftCheckoutsTodayQuery(
+    refreshDate ? { date: refreshDate } : skipToken
+  );
 
   const [countedCash, setCountedCash] = useState("");
   const [countedBanking, setCountedBanking] = useState("");
@@ -58,25 +67,22 @@ const ShiftCheckoutModal = ({
 
   useEffect(() => {
     if (isOpen && scheduleId) {
-      dispatch(fetchShiftCheckoutPreview({ scheduleId, memberId }));
       setEditMode(false);
     }
     if (!isOpen) {
-      dispatch(clearPreview());
       setCountedCash("");
       setCountedBanking("");
       setOpeningCashInput("");
       setNotes("");
       setEditMode(false);
     }
-  }, [isOpen, scheduleId, memberId, dispatch]);
+  }, [isOpen, scheduleId, memberId]);
 
   useEffect(() => {
     if (error) {
-      enqueueSnackbar(error, { variant: "error" });
-      dispatch(clearShiftCheckoutError());
+      enqueueSnackbar(error?.data || error, { variant: "error" });
     }
-  }, [error, dispatch]);
+  }, [error]);
 
   const expected = preview || {};
   const existing = expected.existingCheckout;
@@ -128,7 +134,7 @@ const ShiftCheckoutModal = ({
   const refreshLists = async () => {
     onSuccess?.();
     if (refreshDate) {
-      await dispatch(fetchMyShiftCheckouts({ date: refreshDate })).unwrap();
+      await refetchMyShifts();
     }
   };
 
@@ -163,31 +169,34 @@ const ShiftCheckoutModal = ({
         ) {
           payload.openingCash = openingCashNum;
         }
-        result = await dispatch(updateShiftCheckout(payload)).unwrap();
+        result = await updateCheckout(payload).unwrap();
       } else {
-        result = await dispatch(
-          submitShiftCheckout({
-            scheduleId,
-            memberId: memberId || undefined,
-            countedCash: countedCashNum,
-            countedBanking: countedBankingNum,
-            notes: notes.trim(),
-          })
-        ).unwrap();
+        result = await submitCheckout({
+          scheduleId,
+          memberId: memberId || undefined,
+          countedCash: countedCashNum,
+          countedBanking: countedBankingNum,
+          notes: notes.trim(),
+        }).unwrap();
       }
 
-      const status = result.data?.status;
-      enqueueSnackbar(result.message || "Checkout saved", {
-        variant: status === "balanced" ? "success" : "warning",
-      });
+      const status = result?.status;
+      enqueueSnackbar(
+        status === "balanced"
+          ? "Shift checkout submitted — totals match"
+          : status === "mismatch"
+            ? "Shift checkout submitted — totals do not match"
+            : "Checkout saved",
+        {
+          variant: status === "balanced" ? "success" : "warning",
+        }
+      );
 
       await refreshLists();
       setEditMode(false);
-      await dispatch(
-        fetchShiftCheckoutPreview({ scheduleId, memberId })
-      ).unwrap();
-    } catch {
-      // error handled via slice
+      await refetchPreview();
+    } catch (err) {
+      enqueueSnackbar(err?.data || err || "Failed to save checkout", { variant: "error" });
     }
   };
 

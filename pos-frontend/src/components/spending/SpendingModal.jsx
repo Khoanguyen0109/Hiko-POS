@@ -1,7 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import { useDispatch } from "react-redux";
 import { MdSave, MdCancel } from "react-icons/md";
-import { createSpending, editSpending } from "../../redux/slices/spendingSlice";
+import { enqueueSnackbar } from "notistack";
+import {
+  useAddSpendingMutation,
+  useUpdateSpendingMutation,
+} from "../../redux/api/endpoints";
 import { formatVND } from "../../utils";
 import PropTypes from "prop-types";
 import BottomSheet from "../shared/BottomSheet";
@@ -15,7 +18,8 @@ const SpendingModal = ({
   vendors = [],
   onSuccess 
 }) => {
-  const dispatch = useDispatch();
+  const [addSpending] = useAddSpendingMutation();
+  const [updateSpending] = useUpdateSpendingMutation();
   const initialFormData = useMemo(() => ({
     title: "",
     amount: "",
@@ -89,29 +93,26 @@ const SpendingModal = ({
         }
       });
 
-      let result;
-      if (mode === "create") {
-        result = await dispatch(createSpending(submitData));
-      } else {
-        result = await dispatch(editSpending({ spendingId: spending._id, ...submitData }));
-      }
+      const result = mode === "create"
+        ? await addSpending(submitData).unwrap()
+        : await updateSpending({ spendingId: spending._id, ...submitData }).unwrap();
 
-      if (result.meta.requestStatus === 'fulfilled') {
-        // Reset form only for create mode
-        if (mode === "create") {
-          setFormData({
-            ...initialFormData,
-            paymentDate: new Date().toISOString().split('T')[0]
-          });
-          setError("");
-        }
-        onSuccess?.(result.payload.data);
-        onClose();
+      if (mode === "create") {
+        setFormData({
+          ...initialFormData,
+          paymentDate: new Date().toISOString().split('T')[0]
+        });
+        setError("");
+        enqueueSnackbar("Spending record created!", { variant: "success" });
       } else {
-        throw new Error(result.payload?.message || `Failed to ${mode} spending record`);
+        enqueueSnackbar("Spending record updated!", { variant: "success" });
       }
+      onSuccess?.(result);
+      onClose();
     } catch (err) {
-      setError(err.message || err.response?.data?.message || `Failed to ${mode} spending record`);
+      const errorMsg = err?.data || err.message || `Failed to ${mode} spending record`;
+      setError(errorMsg);
+      enqueueSnackbar(errorMsg, { variant: "error" });
     } finally {
       setLoading(false);
     }

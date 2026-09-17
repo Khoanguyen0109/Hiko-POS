@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import PropTypes from "prop-types";
 import BottomSheet from "../shared/BottomSheet";
 import WheelSlotEditor from "./WheelSlotEditor";
-import { fetchDishes } from "../../redux/slices/dishSlice";
+import { useGetDishesQuery } from "../../redux/api/endpoints";
+import { unwrapList } from "../../redux/api/queryResult";
 import { getSpinUrl } from "../../utils/spinQr";
 
 const DEFAULT_SLOTS = [
@@ -43,10 +43,8 @@ const slugify = (name) =>
     .replace(/^-|-$/g, "");
 
 const CampaignForm = ({ campaign, onSubmit, onClose }) => {
-  const dispatch = useDispatch();
-  const { items: dishes, loading: dishesLoading } = useSelector(
-    (state) => state.dishes
-  );
+  const { data: dishesResult } = useGetDishesQuery();
+  const dishes = unwrapList(dishesResult);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -61,12 +59,6 @@ const CampaignForm = ({ campaign, onSubmit, onClose }) => {
   const [slugTouched, setSlugTouched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-
-  useEffect(() => {
-    if (dishes.length === 0 && !dishesLoading) {
-      dispatch(fetchDishes());
-    }
-  }, [dispatch, dishes.length, dishesLoading]);
 
   useEffect(() => {
     if (campaign) {
