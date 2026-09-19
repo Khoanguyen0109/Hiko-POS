@@ -21,6 +21,59 @@ const withOptionalStoreHeader = (storeId) =>
     ? { skipStoreHeader: true, headers: { "X-Store-Id": storeId } }
     : {};
 
+const sameWeekArgs = (args, schedule) =>
+  Number(args?.year) === Number(schedule?.year) &&
+  Number(args?.week) === Number(schedule?.weekNumber);
+
+const mergeSchedule = (previous, next) => ({
+  ...previous,
+  ...next,
+  store:
+    next.store && typeof next.store === "object" ? next.store : previous.store,
+  shiftTemplate:
+    next.shiftTemplate && typeof next.shiftTemplate === "object"
+      ? next.shiftTemplate
+      : previous.shiftTemplate,
+  assignedMembers: next.assignedMembers ?? previous.assignedMembers,
+});
+
+const upsertScheduleInWeekCaches = (dispatch, getState, schedule) => {
+  if (!schedule?._id) return;
+
+  const cachedArgs = baseApi.util.selectCachedArgsForQuery(
+    getState(),
+    "getAllMembersWeek"
+  ) || [];
+  const matchingArgs = cachedArgs.filter((args) => sameWeekArgs(args, schedule));
+  const argsToPatch = matchingArgs.length > 0 ? matchingArgs : cachedArgs;
+
+  argsToPatch.forEach((args) => {
+
+    dispatch(
+      baseApi.util.updateQueryData("getAllMembersWeek", args, (draft) => {
+        if (!Array.isArray(draft)) return;
+        const index = draft.findIndex((item) => item._id === schedule._id);
+        if (index >= 0) {
+          draft[index] = mergeSchedule(draft[index], schedule);
+          return;
+        }
+        draft.push(schedule);
+      })
+    );
+  });
+};
+
+const patchWeekCacheOnScheduleWrite = async (
+  { dispatch, getState, queryFulfilled }
+) => {
+  try {
+    const { data: schedule } = await queryFulfilled;
+    upsertScheduleInWeekCaches(dispatch, getState, schedule);
+  } catch {
+    // Leave existing week data on screen; the mutation error is handled by the caller.
+  }
+};
+
 const filterEmptyParams = (params = {}) =>
   Object.fromEntries(
     Object.entries(params).filter(
@@ -320,7 +373,7 @@ export const peopleApi = baseApi.injectEndpoints({
         data,
         ...withOptionalStoreHeader(storeId),
       }),
-      invalidatesTags: [{ type: "Schedule", id: "LIST" }],
+      onQueryStarted: (_arg, api) => patchWeekCacheOnScheduleWrite(api),
     }),
     bulkCreateSchedules: build.mutation({
       query: (schedules) => ({
@@ -352,8 +405,7 @@ export const peopleApi = baseApi.injectEndpoints({
         method: "PATCH",
         data: { memberId },
       }),
-      invalidatesTags: (_result, _error, { scheduleId }) =>
-        invalidatesList("Schedule", scheduleId),
+      onQueryStarted: (_arg, api) => patchWeekCacheOnScheduleWrite(api),
     }),
     batchAssignMembers: build.mutation({
       query: ({ scheduleId, memberIds, storeId }) => ({
@@ -362,8 +414,7 @@ export const peopleApi = baseApi.injectEndpoints({
         data: { memberIds },
         ...withOptionalStoreHeader(storeId),
       }),
-      invalidatesTags: (_result, _error, { scheduleId }) =>
-        invalidatesList("Schedule", scheduleId),
+      onQueryStarted: (_arg, api) => patchWeekCacheOnScheduleWrite(api),
     }),
     unassignMemberFromShift: build.mutation({
       query: ({ scheduleId, memberId }) => ({
@@ -371,8 +422,7 @@ export const peopleApi = baseApi.injectEndpoints({
         method: "PATCH",
         data: { memberId },
       }),
-      invalidatesTags: (_result, _error, { scheduleId }) =>
-        invalidatesList("Schedule", scheduleId),
+      onQueryStarted: (_arg, api) => patchWeekCacheOnScheduleWrite(api),
     }),
     updateMemberStatus: build.mutation({
       query: ({ scheduleId, memberId, status }) => ({
@@ -380,8 +430,7 @@ export const peopleApi = baseApi.injectEndpoints({
         method: "PATCH",
         data: { memberId, status },
       }),
-      invalidatesTags: (_result, _error, { scheduleId }) =>
-        invalidatesList("Schedule", scheduleId),
+      onQueryStarted: (_arg, api) => patchWeekCacheOnScheduleWrite(api),
     }),
     getMySchedules: build.query({
       query: (params) => ({

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { memo, useMemo, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import {
   MdStore,
@@ -331,8 +331,10 @@ const AllStoresWeekGrid = ({
                               <ScheduleCell
                                 schedule={schedule}
                                 shiftTemplate={template}
+                                store={store}
+                                date={date}
                                 members={members}
-                                onClick={() => onCellClick?.(store, date, template)}
+                                onCellClick={onCellClick}
                                 disabled={readOnly || shiftEnded}
                                 disabledTitle={
                                   readOnly
@@ -370,4 +372,4 @@ AllStoresWeekGrid.propTypes = {
   readOnly: PropTypes.bool
 };
 
-export default AllStoresWeekGrid;
+export default memo(AllStoresWeekGrid);

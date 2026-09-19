@@ -289,6 +289,7 @@ const createSchedule = async (req, res, next) => {
         if (existingSchedule) {
             await existingSchedule.populate([
                 { path: 'shiftTemplate' },
+                { path: 'store', select: 'name code' },
                 { path: 'assignedMembers.member', select: '-password' },
                 { path: 'createdBy', select: 'name email' }
             ]);
@@ -342,6 +343,7 @@ const createSchedule = async (req, res, next) => {
         await schedule.save();
         await schedule.populate([
             { path: 'shiftTemplate' },
+            { path: 'store', select: 'name code' },
             { path: 'assignedMembers.member', select: '-password' },
             { path: 'createdBy', select: 'name email' }
         ]);
@@ -540,6 +542,7 @@ const assignMemberToShift = async (req, res, next) => {
         await schedule.save();
         await schedule.populate([
             { path: 'shiftTemplate' },
+            { path: 'store', select: 'name code' },
             { path: 'assignedMembers.member', select: '-password' }
         ]);
 
@@ -600,6 +603,7 @@ const batchAssignMembers = async (req, res, next) => {
         await schedule.save();
         await schedule.populate([
             { path: 'shiftTemplate' },
+            { path: 'store', select: 'name code' },
             { path: 'assignedMembers.member', select: '-password' }
         ]);
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { MdSettings, MdAccessTime, MdFilterList, MdPeople, MdPerson, MdStore, MdDelete } from "react-icons/md";
@@ -24,7 +24,6 @@ import {
   useGetAllStoresQuery,
   useGetAllMembersQuery,
   useGetAllExtraWorkQuery,
-  useCreateScheduleMutation,
   useDeleteExtraWorkMutation,
 } from "../redux/api/endpoints";
 import { unwrapList } from "../redux/api/queryResult";
@@ -40,6 +39,20 @@ const SCHEDULE_VIEW_MODES = {
   COMPACT: "compact",
   FULL_WEEK: "fullWeek",
   CALENDAR: "calendar",
+};
+
+const findScheduleForStore = (schedules, storeId, date, shiftTemplateId) => {
+  if (!schedules || schedules.length === 0) return null;
+  const targetDateStr = getLocalDateString(date);
+  return schedules.find((schedule) => {
+    const sId = typeof schedule.store === "object" ? schedule.store?._id : schedule.store;
+    if (sId !== storeId) return false;
+    const scheduleDateStr = getLocalDateString(new Date(schedule.date));
+    const scheduleTemplateId = typeof schedule.shiftTemplate === "string"
+      ? schedule.shiftTemplate
+      : schedule.shiftTemplate?._id;
+    return scheduleDateStr === targetDateStr && scheduleTemplateId === shiftTemplateId;
+  });
 };
 
 function getMonthGridDays(year, month) {
@@ -103,25 +116,24 @@ const WeeklySchedule = () => {
 
   const { data: templatesResult, isLoading: templatesLoading, error: templatesError } =
     useGetActiveShiftTemplatesAllStoresQuery();
-  const activeShiftTemplates = unwrapList(templatesResult);
+  const activeShiftTemplates = useMemo(() => unwrapList(templatesResult), [templatesResult]);
 
   const {
     data: weekResult,
     isLoading: allMembersLoading,
     error: weekError,
-    refetch: refetchAdminWeek,
   } = useGetAllMembersWeekQuery(currentWeek, { skip: activeTab !== TABS.BY_STORE });
-  const allMembersSchedules = unwrapList(weekResult);
+  const allMembersSchedules = useMemo(() => unwrapList(weekResult), [weekResult]);
 
   const { data: storesResult, isLoading: allStoresLoading, error: storesError } =
     useGetAllStoresQuery(undefined, { skip: activeTab !== TABS.BY_STORE });
-  const allStores = unwrapList(storesResult);
+  const allStores = useMemo(() => unwrapList(storesResult), [storesResult]);
 
   const { data: membersResult } = useGetAllMembersQuery(
     { isActive: true },
     { skip: !isAdmin }
   );
-  const members = unwrapList(membersResult);
+  const members = useMemo(() => unwrapList(membersResult), [membersResult]);
 
   const { data: extraWorkResult, isLoading: extraWorkLoading, error: extraWorkError } =
     useGetAllExtraWorkQuery(extraWorkParams, { skip: !isAdmin });
@@ -129,8 +141,11 @@ const WeeklySchedule = () => {
   const totalHours = extraWorkEntries.reduce((sum, entry) => sum + (entry.durationHours || 0), 0);
   const totalPayment = extraWorkEntries.reduce((sum, entry) => sum + (entry.paymentAmount || 0), 0);
 
-  const [createSchedule, { isLoading: createLoading }] = useCreateScheduleMutation();
   const [deleteExtraWork] = useDeleteExtraWorkMutation();
+  const isInitialByStoreLoad =
+    (allMembersLoading && weekResult === undefined) ||
+    (templatesLoading && templatesResult === undefined) ||
+    (allStoresLoading && storesResult === undefined);
 
   const queryError = templatesError || weekError || storesError || extraWorkError;
 
@@ -152,24 +167,7 @@ const WeeklySchedule = () => {
     setCurrentWeek({ year, week });
   };
 
-  // Find a schedule for a specific store within the cross-store week data.
-  const findScheduleForStore = (storeId, date, shiftTemplateId) => {
-    if (!allMembersSchedules || allMembersSchedules.length === 0) return null;
-    const targetDateStr = getLocalDateString(date);
-    return allMembersSchedules.find(schedule => {
-      const sId = typeof schedule.store === 'object' ? schedule.store?._id : schedule.store;
-      if (sId !== storeId) return false;
-      const scheduleDateStr = getLocalDateString(new Date(schedule.date));
-      const scheduleTemplateId = typeof schedule.shiftTemplate === 'string'
-        ? schedule.shiftTemplate
-        : schedule.shiftTemplate?._id;
-      return scheduleDateStr === targetDateStr && scheduleTemplateId === shiftTemplateId;
-    });
-  };
-
-  // Cell click from the admin all-stores grid: open/create a schedule for the
-  // clicked store without changing the active store.
-  const handleCombinedCellClick = async (store, date, shiftTemplate) => {
+  const handleCombinedCellClick = useCallback((store, date, shiftTemplate) => {
     if (!isAdmin) return;
 
     if (isShiftOver(date, shiftTemplate.endTime)) {
@@ -177,42 +175,29 @@ const WeeklySchedule = () => {
       return;
     }
 
-    try {
-      const existingSchedule = findScheduleForStore(store._id, date, shiftTemplate._id);
-      if (existingSchedule) {
-        setSelectedSchedule(existingSchedule);
-        setSelectedShiftTemplate(shiftTemplate);
-        setSelectedStore(store);
-        setShowAssignmentModal(true);
-      } else {
-        const dateStr = formatDate(date, "iso");
-        const scheduleDate = new Date(date);
-        const year = scheduleDate.getFullYear();
-        const weekNumber = getWeekNumber(scheduleDate);
+    const existingSchedule = findScheduleForStore(
+      allMembersSchedules,
+      store._id,
+      date,
+      shiftTemplate._id
+    );
 
-        const result = await createSchedule({
-          date: dateStr,
-          shiftTemplateId: shiftTemplate._id,
-          memberIds: [],
-          year,
-          weekNumber,
-          storeId: store._id
-        }).unwrap();
-
-        setSelectedSchedule(result);
-        setSelectedShiftTemplate(shiftTemplate);
-        setSelectedStore(store);
-        setShowAssignmentModal(true);
-      }
-    } catch (err) {
-      enqueueSnackbar(err?.data || err || "Failed to access schedule", { variant: "error" });
+    if (existingSchedule) {
+      setSelectedSchedule(existingSchedule);
+    } else {
+      const scheduleDate = new Date(date);
+      setSelectedSchedule({
+        date: formatDate(date, "iso"),
+        assignedMembers: [],
+        year: scheduleDate.getFullYear(),
+        weekNumber: getWeekNumber(scheduleDate),
+      });
     }
-  };
 
-  // Refresh the cross-store week data after an edit so the combined grid updates.
-  const refreshAdminWeek = () => {
-    refetchAdminWeek();
-  };
+    setSelectedShiftTemplate(shiftTemplate);
+    setSelectedStore(store);
+    setShowAssignmentModal(true);
+  }, [isAdmin, allMembersSchedules]);
 
   const handleCloseModal = () => {
     setShowAssignmentModal(false);
@@ -264,7 +249,10 @@ const WeeklySchedule = () => {
     return colors[workType] || colors.other;
   };
 
-  const weekDates = getWeekDates(currentWeek.year, currentWeek.week);
+  const weekDates = useMemo(
+    () => getWeekDates(currentWeek.year, currentWeek.week),
+    [currentWeek.year, currentWeek.week]
+  );
 
   const calendarMonth = useMemo(() => {
     const anchor = weekDates[0] || new Date();
@@ -505,7 +493,7 @@ const WeeklySchedule = () => {
         {/* ── By Store Tab ── */}
         {activeTab === TABS.BY_STORE && (
           <>
-            {allMembersLoading || templatesLoading || allStoresLoading ? (
+            {isInitialByStoreLoad ? (
               <FullScreenLoader />
             ) : (
               <div className="space-y-6">
@@ -718,7 +706,6 @@ const WeeklySchedule = () => {
         shiftTemplate={selectedShiftTemplate}
         store={selectedStore}
         onLogExtraWork={handleOpenExtraWorkModal}
-        onSaved={isAdmin ? refreshAdminWeek : undefined}
       />
 
       <ExtraWorkModal
@@ -727,8 +714,6 @@ const WeeklySchedule = () => {
         memberId={selectedMemberForExtraWork}
         date={selectedDate}
       />
-
-      {createLoading && <FullScreenLoader />}
     </div>
   );
 };

@@ -1,9 +1,10 @@
+import { memo } from "react";
 import { BRAND_PRIMARY } from "../../constants/colors.js";
 import PropTypes from "prop-types";
 import { useSelector } from "react-redux";
 import { MdAdd as MdAddIcon } from "react-icons/md";
 
-const ScheduleCell = ({ schedule, shiftTemplate, onClick, members, disabled = false, disabledTitle }) => {
+const ScheduleCell = ({ schedule, shiftTemplate, store, date, onCellClick, members, disabled = false, disabledTitle }) => {
   const { _id: currentUserId } = useSelector((state) => state.user);
 
   if (!shiftTemplate) return null;
@@ -50,7 +51,8 @@ const ScheduleCell = ({ schedule, shiftTemplate, onClick, members, disabled = fa
 
   return (
     <button
-      onClick={disabled ? undefined : onClick}
+      type="button"
+      onClick={disabled ? undefined : () => onCellClick?.(store, date, shiftTemplate)}
       disabled={disabled}
       className={`w-full h-full min-h-[80px] p-2 rounded-lg transition-all border-2 text-left ${
         disabled
@@ -151,7 +153,9 @@ ScheduleCell.propTypes = {
     endTime: PropTypes.string,
     color: PropTypes.string
   }),
-  onClick: PropTypes.func.isRequired,
+  store: PropTypes.object,
+  date: PropTypes.instanceOf(Date),
+  onCellClick: PropTypes.func,
   members: PropTypes.arrayOf(
     PropTypes.shape({ _id: PropTypes.string, name: PropTypes.string })
   ),
@@ -159,4 +163,4 @@ ScheduleCell.propTypes = {
   disabledTitle: PropTypes.string
 };
 
-export default ScheduleCell;
+export default memo(ScheduleCell);
