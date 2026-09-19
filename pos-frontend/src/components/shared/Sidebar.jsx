@@ -26,6 +26,7 @@ import { useSelector } from "react-redux";
 import PropTypes from "prop-types";
 import { ROUTES } from "../../constants";
 import { useV2Ui } from "../../hooks/useV2Ui";
+import Tooltip from "./Tooltip";
 
 const Sidebar = ({ isOpen, onClose, onOpen }) => {
   const navigate = useNavigate();
@@ -304,13 +305,16 @@ const Sidebar = ({ isOpen, onClose, onOpen }) => {
               </button>
             </>
           ) : (
-            <button
-              onClick={onOpen}
-              className="p-1 rounded-lg hover:bg-[#262626] transition-colors mx-auto"
-              data-sidebar-toggle
-            >
-              <MdMenu size={20} className="text-[#ababab]" />
-            </button>
+            <Tooltip label="Open menu">
+              <button
+                onClick={onOpen}
+                className="p-1 rounded-lg hover:bg-[#262626] transition-colors mx-auto"
+                data-sidebar-toggle
+                aria-label="Open menu"
+              >
+                <MdMenu size={20} className="text-[#ababab]" />
+              </button>
+            </Tooltip>
           )}
         </div>
 
@@ -328,21 +332,27 @@ const Sidebar = ({ isOpen, onClose, onOpen }) => {
               )}
               <div className="space-y-0.5">
                 {section.items.map((item) => (
-                  <button
+                  <Tooltip
                     key={item.path}
-                    onClick={() => handleNav(item.path)}
-                    title={!isOpen ? item.label : undefined}
-                    className={`w-full flex items-center gap-3 rounded-lg text-sm font-medium transition-colors ${
-                      isOpen ? "px-3 py-2.5" : "px-0 py-2.5 justify-center"
-                    } ${
-                      isActive(item.path)
-                        ? "bg-brand/15 text-brand"
-                        : "text-[#ababab] hover:bg-[#262626] hover:text-[#f5f5f5]"
-                    }`}
+                    label={item.label}
+                    disabled={isOpen}
+                    className="w-full"
                   >
-                    <span className="flex-shrink-0">{item.icon}</span>
-                    {isOpen && <span className="whitespace-nowrap">{item.label}</span>}
-                  </button>
+                    <button
+                      onClick={() => handleNav(item.path)}
+                      aria-label={item.label}
+                      className={`w-full flex items-center gap-3 rounded-lg text-sm font-medium transition-colors ${
+                        isOpen ? "px-3 py-2.5" : "px-0 py-2.5 justify-center"
+                      } ${
+                        isActive(item.path)
+                          ? "bg-brand/15 text-brand"
+                          : "text-[#ababab] hover:bg-[#262626] hover:text-[#f5f5f5]"
+                      }`}
+                    >
+                      <span className="flex-shrink-0">{item.icon}</span>
+                      {isOpen && <span className="whitespace-nowrap">{item.label}</span>}
+                    </button>
+                  </Tooltip>
                 ))}
               </div>
             </div>
