@@ -14,6 +14,7 @@ import {
   MdPeople,
   MdCardGiftcard,
   MdMenuBook,
+  MdCasino,
   MdQrCodeScanner,
 } from "react-icons/md";
 import { BiSolidDish } from "react-icons/bi";
@@ -94,6 +95,7 @@ function buildMoreMenuSections({ isAdmin, canManageTickets }) {
               { path: ROUTES.CATEGORIES, icon: <MdCategory size={18} />, label: "Categories" },
               { path: ROUTES.TOPPINGS, icon: <MdLocalOffer size={18} />, label: "Toppings" },
               { path: ROUTES.PROMOTIONS, icon: <MdLocalOffer size={18} />, label: "Promotions" },
+              { path: ROUTES.CAMPAIGNS, icon: <MdCasino size={18} />, label: "Campaigns" },
             ],
           },
           {
