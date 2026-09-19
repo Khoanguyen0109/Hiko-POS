@@ -297,12 +297,15 @@ const Sidebar = ({ isOpen, onClose, onOpen }) => {
               <span className="text-[#f5f5f5] text-lg font-bold tracking-wide ml-1">
                 Menu
               </span>
-              <button
-                onClick={onClose}
-                className="p-1 rounded-lg hover:bg-[#262626] transition-colors"
-              >
-                <MdClose size={20} className="text-[#ababab]" />
-              </button>
+              <Tooltip label="Close menu">
+                <button
+                  onClick={onClose}
+                  className="p-1 rounded-lg hover:bg-[#262626] transition-colors"
+                  aria-label="Close menu"
+                >
+                  <MdClose size={20} className="text-[#ababab]" />
+                </button>
+              </Tooltip>
             </>
           ) : (
             <Tooltip label="Open menu">
