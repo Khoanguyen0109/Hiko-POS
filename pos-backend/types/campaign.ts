@@ -141,6 +141,12 @@ export interface RecentActivityRow {
   campaignId?: string;
 }
 
+export type ParticipantRewardStatus =
+  | "redeemed"
+  | "not_redeemed"
+  | "expired"
+  | "no_prize";
+
 export interface ParticipantRow {
   participationId: string;
   campaignId: string;
@@ -150,6 +156,9 @@ export interface ParticipantRow {
   maxPlaysPerPhone: number;
   lastPlayedAt: Date;
   hasActiveVoucher: boolean;
+  rewardStatus: ParticipantRewardStatus;
+  rewardLabel?: string;
+  redeemedAt?: Date;
 }
 
 export interface CampaignDashboardAnalytics {

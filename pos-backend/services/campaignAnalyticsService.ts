@@ -7,9 +7,11 @@ import type {
   CampaignPerformanceRow,
   DailyTrendRow,
   PrizeDistributionRow,
+  ParticipantRewardStatus,
   ParticipantRow,
   RecentActivityRow,
   RedemptionsByStoreRow,
+  VoucherStatus,
 } from "../types/campaign.js";
 import { getDateRangeVietnam } from "../utils/dateUtils.js";
 
@@ -44,6 +46,74 @@ function pct(numerator: number, denominator: number): number {
     return 0;
   }
   return Math.round((numerator / denominator) * 100);
+}
+
+type ParticipantVoucherDoc = {
+  participation: unknown;
+  status: VoucherStatus;
+  rewardLabel?: string;
+  redeemedAt?: Date | null;
+};
+
+type ParticipantVoucherInfo = {
+  hasActiveVoucher: boolean;
+  rewardStatus: ParticipantRewardStatus;
+  rewardLabel?: string;
+  redeemedAt?: Date;
+};
+
+function resolveRewardStatus(info: {
+  hasActive: boolean;
+  hasRedeemed: boolean;
+  hasExpired: boolean;
+}): ParticipantRewardStatus {
+  if (info.hasActive) return "not_redeemed";
+  if (info.hasRedeemed) return "redeemed";
+  if (info.hasExpired) return "expired";
+  return "no_prize";
+}
+
+function buildParticipantVoucherInfo(
+  vouchers: ParticipantVoucherDoc[]
+): Map<string, ParticipantVoucherInfo> {
+  const grouped = new Map<string, ParticipantVoucherDoc[]>();
+
+  for (const voucher of vouchers) {
+    const key = String(voucher.participation);
+    const list = grouped.get(key);
+    if (list) {
+      list.push(voucher);
+    } else {
+      grouped.set(key, [voucher]);
+    }
+  }
+
+  const result = new Map<string, ParticipantVoucherInfo>();
+
+  for (const [key, list] of grouped) {
+    const hasActive = list.some((voucher) => voucher.status === "active");
+    const redeemed = list.filter((voucher) => voucher.status === "redeemed");
+    const hasRedeemed = redeemed.length > 0;
+    const hasExpired = list.some((voucher) => voucher.status === "expired");
+    const preferred =
+      list.find((voucher) => voucher.status === "active") ??
+      redeemed[0] ??
+      list[0];
+    const redeemedAt = redeemed.reduce<Date | undefined>((latest, voucher) => {
+      if (!voucher.redeemedAt) return latest;
+      if (!latest) return voucher.redeemedAt;
+      return voucher.redeemedAt > latest ? voucher.redeemedAt : latest;
+    }, undefined);
+
+    result.set(key, {
+      hasActiveVoucher: hasActive,
+      rewardStatus: resolveRewardStatus({ hasActive, hasRedeemed, hasExpired }),
+      rewardLabel: preferred?.rewardLabel,
+      redeemedAt,
+    });
+  }
+
+  return result;
 }
 
 export class CampaignAnalyticsService {
@@ -321,15 +391,13 @@ export class CampaignAnalyticsService {
       .lean();
 
     const participationIds = participationDocs.map((row) => row._id);
-    const activeVoucherParticipationIds = new Set(
-      (
-        await CampaignVoucher.find({
-          participation: { $in: participationIds },
-          status: "active",
-        })
-          .select("participation")
-          .lean()
-      ).map((voucher) => String(voucher.participation))
+    const voucherInfoByParticipation = buildParticipantVoucherInfo(
+      await CampaignVoucher.find({
+        participation: { $in: participationIds },
+      })
+        .select("participation status rewardLabel redeemedAt")
+        .sort({ wonAt: -1 })
+        .lean()
     );
 
     const participants: ParticipantRow[] = participationDocs.map((row) => {
@@ -338,6 +406,7 @@ export class CampaignAnalyticsService {
         name?: string;
         maxPlaysPerPhone?: number;
       } | null;
+      const voucherInfo = voucherInfoByParticipation.get(String(row._id));
 
       return {
         participationId: String(row._id),
@@ -347,7 +416,10 @@ export class CampaignAnalyticsService {
         playCount: row.playCount,
         maxPlaysPerPhone: campaign?.maxPlaysPerPhone ?? 1,
         lastPlayedAt: row.lastPlayedAt as Date,
-        hasActiveVoucher: activeVoucherParticipationIds.has(String(row._id)),
+        hasActiveVoucher: voucherInfo?.hasActiveVoucher ?? false,
+        rewardStatus: voucherInfo?.rewardStatus ?? "no_prize",
+        rewardLabel: voucherInfo?.rewardLabel,
+        redeemedAt: voucherInfo?.redeemedAt,
       };
     });
 
