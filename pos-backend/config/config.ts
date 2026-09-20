@@ -15,9 +15,17 @@ const config = Object.freeze({
     znsOtpParamName: process.env.ZNS_OTP_PARAM_NAME || "otp",
     znsOtpDryRun:
         process.env.ZNS_OTP_DRY_RUN === "true" ||
+        process.env.SPEEDSMS_OTP_DRY_RUN === "true" ||
         process.env.NODE_ENV === "test",
-    /** When ZNS=false, skip Zalo OTP verification before spin. */
+    /** When ZNS=false, skip OTP verification before spin. */
     znsEnabled: process.env.ZNS !== "false",
+    speedSmsAccessToken: process.env.SPEEDSMS_ACCESS_TOKEN || "",
+    speedSmsApiUrl:
+        process.env.SPEEDSMS_API_URL || "https://api.speedsms.vn/index.php",
+    speedSmsType: Number(process.env.SPEEDSMS_SMS_TYPE || 4),
+    speedSmsSender: process.env.SPEEDSMS_SENDER || "Verify",
+    /** When SPEEDSMS=false, skip SpeedSMS and use Zalo only. */
+    speedSmsEnabled: process.env.SPEEDSMS !== "false",
     otpHashSecret:
         process.env.OTP_HASH_SECRET || process.env.JWT_SECRET || "otp-dev-secret",
 });

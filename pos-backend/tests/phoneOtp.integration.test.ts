@@ -66,6 +66,7 @@ describe("Integration — Campaign phone OTP", () => {
     expect(sendRes.body.success).toBe(true);
     expect(sendRes.body.alreadyVerified).toBe(false);
     expect(sendRes.body.expiresInSeconds).toBe(300);
+    expect(sendRes.body.channel).toBe("sms");
 
     const challenge = await PhoneOtpChallenge.findOne({ phone: "0911111111" });
     expect(challenge).toBeTruthy();

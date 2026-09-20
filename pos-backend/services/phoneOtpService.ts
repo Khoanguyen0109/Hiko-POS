@@ -3,6 +3,7 @@ import config from "../config/config.js";
 import Customer from "../models/customerModel.js";
 import PhoneOtpChallenge from "../models/phoneOtpChallengeModel.js";
 import { CampaignService } from "./campaignService.js";
+import { SpeedSmsService } from "./speedSmsService.js";
 import { ZaloZnsService } from "./zaloZnsService.js";
 import {
   OTP_MAX_ATTEMPTS,
@@ -12,6 +13,8 @@ import {
   hashOtpCode,
 } from "../utils/phoneOtpUtils.js";
 
+export type OtpDeliveryChannel = "sms" | "zalo";
+
 /** Deterministic code when ZNS is dry-run (tests / local without Zalo). */
 const DRY_RUN_OTP = "000000";
 
@@ -19,6 +22,7 @@ export interface OtpSendResult {
   success: true;
   alreadyVerified: boolean;
   expiresInSeconds?: number;
+  channel?: OtpDeliveryChannel;
 }
 
 export interface OtpVerifyResult {
@@ -92,8 +96,10 @@ export class PhoneOtpService {
       { upsert: true, new: true }
     );
 
+    let channel: OtpDeliveryChannel = "sms";
+
     try {
-      await ZaloZnsService.sendOtp(phone, code);
+      channel = await this.deliverOtp(phone, code);
     } catch (error) {
       await PhoneOtpChallenge.deleteOne({ phone });
       throw error;
@@ -103,7 +109,35 @@ export class PhoneOtpService {
       success: true,
       alreadyVerified: false,
       expiresInSeconds: OTP_TTL_SECONDS,
+      channel,
     };
+  }
+
+  /** SpeedSMS first; keep Zalo ZNS as fallback when SMS is unavailable. */
+  static async deliverOtp(
+    phone: string,
+    code: string
+  ): Promise<OtpDeliveryChannel> {
+    if (config.znsOtpDryRun) {
+      return "sms";
+    }
+
+    if (!SpeedSmsService.isConfigured()) {
+      await ZaloZnsService.sendOtp(phone, code);
+      return "zalo";
+    }
+
+    try {
+      await SpeedSmsService.sendOtp(phone, code);
+      return "sms";
+    } catch (speedSmsError) {
+      try {
+        await ZaloZnsService.sendOtp(phone, code);
+        return "zalo";
+      } catch {
+        throw speedSmsError;
+      }
+    }
   }
 
   static async verifyOtp(

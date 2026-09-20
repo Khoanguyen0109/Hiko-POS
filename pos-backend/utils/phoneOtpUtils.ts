@@ -26,3 +26,11 @@ export function toZnsPhone(phone: string): string {
   }
   return `84${phone}`;
 }
+
+/** SpeedSMS OTP APIs expect 09x / 01x (not +84). */
+export function toSpeedSmsPhone(phone: string): string {
+  if (!/^\d{10}$/.test(phone)) {
+    throw new Error("Phone must be a 10-digit number");
+  }
+  return phone;
+}
