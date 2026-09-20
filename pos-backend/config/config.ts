@@ -24,8 +24,8 @@ const config = Object.freeze({
         process.env.SPEEDSMS_API_URL || "https://api.speedsms.vn/index.php",
     speedSmsType: Number(process.env.SPEEDSMS_SMS_TYPE || 4),
     speedSmsSender: process.env.SPEEDSMS_SENDER || "Verify",
-    /** When SPEEDSMS=false, skip SpeedSMS and use Zalo only. */
-    speedSmsEnabled: process.env.SPEEDSMS !== "false",
+    /** Opt-in. Leave unset/false to send OTP via Zalo only. */
+    speedSmsEnabled: process.env.SPEEDSMS === "true",
     otpHashSecret:
         process.env.OTP_HASH_SECRET || process.env.JWT_SECRET || "otp-dev-secret",
 });

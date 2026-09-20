@@ -119,7 +119,7 @@ export class PhoneOtpService {
     code: string
   ): Promise<OtpDeliveryChannel> {
     if (config.znsOtpDryRun) {
-      return "sms";
+      return SpeedSmsService.isConfigured() ? "sms" : "zalo";
     }
 
     if (!SpeedSmsService.isConfigured()) {
