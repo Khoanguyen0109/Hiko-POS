@@ -1,10 +1,6 @@
 import PropTypes from "prop-types";
 import { useState } from "react";
-import {
-  IoMdInformationCircleOutline,
-  IoMdPricetag,
-  IoMdTrash,
-} from "react-icons/io";
+import { IoMdPricetag, IoMdTrash } from "react-icons/io";
 import { MdOutlineInventory, MdToggleOn, MdToggleOff, MdEdit, MdMenuBook } from "react-icons/md";
 import {
   useDeleteDishMutation,
@@ -12,7 +8,7 @@ import {
 } from "../../redux/api/endpoints/catalogEndpoints";
 import { enqueueSnackbar } from "notistack";
 import biryani from "../../assets/images/hyderabadibiryani.jpg";
-import { formatVND } from "../../utils";
+import { formatPriceK, formatVND } from "../../utils";
 
 const Dish = ({ dish, onEdit, onRecipe }) => {
   const [deleteDish] = useDeleteDishMutation();
@@ -95,194 +91,85 @@ const Dish = ({ dish, onEdit, onRecipe }) => {
     return dish.cost;
   };
 
-  const getPriceRange = () => {
-    if (!dish.hasSizeVariants || !dish.sizeVariants?.length) return null;
-
-    const prices = dish.sizeVariants.map((v) => v.price);
-    const minPrice = Math.min(...prices);
-    const maxPrice = Math.max(...prices);
-
-    if (minPrice === maxPrice) {
-      return formatVND(minPrice);
-    }
-    return `${formatVND(minPrice)} - ${formatVND(maxPrice)}`;
-  };
-
   return (
-    <div className="bg-[#1f1f1f] rounded-[20px] p-4 sm:p-6 mt-4 mx-2 sm:mx-4 lg:mx-6 hover:bg-[#252525] transition-colors duration-200 border border-transparent hover:border-[#343434] relative">
-      {/* Action Buttons */}
+    <div className="flex h-full min-w-0 flex-col rounded-[20px] border border-transparent bg-[#1f1f1f] p-4 transition-colors duration-200 hover:border-[#343434] hover:bg-[#252525]">
+      <div className="flex items-start gap-3">
+        <img
+          src={dish.image || biryani}
+          alt={dish.name}
+          className="h-12 w-12 shrink-0 rounded-xl border-2 border-[#343434] object-cover"
+        />
 
-      {/* Header Section */}
-      <div className="flex items-start gap-3 sm:gap-4 pr-16 sm:pr-24">
-        {/* Dish Number */}
-        {/* <div className="flex-shrink-0">
-          <div className="w-12 h-12 bg-gradient-to-br from-brand to-brand-hover rounded-full flex items-center justify-center">
-            <span className="text-[#f5f5f5] font-bold text-lg">
-              {dish.id ? (dish.id < 10 ? `0${dish.id}` : dish.id) : "00"}
-            </span>
-          </div>
-        </div> */}
+        <div className="min-w-0 flex-1">
+          <h2 className="line-clamp-2 text-base font-bold tracking-wide text-[#f5f5f5]">
+            {dish.name}
+          </h2>
 
-        {/* Dish Image */}
-        <div className="flex-shrink-0">
-          <img
-            src={dish.image || biryani}
-            alt={dish.name}
-            className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl object-cover border-2 border-[#343434]"
-          />
-        </div>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            {!dish.isAvailable && (
+              <span className="inline-flex items-center rounded-full border border-red-800 bg-red-900/30 px-2 py-0.5 text-xs font-medium text-red-400">
+                <MdOutlineInventory size={12} className="mr-1" />
+                Unavailable
+              </span>
+            )}
 
-        {/* Dish Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <h2 className="text-[#f5f5f5] font-bold text-lg sm:text-xl tracking-wide mb-1 line-clamp-2">
-                {dish.name}
-              </h2>
-
-              {/* Dish Meta Info */}
-              <div className="flex items-center gap-2 sm:gap-3 mb-2 flex-wrap">
-                {!dish.isAvailable && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-900/30 text-red-400 border border-red-800">
-                    <MdOutlineInventory size={12} className="mr-1" />
-                    <span className="hidden sm:inline">Unavailable</span>
-                    <span className="sm:hidden">N/A</span>
-                  </span>
-                )}
-
-                {dish.hasSizeVariants && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-900/30 text-blue-400 border border-blue-800">
-                    <IoMdPricetag size={12} className="mr-1" />
-                    <span className="hidden sm:inline">{dish.sizeVariants?.length} Sizes</span>
-                    <span className="sm:hidden">{dish.sizeVariants?.length}S</span>
-                  </span>
-                )}
-              </div>
-
-              {dish.note && (
-                <div className="flex items-start gap-1 mb-3">
-                  <IoMdInformationCircleOutline
-                    size={14}
-                    className="text-[#ababab] mt-0.5 flex-shrink-0"
-                  />
-                  <p className="text-[#ababab] text-sm leading-relaxed">
-                    {dish.note}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Price Section */}
-            <div className="text-right flex-shrink-0 ml-4">
-              {dish.hasSizeVariants ? (
-                <div>
-                  <p className="text-[#ababab] text-xs mb-1">Price Range</p>
-                  <p className="text-brand font-bold text-lg">
-                    {getPriceRange()}
-                  </p>
-                  <p className="text-brand font-bold text-xl mt-1">
-                    {formatVND(getCurrentPrice())}
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <p className="text-brand font-bold text-2xl">
-                    {formatVND(getCurrentPrice())}
-                  </p>
-                </div>
-              )}
-
-              {getCurrentCost() > 0 && (
-                <p className="text-[#ababab] text-xs mt-1">
-                  Cost: {formatVND(getCurrentCost())}
-                </p>
-              )}
-            </div>
+            {dish.hasSizeVariants && (
+              <span className="inline-flex items-center rounded-full border border-blue-800 bg-blue-900/30 px-2 py-0.5 text-xs font-medium text-blue-400">
+                <IoMdPricetag size={12} className="mr-1" />
+                {dish.sizeVariants?.length} sizes
+              </span>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Size Variants Section */}
+      <div className="mt-3 min-w-0">
+        <p className="truncate text-lg font-bold text-brand">
+          {formatVND(getCurrentPrice())}
+        </p>
+        {getCurrentCost() > 0 && (
+          <p className="mt-0.5 text-xs text-[#ababab]">
+            Cost: {formatVND(getCurrentCost())}
+          </p>
+        )}
+      </div>
+
+      {dish.note && (
+        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-[#ababab]">
+          {dish.note}
+        </p>
+      )}
+
       {dish.hasSizeVariants && dish.sizeVariants?.length > 0 && (
-        <div className="mt-6 pt-4 border-t border-[#343434]">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[#f5f5f5] font-semibold text-sm">
-              Available Sizes
-            </h3>
-            <span className="text-[#ababab] text-xs">
-              Select your preferred size
-            </span>
-          </div>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {dish.sizeVariants.map((variant, index) => {
+            const isSelected = selectedVariant?.size === variant.size;
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {dish.sizeVariants.map((variant, index) => {
-              const isSelected = selectedVariant?.size === variant.size;
-              const isDefault = variant.isDefault;
-
-              return (
-                <button
-                  key={index}
-                  onClick={() => handleVariantChange(variant)}
-                  className={`relative p-3 rounded-lg text-sm font-medium transition-all duration-200 border-2 ${
-                    isSelected
-                      ? "bg-brand text-[#f5f5f5] border-brand shadow-lg transform scale-105"
-                      : "bg-[#262626] text-[#f5f5f5] border-[#343434] hover:border-brand hover:bg-[#343434]"
-                  }`}
-                >
-                  {/* Default Badge */}
-                  {isDefault && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-[#1f1f1f]"></div>
-                  )}
-
-                  <div className="flex flex-col items-center">
-                    <span className="font-bold mb-1">{variant.size}</span>
-                    <span
-                      className={`text-xs ${
-                        isSelected ? "text-[#f5f5f5]" : "text-brand"
-                      } font-bold`}
-                    >
-                      {formatVND(variant.price)}
-                    </span>
-                    {variant.cost > 0 && (
-                      <span
-                        className={`text-xs mt-1 ${
-                          isSelected ? "text-[#f5f5f5]/70" : "text-[#ababab]"
-                        }`}
-                      >
-                        Cost: {formatVND(variant.cost)}
-                      </span>
-                    )}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Selected Variant Info */}
-          {selectedVariant && (
-            <div className="mt-4 p-3 bg-[#262626] rounded-lg border border-[#343434]">
-              <div className="flex items-center justify-between">
-                <span className="text-[#ababab] text-sm">Selected:</span>
-                <div className="text-right">
-                  <span className="text-[#f5f5f5] font-semibold">
-                    {selectedVariant.size}
-                  </span>
-                  <span className="text-brand font-bold ml-2">
-                    {formatVND(selectedVariant.price)}
-                  </span>
-                </div>
-              </div>
-              {selectedVariant.isDefault && (
-                <p className="text-[#ababab] text-xs mt-1">
-                  ✓ This is the default size for this dish
-                </p>
-              )}
-            </div>
-          )}
+            return (
+              <button
+                key={`${variant.size}-${index}`}
+                type="button"
+                onClick={() => handleVariantChange(variant)}
+                className={`relative rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  isSelected
+                    ? "border-brand bg-brand text-[#f5f5f5]"
+                    : "border-[#343434] bg-[#262626] text-[#f5f5f5] hover:border-brand"
+                }`}
+              >
+                {variant.isDefault && (
+                  <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full border border-[#1f1f1f] bg-green-500" />
+                )}
+                {variant.size}{" "}
+                <span className={isSelected ? "text-[#f5f5f5]" : "text-brand"}>
+                  {formatPriceK(variant.price)}
+                </span>
+              </button>
+            );
+          })}
         </div>
       )}
 
-      <div className="flex justify-end mt-4 items-center gap-2">
+      <div className="mt-auto flex flex-wrap items-center justify-end gap-2 pt-4">
         <button
           onClick={handleRecipeDish}
           className="p-2 rounded-lg bg-amber-900/30 text-amber-400 hover:bg-amber-900/50 border border-amber-800 transition-colors duration-200"

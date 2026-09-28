@@ -2,6 +2,7 @@ import { useState } from "react";
 import DishModal from "../../components/dashboard/DishModal";
 import RecipeModal from "../../components/dishes/RecipeModal";
 import BackButton from "../../components/shared/BackButton";
+import HeaderActionButton from "../../components/shared/HeaderActionButton";
 import DishList from "./DishList";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "../../constants";
@@ -41,34 +42,25 @@ const Dishes = () => {
 
   return (
     <>
-      <section className="bg-[#1f1f1f] min-h-screen pb-20 overflow-x-hidden">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 sm:px-10 py-4 gap-4">
-          <div className="flex items-center gap-4 min-w-0">
+      <section className="min-h-screen bg-[#1f1f1f] pb-20">
+        <div className="flex flex-col gap-3 px-4 py-4 sm:px-10 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
             <BackButton />
-            <h1 className="text-[#f5f5f5] text-xl sm:text-2xl font-bold tracking-wider">
+            <h1 className="text-xl font-bold tracking-wider text-[#f5f5f5] sm:text-2xl">
               Dishes
             </h1>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto shrink-0">
-            <button
-              onClick={() => navigate(ROUTES.RECIPES)}
-              className="bg-[#1a1a1a] hover:bg-[#262626] px-4 sm:px-8 py-2.5 sm:py-3 rounded-lg text-[#f5f5f5] font-semibold text-sm sm:text-md flex items-center justify-center gap-2 whitespace-nowrap"
-            >
+          <div className="flex flex-wrap gap-2">
+            <HeaderActionButton onClick={() => navigate(ROUTES.RECIPES)}>
               Recipes
-            </button>
-            <button
-              onClick={() => navigate(ROUTES.CATEGORIES)}
-              className="bg-[#1a1a1a] hover:bg-[#262626] px-4 sm:px-8 py-2.5 sm:py-3 rounded-lg text-[#f5f5f5] font-semibold text-sm sm:text-md flex items-center justify-center gap-2 whitespace-nowrap"
-            >
+            </HeaderActionButton>
+            <HeaderActionButton onClick={() => navigate(ROUTES.CATEGORIES)}>
               Categories
-            </button>
-            <button
-              onClick={() => handleOpenModal()}
-              className="bg-[#1a1a1a] hover:bg-[#262626] px-4 sm:px-8 py-2.5 sm:py-3 rounded-lg text-[#f5f5f5] font-semibold text-sm sm:text-md flex items-center justify-center gap-2 whitespace-nowrap"
-            >
+            </HeaderActionButton>
+            <HeaderActionButton variant="primary" onClick={handleOpenModal}>
               Add Dishes
-            </button>
+            </HeaderActionButton>
           </div>
         </div>
 

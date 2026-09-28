@@ -45,7 +45,7 @@ const DishList = ({ filterStatus, onEditDish, onRecipeDish }) => {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 px-4 sm:px-6 lg:px-10 py-4">
+    <div className="grid grid-cols-1 items-stretch gap-4 px-4 py-4 sm:grid-cols-2 sm:px-10 lg:grid-cols-3 xl:grid-cols-4">
       {filteredDishes.map((dish) => (
         <Dish key={dish._id} dish={dish} onEdit={onEditDish} onRecipe={onRecipeDish} />
       ))}
