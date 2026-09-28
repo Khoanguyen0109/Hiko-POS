@@ -92,7 +92,7 @@ const Dish = ({ dish, onEdit, onRecipe }) => {
   };
 
   return (
-    <div className="flex h-full min-w-0 flex-col rounded-[20px] border border-transparent bg-[#1f1f1f] p-4 transition-colors duration-200 hover:border-[#343434] hover:bg-[#252525]">
+    <div className="flex h-full min-w-0 flex-col rounded-[20px] border border-[#3a3a3a] bg-[#1f1f1f] p-4 shadow-[0_8px_24px_rgba(0,0,0,0.45)] transition-colors duration-200 hover:border-[#4a4a4a] hover:bg-[#252525]">
       <div className="flex items-start gap-3">
         <img
           src={dish.image || biryani}
