@@ -25,8 +25,31 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import PropTypes from "prop-types";
 import { ROUTES } from "../../constants";
+import { useGetOrdersQuery } from "../../redux/api/endpoints";
+import { unwrapPaginated } from "../../redux/api/queryResult";
 import { useV2Ui } from "../../hooks/useV2Ui";
 import Tooltip from "./Tooltip";
+
+function playWebOrderSound() {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    const context = new AudioContextClass();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.frequency.value = 880;
+    gain.gain.value = 0.05;
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.18);
+    oscillator.onended = () => {
+      context.close();
+    };
+  } catch {
+    // Browsers block audio until the cashier has clicked the page.
+  }
+}
 
 const Sidebar = ({ isOpen, onClose, onOpen }) => {
   const navigate = useNavigate();
@@ -39,6 +62,32 @@ const Sidebar = ({ isOpen, onClose, onOpen }) => {
   const canManageTickets = isAdmin || storeRole === "Owner" || storeRole === "Manager";
 
   const sidebarRef = useRef(null);
+  const previousWebCount = useRef(null);
+
+  const { data: webOrderResult, isSuccess: webOrdersLoaded } = useGetOrdersQuery(
+    { source: "web", status: "pending", paginate: true, page: 1, limit: 1 },
+    { skip: !activeStore?._id, pollingInterval: 15000 }
+  );
+  const webOrderCount = unwrapPaginated(webOrderResult).pagination?.total || 0;
+
+  useEffect(() => {
+    if (!webOrdersLoaded) return;
+    if (previousWebCount.current === null) {
+      previousWebCount.current = webOrderCount;
+      return;
+    }
+    if (webOrderCount > previousWebCount.current) {
+      playWebOrderSound();
+      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+        new Notification("New web order", {
+          body: "A bank transfer request is waiting.",
+        });
+      } else if (typeof Notification !== "undefined" && Notification.permission === "default") {
+        Notification.requestPermission();
+      }
+    }
+    previousWebCount.current = webOrderCount;
+  }, [webOrdersLoaded, webOrderCount]);
 
   const isActive = (path) => {
     if (path === ROUTES.DOCS) {
@@ -352,7 +401,14 @@ const Sidebar = ({ isOpen, onClose, onOpen }) => {
                           : "text-[#ababab] hover:bg-[#262626] hover:text-[#f5f5f5]"
                       }`}
                     >
-                      <span className="flex-shrink-0">{item.icon}</span>
+                      <span className="relative flex-shrink-0">
+                        {item.icon}
+                        {item.path === ROUTES.ORDERS && webOrderCount > 0 ? (
+                          <span className="absolute -top-2 -right-2 min-w-4 h-4 px-1 rounded-full bg-red-600 text-white text-[10px] leading-4 text-center">
+                            {webOrderCount > 9 ? "9+" : webOrderCount}
+                          </span>
+                        ) : null}
+                      </span>
                       {isOpen && <span className="whitespace-nowrap">{item.label}</span>}
                     </button>
                   </Tooltip>

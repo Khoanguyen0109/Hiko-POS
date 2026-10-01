@@ -121,7 +121,27 @@ const orderSchema = new mongoose.Schema({
     customerDetails: {
         name: { type: String, trim: true },
         phone: { type: String, trim: true },
-        guests: { type: Number, min: 1 }
+        guests: { type: Number, min: 1 },
+        address: { type: String, trim: true, default: "" }
+    },
+    source: {
+        type: String,
+        enum: ["pos", "web"],
+        default: "pos"
+    },
+    orderNote: {
+        type: String,
+        trim: true,
+        default: ""
+    },
+    publicCode: {
+        type: String,
+        trim: true,
+        uppercase: true
+    },
+    publicToken: {
+        type: String,
+        trim: true
     },
     orderStatus: {
         type: String,
@@ -221,6 +241,9 @@ orderSchema.index({ orderStatus: 1 });
 orderSchema.index({ 'customerDetails.phone': 1 });
 orderSchema.index({ 'createdBy.userId': 1 });
 orderSchema.index({ customer: 1, createdAt: -1 });
+orderSchema.index({ publicCode: 1 }, { unique: true, sparse: true });
+orderSchema.index({ publicToken: 1 }, { unique: true, sparse: true });
+orderSchema.index({ store: 1, source: 1, orderStatus: 1 });
 
 // Virtual for total items count
 orderSchema.virtual('totalItems').get(function() {

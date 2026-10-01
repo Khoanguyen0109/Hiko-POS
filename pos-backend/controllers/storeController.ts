@@ -9,7 +9,7 @@ import User from "../models/userModel.js";
 
 const createStore = async (req, res, next) => {
     try {
-        const { name, code, address, phone, settings } = req.body;
+        const { name, code, address, phone, settings, mapUrl, bankName, bankAccountNumber, bankAccountName, bankQrImage } = req.body;
 
         if (!name || !code) {
             return next(createHttpError(400, "Store name and code are required."));
@@ -25,6 +25,11 @@ const createStore = async (req, res, next) => {
             code: code.toUpperCase().trim(),
             address: address ? address.trim() : undefined,
             phone: phone ? phone.trim() : undefined,
+            mapUrl: mapUrl ? String(mapUrl).trim() : "",
+            bankName: bankName ? String(bankName).trim() : "",
+            bankAccountNumber: bankAccountNumber ? String(bankAccountNumber).trim() : "",
+            bankAccountName: bankAccountName ? String(bankAccountName).trim() : "",
+            bankQrImage: bankQrImage ? String(bankQrImage).trim() : "",
             owner: req.user._id,
             settings: settings || {}
         });
@@ -83,6 +88,11 @@ const getMyStores = async (req, res, next) => {
                 code: su.store.code,
                 address: su.store.address,
                 phone: su.store.phone,
+                mapUrl: su.store.mapUrl,
+                bankName: su.store.bankName,
+                bankAccountNumber: su.store.bankAccountNumber,
+                bankAccountName: su.store.bankAccountName,
+                bankQrImage: su.store.bankQrImage,
                 role: su.role,
                 settings: su.store.settings
             }));
@@ -130,7 +140,7 @@ const getStoreById = async (req, res, next) => {
 const updateStore = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { name, address, phone, settings, isActive } = req.body;
+        const { name, address, phone, settings, isActive, mapUrl, bankName, bankAccountNumber, bankAccountName, bankQrImage } = req.body;
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return next(createHttpError(400, "Invalid store ID."));
@@ -140,6 +150,11 @@ const updateStore = async (req, res, next) => {
         if (name !== undefined) updates.name = name.trim();
         if (address !== undefined) updates.address = address.trim();
         if (phone !== undefined) updates.phone = phone.trim();
+        if (mapUrl !== undefined) updates.mapUrl = String(mapUrl).trim();
+        if (bankName !== undefined) updates.bankName = String(bankName).trim();
+        if (bankAccountNumber !== undefined) updates.bankAccountNumber = String(bankAccountNumber).trim();
+        if (bankAccountName !== undefined) updates.bankAccountName = String(bankAccountName).trim();
+        if (bankQrImage !== undefined) updates.bankQrImage = String(bankQrImage).trim();
         if (settings !== undefined) updates.settings = settings;
         if (isActive !== undefined) updates.isActive = Boolean(isActive);
 

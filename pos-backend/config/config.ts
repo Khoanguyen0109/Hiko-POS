@@ -28,6 +28,7 @@ const config = Object.freeze({
     speedSmsEnabled: process.env.SPEEDSMS === "true",
     otpHashSecret:
         process.env.OTP_HASH_SECRET || process.env.JWT_SECRET || "otp-dev-secret",
+    hikoOrderKey: process.env.HIKO_ORDER_KEY || "",
 });
 
 export default config;

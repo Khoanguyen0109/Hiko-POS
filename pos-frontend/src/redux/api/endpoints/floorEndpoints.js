@@ -30,6 +30,9 @@ const buildOrderQueryParams = (params = {}) => {
   if (params.thirdPartyVendor && params.thirdPartyVendor !== ALL_FILTER) {
     queryParams.thirdPartyVendor = params.thirdPartyVendor;
   }
+  if (params.source && params.source !== ALL_FILTER) {
+    queryParams.source = params.source;
+  }
   if (params.paginate) {
     queryParams.paginate = "true";
     if (params.page) queryParams.page = params.page;

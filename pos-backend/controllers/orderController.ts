@@ -497,7 +497,7 @@ const getOrders = async (req, res, next) => {
   try {
     const {
       startDate, endDate,
-      status, createdBy, paymentMethod, thirdPartyVendor,
+      status, createdBy, paymentMethod, thirdPartyVendor, source,
       page, limit,
       paginate = 'false',
     } = req.query;
@@ -518,6 +518,7 @@ const getOrders = async (req, res, next) => {
     if (createdBy && createdBy !== 'all')          query['createdBy.userId']   = createdBy;
     if (paymentMethod && paymentMethod !== 'all')  query.paymentMethod         = paymentMethod;
     if (thirdPartyVendor && thirdPartyVendor !== 'all') query.thirdPartyVendor = thirdPartyVendor;
+    if (source === 'web' || source === 'pos') query.source = source;
 
     let orders, paginationMeta;
 
@@ -573,6 +574,7 @@ const getOrders = async (req, res, next) => {
         createdBy: createdBy || 'all',
         paymentMethod:    paymentMethod    || 'all',
         thirdPartyVendor: thirdPartyVendor || 'all',
+        source: source || 'all',
       },
     });
   } catch (error) {

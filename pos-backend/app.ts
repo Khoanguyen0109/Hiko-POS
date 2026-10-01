@@ -45,6 +45,7 @@ import campaignRoute from "./routes/campaignRoute.js";
 import voucherRoute from "./routes/voucherRoute.js";
 import docRoute from "./routes/docRoute.js";
 import testRoute from "./routes/testRoute.js";
+import publicOrderRoute from "./routes/publicOrderRoute.js";
 
 const app = express();
 
@@ -69,7 +70,7 @@ app.use(
       "https://www.hikomatcha.vn",
     ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Store-Id"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Store-Id", "x-hiko-order-key"],
     credentials: true,
   })
 );
@@ -159,6 +160,7 @@ app.use("/api/ticket", ticketRoute);
 app.use("/api/reward-program", rewardProgramRoute);
 app.use("/api/campaign", campaignRoute);
 app.use("/api/voucher", voucherRoute);
+app.use("/api/public", publicOrderRoute);
 app.use("/api/docs", docRoute);
 app.use("/api/test", testRoute);
 

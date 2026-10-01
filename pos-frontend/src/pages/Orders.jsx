@@ -34,6 +34,9 @@ const Orders = () => {
   const LIMIT = 50;
 
   const params = useMemo(() => {
+    if (status === "web") {
+      return { status: "pending", source: "web", paginate: true, page, limit: LIMIT };
+    }
     const next = { status, paginate: true, page, limit: LIMIT };
     if (isAdmin) {
       next.startDate = startDate;
@@ -162,13 +165,22 @@ const Orders = () => {
 
   // Filter orders by status on frontend (createdBy filtering is now done on backend)
   const filteredOrders = orders.filter((order) => {
-    // Filter by status
+    if (status === "web") return order.source === "web";
     return status === "all" || order.orderStatus === status;
   });
 
   // Calculate status counts (backend already filtered by createdBy)
   const statusButtons = [
     { key: "all", label: "All", shortLabel: "ALL", count: orders?.length || 0 },
+    {
+      key: "web",
+      label: "Web",
+      shortLabel: "WEB",
+      count:
+        status === "web"
+          ? pagination?.total || orders.length
+          : orders?.filter((order) => order.source === "web" && order.orderStatus === "pending").length || 0,
+    },
     {
       key: "progress",
       label: "In Progress",
@@ -413,7 +425,10 @@ const Orders = () => {
             <button
               key={key}
               type="button"
-              onClick={() => setStatus(key)}
+              onClick={() => {
+                setStatus(key);
+                setPage(1);
+              }}
               className={`flex min-h-[40px] min-w-0 flex-1 items-center justify-center gap-1 rounded-lg px-2 py-2 text-xs font-semibold transition-all duration-200 sm:flex-none sm:justify-start sm:gap-1.5 sm:px-4 sm:text-sm sm:font-medium ${
                 status === key
                   ? key === "cancelled"

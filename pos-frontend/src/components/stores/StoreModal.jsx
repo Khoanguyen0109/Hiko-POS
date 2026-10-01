@@ -29,6 +29,11 @@ const StoreModal = ({ isOpen, onClose, mode, store }) => {
     timezone: "Asia/Ho_Chi_Minh",
     openTime: "",
     closeTime: "",
+    mapUrl: "",
+    bankName: "",
+    bankAccountNumber: "",
+    bankAccountName: "",
+    bankQrImage: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -47,6 +52,11 @@ const StoreModal = ({ isOpen, onClose, mode, store }) => {
         timezone: store.settings?.timezone || "Asia/Ho_Chi_Minh",
         openTime: store.settings?.openTime || "",
         closeTime: store.settings?.closeTime || "",
+        mapUrl: store.mapUrl || "",
+        bankName: store.bankName || "",
+        bankAccountNumber: store.bankAccountNumber || "",
+        bankAccountName: store.bankAccountName || "",
+        bankQrImage: store.bankQrImage || "",
       });
     } else {
       setFormData({
@@ -58,6 +68,11 @@ const StoreModal = ({ isOpen, onClose, mode, store }) => {
         timezone: "Asia/Ho_Chi_Minh",
         openTime: "",
         closeTime: "",
+        mapUrl: "",
+        bankName: "",
+        bankAccountNumber: "",
+        bankAccountName: "",
+        bankQrImage: "",
       });
     }
     setErrors({});
@@ -109,6 +124,17 @@ const StoreModal = ({ isOpen, onClose, mode, store }) => {
         if (formData.address !== store.address)
           updateData.address = formData.address;
         if (formData.phone !== store.phone) updateData.phone = formData.phone;
+        if (formData.mapUrl !== (store.mapUrl || "")) updateData.mapUrl = formData.mapUrl;
+        if (formData.bankName !== (store.bankName || "")) updateData.bankName = formData.bankName;
+        if (formData.bankAccountNumber !== (store.bankAccountNumber || "")) {
+          updateData.bankAccountNumber = formData.bankAccountNumber;
+        }
+        if (formData.bankAccountName !== (store.bankAccountName || "")) {
+          updateData.bankAccountName = formData.bankAccountName;
+        }
+        if (formData.bankQrImage !== (store.bankQrImage || "")) {
+          updateData.bankQrImage = formData.bankQrImage;
+        }
 
         const settingsChanged =
           formData.currency !== (store.settings?.currency || "VND") ||
@@ -140,6 +166,11 @@ const StoreModal = ({ isOpen, onClose, mode, store }) => {
           code: formData.code.trim().toUpperCase(),
           address: formData.address.trim(),
           phone: formData.phone.trim(),
+          mapUrl: formData.mapUrl.trim(),
+          bankName: formData.bankName.trim(),
+          bankAccountNumber: formData.bankAccountNumber.trim(),
+          bankAccountName: formData.bankAccountName.trim(),
+          bankQrImage: formData.bankQrImage.trim(),
           settings: {
             currency: formData.currency,
             timezone: formData.timezone,
@@ -230,6 +261,72 @@ const StoreModal = ({ isOpen, onClose, mode, store }) => {
             placeholder="Store phone number"
             icon={<MdPhone size={16} />}
           />
+
+          <FormField
+            label="Google Maps link"
+            type="url"
+            value={formData.mapUrl}
+            onChange={(e) =>
+              handleInputChange({
+                target: { name: "mapUrl", value: e.target.value },
+              })
+            }
+            placeholder="https://maps.google.com/..."
+            icon={<MdLocationOn size={16} />}
+          />
+
+          <div className="border-t border-[#343434] pt-4">
+            <p className="text-[#ababab] text-xs font-medium uppercase tracking-wider mb-4">
+              Bank transfer
+            </p>
+            <div className="space-y-4">
+              <FormField
+                label="Bank name"
+                type="text"
+                value={formData.bankName}
+                onChange={(e) =>
+                  handleInputChange({
+                    target: { name: "bankName", value: e.target.value },
+                  })
+                }
+                placeholder="Techcombank"
+              />
+              <FormField
+                label="Account number"
+                type="text"
+                value={formData.bankAccountNumber}
+                onChange={(e) =>
+                  handleInputChange({
+                    target: { name: "bankAccountNumber", value: e.target.value },
+                  })
+                }
+                placeholder="1907 4858 4830 12"
+              />
+              <FormField
+                label="Account name"
+                type="text"
+                value={formData.bankAccountName}
+                onChange={(e) =>
+                  handleInputChange({
+                    target: { name: "bankAccountName", value: e.target.value },
+                  })
+                }
+                placeholder="HKD THE HIKO MATCHA"
+              />
+              <FormField
+                label="QR image URL"
+                type="url"
+                value={formData.bankQrImage}
+                onChange={(e) =>
+                  handleInputChange({
+                    target: { name: "bankQrImage", value: e.target.value },
+                  })
+                }
+                placeholder="https://hikomatcha.vn/qr/techcombank-hiko.jpg"
+                helpText="Paste a link to the transfer QR image"
+              />
+            </div>
+          </div>
 
           {/* Settings Section */}
           <div className="border-t border-[#343434] pt-4">

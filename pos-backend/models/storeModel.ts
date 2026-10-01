@@ -21,6 +21,31 @@ const storeSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
+    mapUrl: {
+        type: String,
+        trim: true,
+        default: ""
+    },
+    bankName: {
+        type: String,
+        trim: true,
+        default: ""
+    },
+    bankAccountNumber: {
+        type: String,
+        trim: true,
+        default: ""
+    },
+    bankAccountName: {
+        type: String,
+        trim: true,
+        default: ""
+    },
+    bankQrImage: {
+        type: String,
+        trim: true,
+        default: ""
+    },
     isActive: {
         type: Boolean,
         default: true

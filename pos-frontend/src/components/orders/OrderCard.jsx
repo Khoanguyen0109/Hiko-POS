@@ -216,6 +216,14 @@ const OrderCard = ({ order }) => {
           <p className="truncate">
             {formatDateAndTime(order.createdAt || order.orderDate)}
           </p>
+          {order.source === "web" && (
+            <div className="mt-1 space-y-0.5 text-[11px] text-[#ccc]">
+              <p>Web · {order.customerDetails?.phone}</p>
+              {order.customerDetails?.name ? <p>{order.customerDetails.name}</p> : null}
+              {order.customerDetails?.address ? <p>{order.customerDetails.address}</p> : null}
+              {order.orderNote ? <p>Note: {order.orderNote}</p> : null}
+            </div>
+          )}
           {order.updatedAt && order.updatedAt !== order.createdAt && (
             <p className="truncate text-[10px] sm:text-xs text-[#888]">
               Updated: {formatDateAndTime(order.updatedAt)}
@@ -281,7 +289,10 @@ OrderCard.propTypes = {
     customerDetails: PropTypes.shape({
       name: PropTypes.string,
       phone: PropTypes.string,
+      address: PropTypes.string,
     }),
+    source: PropTypes.oneOf(["pos", "web"]),
+    orderNote: PropTypes.string,
     customer: PropTypes.shape({
       name: PropTypes.string,
       phone: PropTypes.string,
