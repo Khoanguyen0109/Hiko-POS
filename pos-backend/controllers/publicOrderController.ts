@@ -3,13 +3,14 @@ import createHttpError from "http-errors";
 import mongoose from "mongoose";
 import Store from "../models/storeModel.js";
 import Dish from "../models/dishModel.js";
-import "../models/toppingModel.js";
+import Topping from "../models/toppingModel.js";
 import Customer from "../models/customerModel.js";
 import Order from "../models/orderModel.js";
 import { getCurrentVietnamTime } from "../utils/dateUtils.js";
 
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const MAX_QUANTITY = 20;
+const MAX_TOPPING_QUANTITY = 10;
 
 interface SizeVariantDoc {
     _id: mongoose.Types.ObjectId;
@@ -29,6 +30,7 @@ interface ToppingDoc {
 interface CategoryDoc {
     _id: mongoose.Types.ObjectId;
     name?: string;
+    color?: string;
     isActive?: boolean;
 }
 
@@ -52,6 +54,7 @@ interface RequestItem {
     size?: unknown;
     quantity?: unknown;
     toppingIds?: unknown;
+    toppings?: unknown;
 }
 
 function asString(value: unknown): string {
@@ -69,6 +72,25 @@ function makePublicCode(): string {
 
 function isDuplicateKey(error: unknown): boolean {
     return typeof error === "object" && error !== null && "code" in error && error.code === 11000;
+}
+
+function requestedToppings(item: RequestItem): { id: string; quantity: number }[] {
+    const counts = new Map<string, number>();
+    const entries = Array.isArray(item.toppings) ? item.toppings : [];
+    for (const entry of entries) {
+        if (!entry || typeof entry !== "object") continue;
+        const record = entry as { toppingId?: unknown; id?: unknown; quantity?: unknown };
+        const id = asString(record.toppingId) || asString(record.id);
+        const quantity = Number(record.quantity ?? 1);
+        if (!id) continue;
+        counts.set(id, (counts.get(id) || 0) + quantity);
+    }
+    if (counts.size === 0 && Array.isArray(item.toppingIds)) {
+        for (const id of item.toppingIds.map((value) => asString(value)).filter(Boolean)) {
+            counts.set(id, (counts.get(id) || 0) + 1);
+        }
+    }
+    return [...counts.entries()].map(([id, quantity]) => ({ id, quantity }));
 }
 
 function dishBelongsToStore(dish: DishDoc, storeId: string): boolean {
@@ -128,12 +150,12 @@ const getPublicMenu = async (req, res, next) => {
             isAvailable: true,
             $or: [{ store: storeId }, { store: null }],
         })
-            .populate("category", "name isActive")
+            .populate("category", "name isActive color")
             .populate("compatibleToppings", "name price isAvailable store")
             .sort({ name: 1 })
             .lean();
 
-        const grouped = new Map<string, { id: string; name: string; dishes: unknown[] }>();
+        const grouped = new Map<string, { id: string; name: string; color: string; dishes: unknown[] }>();
 
         for (const dish of dishes as unknown as DishDoc[]) {
             const category = dish.category;
@@ -162,6 +184,7 @@ const getPublicMenu = async (req, res, next) => {
             const bucket = grouped.get(categoryId) || {
                 id: categoryId,
                 name: category.name,
+                color: category.color || "",
                 dishes: [],
             };
             bucket.dishes.push({
@@ -177,11 +200,24 @@ const getPublicMenu = async (req, res, next) => {
             grouped.set(categoryId, bucket);
         }
 
+        const storeToppings = await Topping.find({ store: storeId, isAvailable: true })
+            .sort({ category: 1, name: 1 })
+            .select("name price category")
+            .lean();
+        const toppingGroups = new Map<string, { category: string; toppings: { id: unknown; name: string; price: number }[] }>();
+        for (const topping of storeToppings) {
+            const category = topping.category || "Khác";
+            const group = toppingGroups.get(category) || { category, toppings: [] };
+            group.toppings.push({ id: topping._id, name: topping.name, price: topping.price });
+            toppingGroups.set(category, group);
+        }
+
         res.status(200).json({
             success: true,
             data: {
                 store: publicStore(store),
                 categories: [...grouped.values()],
+                toppingGroups: [...toppingGroups.values()],
             },
         });
     } catch (error) {
@@ -220,10 +256,10 @@ const createPublicOrder = async (req, res, next) => {
         }
 
         const dishIds = items.map((item) => asString(item.dishId)).filter((id) => mongoose.Types.ObjectId.isValid(id));
-        const dishes = await Dish.find({ _id: { $in: dishIds } })
-            .populate("category", "name")
-            .populate("compatibleToppings");
+        const dishes = await Dish.find({ _id: { $in: dishIds } }).populate("category", "name");
         const dishById = new Map(dishes.map((dish) => [dish._id.toString(), dish as unknown as DishDoc]));
+        const storeToppings = await Topping.find({ store: store._id, isAvailable: true });
+        const toppingById = new Map(storeToppings.map((topping) => [topping._id.toString(), topping]));
 
         const orderItems = items.map((item, index) => {
             const dishId = asString(item.dishId);
@@ -252,26 +288,23 @@ const createPublicOrder = async (req, res, next) => {
                 variant = { size: match.size, price: match.price };
             }
 
-            const requestedToppingIds = Array.isArray(item.toppingIds)
-                ? item.toppingIds.map((id) => asString(id)).filter(Boolean)
-                : [];
-            const toppings = requestedToppingIds.map((toppingId) => {
-                const topping = (dish.compatibleToppings || []).find((entry) => entry._id.toString() === toppingId);
-                if (!topping || topping.isAvailable === false) {
-                    throw createHttpError(400, `Topping không còn bán (dòng ${index + 1})`);
+            const toppings = requestedToppings(item).map((requested) => {
+                if (!Number.isInteger(requested.quantity) || requested.quantity < 1 || requested.quantity > MAX_TOPPING_QUANTITY) {
+                    throw createHttpError(400, `Số lượng topping không hợp lệ (dòng ${index + 1})`);
                 }
-                if (topping.store && topping.store.toString() !== storeId) {
-                    throw createHttpError(400, `Topping không thuộc cửa hàng (dòng ${index + 1})`);
+                const topping = toppingById.get(requested.id);
+                if (!topping) {
+                    throw createHttpError(400, `Topping không còn bán (dòng ${index + 1})`);
                 }
                 return {
                     toppingId: topping._id,
                     name: topping.name,
                     price: topping.price,
-                    quantity: 1,
+                    quantity: requested.quantity,
                 };
             });
 
-            const toppingTotal = toppings.reduce((sum, topping) => sum + topping.price, 0);
+            const toppingTotal = toppings.reduce((sum, topping) => sum + topping.price * topping.quantity, 0);
             const pricePerQuantity = unitPrice + toppingTotal;
             const lineTotal = pricePerQuantity * quantity;
             const categoryName = dish.category && typeof dish.category === "object" && "name" in dish.category
@@ -397,7 +430,9 @@ const getPublicReceipt = async (req, res, next) => {
                     quantity: item.quantity,
                     price: item.price,
                     size: item.variant?.size || "",
-                    toppings: (item.toppings || []).map((topping) => topping.name),
+                    toppings: (item.toppings || []).map((topping) => (
+                        topping.quantity > 1 ? `${topping.name} ×${topping.quantity}` : topping.name
+                    )),
                 })),
                 total: order.bills?.totalWithTax ?? 0,
                 store: {

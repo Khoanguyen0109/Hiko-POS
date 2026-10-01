@@ -10,6 +10,7 @@ import mongoose from "mongoose";
 import Store from "../models/storeModel.js";
 import Category from "../models/categoryModel.js";
 import Dish from "../models/dishModel.js";
+import Topping from "../models/toppingModel.js";
 import Order from "../models/orderModel.js";
 import publicOrderRoute from "../routes/publicOrderRoute.js";
 import globalErrorHandler from "../middlewares/globalErrorHandler.js";
@@ -118,6 +119,36 @@ describe("public web orders", () => {
         expect(receipt.status).toBe(200);
         expect(receipt.body.data.total).toBe(118000);
         expect(receipt.body.data.bank.bankQrImage).toContain("techcombank");
+    });
+
+    test("prices toppings from the store menu", async () => {
+        const topping = await Topping.create({
+            store: storeId,
+            name: "Trân châu",
+            price: 10000,
+            category: "Kem",
+        });
+        const response = await request(app)
+            .post("/api/public/orders")
+            .set(KEY)
+            .send({
+                storeId,
+                customer: { name: "Nguyễn An", phone: "0901234568", address: "12 Nguyễn Văn Trỗi" },
+                items: [{
+                    dishId,
+                    size: "Medium",
+                    quantity: 1,
+                    toppings: [{ toppingId: topping._id.toString(), quantity: 2, price: 1 }],
+                }],
+            });
+
+        expect(response.status).toBe(201);
+        expect(response.body.data.total).toBe(69000);
+
+        const receipt = await request(app)
+            .get(`/api/public/orders/${response.body.data.token}`)
+            .set(KEY);
+        expect(receipt.body.data.items[0].toppings).toEqual(["Trân châu ×2"]);
     });
 
     test("rejects a dish from another store", async () => {
