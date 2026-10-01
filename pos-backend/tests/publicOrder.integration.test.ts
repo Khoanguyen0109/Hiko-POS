@@ -128,6 +128,7 @@ describe("public web orders", () => {
             price: 10000,
             category: "Kem",
         });
+        await Dish.findByIdAndUpdate(dishId, { allowToppings: true, compatibleToppings: [topping._id] });
         const response = await request(app)
             .post("/api/public/orders")
             .set(KEY)
@@ -149,6 +150,30 @@ describe("public web orders", () => {
             .get(`/api/public/orders/${response.body.data.token}`)
             .set(KEY);
         expect(receipt.body.data.items[0].toppings).toEqual(["Trân châu ×2"]);
+    });
+
+    test("rejects a topping that is not assigned to the dish", async () => {
+        const topping = await Topping.create({
+            store: storeId,
+            name: "Kem muối",
+            price: 8000,
+            category: "Kem",
+        });
+        const response = await request(app)
+            .post("/api/public/orders")
+            .set(KEY)
+            .send({
+                storeId,
+                customer: { name: "Nguyễn An", phone: "0901234568", address: "12 Nguyễn Văn Trỗi" },
+                items: [{
+                    dishId,
+                    size: "Medium",
+                    quantity: 1,
+                    toppings: [{ toppingId: topping._id.toString(), quantity: 1 }],
+                }],
+            });
+
+        expect(response.status).toBe(400);
     });
 
     test("rejects a dish from another store", async () => {

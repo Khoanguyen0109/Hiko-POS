@@ -3,7 +3,7 @@ import createHttpError from "http-errors";
 import mongoose from "mongoose";
 import Store from "../models/storeModel.js";
 import Dish from "../models/dishModel.js";
-import Topping from "../models/toppingModel.js";
+import "../models/toppingModel.js";
 import Customer from "../models/customerModel.js";
 import Order from "../models/orderModel.js";
 import { getCurrentVietnamTime } from "../utils/dateUtils.js";
@@ -23,6 +23,7 @@ interface ToppingDoc {
     _id: mongoose.Types.ObjectId;
     name: string;
     price: number;
+    category?: string;
     isAvailable?: boolean;
     store?: mongoose.Types.ObjectId;
 }
@@ -151,7 +152,7 @@ const getPublicMenu = async (req, res, next) => {
             $or: [{ store: storeId }, { store: null }],
         })
             .populate("category", "name isActive color")
-            .populate("compatibleToppings", "name price isAvailable store")
+            .populate("compatibleToppings", "name price category isAvailable store")
             .sort({ name: 1 })
             .lean();
 
@@ -171,6 +172,7 @@ const getPublicMenu = async (req, res, next) => {
                     id: topping._id,
                     name: topping.name,
                     price: topping.price,
+                    category: topping.category || "",
                 }));
 
             const sizes = (dish.sizeVariants || []).map((variant) => ({
@@ -200,24 +202,11 @@ const getPublicMenu = async (req, res, next) => {
             grouped.set(categoryId, bucket);
         }
 
-        const storeToppings = await Topping.find({ store: storeId, isAvailable: true })
-            .sort({ category: 1, name: 1 })
-            .select("name price category")
-            .lean();
-        const toppingGroups = new Map<string, { category: string; toppings: { id: unknown; name: string; price: number }[] }>();
-        for (const topping of storeToppings) {
-            const category = topping.category || "Khác";
-            const group = toppingGroups.get(category) || { category, toppings: [] };
-            group.toppings.push({ id: topping._id, name: topping.name, price: topping.price });
-            toppingGroups.set(category, group);
-        }
-
         res.status(200).json({
             success: true,
             data: {
                 store: publicStore(store),
                 categories: [...grouped.values()],
-                toppingGroups: [...toppingGroups.values()],
             },
         });
     } catch (error) {
@@ -256,10 +245,10 @@ const createPublicOrder = async (req, res, next) => {
         }
 
         const dishIds = items.map((item) => asString(item.dishId)).filter((id) => mongoose.Types.ObjectId.isValid(id));
-        const dishes = await Dish.find({ _id: { $in: dishIds } }).populate("category", "name");
+        const dishes = await Dish.find({ _id: { $in: dishIds } })
+            .populate("category", "name")
+            .populate("compatibleToppings", "name price category isAvailable store");
         const dishById = new Map(dishes.map((dish) => [dish._id.toString(), dish as unknown as DishDoc]));
-        const storeToppings = await Topping.find({ store: store._id, isAvailable: true });
-        const toppingById = new Map(storeToppings.map((topping) => [topping._id.toString(), topping]));
 
         const orderItems = items.map((item, index) => {
             const dishId = asString(item.dishId);
@@ -288,13 +277,19 @@ const createPublicOrder = async (req, res, next) => {
                 variant = { size: match.size, price: match.price };
             }
 
+            const allowedToppings = new Map(
+                (dish.allowToppings ? dish.compatibleToppings || [] : [])
+                    .filter((topping) => topping?._id && topping.isAvailable !== false)
+                    .filter((topping) => !topping.store || topping.store.toString() === storeId)
+                    .map((topping) => [topping._id.toString(), topping])
+            );
             const toppings = requestedToppings(item).map((requested) => {
                 if (!Number.isInteger(requested.quantity) || requested.quantity < 1 || requested.quantity > MAX_TOPPING_QUANTITY) {
                     throw createHttpError(400, `Số lượng topping không hợp lệ (dòng ${index + 1})`);
                 }
-                const topping = toppingById.get(requested.id);
+                const topping = allowedToppings.get(requested.id);
                 if (!topping) {
-                    throw createHttpError(400, `Topping không còn bán (dòng ${index + 1})`);
+                    throw createHttpError(400, `Topping không dùng cho món này (dòng ${index + 1})`);
                 }
                 return {
                     toppingId: topping._id,
