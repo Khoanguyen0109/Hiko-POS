@@ -99,6 +99,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
               <PaymentButtons
                 onPay={(method) => billRef.current?.handlePayWithMethod(method)}
                 onNotPay={() => billRef.current?.handlePlaceOrder()}
+                onShowQr={() => billRef.current?.handleShowQr()}
                 disabled={cartEmpty}
                 loading={loading}
               />

@@ -96,8 +96,6 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false, onBankingQrChange 
   const [showInvoice, setShowInvoice] = useState(false);
   const [orderInfo, setOrderInfo] = useState();
   const [bankingQr, setBankingQr] = useState(null);
-  const bankingQrDismissedRef = useRef(false);
-  const bankingAwaitingCleanupRef = useRef(false);
 
   const clearOrderDraft = useCallback(() => {
     dispatch(removeCustomer());
@@ -106,18 +104,13 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false, onBankingQrChange 
     dispatch(clearCustomerRewards());
   }, [dispatch]);
 
+  const openBankingQr = useCallback(() => {
+    setBankingQr({ amount: totalWithReward });
+  }, [totalWithReward]);
+
   const closeBankingQr = useCallback(() => {
     setBankingQr(null);
-    if (bankingAwaitingCleanupRef.current) {
-      bankingAwaitingCleanupRef.current = false;
-      clearOrderDraft();
-      if (onOrderComplete) {
-        onOrderComplete();
-      }
-      return;
-    }
-    bankingQrDismissedRef.current = true;
-  }, [clearOrderDraft, onOrderComplete]);
+  }, []);
 
   useEffect(() => {
     onBankingQrChange?.(Boolean(bankingQr));
@@ -129,6 +122,7 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false, onBankingQrChange 
     handlePrintReceipt,
     handlePayWithMethod: (method) =>
       handlePlaceOrder({ paymentMethod: method, orderStatus: "completed" }),
+    handleShowQr: openBankingQr,
     loading,
     cartEmpty: !cartData.items?.length,
   }));
@@ -157,12 +151,6 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false, onBankingQrChange 
 
   const handlePlaceOrder = async (options = {}) => {
     const { paymentMethod, orderStatus = "progress" } = options;
-
-    if (paymentMethod === "Banking") {
-      bankingQrDismissedRef.current = false;
-      bankingAwaitingCleanupRef.current = false;
-      setBankingQr({ amount: totalWithReward });
-    }
     // Enhanced order data with Happy Hour support
     const enhancedItems = cartData.items.map((item) => ({
       ...item,
@@ -272,11 +260,6 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false, onBankingQrChange 
           variant: "success",
         });
 
-        if (paymentMethod === "Banking" && !bankingQrDismissedRef.current) {
-          bankingAwaitingCleanupRef.current = true;
-          return;
-        }
-
         if (!v2UiEnabled) {
           setShowInvoice(true);
         } else if (onOrderComplete) {
@@ -289,9 +272,6 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false, onBankingQrChange 
       })
       .catch((error) => {
         logger.error("Order creation failed:", error);
-        setBankingQr(null);
-        bankingAwaitingCleanupRef.current = false;
-        bankingQrDismissedRef.current = true;
         const errorMessage = error?.data || error || "Failed to place order";
         enqueueSnackbar(errorMessage, {
           variant: "error",
@@ -420,6 +400,7 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false, onBankingQrChange 
               handlePlaceOrder({ paymentMethod: method, orderStatus: "completed" })
             }
             onNotPay={() => handlePlaceOrder()}
+            onShowQr={openBankingQr}
             disabled={cartData.items?.length === 0}
             loading={loading}
           />
