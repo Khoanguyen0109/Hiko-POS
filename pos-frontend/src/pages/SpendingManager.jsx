@@ -22,7 +22,7 @@ import {
   useGetSpendingQuery,
   useGetSpendingCategoriesQuery,
   useGetVendorsQuery,
-  useGetSpendingDashboardQuery,
+  useGetSpendingAnalyticsQuery,
   useDeleteSpendingMutation,
   useDeleteSpendingCategoryMutation,
   useDeleteVendorMutation,
@@ -95,8 +95,8 @@ const SpendingManager = () => {
   const { items: spending, pagination: spendingPagination } = unwrapPaginated(spendingResult);
   const { data: categoriesResult, isLoading: categoriesLoading } = useGetSpendingCategoriesQuery();
   const { data: vendorsResult, isLoading: vendorsLoading } = useGetVendorsQuery();
-  const { data: dashboardData, isLoading: dashboardLoading } = useGetSpendingDashboardQuery(
-    undefined,
+  const { data: dashboardData, isLoading: dashboardLoading } = useGetSpendingAnalyticsQuery(
+    { period: "month" },
     { skip: activeTab !== "analytics" }
   );
   const categories = unwrapList(categoriesResult);

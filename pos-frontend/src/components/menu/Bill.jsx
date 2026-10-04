@@ -16,7 +16,8 @@ import Invoice from "../invoice/Invoice";
 import CouponSelector from "./CouponInput";
 import OrderTypePicker from "../v2/OrderTypePicker";
 import PaymentButtons from "../v2/PaymentButtons";
-import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from "react";
+import BankingQrModal from "../v2/BankingQrModal";
+import { useState, useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
 import { useReactToPrint } from "react-to-print";
 import ThermalReceiptTemplate from "../print/ThermalReceiptTemplate";
 import { formatVND } from "../../utils";
@@ -25,7 +26,7 @@ import { logger } from "../../utils/logger";
 import { useV2Ui } from "../../hooks/useV2Ui";
 import PropTypes from "prop-types";
 
-const Bill = forwardRef(({ onOrderComplete, inDrawer = false }, ref) => {
+const Bill = forwardRef(({ onOrderComplete, inDrawer = false, onBankingQrChange }, ref) => {
   const dispatch = useDispatch();
   const { v2UiEnabled } = useV2Ui();
   const thermalReceiptRef = useRef();
@@ -46,6 +47,8 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false }, ref) => {
   const promotions = unwrapList(promotionsResult);
   const appliedReward = useSelector((state) => state.rewards.appliedReward);
   const customerRewards = useSelector((state) => state.rewards.customerRewards);
+  const activeStore = useSelector((state) => state.store.activeStore);
+  const bankQrSrc = activeStore?.bankQrImage || "/bank-qr.png";
 
   const getRewardDiscountAmount = () => {
     if (!appliedReward) return 0;
@@ -92,6 +95,33 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false }, ref) => {
 
   const [showInvoice, setShowInvoice] = useState(false);
   const [orderInfo, setOrderInfo] = useState();
+  const [bankingQr, setBankingQr] = useState(null);
+  const bankingQrDismissedRef = useRef(false);
+  const bankingAwaitingCleanupRef = useRef(false);
+
+  const clearOrderDraft = useCallback(() => {
+    dispatch(removeCustomer());
+    dispatch(removeAllItems());
+    dispatch(removeAppliedReward());
+    dispatch(clearCustomerRewards());
+  }, [dispatch]);
+
+  const closeBankingQr = useCallback(() => {
+    setBankingQr(null);
+    if (bankingAwaitingCleanupRef.current) {
+      bankingAwaitingCleanupRef.current = false;
+      clearOrderDraft();
+      if (onOrderComplete) {
+        onOrderComplete();
+      }
+      return;
+    }
+    bankingQrDismissedRef.current = true;
+  }, [clearOrderDraft, onOrderComplete]);
+
+  useEffect(() => {
+    onBankingQrChange?.(Boolean(bankingQr));
+  }, [bankingQr, onBankingQrChange]);
 
   // Expose handlers to parent component via ref
   useImperativeHandle(ref, () => ({
@@ -127,6 +157,12 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false }, ref) => {
 
   const handlePlaceOrder = async (options = {}) => {
     const { paymentMethod, orderStatus = "progress" } = options;
+
+    if (paymentMethod === "Banking") {
+      bankingQrDismissedRef.current = false;
+      bankingAwaitingCleanupRef.current = false;
+      setBankingQr({ amount: totalWithReward });
+    }
     // Enhanced order data with Happy Hour support
     const enhancedItems = cartData.items.map((item) => ({
       ...item,
@@ -236,6 +272,11 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false }, ref) => {
           variant: "success",
         });
 
+        if (paymentMethod === "Banking" && !bankingQrDismissedRef.current) {
+          bankingAwaitingCleanupRef.current = true;
+          return;
+        }
+
         if (!v2UiEnabled) {
           setShowInvoice(true);
         } else if (onOrderComplete) {
@@ -243,14 +284,14 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false }, ref) => {
         }
 
         setTimeout(() => {
-          dispatch(removeCustomer());
-          dispatch(removeAllItems());
-          dispatch(removeAppliedReward());
-          dispatch(clearCustomerRewards());
+          clearOrderDraft();
         }, 1500);
       })
       .catch((error) => {
         logger.error("Order creation failed:", error);
+        setBankingQr(null);
+        bankingAwaitingCleanupRef.current = false;
+        bankingQrDismissedRef.current = true;
         const errorMessage = error?.data || error || "Failed to place order";
         enqueueSnackbar(errorMessage, {
           variant: "error",
@@ -415,6 +456,13 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false }, ref) => {
       {!v2UiEnabled && showInvoice && (
         <Invoice orderInfo={orderInfo} setShowInvoice={setShowInvoice} />
       )}
+
+      <BankingQrModal
+        isOpen={Boolean(bankingQr)}
+        amount={bankingQr?.amount ?? 0}
+        qrSrc={bankQrSrc}
+        onClose={closeBankingQr}
+      />
     </>
   );
 });
@@ -424,6 +472,7 @@ Bill.displayName = "Bill";
 Bill.propTypes = {
   onOrderComplete: PropTypes.func,
   inDrawer: PropTypes.bool,
+  onBankingQrChange: PropTypes.func,
 };
 
 export default Bill;

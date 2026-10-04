@@ -17,14 +17,15 @@ import CategoryModal from "../components/dashboard/CategoryModal";
 import DishModal from "../components/dashboard/DishModal";
 import { getStoredUser } from "../utils/auth";
 import { formatVND } from "../utils";
-import { useGetSpendingDashboardQuery } from "../redux/api/endpoints";
+import { getTodayDateVietnam, getDateRangeByPeriodVietnam } from "../utils/dateUtils";
+import { useGetSpendingAnalyticsQuery } from "../redux/api/endpoints";
 import DateFilterBar from "../components/shared/DateFilterBar";
 import LoadingState from "../components/shared/LoadingState";
 import EmptyState from "../components/shared/EmptyState";
 import StoreSummariesTable from "../components/dashboard/StoreSummariesTable";
 
 // Spending Analytics Component
-const SpendingAnalytics = ({ dashboardData, loading, error }) => {
+const SpendingAnalytics = ({ dashboardData, loading, error, periodLabel = "This Month" }) => {
   if (loading) {
     return <LoadingState message="Loading analytics..." />;
   }
@@ -52,6 +53,7 @@ const SpendingAnalytics = ({ dashboardData, loading, error }) => {
   }
 
   const { summary, spendingByCategory, spendingByVendor, monthlyTrend, paymentStatusBreakdown, storeSummaries, scope } = dashboardData;
+  const latestMonth = monthlyTrend?.length ? monthlyTrend[monthlyTrend.length - 1] : null;
 
   return (
     <div className="container mx-auto px-4 md:px-6">
@@ -65,7 +67,7 @@ const SpendingAnalytics = ({ dashboardData, loading, error }) => {
           <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <MdAccountBalanceWallet className="text-xl sm:text-2xl text-brand" />
-              <span className="text-[#ababab] text-xs sm:text-sm">This Month</span>
+              <span className="text-[#ababab] text-xs sm:text-sm">{periodLabel}</span>
             </div>
             <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#f5f5f5] mb-1">
               {formatVND(summary?.totalAmount || 0)}
@@ -76,7 +78,7 @@ const SpendingAnalytics = ({ dashboardData, loading, error }) => {
           <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <MdReceipt className="text-xl sm:text-2xl text-[#10B981]" />
-              <span className="text-[#ababab] text-xs sm:text-sm">This Month</span>
+              <span className="text-[#ababab] text-xs sm:text-sm">{periodLabel}</span>
             </div>
             <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#f5f5f5] mb-1">
               {summary?.count || 0}
@@ -98,12 +100,12 @@ const SpendingAnalytics = ({ dashboardData, loading, error }) => {
           <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
             <div className="flex items-center justify-between mb-3 sm:mb-4">
               <MdDateRange className="text-xl sm:text-2xl text-[#8B5CF6]" />
-              <span className="text-[#ababab] text-xs sm:text-sm">This Year</span>
+              <span className="text-[#ababab] text-xs sm:text-sm">Latest</span>
             </div>
             <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#f5f5f5] mb-1">
-              {formatVND(monthlyTrend?.[0]?.totalAmount || 0)}
+              {formatVND(latestMonth?.totalAmount || 0)}
             </h3>
-            <p className="text-[#ababab] text-xs sm:text-sm">Period Total</p>
+            <p className="text-[#ababab] text-xs sm:text-sm">Latest Month</p>
           </div>
         </div>
 
@@ -190,15 +192,17 @@ const SpendingAnalytics = ({ dashboardData, loading, error }) => {
           <div className="bg-[#262626] rounded-lg p-4 sm:p-5 lg:p-6 border border-[#343434]">
             <h3 className="text-[#f5f5f5] font-semibold text-base sm:text-lg mb-3 sm:mb-4">Monthly Trend</h3>
             <div className="space-y-2 sm:space-y-3">
-              {monthlyTrend?.map((item) => (
-                <div key={`${item._id.year}-${item._id.month}`} className="flex items-center justify-between py-2 border-b border-[#343434] last:border-b-0">
+              {monthlyTrend?.map((item, index) => (
+                <div key={item._id ? `${item._id.year}-${item._id.month}` : index} className="flex items-center justify-between py-2 border-b border-[#343434] last:border-b-0">
                   <div className="flex-1 min-w-0 pr-2">
                     <p className="text-[#f5f5f5] font-medium text-sm sm:text-base">
-                      {new Date(item._id.year, item._id.month - 1).toLocaleDateString('en-US', { 
-                        year: 'numeric', 
-                        month: window.innerWidth < 640 ? 'short' : 'long',
-                        timeZone: 'Asia/Ho_Chi_Minh'
-                      })}
+                      {item._id
+                        ? new Date(item._id.year, item._id.month - 1).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: window.innerWidth < 640 ? 'short' : 'long',
+                            timeZone: 'Asia/Ho_Chi_Minh'
+                          })
+                        : "Unknown"}
                     </p>
                     <p className="text-[#ababab] text-xs sm:text-sm">{item.count} records</p>
                   </div>
@@ -229,7 +233,8 @@ SpendingAnalytics.propTypes = {
     scope: PropTypes.string
   }),
   loading: PropTypes.bool,
-  error: PropTypes.string
+  error: PropTypes.string,
+  periodLabel: PropTypes.string
 };
 
 const Dashboard = () => {
@@ -237,14 +242,6 @@ const Dashboard = () => {
   const user = getStoredUser();
   const isAdmin = user?.role === "Admin";
   const [activeTab, setActiveTab] = useState("Metrics");
-
-  const {
-    data: dashboardData,
-    isLoading: dashboardLoading,
-    error: dashboardError,
-  } = useGetSpendingDashboardQuery(undefined, {
-    skip: !isAdmin || activeTab !== "Spending",
-  });
 
   // Memoize buttons array to prevent recreation on every render
   const buttons = useMemo(() => [
@@ -279,6 +276,39 @@ const Dashboard = () => {
   const [customDateRange, setCustomDateRange] = useState({
     startDate: "",
     endDate: ""
+  });
+
+  const spendingParams = useMemo(() => {
+    const next = { scope: "all" };
+    const today = getTodayDateVietnam();
+
+    if (dateFilter === "custom" && customDateRange.startDate && customDateRange.endDate) {
+      next.startDate = customDateRange.startDate;
+      next.endDate = customDateRange.endDate;
+    } else if (dateFilter === "today") {
+      next.startDate = today;
+      next.endDate = today;
+    } else if (dateFilter === "week") {
+      const { start } = getDateRangeByPeriodVietnam("thisWeek");
+      next.startDate = start;
+      next.endDate = today;
+    } else if (dateFilter === "month") {
+      const { start } = getDateRangeByPeriodVietnam("thisMonth");
+      next.startDate = start;
+      next.endDate = today;
+    }
+
+    return next;
+  }, [dateFilter, customDateRange]);
+
+  const periodLabel = dateFilterOptions.find((option) => option.value === dateFilter)?.label || "This Month";
+
+  const {
+    data: dashboardData,
+    isLoading: dashboardLoading,
+    error: dashboardError,
+  } = useGetSpendingAnalyticsQuery(spendingParams, {
+    skip: !isAdmin || activeTab !== "Spending",
   });
 
   useEffect(() => {
@@ -394,6 +424,7 @@ const Dashboard = () => {
           dashboardData={dashboardData}
           loading={dashboardLoading}
           error={dashboardError?.data || (dashboardError ? "Failed to load analytics" : undefined)}
+          periodLabel={periodLabel}
         />
       )}
       {activeTab === "Shift Checkout" && isAdmin && (

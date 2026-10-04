@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { MdClose } from "react-icons/md";
 import CustomerLookup from "../menu/CustomerLookup";
@@ -19,6 +19,14 @@ const CartDrawer = ({ isOpen, onClose }) => {
   });
   const cartItems = useSelector((state) => state.cart.items);
   const cartEmpty = !cartItems?.length;
+  const [bankingQrOpen, setBankingQrOpen] = useState(false);
+
+  const requestClose = () => {
+    if (bankingQrOpen) {
+      return;
+    }
+    onClose();
+  };
 
   useEffect(() => {
     if (!isOpen) {
@@ -41,7 +49,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
         type="button"
         aria-label="Close cart"
         className="absolute inset-0 bg-black/50"
-        onClick={onClose}
+        onClick={requestClose}
       />
 
       <div
@@ -59,7 +67,7 @@ const CartDrawer = ({ isOpen, onClose }) => {
             <h2 className="text-base font-semibold text-[#f5f5f5]">Cart</h2>
             <button
               type="button"
-              onClick={onClose}
+              onClick={requestClose}
               className="rounded-lg p-2 text-[#ababab] hover:bg-[#262626] hover:text-[#f5f5f5]"
               aria-label="Close"
             >
@@ -74,7 +82,12 @@ const CartDrawer = ({ isOpen, onClose }) => {
           <hr className="border-[#2a2a2a] border-t-2" />
           <CartInfo />
           <hr className="border-[#2a2a2a] border-t-2" />
-          <Bill ref={billRef} inDrawer onOrderComplete={onClose} />
+          <Bill
+            ref={billRef}
+            inDrawer
+            onOrderComplete={onClose}
+            onBankingQrChange={setBankingQrOpen}
+          />
         </div>
 
         <div
