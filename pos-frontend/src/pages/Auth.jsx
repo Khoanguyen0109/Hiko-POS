@@ -23,11 +23,10 @@ const Auth = () => {
         <div className="absolute inset-0 bg-black bg-opacity-80"></div>
 
         {/* Quote at bottom */}
-        <blockquote className="absolute bottom-10 px-8 mb-10 text-xl xl:text-2xl italic text-white">
-          &quot;Serve customers the best food with prompt and friendly service in a
-          welcoming atmosphere, and they'll keep coming back.&quot;
+        <blockquote className="absolute bottom-10 px-8 mb-10 text-xl xl:text-2xl italic text-brand">
+          &quot;Start it as small, but always able to articulate the big story.&quot;
           <br />
-          <span className="block mt-4 text-yellow-400">- Founder of Hiko</span>
+          <span className="block mt-4 text-brand">- Founder of Hiko</span>
         </blockquote>
       </div>
 
@@ -38,8 +37,8 @@ const Auth = () => {
           <h1 className="text-lg font-semibold text-[#f5f5f5] tracking-wide">Hiko</h1>
         </div>
 
-        <h2 className="text-2xl sm:text-3xl lg:text-4xl text-center mt-6 sm:mt-10 font-semibold text-yellow-400 mb-6 sm:mb-10">
-          {isRegister ? "Employee Registration" : "Employee Login"}
+        <h2 className="text-2xl sm:text-3xl lg:text-4xl text-center mt-6 sm:mt-10 font-semibold text-brand mb-6 sm:mb-10">
+          {isRegister ? "Employee Registration" : "Hiko login"}
         </h2>
 
         {/* Components */}  
@@ -49,7 +48,7 @@ const Auth = () => {
         <div className="flex justify-center mt-6">
           <p className="text-sm text-[#ababab]">
             {isRegister ? "Already have an account?" : "Don 27t have an account?"}
-            <a onClick={() => setIsRegister(!isRegister)} className="text-yellow-400 font-semibold hover:underline" href="#">
+            <a onClick={() => setIsRegister(!isRegister)} className="text-brand font-semibold hover:underline" href="#">
               {isRegister ? "Sign in" : "Sign up"}
             </a>
           </p>
