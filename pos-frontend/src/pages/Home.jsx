@@ -11,18 +11,160 @@ import { ROUTES } from "../constants";
 import { useGetOrdersQuery, useGetLowStockItemsQuery } from "../redux/api/endpoints";
 import { unwrapList } from "../redux/api/queryResult";
 import { getTodayDate, formatVND } from "../utils";
+import { getDateRangeByPeriodVietnam } from "../utils/dateUtils";
 import { getOrderRewardDiscount } from "../utils/orderBills";
+
+const EMPTY_VENDOR_BREAKDOWN = {
+  None: { earnings: 0, orders: 0 },
+  Shopee: { earnings: 0, orders: 0 },
+  Grab: { earnings: 0, orders: 0 },
+  BeFood: { earnings: 0, orders: 0 },
+  XanhSM: { earnings: 0, orders: 0 },
+};
+
+const EMPTY_ORDER_STATS = {
+  totalEarnings: 0,
+  totalOrders: 0,
+  completedOrders: 0,
+  inProgressOrders: 0,
+  totalInProgressValue: 0,
+  totalDishesOrdered: 0,
+  totalCash: 0,
+  totalBanking: 0,
+  vendorBreakdown: EMPTY_VENDOR_BREAKDOWN,
+  totalPromotionDiscount: 0,
+  totalRewardDiscount: 0,
+  totalDiscount: 0,
+  discountedOrders: 0,
+};
+
+const computeOrderStats = (orders) => {
+  if (!orders || orders.length === 0) {
+    return EMPTY_ORDER_STATS;
+  }
+
+  const completedOrders = orders.filter(
+    (order) => order.orderStatus === "completed"
+  );
+  const inProgressOrders = orders.filter(
+    (order) => order.orderStatus === "progress"
+  );
+
+  const totalInProgressValue = inProgressOrders.reduce(
+    (sum, order) => sum + (order.bills?.totalWithTax || 0),
+    0
+  );
+  const totalEarnings = completedOrders.reduce(
+    (sum, order) => sum + (order.bills?.totalWithTax || 0),
+    0
+  );
+  const totalCash = completedOrders
+    .filter((order) => order.paymentMethod === "Cash")
+    .reduce((sum, order) => sum + (order.bills?.totalWithTax || 0), 0);
+  const totalBanking = completedOrders
+    .filter(
+      (order) =>
+        order.paymentMethod === "Banking" &&
+        (order.thirdPartyVendor === "None" || !order.thirdPartyVendor)
+    )
+    .reduce((sum, order) => sum + (order.bills?.totalWithTax || 0), 0);
+
+  const totalDishesOrdered = orders.reduce((sum, order) => {
+    if (order.orderStatus === "cancelled") return sum;
+    if (order.items && Array.isArray(order.items)) {
+      return (
+        sum +
+        order.items.reduce((itemSum, item) => itemSum + (item.quantity || 0), 0)
+      );
+    }
+    return sum;
+  }, 0);
+
+  const vendorBreakdown = {
+    None: { earnings: 0, orders: 0 },
+    Shopee: { earnings: 0, orders: 0 },
+    Grab: { earnings: 0, orders: 0 },
+    BeFood: { earnings: 0, orders: 0 },
+    XanhSM: { earnings: 0, orders: 0 },
+  };
+
+  completedOrders.forEach((order) => {
+    const vendor = order.thirdPartyVendor || "None";
+    const earnings = order.bills?.totalWithTax || 0;
+    if (vendorBreakdown[vendor]) {
+      vendorBreakdown[vendor].earnings += earnings;
+      vendorBreakdown[vendor].orders += 1;
+    }
+  });
+
+  const activeOrders = orders.filter((order) => order.orderStatus !== "cancelled");
+  const totalPromotionDiscount = activeOrders.reduce(
+    (sum, order) => sum + (order.bills?.promotionDiscount || 0),
+    0
+  );
+  const totalRewardDiscount = activeOrders.reduce(
+    (sum, order) => sum + getOrderRewardDiscount(order),
+    0
+  );
+  const discountedOrders = activeOrders.filter((order) => {
+    const promotionDiscount = order.bills?.promotionDiscount || 0;
+    const rewardDiscount = getOrderRewardDiscount(order);
+    return promotionDiscount > 0 || rewardDiscount > 0;
+  }).length;
+
+  return {
+    totalEarnings,
+    totalOrders: orders.length,
+    completedOrders: completedOrders.length,
+    inProgressOrders: inProgressOrders.length,
+    totalInProgressValue,
+    totalDishesOrdered,
+    totalCash,
+    totalBanking,
+    vendorBreakdown,
+    totalPromotionDiscount,
+    totalRewardDiscount,
+    totalDiscount: totalPromotionDiscount + totalRewardDiscount,
+    discountedOrders,
+  };
+};
+
+const getDayChange = (current, previous) => {
+  if (previous === 0) {
+    if (current === 0) return { text: "0.0%", direction: "flat" };
+    return null;
+  }
+
+  const percent = ((current - previous) / previous) * 100;
+  const rounded = Math.round(percent * 10) / 10;
+  if (rounded === 0) return { text: "0.0%", direction: "flat" };
+
+  return {
+    text: `${rounded.toFixed(1)}%`,
+    direction: rounded > 0 ? "up" : "down",
+  };
+};
 
 const Home = () => {
   const navigate = useNavigate();
   const { v2UiEnabled } = useV2Ui();
   const today = getTodayDate();
+  const yesterday = getDateRangeByPeriodVietnam("yesterday").start;
   const { data: ordersResult, isLoading: loading } = useGetOrdersQuery({
     startDate: today,
     endDate: today,
   });
+  const {
+    data: yesterdayOrdersResult,
+    isLoading: yesterdayLoading,
+    isError: yesterdayError,
+  } = useGetOrdersQuery({
+    startDate: yesterday,
+    endDate: yesterday,
+  });
   const { data: lowStockResult } = useGetLowStockItemsQuery();
   const orders = unwrapList(ordersResult);
+  const yesterdayOrders = unwrapList(yesterdayOrdersResult);
   const lowStockItems = unwrapList(lowStockResult);
 
   useEffect(() => {
@@ -35,143 +177,43 @@ const Home = () => {
       .sort((a, b) => (a.currentStock / (a.minStock || 1)) - (b.currentStock / (b.minStock || 1)));
   }, [lowStockItems]);
 
-  // Calculate today's statistics
-  const todayStats = useMemo(() => {
-    if (!orders || orders.length === 0) {
-      return {
-        totalEarnings: 0,
-        totalOrders: 0,
-        completedOrders: 0,
-        inProgressOrders: 0,
-        totalInProgressValue: 0,
-        totalDishesOrdered: 0,
-        totalCash: 0,
-        totalBanking: 0,
-        vendorBreakdown: {
-          None: { earnings: 0, orders: 0 },
-          Shopee: { earnings: 0, orders: 0 },
-          Grab: { earnings: 0, orders: 0 },
-          BeFood: { earnings: 0, orders: 0 },
-          XanhSM: { earnings: 0, orders: 0 },
-        },
-        totalPromotionDiscount: 0,
-        totalRewardDiscount: 0,
-        totalDiscount: 0,
-        discountedOrders: 0,
-      };
-    }
-
-    // Filter orders for today and completed status for earnings
-    const completedOrders = orders.filter(
-      (order) => order.orderStatus === "completed"
-    );
-
-    // Filter in-progress orders
-    const inProgressOrders = orders.filter(
-      (order) => order.orderStatus === "progress"
-    );
-
-    // Calculate total value of in-progress orders
-    const totalInProgressValue = inProgressOrders.reduce(
-      (sum, order) => sum + (order.bills?.totalWithTax || 0),
-      0
-    );
-
-    const totalEarnings = completedOrders.reduce(
-      (sum, order) => sum + (order.bills?.totalWithTax || 0),
-      0
-    );
-
-    // Calculate payment method totals from completed orders (excluding 3rd party vendors for banking)
-    const totalCash = completedOrders
-      .filter(order => order.paymentMethod === 'Cash')
-      .reduce((sum, order) => sum + (order.bills?.totalWithTax || 0), 0);
-
-    const totalBanking = completedOrders
-      .filter(order => order.paymentMethod === 'Banking' && (order.thirdPartyVendor === 'None' || !order.thirdPartyVendor))
-      .reduce((sum, order) => sum + (order.bills?.totalWithTax || 0), 0);
-
-    // Calculate total dishes ordered across all orders (excluding cancelled orders)
-    const totalDishesOrdered = orders.reduce((sum, order) => {
-      // Skip cancelled orders
-      if (order.orderStatus === 'cancelled') {
-        return sum;
-      }
-      
-      if (order.items && Array.isArray(order.items)) {
-        return sum + order.items.reduce((itemSum, item) => itemSum + (item.quantity || 0), 0);
-      }
-      return sum;
-    }, 0);
-
-    // Calculate income breakdown by third party vendor
-    const vendorBreakdown = {
-      None: { earnings: 0, orders: 0 },
-      Shopee: { earnings: 0, orders: 0 },
-      Grab: { earnings: 0, orders: 0 },
-      BeFood: { earnings: 0, orders: 0 },
-      XanhSM: { earnings: 0, orders: 0 },
-    };
-
-    completedOrders.forEach(order => {
-      const vendor = order.thirdPartyVendor || 'None';
-      const earnings = order.bills?.totalWithTax || 0;
-      
-      if (vendorBreakdown[vendor]) {
-        vendorBreakdown[vendor].earnings += earnings;
-        vendorBreakdown[vendor].orders += 1;
-      }
-    });
-
-    const activeOrders = orders.filter(
-      (order) => order.orderStatus !== "cancelled"
-    );
-    const totalPromotionDiscount = activeOrders.reduce(
-      (sum, order) => sum + (order.bills?.promotionDiscount || 0),
-      0
-    );
-    const totalRewardDiscount = activeOrders.reduce(
-      (sum, order) => sum + getOrderRewardDiscount(order),
-      0
-    );
-    const discountedOrders = activeOrders.filter((order) => {
-      const promotionDiscount = order.bills?.promotionDiscount || 0;
-      const rewardDiscount = getOrderRewardDiscount(order);
-      return promotionDiscount > 0 || rewardDiscount > 0;
-    }).length;
-
+  const todayStats = useMemo(() => computeOrderStats(orders), [orders]);
+  const yesterdayStats = useMemo(
+    () => computeOrderStats(yesterdayOrders),
+    [yesterdayOrders]
+  );
+  const dayChanges = useMemo(() => {
+    if (loading || yesterdayLoading || yesterdayError) return null;
     return {
-      totalEarnings,
-      totalOrders: orders.length,
-      completedOrders: completedOrders.length,
-      inProgressOrders: inProgressOrders.length,
-      totalInProgressValue,
-      totalDishesOrdered,
-      totalCash,
-      totalBanking,
-      vendorBreakdown,
-      totalPromotionDiscount,
-      totalRewardDiscount,
-      totalDiscount: totalPromotionDiscount + totalRewardDiscount,
-      discountedOrders,
+      totalEarnings: getDayChange(todayStats.totalEarnings, yesterdayStats.totalEarnings),
+      totalOrders: getDayChange(todayStats.totalOrders, yesterdayStats.totalOrders),
+      totalDishesOrdered: getDayChange(
+        todayStats.totalDishesOrdered,
+        yesterdayStats.totalDishesOrdered
+      ),
+      totalCash: getDayChange(todayStats.totalCash, yesterdayStats.totalCash),
+      totalBanking: getDayChange(todayStats.totalBanking, yesterdayStats.totalBanking),
+      totalDiscount: getDayChange(todayStats.totalDiscount, yesterdayStats.totalDiscount),
     };
-  }, [orders]);
+  }, [loading, yesterdayLoading, yesterdayError, todayStats, yesterdayStats]);
 
   return (
     <section className="bg-[#1f1f1f] pb-20 flex flex-col h-auto lg:flex-row gap-3">
       {/* Left Div */}
       <div className="flex-1 lg:flex-[3]">
         <HomeHeader />
-        <div className="flex flex-col sm:flex-row items-center w-full gap-3 px-4 sm:px-8 mt-4">
+        <div className="flex flex-col sm:flex-row items-stretch w-full gap-3 px-4 sm:px-8 mt-4">
           <MiniCard
             title="Total Earnings"
             icon={<BsCashCoin />}
             number={loading ? "..." : todayStats.totalEarnings}
+            change={dayChanges?.totalEarnings}
           />
           <MiniCard
             title="Total Orders"
             icon={<GrInProgress />}
             number={loading ? "..." : todayStats.totalOrders}
+            change={dayChanges?.totalOrders}
           />
           <MiniCard
             title="In Progress"
@@ -182,25 +224,29 @@ const Home = () => {
             title="Dishes Ordered"
             icon={<MdRestaurantMenu />}
             number={loading ? "..." : todayStats.totalDishesOrdered}
+            change={dayChanges?.totalDishesOrdered}
           />
         </div>
         
         {/* Payment Method Cards */}
-        <div className="flex flex-col sm:flex-row items-center w-full gap-3 px-4 sm:px-8 mt-4">
+        <div className="flex flex-col sm:flex-row items-stretch w-full gap-3 px-4 sm:px-8 mt-4">
           <MiniCard
             title="Total Cash"
             icon={<MdMoney />}
             number={loading ? "..." : formatVND(todayStats.totalCash)}
+            change={dayChanges?.totalCash}
           />
           <MiniCard
             title="Total Banking"
             icon={<MdAccountBalance />}
             number={loading ? "..." : formatVND(todayStats.totalBanking)}
+            change={dayChanges?.totalBanking}
           />
           <MiniCard
             title="Total Discount"
             icon={<MdLocalOffer />}
             number={loading ? "..." : formatVND(todayStats.totalDiscount)}
+            change={dayChanges?.totalDiscount}
           />
         </div>
 

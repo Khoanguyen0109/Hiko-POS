@@ -472,6 +472,15 @@ export const peopleApi = baseApi.injectEndpoints({
       providesTags: (result) => providesList("Schedule", result),
       ...SCHEDULE_CACHE,
     }),
+    getAllExtraWorkAllStores: build.query({
+      query: (params) => ({
+        url: "/api/extra-work",
+        params,
+        skipStoreHeader: true,
+      }),
+      providesTags: (result) => providesList("Schedule", result),
+      ...SCHEDULE_CACHE,
+    }),
     getExtraWorkById: build.query({
       query: (id) => ({ url: `/api/extra-work/${id}` }),
       providesTags: (_result, _error, id) => [{ type: "Schedule", id }],
@@ -503,11 +512,12 @@ export const peopleApi = baseApi.injectEndpoints({
         invalidatesList("Schedule", id),
     }),
     deleteExtraWork: build.mutation({
-      query: (id) => ({
+      query: ({ id, storeId }) => ({
         url: `/api/extra-work/${id}`,
         method: "DELETE",
+        ...withOptionalStoreHeader(storeId),
       }),
-      invalidatesTags: (_result, _error, id) => invalidatesList("Schedule", id),
+      invalidatesTags: (_result, _error, { id }) => invalidatesList("Schedule", id),
     }),
     approveExtraWork: build.mutation({
       query: (id) => ({
@@ -691,6 +701,7 @@ export const {
   useCheckScheduleConflictsMutation,
   // Extra work
   useGetAllExtraWorkQuery,
+  useGetAllExtraWorkAllStoresQuery,
   useGetExtraWorkByIdQuery,
   useGetExtraWorkByMemberQuery,
   useCreateExtraWorkMutation,

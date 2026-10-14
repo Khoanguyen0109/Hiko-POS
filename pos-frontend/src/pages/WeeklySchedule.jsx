@@ -23,7 +23,7 @@ import {
   useGetAllMembersWeekQuery,
   useGetAllStoresQuery,
   useGetAllMembersQuery,
-  useGetAllExtraWorkQuery,
+  useGetAllExtraWorkAllStoresQuery,
   useDeleteExtraWorkMutation,
 } from "../redux/api/endpoints";
 import { unwrapList } from "../redux/api/queryResult";
@@ -99,6 +99,7 @@ const WeeklySchedule = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedMemberForExtraWork, setSelectedMemberForExtraWork] = useState(null);
   const [extraWorkFilters, setExtraWorkFilters] = useState({
+    storeId: "",
     memberId: "",
     startDate: "",
     endDate: ""
@@ -108,6 +109,7 @@ const WeeklySchedule = () => {
 
   const extraWorkParams = useMemo(() => {
     const filters = {};
+    if (extraWorkFilters.storeId) filters.storeId = extraWorkFilters.storeId;
     if (extraWorkFilters.memberId) filters.memberId = extraWorkFilters.memberId;
     if (extraWorkFilters.startDate) filters.startDate = extraWorkFilters.startDate;
     if (extraWorkFilters.endDate) filters.endDate = extraWorkFilters.endDate;
@@ -136,7 +138,7 @@ const WeeklySchedule = () => {
   const members = useMemo(() => unwrapList(membersResult), [membersResult]);
 
   const { data: extraWorkResult, isLoading: extraWorkLoading, error: extraWorkError } =
-    useGetAllExtraWorkQuery(extraWorkParams, { skip: !isAdmin });
+    useGetAllExtraWorkAllStoresQuery(extraWorkParams, { skip: !isAdmin });
   const extraWorkEntries = unwrapList(extraWorkResult);
   const totalHours = extraWorkEntries.reduce((sum, entry) => sum + (entry.durationHours || 0), 0);
   const totalPayment = extraWorkEntries.reduce((sum, entry) => sum + (entry.paymentAmount || 0), 0);
@@ -220,17 +222,22 @@ const WeeklySchedule = () => {
   };
 
   const handleFilterChange = (name, value) => {
-    setExtraWorkFilters(prev => ({ ...prev, [name]: value }));
+    setExtraWorkFilters((prev) => ({
+      ...prev,
+      [name]: value,
+      ...(name === "storeId" ? { memberId: "" } : {}),
+    }));
   };
 
   const clearFilters = () => {
-    setExtraWorkFilters({ memberId: "", startDate: "", endDate: "" });
+    setExtraWorkFilters({ storeId: "", memberId: "", startDate: "", endDate: "" });
   };
 
-  const handleDeleteExtraWork = async (id) => {
+  const handleDeleteExtraWork = async (entry) => {
     if (!window.confirm("Are you sure you want to delete this extra work entry?")) return;
+    const storeId = typeof entry.store === "object" ? entry.store?._id : entry.store;
     try {
-      await deleteExtraWork(id).unwrap();
+      await deleteExtraWork({ id: entry._id, storeId }).unwrap();
       enqueueSnackbar("Extra work entry deleted", { variant: "success" });
     } catch (err) {
       enqueueSnackbar(err?.data || err || "Failed to delete extra work entry", { variant: "error" });
@@ -546,7 +553,7 @@ const WeeklySchedule = () => {
                             Extra Work Entries
                           </h4>
                           <p className="text-[#ababab] text-sm mt-1">
-                            View and filter logged extra work hours
+                            Logged extra work hours from every store
                           </p>
                         </div>
                         <HeaderActionButton
@@ -559,7 +566,20 @@ const WeeklySchedule = () => {
                         </HeaderActionButton>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                        <div>
+                          <label className="block text-xs text-[#ababab] mb-2">Filter by Store</label>
+                          <select
+                            value={extraWorkFilters.storeId}
+                            onChange={(e) => handleFilterChange("storeId", e.target.value)}
+                            className="w-full px-3 py-2 bg-[#262626] border border-[#3a3a3a] rounded-lg text-[#f5f5f5] text-sm focus:outline-none focus:border-[#4ECDC4]"
+                          >
+                            <option value="">All Stores</option>
+                            {allStores.filter((store) => store.isActive !== false).map((store) => (
+                              <option key={store._id} value={store._id}>{store.name}</option>
+                            ))}
+                          </select>
+                        </div>
                         <div>
                           <label className="block text-xs text-[#ababab] mb-2">Filter by Member</label>
                           <select
@@ -570,9 +590,9 @@ const WeeklySchedule = () => {
                             <option value="">All Members</option>
                             {members?.filter((m) => {
                               if (m.isActive === false || m.role === "Admin") return false;
-                              if (!activeStore?._id) return true;
+                              if (!extraWorkFilters.storeId) return true;
                               return m.assignedStores?.some(
-                                (s) => String(s._id) === String(activeStore._id) && s.isActive
+                                (s) => String(s._id) === String(extraWorkFilters.storeId) && s.isActive
                               );
                             }).map(member => (
                               <option key={member._id} value={member._id}>{member.name}</option>
@@ -631,7 +651,7 @@ const WeeklySchedule = () => {
                               <ExtraWorkEntryCard
                                 key={entry._id}
                                 entry={entry}
-                                onDelete={handleDeleteExtraWork}
+                                onDelete={() => handleDeleteExtraWork(entry)}
                               />
                             ))}
                           </div>
@@ -639,6 +659,7 @@ const WeeklySchedule = () => {
                           <thead>
                             <tr className="border-b border-[#343434] bg-[#262626]">
                               <th className="px-4 py-3 text-left text-[#ababab] text-xs font-medium">Date</th>
+                              <th className="px-4 py-3 text-left text-[#ababab] text-xs font-medium">Store</th>
                               <th className="px-4 py-3 text-left text-[#ababab] text-xs font-medium">Member</th>
                               <th className="px-4 py-3 text-left text-[#ababab] text-xs font-medium">Duration</th>
                               <th className="px-4 py-3 text-left text-[#ababab] text-xs font-medium">Type</th>
@@ -651,6 +672,7 @@ const WeeklySchedule = () => {
                             {extraWorkEntries.map((entry) => (
                               <tr key={entry._id} className="border-b border-[#343434] hover:bg-[#262626] transition-colors">
                                 <td className="px-4 py-3 text-[#f5f5f5] text-sm">{formatDate(new Date(entry.date), "short")}</td>
+                                <td className="px-4 py-3 text-[#f5f5f5] text-sm">{entry.store?.name || "—"}</td>
                                 <td className="px-4 py-3 text-[#f5f5f5] text-sm">{entry.member?.name || "Unknown"}</td>
                                 <td className={`px-4 py-3 text-sm font-medium ${entry.durationHours < 0 ? "text-red-400" : "text-[#4ECDC4]"}`}>
                                   {entry.durationHours.toFixed(2)}h
@@ -666,7 +688,7 @@ const WeeklySchedule = () => {
                                 <td className="px-4 py-3 text-[#ababab] text-sm max-w-xs truncate">{entry.description || "-"}</td>
                                 <td className="px-4 py-3 text-center">
                                   <button
-                                    onClick={() => handleDeleteExtraWork(entry._id)}
+                                    onClick={() => handleDeleteExtraWork(entry)}
                                     className="p-2 rounded-lg text-red-400 hover:bg-red-900/20 transition-colors"
                                     title="Delete entry"
                                   >

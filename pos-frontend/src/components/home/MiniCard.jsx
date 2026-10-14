@@ -1,7 +1,13 @@
 import PropTypes from 'prop-types'
 import { formatVND } from '../../utils'
 
-const MiniCard = ({title, icon, number}) => {
+const CHANGE_COLOR = {
+  up: "text-green-400",
+  down: "text-red-400",
+  flat: "text-[#ababab]",
+};
+
+const MiniCard = ({title, icon, number, change}) => {
   const isLoading = number === "...";
   
   return (
@@ -20,6 +26,12 @@ const MiniCard = ({title, icon, number}) => {
                 number
               )}
             </h1>
+            {change ? (
+              <p className={`mt-1 text-sm font-semibold ${CHANGE_COLOR[change.direction]}`}>
+                {change.text}
+                <span className="ml-1 font-normal text-[#ababab]">vs yesterday</span>
+              </p>
+            ) : null}
         </div>
     </div>
   )
@@ -29,7 +41,10 @@ MiniCard.propTypes = {
   title: PropTypes.string.isRequired,
   icon: PropTypes.node.isRequired,
   number: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-  footerNum: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired
+  change: PropTypes.shape({
+    text: PropTypes.string.isRequired,
+    direction: PropTypes.oneOf(["up", "down", "flat"]).isRequired,
+  }),
 }
 
 export default MiniCard

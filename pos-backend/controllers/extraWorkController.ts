@@ -13,10 +13,18 @@ const getAllExtraWork = async (req, res, next) => {
             endDate, 
             isApproved, 
             isPaid,
-            workType 
+            workType,
+            storeId
         } = req.query;
         
-        const query: MongoFilter = { store: req.store._id };
+        // Store header scopes the list. No header (admin) returns every store,
+        // with an optional storeId query to narrow it.
+        const query: MongoFilter = {};
+        if (req.store?._id) {
+            query.store = req.store._id;
+        } else if (storeId) {
+            query.store = storeId;
+        }
         
         if (memberId) query.member = memberId;
         if (workType) query.workType = workType;
@@ -32,6 +40,7 @@ const getAllExtraWork = async (req, res, next) => {
         
         const extraWorkEntries = await ExtraWork.find(query)
             .populate('member', 'name email phone role salary')
+            .populate('store', 'name code')
             .populate('createdBy', 'name email')
             .populate('approvedBy', 'name email')
             .sort({ date: -1, createdAt: -1 });

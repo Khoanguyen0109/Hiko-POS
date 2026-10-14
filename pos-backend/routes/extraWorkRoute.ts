@@ -1,13 +1,13 @@
 import express from "express";
 import { getAllExtraWork, getExtraWorkById, getExtraWorkByMember, createExtraWork, updateExtraWork, deleteExtraWork, approveExtraWork, markAsPaid, getMyExtraWork } from "../controllers/extraWorkController.js";
 import { isVerifiedUser, isAdmin } from "../middlewares/tokenVerification.js";
-import { storeContext } from "../middlewares/storeContext.js";
+import { storeContext, optionalStoreContext } from "../middlewares/storeContext.js";
 
 const router = express.Router();
 
 // Admin routes
 router.route("/")
-    .get(isVerifiedUser, storeContext, isAdmin, getAllExtraWork)
+    .get(isVerifiedUser, isAdmin, optionalStoreContext, getAllExtraWork)
     .post(isVerifiedUser, storeContext, isAdmin, createExtraWork);
 
 // Member routes - view own extra work (must be before /:id route)

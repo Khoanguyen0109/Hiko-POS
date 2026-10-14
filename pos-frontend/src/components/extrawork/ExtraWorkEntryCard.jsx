@@ -27,6 +27,7 @@ const ExtraWorkEntryCard = ({ entry, onDelete }) => {
           </p>
           <p className="mt-0.5 text-xs text-[#ababab]">
             {formatDate(new Date(entry.date), "short")}
+            {entry.store?.name ? ` · ${entry.store.name}` : ""}
           </p>
         </div>
         <button
@@ -84,6 +85,7 @@ ExtraWorkEntryCard.propTypes = {
     _id: PropTypes.string.isRequired,
     date: PropTypes.string.isRequired,
     member: PropTypes.shape({ name: PropTypes.string }),
+    store: PropTypes.shape({ name: PropTypes.string }),
     durationHours: PropTypes.number.isRequired,
     workType: PropTypes.string.isRequired,
     paymentAmount: PropTypes.number.isRequired,
