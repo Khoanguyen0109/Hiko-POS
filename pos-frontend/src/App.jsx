@@ -57,6 +57,7 @@ import {
 } from "./constants";
 import Sidebar from "./components/shared/Sidebar";
 import V2Shell from "./components/v2/V2Shell";
+import Copilot from "./components/copilot/Copilot";
 import { useV2Ui } from "./hooks/useV2Ui";
 
 const COMPONENT_MAP = {
@@ -234,6 +235,7 @@ function Layout() {
           {routes}
         </div>
       )}
+      {isAuth ? <Copilot /> : null}
     </>
   );
 }

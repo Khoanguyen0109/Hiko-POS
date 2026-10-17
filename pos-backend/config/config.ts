@@ -29,6 +29,8 @@ const config = Object.freeze({
     otpHashSecret:
         process.env.OTP_HASH_SECRET || process.env.JWT_SECRET || "otp-dev-secret",
     hikoOrderKey: process.env.HIKO_ORDER_KEY || "",
+    anthropicApiKey: process.env.ANTHROPIC_API_KEY || "",
+    typesafeApiKey: "",
 });
 
 export default config;

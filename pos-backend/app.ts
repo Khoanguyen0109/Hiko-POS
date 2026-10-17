@@ -46,6 +46,7 @@ import voucherRoute from "./routes/voucherRoute.js";
 import docRoute from "./routes/docRoute.js";
 import testRoute from "./routes/testRoute.js";
 import publicOrderRoute from "./routes/publicOrderRoute.js";
+import assistantRoute from "./routes/assistantRoute.js";
 
 const app = express();
 
@@ -162,6 +163,7 @@ app.use("/api/campaign", campaignRoute);
 app.use("/api/voucher", voucherRoute);
 app.use("/api/public", publicOrderRoute);
 app.use("/api/docs", docRoute);
+app.use("/api/assistant", assistantRoute);
 app.use("/api/test", testRoute);
 
 // ─── Global error handler ──────────────────────────────────────────────────
