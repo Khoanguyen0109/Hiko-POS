@@ -90,6 +90,10 @@ export const updateDish = ({ dishId, ...dishData }) =>
   axiosWrapper.put(`/api/dish/${dishId}`, dishData);
 export const deleteDish = (dishId) => axiosWrapper.delete(`/api/dish/${dishId}`);
 export const toggleDishAvailability = (dishId) => axiosWrapper.patch(`/api/dish/${dishId}/toggle-availability`);
+export const getDishStore = (dishId) => axiosWrapper.get(`/api/dish/${dishId}/store`);
+export const upsertDishStore = ({ dishId, ...data }) =>
+  axiosWrapper.put(`/api/dish/${dishId}/store`, data);
+export const deleteDishStore = (dishId) => axiosWrapper.delete(`/api/dish/${dishId}/store`);
 
 // Customer Endpoints
 export const addCustomer = (data) => axiosWrapper.post("/api/customer/", data);

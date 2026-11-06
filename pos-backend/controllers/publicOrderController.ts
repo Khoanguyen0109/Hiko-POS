@@ -3,10 +3,17 @@ import createHttpError from "http-errors";
 import mongoose from "mongoose";
 import Store from "../models/storeModel.js";
 import Dish from "../models/dishModel.js";
+import DishStore from "../models/dishStoreModel.js";
 import "../models/toppingModel.js";
 import Customer from "../models/customerModel.js";
 import Order from "../models/orderModel.js";
 import { getCurrentVietnamTime } from "../utils/dateUtils.js";
+import {
+    isDishVisibleAtStore,
+    overlayByDishId,
+    resolveDishForStore,
+    resolveDishUnitPrice,
+} from "../utils/resolveDishForStore.js";
 
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const MAX_QUANTITY = 20;
@@ -94,11 +101,6 @@ function requestedToppings(item: RequestItem): { id: string; quantity: number }[
     return [...counts.entries()].map(([id, quantity]) => ({ id, quantity }));
 }
 
-function dishBelongsToStore(dish: DishDoc, storeId: string): boolean {
-    if (!dish.store) return true;
-    return dish.store.toString() === storeId;
-}
-
 function publicStore(store: {
     _id: unknown;
     name: string;
@@ -156,9 +158,18 @@ const getPublicMenu = async (req, res, next) => {
             .sort({ name: 1 })
             .lean();
 
+        const overlays = await DishStore.find({
+            store: storeId,
+            dish: { $in: dishes.map((dish) => dish._id) },
+        }).lean();
+        const overlayMap = overlayByDishId(overlays);
+
         const grouped = new Map<string, { id: string; name: string; color: string; dishes: unknown[] }>();
 
         for (const dish of dishes as unknown as DishDoc[]) {
+            const overlay = overlayMap.get(dish._id.toString());
+            if (!isDishVisibleAtStore(dish, overlay, storeId)) continue;
+
             const category = dish.category;
             if (!category || typeof category !== "object" || !("name" in category) || !category.name) {
                 continue;
@@ -175,7 +186,8 @@ const getPublicMenu = async (req, res, next) => {
                     category: topping.category || "",
                 }));
 
-            const sizes = (dish.sizeVariants || []).map((variant) => ({
+            const resolved = resolveDishForStore(dish, overlay);
+            const sizes = resolved.sizeVariants.map((variant) => ({
                 id: variant._id,
                 size: variant.size,
                 price: variant.price,
@@ -193,8 +205,8 @@ const getPublicMenu = async (req, res, next) => {
                 id: dish._id,
                 name: dish.name,
                 image: dish.image || "",
-                price: dish.price,
-                hasSizeVariants: Boolean(dish.hasSizeVariants && sizes.length > 0),
+                price: resolved.price,
+                hasSizeVariants: resolved.hasSizeVariants,
                 sizes,
                 allowToppings: Boolean(dish.allowToppings && toppings.length > 0),
                 toppings,
@@ -249,11 +261,17 @@ const createPublicOrder = async (req, res, next) => {
             .populate("category", "name")
             .populate("compatibleToppings", "name price category isAvailable store");
         const dishById = new Map(dishes.map((dish) => [dish._id.toString(), dish as unknown as DishDoc]));
+        const overlays = await DishStore.find({
+            store: storeId,
+            dish: { $in: dishes.map((dish) => dish._id) },
+        }).lean();
+        const overlayMap = overlayByDishId(overlays);
 
         const orderItems = items.map((item, index) => {
             const dishId = asString(item.dishId);
             const dish = dishById.get(dishId);
-            if (!dish || dish.isAvailable === false || !dishBelongsToStore(dish, storeId)) {
+            const overlay = overlayMap.get(dishId);
+            if (!dish || !isDishVisibleAtStore(dish, overlay, storeId)) {
                 throw createHttpError(400, `Món không còn bán (dòng ${index + 1})`);
             }
 
@@ -263,19 +281,14 @@ const createPublicOrder = async (req, res, next) => {
             }
 
             const requestedSize = asString(item.size);
-            let unitPrice = dish.price;
-            let variant: { size: string; price: number } | undefined;
-            const sizes = dish.sizeVariants || [];
-            if (dish.hasSizeVariants && sizes.length > 0) {
-                const match = sizes.find((size) => size.size.toLowerCase() === requestedSize.toLowerCase())
-                    || sizes.find((size) => size.isDefault)
-                    || sizes[0];
-                if (!match) {
-                    throw createHttpError(400, `Chưa chọn size (dòng ${index + 1})`);
-                }
-                unitPrice = match.price;
-                variant = { size: match.size, price: match.price };
+            const priced = resolveDishUnitPrice(dish, overlay, requestedSize || undefined);
+            if (dish.hasSizeVariants && (dish.sizeVariants || []).length > 0 && !priced.variant) {
+                throw createHttpError(400, `Chưa chọn size (dòng ${index + 1})`);
             }
+            const unitPrice = priced.price;
+            const variant = priced.variant
+                ? { size: priced.variant.size, price: priced.variant.price }
+                : undefined;
 
             const allowedToppings = new Map(
                 (dish.allowToppings ? dish.compatibleToppings || [] : [])

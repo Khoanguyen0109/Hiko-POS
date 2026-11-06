@@ -1,24 +1,45 @@
 import PropTypes from "prop-types";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import { IoMdPricetag, IoMdTrash } from "react-icons/io";
 import { MdOutlineInventory, MdToggleOn, MdToggleOff, MdEdit, MdMenuBook } from "react-icons/md";
 import {
   useDeleteDishMutation,
   useToggleDishAvailabilityMutation,
+  useUpsertDishStoreMutation,
 } from "../../redux/api/endpoints/catalogEndpoints";
 import { enqueueSnackbar } from "notistack";
 import biryani from "../../assets/images/hyderabadibiryani.jpg";
 import { formatPriceK, formatVND } from "../../utils";
 
+const hasStorePriceOverride = (overlay) => {
+  if (!overlay) return false;
+  if (typeof overlay.price === "number") return true;
+  return Array.isArray(overlay.sizeVariants) && overlay.sizeVariants.length > 0;
+};
+
 const Dish = ({ dish, onEdit, onRecipe }) => {
+  const isAdmin = useSelector((state) => state.user.role) === "Admin";
   const [deleteDish] = useDeleteDishMutation();
   const [toggleDishAvailability] = useToggleDishAvailabilityMutation();
+  const [upsertDishStore] = useUpsertDishStoreMutation();
   const [selectedVariant, setSelectedVariant] = useState(() => {
     if (dish.hasSizeVariants && dish.sizeVariants?.length > 0) {
       return dish.sizeVariants.find((v) => v.isDefault) || dish.sizeVariants[0];
     }
     return null;
   });
+
+  useEffect(() => {
+    if (!dish.hasSizeVariants || !dish.sizeVariants?.length) {
+      setSelectedVariant(null);
+      return;
+    }
+    setSelectedVariant((current) => {
+      const match = dish.sizeVariants.find((variant) => variant.size === current?.size);
+      return match || dish.sizeVariants.find((variant) => variant.isDefault) || dish.sizeVariants[0];
+    });
+  }, [dish]);
 
   const handleVariantChange = (variant) => {
     setSelectedVariant(variant);
@@ -63,10 +84,15 @@ const Dish = ({ dish, onEdit, onRecipe }) => {
     e.stopPropagation();
 
     try {
-      const result = await toggleDishAvailability(dish._id).unwrap();
+      const result = isAdmin
+        ? await upsertDishStore({
+            dishId: dish._id,
+            isAvailable: !dish.isAvailable,
+          }).unwrap()
+        : await toggleDishAvailability(dish._id).unwrap();
       const newStatus = result.isAvailable;
       enqueueSnackbar(
-        `Dish ${newStatus ? "enabled" : "disabled"} successfully!`,
+        `Dish ${newStatus ? "enabled" : "disabled"}${isAdmin ? " at this store" : ""}!`,
         { variant: "success" }
       );
     } catch (error) {
@@ -117,6 +143,12 @@ const Dish = ({ dish, onEdit, onRecipe }) => {
               <span className="inline-flex items-center rounded-full border border-blue-800 bg-blue-900/30 px-2 py-0.5 text-xs font-medium text-blue-400">
                 <IoMdPricetag size={12} className="mr-1" />
                 {dish.sizeVariants?.length} sizes
+              </span>
+            )}
+
+            {hasStorePriceOverride(dish.storeOverlay) && (
+              <span className="inline-flex items-center rounded-full border border-amber-800 bg-amber-900/30 px-2 py-0.5 text-xs font-medium text-amber-400">
+                Store price
               </span>
             )}
           </div>
@@ -195,7 +227,7 @@ const Dish = ({ dish, onEdit, onRecipe }) => {
               ? "bg-green-900/30 text-green-400 hover:bg-green-900/50 border border-green-800"
               : "bg-red-900/30 text-red-400 hover:bg-red-900/50 border border-red-800"
           }`}
-          title={dish.isAvailable ? "Disable dish" : "Enable dish"}
+          title={dish.isAvailable ? "Disable at this store" : "Enable at this store"}
         >
           {dish.isAvailable ? (
             <MdToggleOn size={18} />
@@ -228,6 +260,7 @@ Dish.propTypes = {
     note: PropTypes.string,
     hasSizeVariants: PropTypes.bool,
     isAvailable: PropTypes.bool,
+    storeOverlay: PropTypes.object,
     sizeVariants: PropTypes.arrayOf(
       PropTypes.shape({
         size: PropTypes.string.isRequired,

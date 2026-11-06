@@ -1,9 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
+import { useSelector } from "react-redux";
 import { IoMdAdd, IoMdRemove } from "react-icons/io";
 import {
   useGetCategoriesQuery,
+  useGetDishByIdQuery,
+  useGetDishStoreQuery,
   useCreateDishMutation,
   useUpdateDishMutation,
+  useUpsertDishStoreMutation,
+  useDeleteDishStoreMutation,
 } from "../../redux/api/endpoints/catalogEndpoints";
 import { unwrapList } from "../../redux/api/queryResult";
 import { enqueueSnackbar } from "notistack"
@@ -13,12 +18,24 @@ import BottomSheet from "../shared/BottomSheet";
 const SIZE_OPTIONS = ['Small', 'Medium', 'Large', 'Extra Large', 'Regular'];
 
 const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) => {
+  const isAdmin = useSelector((state) => state.user.role) === "Admin";
+  const dishId = editingDish?._id;
   const { data: categoriesResult, isLoading: categoriesLoading } =
     useGetCategoriesQuery();
   const categories = unwrapList(categoriesResult);
+  const { data: catalogDish, isLoading: catalogLoading } = useGetDishByIdQuery(
+    dishId,
+    { skip: !dishId }
+  );
+  const { data: storeSettings, isLoading: storeLoading } = useGetDishStoreQuery(
+    dishId,
+    { skip: !dishId || !isAdmin }
+  );
   const [createDish, { isLoading: isCreating }] = useCreateDishMutation();
   const [updateDish, { isLoading: isUpdating }] = useUpdateDishMutation();
-  const dishLoading = isCreating || isUpdating;
+  const [upsertDishStore, { isLoading: isSavingStore }] = useUpsertDishStoreMutation();
+  const [deleteDishStore, { isLoading: isClearingStore }] = useDeleteDishStoreMutation();
+  const dishLoading = isCreating || isUpdating || isSavingStore || isClearingStore;
   
   const [dishData, setDishData] = useState({
     name: "",
@@ -33,22 +50,26 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
   const [sizeVariants, setSizeVariants] = useState([
     { size: 'Medium', price: '', isDefault: true }
   ]);
+  const [storeEnabled, setStoreEnabled] = useState(true);
+  const [storePrice, setStorePrice] = useState("");
+  const [storeSizePrices, setStoreSizePrices] = useState([]);
 
-  // Initialize form data when editing
+  // Initialize catalog fields from GET /dish/:id so store prices are never saved as defaults
   useEffect(() => {
-    if (editingDish) {
+    const source = catalogDish || editingDish;
+    if (editingDish && source) {
       setDishData({
-        name: editingDish.name || "",
-        price: editingDish.price?.toString() || "",
-        category: editingDish.category?._id || editingDish.category || "",
-        note: editingDish.note || "",
-        image: editingDish.image || "",
-        hasSizeVariants: editingDish.hasSizeVariants || false,
-        isAvailable: editingDish.isAvailable !== undefined ? editingDish.isAvailable : true,
+        name: source.name || "",
+        price: source.price?.toString() || "",
+        category: source.category?._id || source.category || "",
+        note: source.note || "",
+        image: source.image || "",
+        hasSizeVariants: source.hasSizeVariants || false,
+        isAvailable: source.isAvailable !== undefined ? source.isAvailable : true,
       });
 
-      if (editingDish.hasSizeVariants && editingDish.sizeVariants?.length > 0) {
-        setSizeVariants(editingDish.sizeVariants.map(variant => ({
+      if (source.hasSizeVariants && source.sizeVariants?.length > 0) {
+        setSizeVariants(source.sizeVariants.map(variant => ({
           size: variant.size,
           price: variant.price?.toString() || '',
           isDefault: variant.isDefault || false
@@ -56,8 +77,7 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
       } else {
         setSizeVariants([{ size: 'Medium', price: '', isDefault: true }]);
       }
-    } else {
-      // Reset form for new dish
+    } else if (!editingDish) {
       setDishData({
         name: "",
         price: "",
@@ -68,8 +88,26 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
         isAvailable: true,
       });
       setSizeVariants([{ size: 'Medium', price: '', isDefault: true }]);
+      setStoreEnabled(true);
+      setStorePrice("");
+      setStoreSizePrices([]);
     }
-  }, [editingDish]);
+  }, [editingDish, catalogDish]);
+
+  useEffect(() => {
+    if (!editingDish || !storeSettings) return;
+    setStoreEnabled(storeSettings.isAvailable !== false);
+    setStorePrice(typeof storeSettings.price === "number" ? String(storeSettings.price) : "");
+    const overlayBySize = Object.fromEntries(
+      (storeSettings.sizeVariants || []).map((variant) => [variant.size, String(variant.price)])
+    );
+    const catalogSizes = (catalogDish?.sizeVariants || editingDish.sizeVariants || []).map(
+      (variant) => variant.size
+    );
+    setStoreSizePrices(
+      catalogSizes.map((size) => ({ size, price: overlayBySize[size] || "" }))
+    );
+  }, [editingDish, storeSettings, catalogDish]);
 
   // Define handleCloseModal first with useCallback
   const handleCloseModal = useCallback(() => {
@@ -177,12 +215,52 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
       }));
     }
     
+    const filledStoreSizes = storeSizePrices.filter(
+      (variant) => variant.price !== "" && !Number.isNaN(Number(variant.price))
+    );
+    if (editingDish && isAdmin && dishData.hasSizeVariants) {
+      const invalidStorePrices = filledStoreSizes.filter((variant) => Number(variant.price) < 0);
+      if (invalidStorePrices.length > 0) {
+        enqueueSnackbar("Store size prices must be non-negative", { variant: "error" });
+        return;
+      }
+    }
+
     try {
       if (editingDish) {
         await updateDish({
           dishId: editingDish._id,
           ...submitData,
         }).unwrap();
+
+        if (isAdmin) {
+          const hasSizeOverride = Boolean(submitData.hasSizeVariants) && filledStoreSizes.length > 0;
+          const hasBaseOverride = !submitData.hasSizeVariants && storePrice !== "";
+          const inheritAll = storeEnabled && !hasSizeOverride && !hasBaseOverride;
+
+          if (inheritAll) {
+            if (storeSettings?.exists) {
+              await deleteDishStore(editingDish._id).unwrap();
+            }
+          } else {
+            const overlayPayload = { isAvailable: storeEnabled };
+            if (submitData.hasSizeVariants) {
+              overlayPayload.price = null;
+              overlayPayload.sizeVariants = filledStoreSizes.map((variant) => ({
+                size: variant.size,
+                price: Number(variant.price),
+              }));
+            } else {
+              overlayPayload.price = storePrice === "" ? null : Number(storePrice);
+              overlayPayload.sizeVariants = [];
+            }
+            await upsertDishStore({
+              dishId: editingDish._id,
+              ...overlayPayload,
+            }).unwrap();
+          }
+        }
+
         handleCloseModal();
         enqueueSnackbar("Dish updated successfully!", { variant: "success" });
       } else {
@@ -405,9 +483,88 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
             </div>
           </div>
 
+          <div className="flex items-center space-x-3">
+            <input
+              type="checkbox"
+              name="isAvailable"
+              checked={dishData.isAvailable}
+              onChange={handleInputChange}
+              className="w-4 h-4 text-yellow-400 bg-[#1f1f1f] border-gray-600 rounded focus:ring-yellow-400"
+            />
+            <label className="text-[#ababab] text-sm font-medium">
+              Available at all stores
+            </label>
+          </div>
+
+          {editingDish && isAdmin && (
+            <div className="space-y-3 rounded-lg border border-[#343434] p-4">
+              <p className="text-sm font-medium text-[#f5f5f5]">This store</p>
+              <p className="text-xs text-[#ababab]">
+                Leave prices empty to use the default catalog price. Store price is used first.
+              </p>
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  checked={storeEnabled}
+                  onChange={(e) => setStoreEnabled(e.target.checked)}
+                  className="w-4 h-4 text-yellow-400 bg-[#1f1f1f] border-gray-600 rounded focus:ring-yellow-400"
+                />
+                <label className="text-[#ababab] text-sm font-medium">
+                  Available at this store
+                </label>
+              </div>
+              {storeLoading ? (
+                <p className="text-xs text-[#ababab]">Loading store prices...</p>
+              ) : dishData.hasSizeVariants ? (
+                <div className="space-y-2">
+                  {sizeVariants.map((variant) => {
+                    const storeRow = storeSizePrices.find((row) => row.size === variant.size);
+                    return (
+                      <div key={variant.size} className="grid grid-cols-2 gap-3">
+                        <label className="flex items-center text-xs text-[#ababab]">
+                          {variant.size} default {variant.price || "—"}
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={storeRow?.price || ""}
+                          placeholder={variant.price || "Inherit"}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setStoreSizePrices((prev) => {
+                              const next = prev.filter((row) => row.size !== variant.size);
+                              return [...next, { size: variant.size, price: value }];
+                            });
+                          }}
+                          className="w-full bg-[#262626] text-white rounded p-2 text-sm focus:outline-none"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-[#ababab] mb-1 text-xs">
+                    Store price (₫)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={storePrice}
+                    placeholder={dishData.price || "Inherit"}
+                    onChange={(e) => setStorePrice(e.target.value)}
+                    className="w-full bg-[#262626] text-white rounded p-2 text-sm focus:outline-none"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
           <button
             type="submit"
-            disabled={dishLoading || categoriesLoading}
+            disabled={dishLoading || categoriesLoading || Boolean(editingDish && catalogLoading)}
             className="w-full rounded-lg mt-6 mb-4 py-3 text-lg bg-yellow-400 text-gray-900 font-bold disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {dishLoading 

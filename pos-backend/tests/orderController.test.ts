@@ -60,9 +60,10 @@ describe('Order Controller', () => {
       description: 'Test matcha latte drink',
       category: testCategory._id,
       price: 43000,
-      variants: [
+      hasSizeVariants: true,
+      sizeVariants: [
         { size: 'Small', price: 33000, cost: 12000 },
-        { size: 'Medium', price: 38000, cost: 14000 },
+        { size: 'Medium', price: 38000, cost: 14000, isDefault: true },
         { size: 'Large', price: 43000, cost: 15500 }
       ],
       isAvailable: true

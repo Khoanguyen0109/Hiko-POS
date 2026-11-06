@@ -88,6 +88,35 @@ export const catalogApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: (_r, _e, id) => invalidatesList("Dish", id),
     }),
+    getDishStore: build.query({
+      query: (dishId) => ({
+        url: `/api/dish/${dishId}/store`,
+        method: "GET",
+      }),
+      providesTags: (_r, _e, id) => [{ type: "Dish", id: `STORE-${id}` }],
+      ...catalogQueryOptions,
+    }),
+    upsertDishStore: build.mutation({
+      query: ({ dishId, ...data }) => ({
+        url: `/api/dish/${dishId}/store`,
+        method: "PUT",
+        data,
+      }),
+      invalidatesTags: (_r, _e, { dishId }) => [
+        ...invalidatesList("Dish", dishId),
+        { type: "Dish", id: `STORE-${dishId}` },
+      ],
+    }),
+    deleteDishStore: build.mutation({
+      query: (dishId) => ({
+        url: `/api/dish/${dishId}/store`,
+        method: "DELETE",
+      }),
+      invalidatesTags: (_r, _e, dishId) => [
+        ...invalidatesList("Dish", dishId),
+        { type: "Dish", id: `STORE-${dishId}` },
+      ],
+    }),
 
     getToppings: build.query({
       query: (params = {}) => ({ url: "/api/topping", method: "GET", params }),
@@ -150,6 +179,7 @@ export const {
   useGetAvailableDishesQuery,
   useGetDishesByCategoryQuery,
   useGetDishByIdQuery,
+  useGetDishStoreQuery,
   useGetToppingsQuery,
   useGetToppingsByCategoryQuery,
   useGetToppingByIdQuery,
@@ -160,6 +190,8 @@ export const {
   useUpdateDishMutation,
   useDeleteDishMutation,
   useToggleDishAvailabilityMutation,
+  useUpsertDishStoreMutation,
+  useDeleteDishStoreMutation,
   useCreateToppingMutation,
   useUpdateToppingMutation,
   useDeleteToppingMutation,

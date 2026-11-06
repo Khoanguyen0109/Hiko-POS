@@ -12,6 +12,7 @@ import Category from "../models/categoryModel.js";
 import Dish from "../models/dishModel.js";
 import Topping from "../models/toppingModel.js";
 import Order from "../models/orderModel.js";
+import DishStore from "../models/dishStoreModel.js";
 import publicOrderRoute from "../routes/publicOrderRoute.js";
 import globalErrorHandler from "../middlewares/globalErrorHandler.js";
 
@@ -188,5 +189,47 @@ describe("public web orders", () => {
         expect(response.status).toBe(400);
         expect(otherStoreId).not.toBe(storeId);
         expect(mongoose.Types.ObjectId.isValid(otherDishId)).toBe(true);
+    });
+
+    test("uses store overlay price before catalog price", async () => {
+        await DishStore.create({
+            store: storeId,
+            dish: dishId,
+            isAvailable: true,
+            sizeVariants: [{ size: "Large", price: 65000 }],
+        });
+        const response = await request(app)
+            .post("/api/public/orders")
+            .set(KEY)
+            .send({
+                storeId,
+                customer: { name: "An", phone: "0901234567", address: "12 Nguyễn Văn Trỗi" },
+                items: [{ dishId, size: "Large", quantity: 2 }],
+            });
+        expect(response.status).toBe(201);
+        expect(response.body.data.total).toBe(130000);
+    });
+
+    test("hides a dish disabled for the store", async () => {
+        await DishStore.create({
+            store: storeId,
+            dish: dishId,
+            isAvailable: false,
+        });
+        const menu = await request(app).get(`/api/public/stores/${storeId}/menu`).set(KEY);
+        expect(menu.status).toBe(200);
+        const dishes = (menu.body.data.categories as Array<{ dishes: Array<{ id: string }> }>)
+            .flatMap((category) => category.dishes);
+        expect(dishes.map((dish) => String(dish.id))).not.toContain(dishId);
+
+        const order = await request(app)
+            .post("/api/public/orders")
+            .set(KEY)
+            .send({
+                storeId,
+                customer: { name: "An", phone: "0901234567", address: "12 Nguyễn Văn Trỗi" },
+                items: [{ dishId, size: "Medium", quantity: 1 }],
+            });
+        expect(order.status).toBe(400);
     });
 });

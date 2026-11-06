@@ -7,6 +7,7 @@ import type { OrderItemInput, ProcessedOrderItem } from "../types/order.js";
 import createHttpError from "http-errors";
 import Order from "../models/orderModel.js";
 import Dish from "../models/dishModel.js";
+import DishStore from "../models/dishStoreModel.js";
 import RewardProgram from "../models/rewardProgramModel.js";
 import PromotionService from "../services/promotionService.js";
 import Promotion from "../models/promotionModel.js";
@@ -14,6 +15,11 @@ import mongoose from "mongoose";
 import { getDateRangeVietnam, getCurrentVietnamTime } from "../utils/dateUtils.js";
 import { calculateOrderBills, formatOrderLevelPromotions, calculateRewardDiscount, applyRewardDiscountToBills, removeRewardDiscountFromBills } from "../utils/orderBillsUtils.js";
 import RewardService from "../services/rewardService.js";
+import {
+  isDishVisibleAtStore,
+  overlayByDishId,
+  resolveDishUnitPrice,
+} from "../utils/resolveDishForStore.js";
 
 function toRewardItems(orderItems = []) {
   return orderItems.map((item) => ({
@@ -83,43 +89,26 @@ const buildOrderHistoryEntry = (
  * @returns {Promise<Array>} Processed items ready for order
  */
 const processOrderItems = async (
-  items: OrderItemInput[]
+  items: OrderItemInput[],
+  storeId: string
 ): Promise<ProcessedOrderItem[]> => {
-  const dishIdsNeedingCategory = [
+  const dishIds = [
     ...new Set(
       items
-        .filter((item) => {
-          if (!item.dishId || !mongoose.Types.ObjectId.isValid(item.dishId)) return false;
-          const cat = item.category;
-          if (!cat || typeof cat !== "string") return true;
-          const trimmed = cat.trim();
-          return trimmed === "" || trimmed === "Unknown";
-        })
+        .filter((item) => item.dishId && mongoose.Types.ObjectId.isValid(item.dishId))
         .map((item) => item.dishId.toString())
     ),
   ];
 
-  let dishCategoryMap = new Map<string, string>();
-  if (dishIdsNeedingCategory.length > 0) {
-    try {
-      const dishes = await Dish.find({ _id: { $in: dishIdsNeedingCategory } })
-        .populate("category", "name")
-        .lean();
-      dishCategoryMap = new Map(
-        dishes
-          .filter(
-            (d: { category?: { name?: string } }) => d.category && d.category.name
-          )
-          .map((d: { _id: { toString: () => string }; category: { name: string } }) => [
-            d._id.toString(),
-            d.category.name,
-          ])
-      );
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : String(error);
-      console.warn("Failed to batch fetch dish categories:", msg);
-    }
-  }
+  const dishes = await Dish.find({ _id: { $in: dishIds } })
+    .populate("category", "name")
+    .lean();
+  const dishById = new Map(dishes.map((dish) => [dish._id.toString(), dish]));
+  const overlays = await DishStore.find({
+    store: storeId,
+    dish: { $in: dishes.map((dish) => dish._id) },
+  }).lean();
+  const overlayMap = overlayByDishId(overlays);
 
   return items.map((item, index) => {
     if (!item.dishId || !mongoose.Types.ObjectId.isValid(item.dishId)) {
@@ -128,40 +117,25 @@ const processOrderItems = async (
     if (!item.name || typeof item.name !== "string") {
       throw createHttpError(400, `Item name is required for item at index ${index}`);
     }
-    if (typeof item.pricePerQuantity !== "number" || item.pricePerQuantity < 0) {
-      throw createHttpError(400, `Valid price per quantity is required for item at index ${index}`);
-    }
     if (typeof item.quantity !== "number" || item.quantity < 1) {
       throw createHttpError(400, `Valid quantity (minimum 1) is required for item at index ${index}`);
     }
-    if (typeof item.price !== "number" || item.price < 0) {
-      throw createHttpError(400, `Valid total price is required for item at index ${index}`);
+
+    const dish = dishById.get(item.dishId.toString());
+    const overlay = overlayMap.get(item.dishId.toString());
+    if (!dish || !isDishVisibleAtStore(dish, overlay, storeId)) {
+      throw createHttpError(400, `Dish is not available at this store for item at index ${index}`);
     }
 
     let categoryName = item.category ? item.category.trim() : undefined;
     if (!categoryName || categoryName === "Unknown") {
-      categoryName = dishCategoryMap.get(item.dishId.toString());
+      const populatedCategory = dish.category as { name?: string } | undefined;
+      categoryName = populatedCategory?.name;
     }
 
-    const processedItem: ProcessedOrderItem = {
-      dishId: item.dishId,
-      name: item.name.trim(),
-      originalPricePerQuantity: item.originalPricePerQuantity || item.pricePerQuantity,
-      pricePerQuantity: item.pricePerQuantity,
-      quantity: item.quantity,
-      originalPrice: item.originalPrice || (item.originalPricePerQuantity || item.pricePerQuantity) * item.quantity,
-      price: item.price,
-      promotionsApplied: item.promotionsApplied || [],
-      isHappyHourItem: item.isHappyHourItem || false,
-      happyHourDiscount: item.happyHourDiscount || 0,
-      category: categoryName,
-      image: item.image ? item.image.trim() : undefined,
-      note: item.note ? item.note.trim() : undefined,
-      toppings: []
-    };
-
+    const toppings = [];
     if (item.toppings && Array.isArray(item.toppings)) {
-      processedItem.toppings = item.toppings.map((topping, toppingIndex) => {
+      for (const [toppingIndex, topping] of item.toppings.entries()) {
         if (!topping.toppingId || !mongoose.Types.ObjectId.isValid(topping.toppingId)) {
           throw createHttpError(400, `Invalid topping ID for item ${index}, topping ${toppingIndex}`);
         }
@@ -174,20 +148,56 @@ const processOrderItems = async (
         if (typeof topping.quantity !== 'number' || topping.quantity < 1) {
           throw createHttpError(400, `Valid topping quantity is required for item ${index}, topping ${toppingIndex}`);
         }
-        return {
+        toppings.push({
           toppingId: topping.toppingId,
           name: topping.name.trim(),
           price: topping.price,
           quantity: topping.quantity
-        };
-      });
+        });
+      }
     }
 
-    if (item.variant) {
+    const requestedSize = item.variant?.size ? item.variant.size.trim() : undefined;
+    const priced = resolveDishUnitPrice(dish, overlay, requestedSize);
+    const toppingTotal = toppings.reduce((sum, topping) => sum + topping.price * topping.quantity, 0);
+    const catalogPerQuantity = priced.price + toppingTotal;
+    const catalogLineTotal = catalogPerQuantity * item.quantity;
+
+    const hasItemDiscount =
+      Boolean(item.isHappyHourItem) ||
+      (Array.isArray(item.promotionsApplied) && item.promotionsApplied.length > 0);
+
+    const pricePerQuantity = hasItemDiscount && typeof item.pricePerQuantity === "number"
+      ? item.pricePerQuantity
+      : catalogPerQuantity;
+    const price = hasItemDiscount && typeof item.price === "number"
+      ? item.price
+      : catalogLineTotal;
+
+    const processedItem: ProcessedOrderItem = {
+      dishId: item.dishId,
+      name: item.name.trim(),
+      originalPricePerQuantity: catalogPerQuantity,
+      pricePerQuantity,
+      quantity: item.quantity,
+      originalPrice: catalogLineTotal,
+      price,
+      promotionsApplied: item.promotionsApplied || [],
+      isHappyHourItem: item.isHappyHourItem || false,
+      happyHourDiscount: item.happyHourDiscount || 0,
+      category: categoryName,
+      image: item.image ? item.image.trim() : undefined,
+      note: item.note ? item.note.trim() : undefined,
+      toppings
+    };
+
+    if (priced.variant) {
+      processedItem.variant = priced.variant;
+    } else if (item.variant) {
       processedItem.variant = {
         size: item.variant.size ? item.variant.size.trim() : undefined,
-        price: typeof item.variant.price === 'number' ? item.variant.price : undefined,
-        cost: typeof item.variant.cost === 'number' ? item.variant.cost : 0
+        price: priced.price,
+        cost: priced.cost
       };
     }
 
@@ -224,7 +234,7 @@ const addOrder = async (req, res, next) => {
     }
 
     // Validate and process items
-    const processedItems = await processOrderItems(items as OrderItemInput[]);
+    const processedItems = await processOrderItems(items as OrderItemInput[], String(req.store._id));
 
     // No automatic promotion application - frontend handles all promotion logic
     let finalProcessedItems = processedItems;
@@ -981,7 +991,7 @@ const updateOrderItems = async (req, res, next) => {
       return next(error);
     }
 
-    const processedItems = await processOrderItems(items as OrderItemInput[]);
+    const processedItems = await processOrderItems(items as OrderItemInput[], String(req.store._id));
 
     const hasHappyHourItems = processedItems.some(
       (i) =>
