@@ -9,6 +9,8 @@ import {
     getAvailableDishes,
     toggleDishAvailability,
     getDishStore,
+    getDishStores,
+    saveDishStores,
     upsertDishStore,
     deleteDishStore,
 } from "../controllers/dishController.js";
@@ -20,6 +22,8 @@ router.route("/").post(isVerifiedUser, addDish);
 router.route("/").get(isVerifiedUser, optionalStoreContext, getDishes);
 router.route("/available").get(isVerifiedUser, optionalStoreContext, getAvailableDishes);
 router.route("/category/:categoryId").get(isVerifiedUser, optionalStoreContext, getDishesByCategory);
+router.route("/:id/stores").get(isVerifiedUser, isAdmin, getDishStores);
+router.route("/:id/stores").put(isVerifiedUser, isAdmin, saveDishStores);
 router.route("/:id/store").get(isVerifiedUser, storeContext, getDishStore);
 router.route("/:id/store").put(isVerifiedUser, storeContext, isAdmin, upsertDishStore);
 router.route("/:id/store").delete(isVerifiedUser, storeContext, isAdmin, deleteDishStore);

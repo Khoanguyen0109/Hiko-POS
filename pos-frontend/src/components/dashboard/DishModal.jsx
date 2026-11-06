@@ -4,18 +4,37 @@ import { IoMdAdd, IoMdRemove } from "react-icons/io";
 import {
   useGetCategoriesQuery,
   useGetDishByIdQuery,
-  useGetDishStoreQuery,
+  useGetDishStoresQuery,
   useCreateDishMutation,
   useUpdateDishMutation,
-  useUpsertDishStoreMutation,
-  useDeleteDishStoreMutation,
+  useSaveDishStoresMutation,
 } from "../../redux/api/endpoints/catalogEndpoints";
+import { useGetAllStoresQuery } from "../../redux/api/endpoints/peopleEndpoints";
 import { unwrapList } from "../../redux/api/queryResult";
 import { enqueueSnackbar } from "notistack"
 import PropTypes from "prop-types";
 import BottomSheet from "../shared/BottomSheet";
 
 const SIZE_OPTIONS = ['Small', 'Medium', 'Large', 'Extra Large', 'Regular'];
+
+const storeIdOf = (store) => store?._id || store?.id;
+
+const buildStoreRows = (stores, overlays) =>
+  stores.map((store) => {
+    const storeId = String(storeIdOf(store));
+    const overlay = (overlays || []).find((row) => String(row.storeId) === storeId);
+    return {
+      storeId,
+      name: store.name,
+      code: store.code || "",
+      exists: Boolean(overlay?.exists),
+      enabled: overlay ? overlay.isAvailable !== false : true,
+      price: typeof overlay?.price === "number" ? String(overlay.price) : "",
+      sizePrices: Object.fromEntries(
+        (overlay?.sizeVariants || []).map((variant) => [variant.size, String(variant.price)])
+      ),
+    };
+  });
 
 const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) => {
   const isAdmin = useSelector((state) => state.user.role) === "Admin";
@@ -27,15 +46,16 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
     dishId,
     { skip: !dishId }
   );
-  const { data: storeSettings, isLoading: storeLoading } = useGetDishStoreQuery(
-    dishId,
-    { skip: !dishId || !isAdmin }
-  );
+  const { data: storesResult, isLoading: storesLoading } = useGetAllStoresQuery(undefined, {
+    skip: !isAdmin,
+  });
+  const { data: dishStores, isLoading: storeLoading } = useGetDishStoresQuery(dishId, {
+    skip: !dishId || !isAdmin,
+  });
   const [createDish, { isLoading: isCreating }] = useCreateDishMutation();
   const [updateDish, { isLoading: isUpdating }] = useUpdateDishMutation();
-  const [upsertDishStore, { isLoading: isSavingStore }] = useUpsertDishStoreMutation();
-  const [deleteDishStore, { isLoading: isClearingStore }] = useDeleteDishStoreMutation();
-  const dishLoading = isCreating || isUpdating || isSavingStore || isClearingStore;
+  const [saveDishStores, { isLoading: isSavingStores }] = useSaveDishStoresMutation();
+  const dishLoading = isCreating || isUpdating || isSavingStores;
   
   const [dishData, setDishData] = useState({
     name: "",
@@ -50,9 +70,7 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
   const [sizeVariants, setSizeVariants] = useState([
     { size: 'Medium', price: '', isDefault: true }
   ]);
-  const [storeEnabled, setStoreEnabled] = useState(true);
-  const [storePrice, setStorePrice] = useState("");
-  const [storeSizePrices, setStoreSizePrices] = useState([]);
+  const [storeRows, setStoreRows] = useState([]);
 
   // Initialize catalog fields from GET /dish/:id so store prices are never saved as defaults
   useEffect(() => {
@@ -88,26 +106,16 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
         isAvailable: true,
       });
       setSizeVariants([{ size: 'Medium', price: '', isDefault: true }]);
-      setStoreEnabled(true);
-      setStorePrice("");
-      setStoreSizePrices([]);
+      setStoreRows([]);
     }
   }, [editingDish, catalogDish]);
 
   useEffect(() => {
-    if (!editingDish || !storeSettings) return;
-    setStoreEnabled(storeSettings.isAvailable !== false);
-    setStorePrice(typeof storeSettings.price === "number" ? String(storeSettings.price) : "");
-    const overlayBySize = Object.fromEntries(
-      (storeSettings.sizeVariants || []).map((variant) => [variant.size, String(variant.price)])
-    );
-    const catalogSizes = (catalogDish?.sizeVariants || editingDish.sizeVariants || []).map(
-      (variant) => variant.size
-    );
-    setStoreSizePrices(
-      catalogSizes.map((size) => ({ size, price: overlayBySize[size] || "" }))
-    );
-  }, [editingDish, storeSettings, catalogDish]);
+    if (!isAdmin) return;
+    const list = unwrapList(storesResult).filter((store) => store.isActive !== false);
+    if (list.length === 0) return;
+    setStoreRows(buildStoreRows(list, Array.isArray(dishStores) ? dishStores : []));
+  }, [isAdmin, storesResult, dishStores]);
 
   // Define handleCloseModal first with useCallback
   const handleCloseModal = useCallback(() => {
@@ -215,16 +223,43 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
       }));
     }
     
-    const filledStoreSizes = storeSizePrices.filter(
-      (variant) => variant.price !== "" && !Number.isNaN(Number(variant.price))
-    );
-    if (editingDish && isAdmin && dishData.hasSizeVariants) {
-      const invalidStorePrices = filledStoreSizes.filter((variant) => Number(variant.price) < 0);
-      if (invalidStorePrices.length > 0) {
-        enqueueSnackbar("Store size prices must be non-negative", { variant: "error" });
+    if (isAdmin) {
+      const invalidStorePrice = storeRows.some((row) => {
+        if (submitData.hasSizeVariants) {
+          return sizeVariants.some((variant) => {
+            const value = row.sizePrices[variant.size];
+            return value !== "" && value != null && Number(value) < 0;
+          });
+        }
+        return row.price !== "" && Number(row.price) < 0;
+      });
+      if (invalidStorePrice) {
+        enqueueSnackbar("Store prices must be non-negative", { variant: "error" });
         return;
       }
     }
+
+    const overlays = storeRows.map((row) => {
+      const filledSizes = submitData.hasSizeVariants
+        ? sizeVariants
+            .map((variant) => ({ size: variant.size, price: row.sizePrices[variant.size] }))
+            .filter((variant) => variant.price !== "" && variant.price != null && !Number.isNaN(Number(variant.price)))
+            .map((variant) => ({ size: variant.size, price: Number(variant.price) }))
+        : [];
+      const hasSizeOverride = Boolean(submitData.hasSizeVariants) && filledSizes.length > 0;
+      const hasBaseOverride = !submitData.hasSizeVariants && row.price !== "";
+      const inherit = row.enabled && !hasSizeOverride && !hasBaseOverride;
+      if (inherit) {
+        return { storeId: row.storeId, inherit: true };
+      }
+      return {
+        storeId: row.storeId,
+        inherit: false,
+        isAvailable: row.enabled,
+        price: submitData.hasSizeVariants ? null : row.price === "" ? null : Number(row.price),
+        sizeVariants: submitData.hasSizeVariants ? filledSizes : [],
+      };
+    });
 
     try {
       if (editingDish) {
@@ -233,38 +268,18 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
           ...submitData,
         }).unwrap();
 
-        if (isAdmin) {
-          const hasSizeOverride = Boolean(submitData.hasSizeVariants) && filledStoreSizes.length > 0;
-          const hasBaseOverride = !submitData.hasSizeVariants && storePrice !== "";
-          const inheritAll = storeEnabled && !hasSizeOverride && !hasBaseOverride;
-
-          if (inheritAll) {
-            if (storeSettings?.exists) {
-              await deleteDishStore(editingDish._id).unwrap();
-            }
-          } else {
-            const overlayPayload = { isAvailable: storeEnabled };
-            if (submitData.hasSizeVariants) {
-              overlayPayload.price = null;
-              overlayPayload.sizeVariants = filledStoreSizes.map((variant) => ({
-                size: variant.size,
-                price: Number(variant.price),
-              }));
-            } else {
-              overlayPayload.price = storePrice === "" ? null : Number(storePrice);
-              overlayPayload.sizeVariants = [];
-            }
-            await upsertDishStore({
-              dishId: editingDish._id,
-              ...overlayPayload,
-            }).unwrap();
-          }
+        if (isAdmin && overlays.length > 0) {
+          await saveDishStores({ dishId: editingDish._id, overlays }).unwrap();
         }
 
         handleCloseModal();
         enqueueSnackbar("Dish updated successfully!", { variant: "success" });
       } else {
-        await createDish(submitData).unwrap();
+        const created = await createDish(submitData).unwrap();
+        const createdId = created?._id || created?.id;
+        if (isAdmin && createdId && overlays.length > 0) {
+          await saveDishStores({ dishId: createdId, overlays }).unwrap();
+        }
         handleCloseModal();
         enqueueSnackbar("Dish created successfully!", { variant: "success" });
         setDishData({ 
@@ -272,6 +287,7 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
           image: "", hasSizeVariants: false, isAvailable: true 
         });
         setSizeVariants([{ size: 'Medium', price: '', isDefault: true }]);
+        setStoreRows([]);
       }
     } catch (error) {
       enqueueSnackbar(
@@ -287,7 +303,7 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
       isOpen
       onClose={handleCloseModal}
       title={editingDish ? "Edit Dish" : "Add Dish"}
-      size="md"
+      size="xl"
       bodyClassName="p-4 sm:p-6"
     >
       <form onSubmit={handleSubmit} className="mt-2 space-y-4">
@@ -496,67 +512,98 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
             </label>
           </div>
 
-          {editingDish && isAdmin && (
+          {isAdmin && (
             <div className="space-y-3 rounded-lg border border-[#343434] p-4">
-              <p className="text-sm font-medium text-[#f5f5f5]">This store</p>
+              <p className="text-sm font-medium text-[#f5f5f5]">Prices by store</p>
               <p className="text-xs text-[#ababab]">
-                Leave prices empty to use the default catalog price. Store price is used first.
+                Empty price uses the default catalog price. Store price is used first if set.
               </p>
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  checked={storeEnabled}
-                  onChange={(e) => setStoreEnabled(e.target.checked)}
-                  className="w-4 h-4 text-yellow-400 bg-[#1f1f1f] border-gray-600 rounded focus:ring-yellow-400"
-                />
-                <label className="text-[#ababab] text-sm font-medium">
-                  Available at this store
-                </label>
-              </div>
-              {storeLoading ? (
-                <p className="text-xs text-[#ababab]">Loading store prices...</p>
-              ) : dishData.hasSizeVariants ? (
-                <div className="space-y-2">
-                  {sizeVariants.map((variant) => {
-                    const storeRow = storeSizePrices.find((row) => row.size === variant.size);
-                    return (
-                      <div key={variant.size} className="grid grid-cols-2 gap-3">
-                        <label className="flex items-center text-xs text-[#ababab]">
-                          {variant.size} default {variant.price || "—"}
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={storeRow?.price || ""}
-                          placeholder={variant.price || "Inherit"}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setStoreSizePrices((prev) => {
-                              const next = prev.filter((row) => row.size !== variant.size);
-                              return [...next, { size: variant.size, price: value }];
-                            });
-                          }}
-                          className="w-full bg-[#262626] text-white rounded p-2 text-sm focus:outline-none"
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
+              {storesLoading || (Boolean(dishId) && storeLoading) ? (
+                <p className="text-xs text-[#ababab]">Loading stores...</p>
+              ) : storeRows.length === 0 ? (
+                <p className="text-xs text-[#ababab]">No active stores.</p>
               ) : (
-                <div>
-                  <label className="block text-[#ababab] mb-1 text-xs">
-                    Store price (₫)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={storePrice}
-                    placeholder={dishData.price || "Inherit"}
-                    onChange={(e) => setStorePrice(e.target.value)}
-                    className="w-full bg-[#262626] text-white rounded p-2 text-sm focus:outline-none"
-                  />
+                <div className="space-y-3">
+                  {storeRows.map((row) => (
+                    <div key={row.storeId} className="rounded-lg bg-[#1f1f1f] p-3 space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-[#f5f5f5]">{row.name}</p>
+                          {row.code ? (
+                            <p className="text-xs text-[#ababab]">{row.code}</p>
+                          ) : null}
+                        </div>
+                        <label className="flex shrink-0 items-center gap-2 text-xs text-[#ababab]">
+                          <input
+                            type="checkbox"
+                            checked={row.enabled}
+                            onChange={(e) => {
+                              const enabled = e.target.checked;
+                              setStoreRows((prev) =>
+                                prev.map((item) =>
+                                  item.storeId === row.storeId ? { ...item, enabled } : item
+                                )
+                              );
+                            }}
+                            className="w-4 h-4 text-yellow-400 bg-[#262626] border-gray-600 rounded focus:ring-yellow-400"
+                          />
+                          Sell here
+                        </label>
+                      </div>
+                      {dishData.hasSizeVariants ? (
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          {sizeVariants.map((variant) => (
+                            <label key={`${row.storeId}-${variant.size}`} className="block">
+                              <span className="mb-1 block text-xs text-[#ababab]">
+                                {variant.size} default {variant.price || "—"}
+                              </span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={row.sizePrices[variant.size] || ""}
+                                placeholder={variant.price || "Inherit"}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  setStoreRows((prev) =>
+                                    prev.map((item) =>
+                                      item.storeId === row.storeId
+                                        ? {
+                                            ...item,
+                                            sizePrices: { ...item.sizePrices, [variant.size]: value },
+                                          }
+                                        : item
+                                    )
+                                  );
+                                }}
+                                className="w-full bg-[#262626] text-white rounded p-2 text-sm focus:outline-none"
+                              />
+                            </label>
+                          ))}
+                        </div>
+                      ) : (
+                        <label className="block">
+                          <span className="mb-1 block text-xs text-[#ababab]">Store price (₫)</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={row.price}
+                            placeholder={dishData.price || "Inherit"}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setStoreRows((prev) =>
+                                prev.map((item) =>
+                                  item.storeId === row.storeId ? { ...item, price: value } : item
+                                )
+                              );
+                            }}
+                            className="w-full bg-[#262626] text-white rounded p-2 text-sm focus:outline-none"
+                          />
+                        </label>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>

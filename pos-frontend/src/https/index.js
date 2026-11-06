@@ -91,6 +91,9 @@ export const updateDish = ({ dishId, ...dishData }) =>
 export const deleteDish = (dishId) => axiosWrapper.delete(`/api/dish/${dishId}`);
 export const toggleDishAvailability = (dishId) => axiosWrapper.patch(`/api/dish/${dishId}/toggle-availability`);
 export const getDishStore = (dishId) => axiosWrapper.get(`/api/dish/${dishId}/store`);
+export const getDishStores = (dishId) => axiosWrapper.get(`/api/dish/${dishId}/stores`);
+export const saveDishStores = ({ dishId, overlays }) =>
+  axiosWrapper.put(`/api/dish/${dishId}/stores`, { overlays });
 export const upsertDishStore = ({ dishId, ...data }) =>
   axiosWrapper.put(`/api/dish/${dishId}/store`, data);
 export const deleteDishStore = (dishId) => axiosWrapper.delete(`/api/dish/${dishId}/store`);

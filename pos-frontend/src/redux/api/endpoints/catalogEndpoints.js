@@ -96,6 +96,26 @@ export const catalogApi = baseApi.injectEndpoints({
       providesTags: (_r, _e, id) => [{ type: "Dish", id: `STORE-${id}` }],
       ...catalogQueryOptions,
     }),
+    getDishStores: build.query({
+      query: (dishId) => ({
+        url: `/api/dish/${dishId}/stores`,
+        method: "GET",
+      }),
+      providesTags: (_r, _e, id) => [{ type: "Dish", id: `STORES-${id}` }],
+      ...catalogQueryOptions,
+    }),
+    saveDishStores: build.mutation({
+      query: ({ dishId, overlays }) => ({
+        url: `/api/dish/${dishId}/stores`,
+        method: "PUT",
+        data: { overlays },
+      }),
+      invalidatesTags: (_r, _e, { dishId }) => [
+        ...invalidatesList("Dish", dishId),
+        { type: "Dish", id: `STORE-${dishId}` },
+        { type: "Dish", id: `STORES-${dishId}` },
+      ],
+    }),
     upsertDishStore: build.mutation({
       query: ({ dishId, ...data }) => ({
         url: `/api/dish/${dishId}/store`,
@@ -105,6 +125,7 @@ export const catalogApi = baseApi.injectEndpoints({
       invalidatesTags: (_r, _e, { dishId }) => [
         ...invalidatesList("Dish", dishId),
         { type: "Dish", id: `STORE-${dishId}` },
+        { type: "Dish", id: `STORES-${dishId}` },
       ],
     }),
     deleteDishStore: build.mutation({
@@ -115,6 +136,7 @@ export const catalogApi = baseApi.injectEndpoints({
       invalidatesTags: (_r, _e, dishId) => [
         ...invalidatesList("Dish", dishId),
         { type: "Dish", id: `STORE-${dishId}` },
+        { type: "Dish", id: `STORES-${dishId}` },
       ],
     }),
 
@@ -180,6 +202,7 @@ export const {
   useGetDishesByCategoryQuery,
   useGetDishByIdQuery,
   useGetDishStoreQuery,
+  useGetDishStoresQuery,
   useGetToppingsQuery,
   useGetToppingsByCategoryQuery,
   useGetToppingByIdQuery,
@@ -190,6 +213,7 @@ export const {
   useUpdateDishMutation,
   useDeleteDishMutation,
   useToggleDishAvailabilityMutation,
+  useSaveDishStoresMutation,
   useUpsertDishStoreMutation,
   useDeleteDishStoreMutation,
   useCreateToppingMutation,

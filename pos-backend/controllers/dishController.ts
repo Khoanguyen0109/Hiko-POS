@@ -5,6 +5,7 @@ import createHttpError from "http-errors";
 import mongoose from "mongoose";
 import Dish from "../models/dishModel.js";
 import DishStore, { SIZE_OPTIONS } from "../models/dishStoreModel.js";
+import Store from "../models/storeModel.js";
 import Category from "../models/categoryModel.js";
 import * as cache from "../services/cacheService.js";
 import {
@@ -427,6 +428,8 @@ interface DishStoreBody {
     price?: number | null;
     cost?: number | null;
     sizeVariants?: DishStoreSizeVariantLike[];
+    inherit?: boolean;
+    storeId?: string;
 }
 
 const validateOverlaySizeVariants = (
@@ -463,6 +466,62 @@ const emptyDishStore = {
     sizeVariants: [],
 };
 
+const overlayUpdatesFromBody = (
+    dish: { hasSizeVariants?: boolean; sizeVariants?: Array<{ size: string }> },
+    body: DishStoreBody
+): MongoFilter => {
+    const updates: MongoFilter = {};
+    if (body.isAvailable !== undefined) {
+        updates.isAvailable = Boolean(body.isAvailable);
+    }
+    if (Object.prototype.hasOwnProperty.call(body, "price")) {
+        if (body.price !== null && (typeof body.price !== "number" || body.price < 0)) {
+            throw createHttpError(400, "Price must be a non-negative number!");
+        }
+        updates.price = body.price;
+    }
+    if (Object.prototype.hasOwnProperty.call(body, "cost")) {
+        if (body.cost !== null && (typeof body.cost !== "number" || body.cost < 0)) {
+            throw createHttpError(400, "Cost must be a non-negative number!");
+        }
+        updates.cost = body.cost;
+    }
+    if (Object.prototype.hasOwnProperty.call(body, "sizeVariants")) {
+        if (body.sizeVariants !== undefined && !Array.isArray(body.sizeVariants)) {
+            throw createHttpError(400, "sizeVariants must be an array!");
+        }
+        const sizeVariants = body.sizeVariants || [];
+        validateOverlaySizeVariants(dish, sizeVariants);
+        updates.sizeVariants = sizeVariants.map((variant) => ({
+            size: variant.size,
+            price: variant.price,
+            cost: typeof variant.cost === "number" ? variant.cost : 0,
+        }));
+    }
+    return updates;
+};
+
+const writeDishStoreOverlay = async (
+    dish: { _id: { toString(): string }; hasSizeVariants?: boolean; sizeVariants?: Array<{ size: string }> },
+    storeId: string,
+    body: DishStoreBody
+) => {
+    if (body.inherit) {
+        await DishStore.deleteOne({ store: storeId, dish: dish._id });
+        return;
+    }
+    const updates = overlayUpdatesFromBody(dish, body);
+    const update: MongoFilter = { $setOnInsert: { store: storeId, dish: dish._id } };
+    if (Object.keys(updates).length > 0) {
+        update.$set = updates;
+    }
+    await DishStore.findOneAndUpdate(
+        { store: storeId, dish: dish._id },
+        update,
+        { new: true, upsert: true, runValidators: true }
+    );
+};
+
 const getDishStore = async (req, res, next) => {
     try {
         const { id } = req.params;
@@ -489,6 +548,82 @@ const getDishStore = async (req, res, next) => {
     }
 };
 
+const getDishStores = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return next(createHttpError(404, "Invalid id!"));
+        }
+
+        const dish = await Dish.findById(id).lean();
+        if (!dish) {
+            return next(createHttpError(404, "Dish not found!"));
+        }
+
+        const stores = await Store.find({ isActive: true }).select("name code").sort({ name: 1 }).lean();
+        const overlays = await DishStore.find({ dish: id }).lean();
+        const overlayMap = new Map(
+            overlays.map((overlay) => [overlay.store.toString(), overlay])
+        );
+
+        res.status(200).json({
+            success: true,
+            data: stores.map((store) => {
+                const overlay = overlayMap.get(store._id.toString());
+                return {
+                    storeId: store._id.toString(),
+                    store: { _id: store._id, name: store.name, code: store.code },
+                    exists: Boolean(overlay),
+                    isAvailable: overlay ? overlay.isAvailable !== false : true,
+                    price: overlay?.price ?? null,
+                    cost: overlay?.cost ?? null,
+                    sizeVariants: overlay?.sizeVariants ?? [],
+                };
+            }),
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const saveDishStores = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return next(createHttpError(404, "Invalid id!"));
+        }
+
+        const overlays = req.body?.overlays;
+        if (!Array.isArray(overlays)) {
+            return next(createHttpError(400, "overlays must be an array!"));
+        }
+
+        const dish = await Dish.findById(id);
+        if (!dish) {
+            return next(createHttpError(404, "Dish not found!"));
+        }
+
+        const stores = await Store.find({ isActive: true }).select("_id").lean();
+        const allowedStores = new Set(stores.map((store) => store._id.toString()));
+
+        for (const [index, item] of overlays.entries()) {
+            const storeId = typeof item?.storeId === "string" ? item.storeId : "";
+            if (!mongoose.Types.ObjectId.isValid(storeId) || !allowedStores.has(storeId)) {
+                return next(createHttpError(400, `Invalid store at overlays[${index}]`));
+            }
+            await writeDishStoreOverlay(dish, storeId, item as DishStoreBody);
+        }
+
+        await invalidateDishCache();
+        res.status(200).json({
+            success: true,
+            message: "Store dish settings saved!",
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 const upsertDishStore = async (req, res, next) => {
     try {
         const { id } = req.params;
@@ -506,46 +641,8 @@ const upsertDishStore = async (req, res, next) => {
         }
 
         const body = req.body as DishStoreBody;
-        const updates: MongoFilter = {};
-
-        if (body.isAvailable !== undefined) {
-            updates.isAvailable = Boolean(body.isAvailable);
-        }
-        if (Object.prototype.hasOwnProperty.call(body, "price")) {
-            if (body.price !== null && (typeof body.price !== "number" || body.price < 0)) {
-                return next(createHttpError(400, "Price must be a non-negative number!"));
-            }
-            updates.price = body.price;
-        }
-        if (Object.prototype.hasOwnProperty.call(body, "cost")) {
-            if (body.cost !== null && (typeof body.cost !== "number" || body.cost < 0)) {
-                return next(createHttpError(400, "Cost must be a non-negative number!"));
-            }
-            updates.cost = body.cost;
-        }
-        if (Object.prototype.hasOwnProperty.call(body, "sizeVariants")) {
-            if (body.sizeVariants !== undefined && !Array.isArray(body.sizeVariants)) {
-                return next(createHttpError(400, "sizeVariants must be an array!"));
-            }
-            const sizeVariants = body.sizeVariants || [];
-            validateOverlaySizeVariants(dish, sizeVariants);
-            updates.sizeVariants = sizeVariants.map((variant) => ({
-                size: variant.size,
-                price: variant.price,
-                cost: typeof variant.cost === "number" ? variant.cost : 0,
-            }));
-        }
-
-        const update: MongoFilter = { $setOnInsert: { store: storeId, dish: id } };
-        if (Object.keys(updates).length > 0) {
-            update.$set = updates;
-        }
-
-        const overlay = await DishStore.findOneAndUpdate(
-            { store: storeId, dish: id },
-            update,
-            { new: true, upsert: true, runValidators: true }
-        );
+        await writeDishStoreOverlay(dish, storeId, body);
+        const overlay = await DishStore.findOne({ store: storeId, dish: id });
 
         await invalidateDishCache();
         const populated = await Dish.findById(id).populate({ path: "category", select: "name" }).lean();
@@ -599,6 +696,8 @@ export {
     getAvailableDishes,
     toggleDishAvailability,
     getDishStore,
+    getDishStores,
+    saveDishStores,
     upsertDishStore,
     deleteDishStore
 };
