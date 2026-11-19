@@ -91,6 +91,7 @@ class PromotionService {
         if (promotion.applicableItems === 'all_order') {
             return true;
         } else if (promotion.applicableItems === 'specific_dishes') {
+            if (!item.dishId) return false;
             return promotion.specificDishes?.some(dishId => 
                 dishId.toString() === item.dishId.toString()
             );
@@ -366,7 +367,9 @@ class PromotionService {
         
         for (const item of orderItems) {
             if (item.isHappyHourItem) {
-                const itemId = item._id ? item._id.toString() : (item.dishId && item.dishId.toString());
+                const itemId = item._id
+                    ? item._id.toString()
+                    : (item.dishId && item.dishId.toString()) || (item.toppingId && item.toppingId.toString());
                 const happyHourPromo = appliedPromotions.find(p => 
                     p.type === 'happy_hour' && 
                     (p.appliedToItems || []).some(id => id && id.toString() === itemId)

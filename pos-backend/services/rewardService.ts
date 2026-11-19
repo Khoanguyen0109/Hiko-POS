@@ -494,11 +494,12 @@ class RewardService {
             const orders = await Order.find({
                 customer: cust._id,
                 orderStatus: { $ne: "cancelled" }
-            }).select("items.dishId items.quantity").lean();
+            }).select("items.dishId items.quantity items.itemType").lean();
 
             const allItems: OrderItem[] = [];
             for (const order of orders) {
                 for (const item of order.items) {
+                    if (!item.dishId || item.itemType === "topping") continue;
                     allItems.push({ dishId: item.dishId, quantity: item.quantity });
                 }
             }

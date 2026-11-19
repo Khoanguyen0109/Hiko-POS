@@ -7,6 +7,7 @@ import Order from "../models/orderModel.js";
 import Dish from "../models/dishModel.js";
 import Category from "../models/categoryModel.js";
 import Store from "../models/storeModel.js";
+import Topping from "../models/toppingModel.js";
 import * as orderController from "../controllers/orderController.js";
 import globalErrorHandler from "../middlewares/globalErrorHandler.js";
 
@@ -124,6 +125,86 @@ describe('Order Controller', () => {
         expect(response.body.data.appliedPromotions).toHaveLength(0);
         expect(response.body.data.items).toHaveLength(1);
         expect(response.body.data.items[0].name).toBe('Test Matcha Latte (Large)');
+      });
+
+      test('should sell a topping as its own line and price it from the catalog', async () => {
+        const topping = await Topping.create({
+          store: testStore._id,
+          name: 'Pearl',
+          price: 10000,
+          category: 'Kem',
+          isAvailable: true,
+        });
+
+        const response = await request(app)
+          .post('/api/order')
+          .send({
+            customerDetails: { name: 'Topping Guest', phone: '0111111111', guests: 1 },
+            orderStatus: 'pending',
+            bills: {
+              subtotal: 10000,
+              promotionDiscount: 0,
+              total: 10000,
+              tax: 0,
+              totalWithTax: 10000,
+            },
+            appliedPromotions: [],
+            items: [{
+              itemType: 'topping',
+              toppingId: topping._id,
+              name: 'Hacked name',
+              pricePerQuantity: 1,
+              quantity: 1,
+              price: 1,
+              category: 'Ignored',
+            }],
+            thirdPartyVendor: 'None',
+          })
+          .expect(201);
+
+        const line = response.body.data.items[0];
+        expect(line.itemType).toBe('topping');
+        expect(line.name).toBe('Pearl');
+        expect(line.price).toBe(10000);
+        expect(line.category).toBe('Topping');
+        expect(line.dishId).toBeUndefined();
+        expect(String(line.toppingId)).toBe(String(topping._id));
+      });
+
+      test('should reject a standalone topping that is not on this store menu', async () => {
+        const otherStore = await Store.create({
+          name: 'Other Store',
+          code: 'OS' + Date.now(),
+          isActive: true,
+        });
+        const topping = await Topping.create({
+          store: otherStore._id,
+          name: 'Cheese foam',
+          price: 12000,
+          category: 'Kem',
+          isAvailable: true,
+        });
+
+        const response = await request(app)
+          .post('/api/order')
+          .send({
+            customerDetails: { name: 'Topping Guest', guests: 1 },
+            orderStatus: 'pending',
+            bills: { total: 12000, tax: 0, totalWithTax: 12000 },
+            items: [{
+              itemType: 'topping',
+              toppingId: topping._id,
+              name: 'Cheese foam',
+              pricePerQuantity: 12000,
+              quantity: 1,
+              price: 12000,
+            }],
+          })
+          .expect(400);
+
+        expect(response.body.message || response.body).toEqual(
+          expect.stringMatching(/not available/i)
+        );
       });
 
       test('should create order with multiple items without promotions', async () => {

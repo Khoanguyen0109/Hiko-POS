@@ -198,9 +198,13 @@ const OrderDetail = () => {
   };
 
   const toApiItem = (item) => {
+    const isTopping = item.itemType === "topping";
     const dishId = item.dishId?._id || item.dishId;
+    const toppingId = item.toppingId?._id || item.toppingId;
     return {
-      dishId,
+      ...(isTopping
+        ? { itemType: "topping", toppingId }
+        : { itemType: "dish", dishId }),
       name: item.name,
       pricePerQuantity: item.pricePerQuantity ?? item.price / (item.quantity || 1),
       quantity: item.quantity,
@@ -211,12 +215,14 @@ const OrderDetail = () => {
       image: item.image,
       note: item.note,
       variant: item.variant,
-      toppings: (item.toppings || []).map((t) => ({
-        toppingId: t.toppingId?._id || t.toppingId,
-        name: t.name,
-        price: t.price,
-        quantity: t.quantity,
-      })),
+      toppings: isTopping
+        ? []
+        : (item.toppings || []).map((t) => ({
+            toppingId: t.toppingId?._id || t.toppingId,
+            name: t.name,
+            price: t.price,
+            quantity: t.quantity,
+          })),
     };
   };
 
@@ -1025,7 +1031,7 @@ const OrderDetail = () => {
               {(isEditMode ? editableItems : order.items)?.map((item, index) =>
                 isEditMode ? (
                   <OrderItemEditor
-                    key={`${item.dishId?._id || item.dishId}-${index}`}
+                    key={`${item.itemType === "topping" ? item.toppingId : item.dishId?._id || item.dishId}-${index}`}
                     item={item}
                     index={index}
                     onQuantityChange={handleQuantityChange}
@@ -1380,9 +1386,11 @@ const formatCompactPrice = (price) => {
 const OrderItem = ({ item, onRemove }) => {
   const sizeLabel = item.variant?.size ? ` · ${item.variant.size}` : "";
   const toppingSummary =
-    item.toppings && item.toppings.length > 0
-      ? item.toppings.map((t) => t.name).join(", ")
-      : "Không topping";
+    item.itemType === "topping"
+      ? `Topping ×${item.quantity || 1}`
+      : item.toppings && item.toppings.length > 0
+        ? item.toppings.map((t) => t.name).join(", ")
+        : "Không topping";
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 bg-[#262626] rounded-xl">
@@ -1431,6 +1439,7 @@ const OrderItem = ({ item, onRemove }) => {
 
 OrderItem.propTypes = {
   item: PropTypes.shape({
+    itemType: PropTypes.string,
     name: PropTypes.string.isRequired,
     price: PropTypes.number.isRequired,
     pricePerQuantity: PropTypes.number,

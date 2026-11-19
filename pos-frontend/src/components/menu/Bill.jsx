@@ -230,7 +230,7 @@ const Bill = forwardRef(({ onOrderComplete, inDrawer = false, onBankingQrChange 
                       .appliedToItems
                   : enhancedItems
                       .filter((item) => item.isHappyHourItem)
-                      .map((item) => item.dishId),
+                      .map((item) => item.dishId || item.toppingId),
             },
           ]
         : [],

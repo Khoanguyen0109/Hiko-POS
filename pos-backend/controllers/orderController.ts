@@ -8,6 +8,7 @@ import createHttpError from "http-errors";
 import Order from "../models/orderModel.js";
 import Dish from "../models/dishModel.js";
 import DishStore from "../models/dishStoreModel.js";
+import Topping from "../models/toppingModel.js";
 import RewardProgram from "../models/rewardProgramModel.js";
 import PromotionService from "../services/promotionService.js";
 import Promotion from "../models/promotionModel.js";
@@ -22,13 +23,19 @@ import {
 } from "../utils/resolveDishForStore.js";
 
 function toRewardItems(orderItems = []) {
-  return orderItems.map((item) => ({
-    dishId: item.dishId,
-    quantity: item.quantity,
-    category: item.category,
-    pricePerQuantity: item.pricePerQuantity,
-    price: item.price,
-  }));
+  return orderItems
+    .filter((item) => item.itemType !== "topping" && item.dishId)
+    .map((item) => ({
+      dishId: item.dishId,
+      quantity: item.quantity,
+      category: item.category,
+      pricePerQuantity: item.pricePerQuantity,
+      price: item.price,
+    }));
+}
+
+function dishRewardItems(orderItems = []) {
+  return orderItems.filter((item) => item.itemType !== "topping");
 }
 
 function getEarnableRewardPayload(orderItems, rewardType) {
@@ -95,10 +102,22 @@ const processOrderItems = async (
   const dishIds = [
     ...new Set(
       items
-        .filter((item) => item.dishId && mongoose.Types.ObjectId.isValid(item.dishId))
+        .filter((item) => item.itemType !== "topping" && item.dishId && mongoose.Types.ObjectId.isValid(item.dishId))
         .map((item) => item.dishId.toString())
     ),
   ];
+  const standaloneToppingIds = [
+    ...new Set(
+      items
+        .filter((item) => item.itemType === "topping" && item.toppingId && mongoose.Types.ObjectId.isValid(item.toppingId))
+        .map((item) => item.toppingId.toString())
+    ),
+  ];
+
+  const toppingDocs = standaloneToppingIds.length
+    ? await Topping.find({ _id: { $in: standaloneToppingIds }, store: storeId }).lean()
+    : [];
+  const toppingById = new Map(toppingDocs.map((topping) => [topping._id.toString(), topping]));
 
   const dishes = await Dish.find({ _id: { $in: dishIds } })
     .populate("category", "name")
@@ -111,6 +130,50 @@ const processOrderItems = async (
   const overlayMap = overlayByDishId(overlays);
 
   return items.map((item, index) => {
+    if (item.itemType === "topping") {
+      if (!item.toppingId || !mongoose.Types.ObjectId.isValid(item.toppingId)) {
+        throw createHttpError(400, `Invalid toppingId for item at index ${index}`);
+      }
+      if (typeof item.quantity !== "number" || item.quantity < 1) {
+        throw createHttpError(400, `Valid quantity (minimum 1) is required for item at index ${index}`);
+      }
+
+      const topping = toppingById.get(item.toppingId.toString());
+      if (!topping || !topping.isAvailable) {
+        throw createHttpError(400, `Topping is not available at this store for item at index ${index}`);
+      }
+
+      const catalogPerQuantity = topping.price;
+      const catalogLineTotal = catalogPerQuantity * item.quantity;
+      const hasItemDiscount =
+        Boolean(item.isHappyHourItem) ||
+        (Array.isArray(item.promotionsApplied) && item.promotionsApplied.length > 0);
+      const pricePerQuantity = hasItemDiscount && typeof item.pricePerQuantity === "number"
+        ? item.pricePerQuantity
+        : catalogPerQuantity;
+      const price = hasItemDiscount && typeof item.price === "number"
+        ? item.price
+        : catalogLineTotal;
+
+      const processedTopping: ProcessedOrderItem = {
+        itemType: "topping",
+        toppingId: topping._id,
+        name: topping.name,
+        originalPricePerQuantity: catalogPerQuantity,
+        pricePerQuantity,
+        quantity: item.quantity,
+        originalPrice: catalogLineTotal,
+        price,
+        promotionsApplied: item.promotionsApplied || [],
+        isHappyHourItem: item.isHappyHourItem || false,
+        happyHourDiscount: item.happyHourDiscount || 0,
+        category: "Topping",
+        note: item.note ? item.note.trim() : undefined,
+        toppings: [],
+      };
+      return processedTopping;
+    }
+
     if (!item.dishId || !mongoose.Types.ObjectId.isValid(item.dishId)) {
       throw createHttpError(400, `Invalid dishId for item at index ${index}`);
     }
@@ -175,6 +238,7 @@ const processOrderItems = async (
       : catalogLineTotal;
 
     const processedItem: ProcessedOrderItem = {
+      itemType: "dish",
       dishId: item.dishId,
       name: item.name.trim(),
       originalPricePerQuantity: catalogPerQuantity,
@@ -278,7 +342,7 @@ const addOrder = async (req, res, next) => {
         appliedRewardType = program.type;
         rewardDiscount = calculateRewardDiscount(
           program,
-          finalProcessedItems,
+          dishRewardItems(finalProcessedItems),
           calculatedBills.subtotal
         );
       }
@@ -412,7 +476,7 @@ const addOrder = async (req, res, next) => {
                         discountPercent: redeemResult.discountPercent,
                         maxFreeDishValue: redeemResult.maxFreeDishValue,
                     },
-                    order.items,
+                    dishRewardItems(order.items),
                     orderSubtotal
                 );
                 order.appliedReward = {
@@ -840,7 +904,7 @@ const updateOrder = async (req, res, next) => {
               discountPercent: redeemResult.discountPercent,
               maxFreeDishValue: redeemResult.maxFreeDishValue,
             },
-            currentOrder.items,
+            dishRewardItems(currentOrder.items),
             orderSubtotal
           );
           const adjustedTotal = Math.max(0, preRewardTotal - rewardDiscount);
@@ -1083,7 +1147,7 @@ const updateOrderItems = async (req, res, next) => {
       if (program) {
         const rewardDiscount = calculateRewardDiscount(
           program,
-          processedItems,
+          dishRewardItems(processedItems),
           bills.subtotal
         );
         finalBills = applyRewardDiscountToBills(

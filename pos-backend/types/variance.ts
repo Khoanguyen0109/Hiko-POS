@@ -106,6 +106,7 @@ export interface VarianceOrderLine {
   name: string;
   quantity: number;
   size?: string | null;
+  skipDishRecipe?: boolean;
   toppings: VarianceOrderTopping[];
 }
 

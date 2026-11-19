@@ -130,33 +130,35 @@ export function buildMaterialVariance(input: MaterialVarianceInput): MaterialVar
         );
 
         for (const line of order.items) {
-            const dishRecipe = dishByKey.get(recipeKey(order.storeId, line.dishId));
-            if (!dishRecipe) {
-                addMissing({
-                    type: "dish",
-                    id: line.dishId,
-                    name: line.name,
-                    storeId: order.storeId,
-                    storeName: storeNameById.get(order.storeId) ?? "",
-                    portions: line.quantity,
-                });
-            } else {
-                const sized = getRecipeForSize(
-                    {
-                        ingredients: dishRecipe.ingredients,
-                        sizeVariantRecipes: dishRecipe.sizeVariantRecipes.map((variant) => ({
-                            ...variant,
-                            totalIngredientCost: 0,
-                        })),
-                        totalIngredientCost: dishRecipe.totalIngredientCost,
-                        otherCost: dishRecipe.otherCost,
-                    },
-                    line.size
-                );
-                applyLines(order.storeId, sized.ingredients, line.quantity);
+            if (!line.skipDishRecipe) {
+                const dishRecipe = dishByKey.get(recipeKey(order.storeId, line.dishId));
+                if (!dishRecipe) {
+                    addMissing({
+                        type: "dish",
+                        id: line.dishId,
+                        name: line.name,
+                        storeId: order.storeId,
+                        storeName: storeNameById.get(order.storeId) ?? "",
+                        portions: line.quantity,
+                    });
+                } else {
+                    const sized = getRecipeForSize(
+                        {
+                            ingredients: dishRecipe.ingredients,
+                            sizeVariantRecipes: dishRecipe.sizeVariantRecipes.map((variant) => ({
+                                ...variant,
+                                totalIngredientCost: 0,
+                            })),
+                            totalIngredientCost: dishRecipe.totalIngredientCost,
+                            otherCost: dishRecipe.otherCost,
+                        },
+                        line.size
+                    );
+                    applyLines(order.storeId, sized.ingredients, line.quantity);
+                }
             }
 
-            for (const topping of line.toppings) {
+            for (const topping of line.toppings ?? []) {
                 const toppingRecipe = toppingByKey.get(
                     recipeKey(order.storeId, topping.toppingId)
                 );
@@ -360,17 +362,27 @@ export async function computeMaterialVariance(args: {
             storeId: String(order.store),
             orderStatus: order.orderStatus,
             completedAt: order.completedAt ?? null,
-            items: order.items.map((item) => ({
-                dishId: String(item.dishId),
+            items: order.items.map((item) => {
+                const standaloneTopping = item.itemType === "topping" && item.toppingId;
+                return {
+                dishId: standaloneTopping ? "" : String(item.dishId),
                 name: item.name,
                 quantity: item.quantity,
                 size: item.variant?.size ?? null,
-                toppings: (item.toppings ?? []).map((topping) => ({
-                    toppingId: String(topping.toppingId),
-                    name: topping.name,
-                    quantity: topping.quantity,
-                })),
-            })),
+                skipDishRecipe: Boolean(standaloneTopping),
+                toppings: standaloneTopping
+                    ? [{
+                        toppingId: String(item.toppingId),
+                        name: item.name,
+                        quantity: 1,
+                    }]
+                    : (item.toppings ?? []).map((topping) => ({
+                        toppingId: String(topping.toppingId),
+                        name: topping.name,
+                        quantity: topping.quantity,
+                    })),
+                };
+            }),
         })),
         dishRecipes: dishRecipes.map((recipe) => ({
             storeId: String(recipe.store),

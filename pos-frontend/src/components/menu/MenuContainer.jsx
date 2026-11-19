@@ -1,12 +1,17 @@
 import { useState, useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { enqueueSnackbar } from "notistack";
 import { MdSearch, MdClose, MdRestaurantMenu } from "react-icons/md";
 import defaultDishImage from "../../assets/images/hyderabadibiryani.jpg";
 import DishBottomSheet from "./DishBottomSheet";
 import { formatPriceK } from "../../utils";
+import { buildStandaloneToppingItem, POS_TOPPING_CATEGORY } from "../../utils/toppingOrderItem";
+import { addItems } from "../../redux/slices/cartSlice";
 import LoadingState from "../shared/LoadingState";
 import {
   useGetCategoriesQuery,
   useGetDishesQuery,
+  useGetToppingsQuery,
 } from "../../redux/api/endpoints/catalogEndpoints";
 import { unwrapList } from "../../redux/api/queryResult";
 
@@ -43,11 +48,14 @@ const getCategoryEmoji = (name) => {
 const getDishBgColor = (index) => DISH_BG_COLORS[index % DISH_BG_COLORS.length];
 
 const MenuContainer = () => {
+  const dispatch = useDispatch();
   const { data: categoriesResult, isLoading: categoriesLoading } =
     useGetCategoriesQuery();
   const { data: dishesResult, isLoading: dishesLoading } = useGetDishesQuery();
+  const { data: toppingsResult, isLoading: toppingsLoading } = useGetToppingsQuery();
   const categories = unwrapList(categoriesResult);
   const dishes = unwrapList(dishesResult);
+  const toppings = unwrapList(toppingsResult).filter((topping) => topping.isAvailable);
 
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [filteredDishes, setFilteredDishes] = useState([]);
@@ -95,7 +103,17 @@ const MenuContainer = () => {
     setInitialVariant(null);
   };
 
+  const handleToppingClick = (topping) => {
+    dispatch(addItems(buildStandaloneToppingItem(topping)));
+    enqueueSnackbar(`${topping.name} đã thêm vào giỏ!`, { variant: "success" });
+  };
+
   const activeCategories = [...categories.filter((cat) => cat.isActive)].reverse();
+  const isToppingCategory = selectedCategory === POS_TOPPING_CATEGORY;
+  const visibleToppings = toppings.filter((topping) => {
+    if (!searchTerm.trim()) return true;
+    return topping.name.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   if (categoriesLoading || dishesLoading) {
     return <LoadingState message="Loading menu..." />;
@@ -128,6 +146,20 @@ const MenuContainer = () => {
               </button>
             );
           })}
+          <button
+            type="button"
+            onClick={() =>
+              handleCategorySelect(isToppingCategory ? "all" : POS_TOPPING_CATEGORY)
+            }
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
+              isToppingCategory
+                ? "bg-brand text-[#f5f5f5]"
+                : "bg-[#2a2a2a] text-[#ababab] hover:bg-[#343434]"
+            }`}
+          >
+            <span>{getCategoryEmoji("topping")}</span>
+            <span>Topping</span>
+          </button>
         </div>
       </div>
 
@@ -142,7 +174,7 @@ const MenuContainer = () => {
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Tìm món..."
+            placeholder={isToppingCategory ? "Tìm topping..." : "Tìm món..."}
             className="w-full bg-[#2a2a2a] text-[#f5f5f5] pl-10 pr-10 py-2.5 rounded-xl border-none focus:outline-none focus:ring-1 focus:ring-brand transition-colors text-sm"
           />
           {searchTerm && (
@@ -158,7 +190,50 @@ const MenuContainer = () => {
 
       {/* Dish Grid */}
       <div className="px-4 sm:px-6 pb-4">
-        {filteredDishes.length === 0 ? (
+        {isToppingCategory ? (
+          toppingsLoading ? (
+            <LoadingState message="Loading toppings..." />
+          ) : visibleToppings.length === 0 ? (
+            <div className="text-center py-12">
+              <MdRestaurantMenu size={64} className="text-[#343434] mx-auto mb-4" />
+              <h3 className="text-[#ababab] text-lg font-medium mb-2">
+                {searchTerm ? "No toppings found" : "No toppings available"}
+              </h3>
+              <p className="text-[#ababab] text-sm">
+                {searchTerm
+                  ? `No toppings match "${searchTerm}"`
+                  : "No toppings available at the moment"}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+              {visibleToppings.map((topping) => (
+                <button
+                  key={topping._id}
+                  type="button"
+                  onClick={() => handleToppingClick(topping)}
+                  className="flex flex-col bg-[#1a1a1a] rounded-xl text-left cursor-pointer hover:scale-[1.02] transition-transform duration-200 overflow-hidden"
+                >
+                  <div className="px-2.5 pt-3 pb-2.5">
+                    <p className="text-[#ababab] text-[10px] font-semibold uppercase tracking-wide mb-1">
+                      {topping.category || "Topping"}
+                    </p>
+                    <h3 className="text-[#f5f5f5] text-sm font-semibold leading-tight line-clamp-2 mb-2">
+                      {topping.name}
+                    </h3>
+                    <div className="flex">
+                      <div className="flex-1 flex flex-col items-center bg-[#2a2a2a] rounded-lg py-1.5">
+                        <span className="text-brand text-sm font-bold leading-tight">
+                          {formatPriceK(topping.price)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )
+        ) : filteredDishes.length === 0 ? (
           <div className="text-center py-12">
             <MdRestaurantMenu
               size={64}

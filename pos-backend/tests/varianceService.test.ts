@@ -82,6 +82,39 @@ describe("buildMaterialVariance", () => {
     expect(result.summary.completedOrderCount).toBe(1);
   });
 
+  it("counts a standalone topping without flagging a missing dish", () => {
+    const result = buildMaterialVariance({
+      ...baseInput(),
+      orders: [
+        {
+          storeId: "s1",
+          orderStatus: "completed",
+          completedAt: new Date(),
+          items: [
+            {
+              dishId: "",
+              name: "Boba",
+              quantity: 3,
+              skipDishRecipe: true,
+              toppings: [{ toppingId: "boba", name: "Boba", quantity: 1 }],
+            },
+          ],
+        },
+      ],
+      toppingRecipes: [
+        {
+          storeId: "s1",
+          toppingId: "boba",
+          ingredients: [{ storageItemId: "milk", quantity: 0.05, unit: "liter" }],
+        },
+      ],
+    });
+
+    const row = result.items.find((item) => item.storageItemId === "milk");
+    expect(row?.theoreticalQty).toBeCloseTo(0.15);
+    expect(result.coverage.missingRecipes.some((missing) => missing.type === "dish")).toBe(false);
+  });
+
   it("counts production exports and ignores to_store", () => {
     const result = buildMaterialVariance({
       ...baseInput(),

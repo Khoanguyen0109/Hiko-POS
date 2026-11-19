@@ -3,10 +3,24 @@ import { getCurrentVietnamTime } from "../utils/dateUtils.js";
 
 // Item schema for order items with variant support
 const orderItemSchema = new mongoose.Schema({
+    itemType: {
+        type: String,
+        enum: ["dish", "topping"],
+        default: "dish"
+    },
     dishId: { 
         type: mongoose.Schema.Types.ObjectId, 
         ref: "Dish", 
-        required: true 
+        required: function requiredDish() {
+            return this.itemType !== "topping";
+        }
+    },
+    toppingId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Topping",
+        required: function requiredStandaloneTopping() {
+            return this.itemType === "topping";
+        }
     },
     name: { 
         type: String, 

@@ -14,7 +14,9 @@ export interface OrderItemPromotionApplied {
 
 /** Incoming order item from request body (validated in controller). */
 export interface OrderItemInput {
-  dishId: string | Types.ObjectId;
+  itemType?: "dish" | "topping";
+  dishId?: string | Types.ObjectId;
+  toppingId?: string | Types.ObjectId;
   name: string;
   originalPricePerQuantity?: number;
   pricePerQuantity: number;
@@ -44,7 +46,9 @@ export interface OrderItemToppingInput {
 
 /** Normalized item stored on an order after processing. */
 export interface ProcessedOrderItem {
-  dishId: string | Types.ObjectId;
+  itemType?: "dish" | "topping";
+  dishId?: string | Types.ObjectId;
+  toppingId?: string | Types.ObjectId;
   name: string;
   originalPricePerQuantity: number;
   pricePerQuantity: number;
