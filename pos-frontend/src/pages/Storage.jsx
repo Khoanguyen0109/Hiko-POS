@@ -28,6 +28,7 @@ import { useNavigate } from "react-router-dom";
 import StorageStockCard from "../components/v2/StorageStockCard";
 import { useV2Ui } from "../hooks/useV2Ui";
 import { getStoredUser } from "../utils/auth";
+import { canManageStore } from "../constants";
 import { logger } from "../utils/logger";
 import { getDateRangeByPeriodVietnam } from "../utils/dateUtils";
 
@@ -345,7 +346,7 @@ const Storage = () => {
   const navigate = useNavigate();
   const { v2UiEnabled } = useV2Ui();
   const user = getStoredUser();
-  const isAdmin = user?.role === "Admin";
+  const isAdmin = canManageStore(user?.role);
   const { activeStore } = useSelector((state) => state.store);
 
   const [activeTab, setActiveTab] = useState("stock");

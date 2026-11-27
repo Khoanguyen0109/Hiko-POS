@@ -4,13 +4,16 @@ import { IoMdAdd, IoMdRemove } from "react-icons/io";
 import {
   useGetCategoriesQuery,
   useGetDishByIdQuery,
+  useGetDishStoreQuery,
   useGetDishStoresQuery,
   useCreateDishMutation,
   useUpdateDishMutation,
   useSaveDishStoresMutation,
+  useUpsertDishStoreMutation,
 } from "../../redux/api/endpoints/catalogEndpoints";
 import { useGetAllStoresQuery } from "../../redux/api/endpoints/peopleEndpoints";
 import { unwrapList } from "../../redux/api/queryResult";
+import { canManageStore } from "../../constants";
 import { enqueueSnackbar } from "notistack"
 import PropTypes from "prop-types";
 import BottomSheet from "../shared/BottomSheet";
@@ -37,7 +40,10 @@ const buildStoreRows = (stores, overlays) =>
   });
 
 const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) => {
-  const isAdmin = useSelector((state) => state.user.role) === "Admin";
+  const role = useSelector((state) => state.user.role);
+  const isAdmin = role === "Admin";
+  const canManage = canManageStore(role);
+  const activeStore = useSelector((state) => state.store.activeStore);
   const dishId = editingDish?._id;
   const { data: categoriesResult, isLoading: categoriesLoading } =
     useGetCategoriesQuery();
@@ -52,10 +58,14 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
   const { data: dishStores, isLoading: storeLoading } = useGetDishStoresQuery(dishId, {
     skip: !dishId || !isAdmin,
   });
+  const { data: dishStore, isLoading: currentStoreLoading } = useGetDishStoreQuery(dishId, {
+    skip: !dishId || isAdmin || !canManage,
+  });
   const [createDish, { isLoading: isCreating }] = useCreateDishMutation();
   const [updateDish, { isLoading: isUpdating }] = useUpdateDishMutation();
   const [saveDishStores, { isLoading: isSavingStores }] = useSaveDishStoresMutation();
-  const dishLoading = isCreating || isUpdating || isSavingStores;
+  const [upsertDishStore, { isLoading: isSavingCurrentStore }] = useUpsertDishStoreMutation();
+  const dishLoading = isCreating || isUpdating || isSavingStores || isSavingCurrentStore;
   
   const [dishData, setDishData] = useState({
     name: "",
@@ -116,6 +126,20 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
     if (list.length === 0) return;
     setStoreRows(buildStoreRows(list, Array.isArray(dishStores) ? dishStores : []));
   }, [isAdmin, storesResult, dishStores]);
+
+  useEffect(() => {
+    if (!canManage || isAdmin || !activeStore?._id) return;
+    const overlay = dishStore
+      ? [{
+          storeId: activeStore._id,
+          exists: Boolean(dishStore.exists),
+          isAvailable: dishStore.isAvailable !== false,
+          price: dishStore.price,
+          sizeVariants: dishStore.sizeVariants || [],
+        }]
+      : [];
+    setStoreRows(buildStoreRows([activeStore], overlay));
+  }, [canManage, isAdmin, activeStore, dishStore]);
 
   // Define handleCloseModal first with useCallback
   const handleCloseModal = useCallback(() => {
@@ -223,7 +247,7 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
       }));
     }
     
-    if (isAdmin) {
+    if (canManage) {
       const invalidStorePrice = storeRows.some((row) => {
         if (submitData.hasSizeVariants) {
           return sizeVariants.some((variant) => {
@@ -270,6 +294,10 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
 
         if (isAdmin && overlays.length > 0) {
           await saveDishStores({ dishId: editingDish._id, overlays }).unwrap();
+        } else if (canManage && overlays[0]) {
+          const overlay = { ...overlays[0] };
+          delete overlay.storeId;
+          await upsertDishStore({ dishId: editingDish._id, ...overlay }).unwrap();
         }
 
         handleCloseModal();
@@ -279,6 +307,10 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
         const createdId = created?._id || created?.id;
         if (isAdmin && createdId && overlays.length > 0) {
           await saveDishStores({ dishId: createdId, overlays }).unwrap();
+        } else if (canManage && createdId && overlays[0]) {
+          const overlay = { ...overlays[0] };
+          delete overlay.storeId;
+          await upsertDishStore({ dishId: createdId, ...overlay }).unwrap();
         }
         handleCloseModal();
         enqueueSnackbar("Dish created successfully!", { variant: "success" });
@@ -512,13 +544,15 @@ const DishModal = ({ setIsDishModalOpen, setIsDishesModalOpen, editingDish }) =>
             </label>
           </div>
 
-          {isAdmin && (
+          {canManage && (
             <div className="space-y-3 rounded-lg border border-[#343434] p-4">
-              <p className="text-sm font-medium text-[#f5f5f5]">Prices by store</p>
+              <p className="text-sm font-medium text-[#f5f5f5]">
+                {isAdmin ? "Prices by store" : "Price at this store"}
+              </p>
               <p className="text-xs text-[#ababab]">
                 Empty price uses the default catalog price. Store price is used first if set.
               </p>
-              {storesLoading || (Boolean(dishId) && storeLoading) ? (
+              {(isAdmin ? storesLoading || (Boolean(dishId) && storeLoading) : currentStoreLoading) ? (
                 <p className="text-xs text-[#ababab]">Loading stores...</p>
               ) : storeRows.length === 0 ? (
                 <p className="text-xs text-[#ababab]">No active stores.</p>

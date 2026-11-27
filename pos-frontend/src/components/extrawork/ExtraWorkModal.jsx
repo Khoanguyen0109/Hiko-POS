@@ -13,6 +13,8 @@ import FullScreenLoader from "../shared/FullScreenLoader";
 import { getLocalDateString } from "../../utils/dateUtils";
 
 const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
+  const { role } = useSelector((state) => state.user);
+  const assignedStores = useSelector((state) => state.store.stores);
   const activeStoreId = useSelector((state) => state.store.activeStore?._id || "");
   const { data: membersResult } = useGetAllMembersQuery(
     { isActive: true },
@@ -144,7 +146,7 @@ const ExtraWorkModal = ({ isOpen, onClose, memberId, date }) => {
       (s) => String(s._id) === String(formData.storeId) && s.isActive
     );
   }) || [];
-  const activeStores = allStores?.filter(s => s.isActive) || [];
+  const activeStores = (role === "Admin" ? allStores : assignedStores)?.filter((store) => store.isActive !== false) || [];
   const workTypes = [
     { value: "overtime", label: "Overtime" },
     { value: "extra_shift", label: "Extra Shift" },

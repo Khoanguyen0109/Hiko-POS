@@ -507,22 +507,22 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.DASHBOARD,
     componentName: "Dashboard",
-    adminOnly: true
+    storeManager: true
   },
   {
     path: ROUTES.DISHES,
     componentName: "Dishes",
-    adminOnly: true
+    storeManager: true
   },
   {
     path: ROUTES.RECIPES,
     componentName: "Recipes",
-    adminOnly: true
+    storeManager: true
   },
   {
     path: ROUTES.CATEGORIES,
     componentName: "Categories",
-    adminOnly: true
+    storeManager: true
   },
   {
     path: ROUTES.MEMBERS,
@@ -536,17 +536,17 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.TOPPINGS,
     componentName: "Toppings",
-    adminOnly: true
+    storeManager: true
   },
   {
     path: ROUTES.PROMOTIONS,
     componentName: "PromotionManager",
-    adminOnly: true
+    storeManager: true
   },
   {
     path: ROUTES.CAMPAIGNS,
     componentName: "CampaignManager",
-    adminOnly: true
+    storeManager: true
   },
   {
     path: ROUTES.SPENDING,
@@ -567,7 +567,7 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.SHIFT_TEMPLATES,
     componentName: "ShiftTemplates",
-    adminOnly: true
+    storeManager: true
   },
   {
     path: ROUTES.STORAGE,
@@ -576,12 +576,12 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.STORAGE_ITEMS,
     componentName: "StorageItems",
-    adminOnly: true
+    storeManager: true
   },
   {
     path: ROUTES.SUPPLIERS,
     componentName: "Suppliers",
-    adminOnly: true
+    storeManager: true
   },
   {
     path: ROUTES.STORES,
@@ -595,12 +595,12 @@ export const PROTECTED_ROUTES = [
   {
     path: ROUTES.REWARD_PROGRAMS,
     componentName: "RewardPrograms",
-    adminOnly: true
+    storeManager: true
   },
   {
     path: ROUTES.CUSTOMERS,
     componentName: "Customers",
-    adminOnly: true
+    storeManager: true
   },
   {
     path: ROUTES.DOCS,
@@ -621,5 +621,9 @@ export const HEADER_HIDDEN_ROUTES = [ROUTES.AUTH, ROUTES.SELECT_STORE];
 
 export const userRoles = {
   ADMIN: "Admin",
-  USER: "User"
-}
+  STORE_MANAGER: "Store manager",
+  USER: "User",
+};
+
+export const canManageStore = (role) =>
+  role === userRoles.ADMIN || role === userRoles.STORE_MANAGER;

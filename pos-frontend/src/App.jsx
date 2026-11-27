@@ -54,6 +54,7 @@ import {
   PUBLIC_ROUTES,
   PROTECTED_ROUTES,
   HEADER_HIDDEN_ROUTES,
+  canManageStore,
 } from "./constants";
 import Sidebar from "./components/shared/Sidebar";
 import V2Shell from "./components/v2/V2Shell";
@@ -191,25 +192,23 @@ function Layout() {
         {PROTECTED_ROUTES.map((route) => {
           const Component = COMPONENT_MAP[route.componentName];
           const requiresAdmin = route.adminOnly === true;
+          const requiresStoreManager = route.storeManager === true;
+          const Guard = requiresAdmin
+            ? AdminProtectedRoutes
+            : requiresStoreManager
+              ? StoreManagerRoutes
+              : ProtectedRoutes;
 
           return (
             <Route
               key={route.path}
               path={route.path}
               element={
-                requiresAdmin ? (
-                  <AdminProtectedRoutes>
-                    <StoreRequiredRoutes>
-                      <Component />
-                    </StoreRequiredRoutes>
-                  </AdminProtectedRoutes>
-                ) : (
-                  <ProtectedRoutes>
-                    <StoreRequiredRoutes>
-                      <Component />
-                    </StoreRequiredRoutes>
-                  </ProtectedRoutes>
-                )
+                <Guard>
+                  <StoreRequiredRoutes>
+                    <Component />
+                  </StoreRequiredRoutes>
+                </Guard>
               }
             />
           );
@@ -257,6 +256,14 @@ function AdminProtectedRoutes({ children }) {
   return children;
 }
 
+function StoreManagerRoutes({ children }) {
+  const { isAuth, role } = useSelector((state) => state.user);
+  if (!isAuth || !canManageStore(role)) {
+    return <Navigate to={ROUTES.AUTH} />;
+  }
+  return children;
+}
+
 function StoreRequiredRoutes({ children }) {
   const { activeStore, stores } = useSelector((state) => state.store);
 
@@ -273,6 +280,10 @@ ProtectedRoutes.propTypes = {
 };
 
 AdminProtectedRoutes.propTypes = {
+  children: PropTypes.node.isRequired,
+};
+
+StoreManagerRoutes.propTypes = {
   children: PropTypes.node.isRequired,
 };
 

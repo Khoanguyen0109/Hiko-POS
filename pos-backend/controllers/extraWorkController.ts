@@ -3,6 +3,8 @@ import type { MongoFilter } from "../types/mongo.js";
 import createHttpError from "http-errors";
 import ExtraWork from "../models/extraWorkModel.js";
 import User from "../models/userModel.js";
+import StoreUser from "../models/storeUserModel.js";
+import { isStoreManagerRole } from "../constants/user.js";
 
 // Get all extra work entries (with filters)
 const getAllExtraWork = async (req, res, next) => {
@@ -144,8 +146,21 @@ const createExtraWork = async (req, res, next) => {
             return next(createHttpError(404, "Member not found"));
         }
 
-        // Allow admin to specify a different store via body
-        const targetStoreId = storeId || req.store._id;
+        // Admin may target another store. A store manager may only target a store they belong to.
+        let targetStoreId = storeId || req.store._id;
+        if (isStoreManagerRole(req.user.role)) {
+            if (storeId && String(storeId) !== String(req.store._id)) {
+                const allowed = await StoreUser.exists({
+                    user: req.user._id,
+                    store: storeId,
+                    isActive: true,
+                });
+                if (!allowed) {
+                    return next(createHttpError(403, "You can only manage your assigned store."));
+                }
+            }
+            targetStoreId = storeId || req.store._id;
+        }
         
         // Use member's salary as default hourly rate if not provided
         const rate = hourlyRate !== undefined && hourlyRate !== null ? hourlyRate : (member.salary || 0);

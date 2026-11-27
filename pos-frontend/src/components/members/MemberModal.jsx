@@ -168,6 +168,11 @@ const MemberModal = ({ isOpen, onClose, mode, member }) => {
       description: "Full access to all features",
     },
     {
+      value: "Store manager",
+      label: "Store manager",
+      description: "Full access to assigned stores",
+    },
+    {
       value: "User",
       label: "User",
       description: "Basic access to orders and menu",

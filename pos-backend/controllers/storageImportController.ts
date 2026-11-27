@@ -80,10 +80,6 @@ const createStorageImport = async (req, res, next) => {
             return next(createHttpError(400, "Quantity must be greater than 0"));
         }
 
-        if (!unitCost || unitCost < 0) {
-            return next(createHttpError(400, "Unit cost must be a non-negative number"));
-        }
-
         // Validate storage item exists and is active
         const storageItem = await StorageItem.findById(storageItemId);
         if (!storageItem) {
@@ -91,6 +87,22 @@ const createStorageImport = async (req, res, next) => {
         }
         if (!storageItem.isActive) {
             return next(createHttpError(400, "Storage item is not active"));
+        }
+
+        let resolvedUnitCost: number;
+        if (isFromStoreImport(source)) {
+            if (unitCost !== undefined && unitCost !== null) {
+                if (typeof unitCost !== "number" || unitCost < 0) {
+                    return next(createHttpError(400, "Unit cost must be a non-negative number"));
+                }
+                resolvedUnitCost = unitCost;
+            } else {
+                resolvedUnitCost = storageItem.averageCost ?? storageItem.lastPurchaseCost ?? 0;
+            }
+        } else if (typeof unitCost !== "number" || unitCost < 0) {
+            return next(createHttpError(400, "Unit cost must be a non-negative number"));
+        } else {
+            resolvedUnitCost = unitCost;
         }
 
         let sourceStoreId;
@@ -126,7 +138,7 @@ const createStorageImport = async (req, res, next) => {
         const importNumber = await StorageImport.generateImportNumber();
 
         // Calculate total cost
-        const totalCost = quantity * unitCost;
+        const totalCost = quantity * resolvedUnitCost;
 
         // Purchases create an expense; transfers from another store do not
         let spending = null;
@@ -158,7 +170,7 @@ const createStorageImport = async (req, res, next) => {
             storageItemId,
             quantity,
             unit: storageItem.unit,
-            unitCost,
+            unitCost: resolvedUnitCost,
             totalCost,
             source,
             sourceStore: sourceStoreId,
@@ -182,15 +194,15 @@ const createStorageImport = async (req, res, next) => {
         let newAverageCost = storageItem.averageCost;
         if (stockBefore > 0) {
             newAverageCost = (
-                (stockBefore * storageItem.averageCost) + (quantity * unitCost)
+                (stockBefore * storageItem.averageCost) + (quantity * resolvedUnitCost)
             ) / (stockBefore + quantity);
         } else {
-            newAverageCost = unitCost;
+            newAverageCost = resolvedUnitCost;
         }
 
         storageItem.currentStock = stockAfter;
         storageItem.averageCost = newAverageCost;
-        storageItem.lastPurchaseCost = unitCost;
+        storageItem.lastPurchaseCost = resolvedUnitCost;
         await storageItem.save();
 
         // Populate references for response

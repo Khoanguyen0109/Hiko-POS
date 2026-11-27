@@ -21,12 +21,13 @@ import {
   useToggleShiftTemplateActiveStatusMutation,
 } from "../redux/api/endpoints";
 import { unwrapList } from "../redux/api/queryResult";
+import { canManageStore } from "../constants";
 
 const ShiftTemplates = () => {
   const { activeStore } = useSelector((state) => state.store);
   const { role } = useSelector((state) => state.user);
-  const isAdmin = role === "Admin";
-  const canLoad = isAdmin && Boolean(activeStore?._id);
+  const canManage = canManageStore(role);
+  const canLoad = canManage && Boolean(activeStore?._id);
 
   const {
     data: templatesResult,
@@ -110,7 +111,7 @@ const ShiftTemplates = () => {
     refetch();
   };
 
-  if (!isAdmin) {
+  if (!canManage) {
     return (
       <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center">
         <div className="text-center">

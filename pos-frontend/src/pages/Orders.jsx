@@ -10,11 +10,12 @@ import { enqueueSnackbar } from "notistack";
 import { getTodayDate } from "../utils";
 import { useSelector } from "react-redux";
 import { useGetOrdersQuery, useGetAllMembersQuery } from "../redux/api/endpoints";
+import { canManageStore } from "../constants";
 import { unwrapList, unwrapPaginated } from "../redux/api/queryResult";
 
 const Orders = () => {
   const { role } = useSelector((state) => state.user);
-  const isAdmin = role === "Admin";
+  const isAdmin = canManageStore(role);
 
   // Scroll container ref for scroll position persistence
   const scrollContainerRef = useRef(null);

@@ -40,6 +40,7 @@ import { unwrapList } from "../redux/api/queryResult";
 import { enqueueSnackbar } from "notistack";
 import { formatVND, getAvatarName, getOrderDisplayTotal, getOrderRewardDiscount } from "../utils";
 import { getStoredUser } from "../utils/auth";
+import { canManageStore } from "../constants";
 import FullScreenLoader from "../components/shared/FullScreenLoader";
 import BackButton from "../components/shared/BackButton";
 import OrderItemEditor from "../components/orders/OrderItemEditor";
@@ -81,7 +82,7 @@ const OrderDetail = () => {
 
   // Get user role for admin checking
   const user = getStoredUser();
-  const isAdmin = user?.role === "Admin";
+  const isAdmin = canManageStore(user?.role);
 
   const { data: searchResult, isFetching: searchLoading } = useSearchCustomersQuery(
     debouncedQuery,

@@ -495,10 +495,11 @@ export const peopleApi = baseApi.injectEndpoints({
       ...SCHEDULE_CACHE,
     }),
     createExtraWork: build.mutation({
-      query: (data) => ({
+      query: ({ storeId, ...data } = {}) => ({
         url: "/api/extra-work",
         method: "POST",
-        data,
+        data: { storeId, ...data },
+        ...withOptionalStoreHeader(storeId),
       }),
       invalidatesTags: [{ type: "Schedule", id: "LIST" }],
     }),

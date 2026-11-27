@@ -9,18 +9,19 @@ import {
     getRewardAnalytics,
     backfillCategoryDishCounts,
 } from "../controllers/rewardProgramController.js";
-import { isVerifiedUser, isAdmin } from "../middlewares/tokenVerification.js";
+import { isVerifiedUser, isAdmin, isAdminOrStoreManager } from "../middlewares/tokenVerification.js";
+import { optionalStoreContext } from "../middlewares/storeContext.js";
 
 const router = express.Router();
 router.use(isVerifiedUser);
 
-router.route("/analytics").get(isAdmin, getRewardAnalytics);
+router.route("/analytics").get(optionalStoreContext, isAdminOrStoreManager, getRewardAnalytics);
 router.route("/backfill-categories").post(isAdmin, backfillCategoryDishCounts);
 router.route("/").get(getRewardPrograms);
-router.route("/").post(isAdmin, addRewardProgram);
+router.route("/").post(isAdminOrStoreManager, addRewardProgram);
 router.route("/:id").get(getRewardProgramById);
-router.route("/:id").put(isAdmin, updateRewardProgram);
-router.route("/:id/toggle-status").patch(isAdmin, toggleRewardProgramStatus);
-router.route("/:id").delete(isAdmin, deleteRewardProgram);
+router.route("/:id").put(isAdminOrStoreManager, updateRewardProgram);
+router.route("/:id/toggle-status").patch(isAdminOrStoreManager, toggleRewardProgramStatus);
+router.route("/:id").delete(isAdminOrStoreManager, deleteRewardProgram);
 
 export default router;

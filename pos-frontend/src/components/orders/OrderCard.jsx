@@ -1,4 +1,5 @@
 import { formatDateAndTime, formatVND } from "../../utils/index";
+import { canManageStore } from "../../constants";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { useDeleteOrderMutation } from "../../redux/api/endpoints";
@@ -28,7 +29,7 @@ const OrderCard = ({ order }) => {
   const [deleteOrder] = useDeleteOrderMutation();
   const { role } = useSelector((state) => state.user);
   const { v2UiEnabled } = useV2Ui();
-  const isAdmin = role === "Admin";
+  const isAdmin = canManageStore(role);
   const statusTheme = getStatusTheme(order.orderStatus);
   const paymentTheme = getPaymentTheme(order.paymentMethod);
   const vendorTheme = getVendorTheme(order.thirdPartyVendor);

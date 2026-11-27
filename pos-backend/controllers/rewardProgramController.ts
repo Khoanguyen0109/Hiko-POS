@@ -177,10 +177,17 @@ const getRewardAnalytics = async (req, res, next) => {
         let scope: "all" | "single" = "single";
 
         if (scopeAll) {
+            if (req.user?.role !== "Admin") {
+                return next(createHttpError(403, "Admin access required for all-stores view"));
+            }
             const Store = (await import("../models/storeModel.js")).default;
             const stores = await Store.find({ isActive: true }).select("_id").lean();
             storeIds = stores.map((s) => s._id);
             scope = "all";
+        } else if (req.store?._id) {
+            storeIds = [req.store._id];
+        } else if (req.user?.role === "Store manager") {
+            return next(createHttpError(400, "Store selection required."));
         }
 
         const analytics = await RewardService.getRewardAnalytics(period, { scope, storeIds });

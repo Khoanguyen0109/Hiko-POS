@@ -4,7 +4,7 @@ import { MdCategory, MdDateRange, MdToday, MdCalendarMonth, MdLocalOffer, MdAcco
 import { BiSolidDish } from "react-icons/bi";
 import { MdAddCircle } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
-import { ROUTES } from "../constants";
+import { ROUTES, canManageStore } from "../constants";
 import Metrics from "../components/dashboard/Metrics";
 import PromotionMetrics from "../components/dashboard/PromotionMetrics";
 import SalaryMetrics from "../components/dashboard/SalaryMetrics";
@@ -240,7 +240,8 @@ SpendingAnalytics.propTypes = {
 const Dashboard = () => {
   const navigate = useNavigate();
   const user = getStoredUser();
-  const isAdmin = user?.role === "Admin";
+  const isOrgAdmin = user?.role === "Admin";
+  const canManage = canManageStore(user?.role);
   const [activeTab, setActiveTab] = useState("Metrics");
 
   // Memoize buttons array to prevent recreation on every render
@@ -250,16 +251,16 @@ const Dashboard = () => {
     { label: "Add Topping", icon: <MdAddCircle />, action: "topping" },
     { label: "Add Promotion", icon: <MdLocalOffer />, action: "promotion" },
     { label: "Storage", icon: <MdStorage />, action: "storage" },
-    ...(isAdmin ? [
+    ...(canManage ? [
       { label: "Spending", icon: <MdAccountBalanceWallet />, action: "spending" },
       { label: "Suppliers", icon: <MdBusiness />, action: "suppliers" }
     ] : []),
-  ], [isAdmin]);
+  ], [canManage]);
 
   // Memoize tabs array
   const tabs = useMemo(() => 
-    ["Metrics", "Promotions", ...(isAdmin ? ["Spending", "Shift Checkout", "Salary", "Storage Analytics", "Material Variance", "Rewards", "Redeem Reward"] : [])],
-    [isAdmin]
+    ["Metrics", "Promotions", ...(canManage ? ["Spending", "Shift Checkout", "Salary", "Storage Analytics", "Material Variance", "Rewards", "Redeem Reward"] : [])],
+    [canManage]
   );
 
   // Memoize date filter options (static, no dependencies needed)
@@ -279,7 +280,7 @@ const Dashboard = () => {
   });
 
   const spendingParams = useMemo(() => {
-    const next = { scope: "all" };
+    const next = isOrgAdmin ? { scope: "all" } : {};
     const today = getTodayDateVietnam();
 
     if (dateFilter === "custom" && customDateRange.startDate && customDateRange.endDate) {
@@ -299,7 +300,7 @@ const Dashboard = () => {
     }
 
     return next;
-  }, [dateFilter, customDateRange]);
+  }, [dateFilter, customDateRange, isOrgAdmin]);
 
   const periodLabel = dateFilterOptions.find((option) => option.value === dateFilter)?.label || "This Month";
 
@@ -308,7 +309,7 @@ const Dashboard = () => {
     isLoading: dashboardLoading,
     error: dashboardError,
   } = useGetSpendingAnalyticsQuery(spendingParams, {
-    skip: !isAdmin || activeTab !== "Spending",
+    skip: !canManage || activeTab !== "Spending",
   });
 
   useEffect(() => {
@@ -419,7 +420,7 @@ const Dashboard = () => {
           />
         </div>
       )}
-      {activeTab === "Spending" && isAdmin && (
+      {activeTab === "Spending" && canManage && (
         <SpendingAnalytics 
           dashboardData={dashboardData}
           loading={dashboardLoading}
@@ -427,13 +428,13 @@ const Dashboard = () => {
           periodLabel={periodLabel}
         />
       )}
-      {activeTab === "Shift Checkout" && isAdmin && (
+      {activeTab === "Shift Checkout" && canManage && (
         <ShiftCheckoutDashboard
           dateFilter={dateFilter}
           customDateRange={customDateRange}
         />
       )}
-      {activeTab === "Salary" && isAdmin && (
+      {activeTab === "Salary" && canManage && (
         <div className="container mx-auto px-4 md:px-6">
           <SalaryMetrics 
             dateFilter={dateFilter}
@@ -442,27 +443,27 @@ const Dashboard = () => {
         </div>
       )}
 
-      {activeTab === "Storage Analytics" && isAdmin && (
+      {activeTab === "Storage Analytics" && canManage && (
         <StorageAnalytics 
           dateFilter={dateFilter}
           customDateRange={customDateRange}
         />
       )}
 
-      {activeTab === "Material Variance" && isAdmin && (
+      {activeTab === "Material Variance" && canManage && (
         <MaterialVariance
           dateFilter={dateFilter}
           customDateRange={customDateRange}
         />
       )}
 
-      {activeTab === "Rewards" && isAdmin && (
+      {activeTab === "Rewards" && canManage && (
         <div className="container mx-auto px-4 md:px-6">
           <RewardsDashboard />
         </div>
       )}
 
-      {activeTab === "Redeem Reward" && isAdmin && (
+      {activeTab === "Redeem Reward" && canManage && (
         <div className="container mx-auto px-4 md:px-6">
           <RedeemRewardDashboard
             dateFilter={dateFilter}

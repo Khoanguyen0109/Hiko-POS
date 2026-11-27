@@ -9,7 +9,7 @@ import {
     getCustomerRewards,
     getCustomerHistory
 } from "../controllers/customerController.js";
-import { isVerifiedUser, isAdmin } from "../middlewares/tokenVerification.js";
+import { isVerifiedUser, isAdminOrStoreManager } from "../middlewares/tokenVerification.js";
 import { storeContext } from "../middlewares/storeContext.js";
 
 const router = express.Router();
@@ -18,11 +18,11 @@ router.use(isVerifiedUser);
 
 router.route("/search").get(storeContext, searchCustomers);
 router.route("/").post(storeContext, addCustomer);
-router.route("/").get(isAdmin, getCustomers);
+router.route("/").get(isAdminOrStoreManager, getCustomers);
 router.route("/:id").get(storeContext, getCustomerById);
-router.route("/:id").put(isAdmin, updateCustomer);
-router.route("/:id").delete(isAdmin, deleteCustomer);
+router.route("/:id").put(isAdminOrStoreManager, updateCustomer);
+router.route("/:id").delete(isAdminOrStoreManager, deleteCustomer);
 router.route("/:id/rewards").get(storeContext, getCustomerRewards);
-router.route("/:id/history").get(isAdmin, getCustomerHistory);
+router.route("/:id/history").get(isAdminOrStoreManager, getCustomerHistory);
 
 export default router;

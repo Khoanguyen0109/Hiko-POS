@@ -24,10 +24,11 @@ import {
   useGetAllStoresQuery,
   useGetAllMembersQuery,
   useGetAllExtraWorkAllStoresQuery,
+  useGetAllExtraWorkQuery,
   useDeleteExtraWorkMutation,
 } from "../redux/api/endpoints";
 import { unwrapList } from "../redux/api/queryResult";
-import { ROUTES } from "../constants";
+import { ROUTES, canManageStore } from "../constants";
 
 const TABS = {
   BY_STORE: "by_store",
@@ -87,7 +88,14 @@ const WeeklySchedule = () => {
   const { v2UiEnabled } = useV2Ui();
   const { activeStore } = useSelector((state) => state.store);
   const { role } = useSelector((state) => state.user);
-  const isAdmin = role === "Admin";
+  const assignedStores = useSelector((state) => state.store.stores);
+  const isOrgAdmin = role === "Admin";
+  const canManage = canManageStore(role);
+  const canEditStore = (store) => {
+    if (isOrgAdmin) return true;
+    if (!canManage || !store?._id) return false;
+    return assignedStores.some((item) => String(item._id) === String(store._id));
+  };
 
   const [activeTab, setActiveTab] = useState(TABS.BY_STORE);
   const [currentWeek, setCurrentWeek] = useState(getCurrentWeekInfo());
@@ -133,12 +141,17 @@ const WeeklySchedule = () => {
 
   const { data: membersResult } = useGetAllMembersQuery(
     { isActive: true },
-    { skip: !isAdmin }
+    { skip: !canManage }
   );
   const members = useMemo(() => unwrapList(membersResult), [membersResult]);
 
-  const { data: extraWorkResult, isLoading: extraWorkLoading, error: extraWorkError } =
-    useGetAllExtraWorkAllStoresQuery(extraWorkParams, { skip: !isAdmin });
+  const { data: extraWorkAllResult, isLoading: extraWorkAllLoading, error: extraWorkAllError } =
+    useGetAllExtraWorkAllStoresQuery(extraWorkParams, { skip: !isOrgAdmin });
+  const { data: extraWorkStoreResult, isLoading: extraWorkStoreLoading, error: extraWorkStoreError } =
+    useGetAllExtraWorkQuery(extraWorkParams, { skip: !canManage || isOrgAdmin });
+  const extraWorkResult = isOrgAdmin ? extraWorkAllResult : extraWorkStoreResult;
+  const extraWorkLoading = isOrgAdmin ? extraWorkAllLoading : extraWorkStoreLoading;
+  const extraWorkError = isOrgAdmin ? extraWorkAllError : extraWorkStoreError;
   const extraWorkEntries = unwrapList(extraWorkResult);
   const totalHours = extraWorkEntries.reduce((sum, entry) => sum + (entry.durationHours || 0), 0);
   const totalPayment = extraWorkEntries.reduce((sum, entry) => sum + (entry.paymentAmount || 0), 0);
@@ -170,7 +183,7 @@ const WeeklySchedule = () => {
   };
 
   const handleCombinedCellClick = useCallback((store, date, shiftTemplate) => {
-    if (!isAdmin) return;
+    if (!canEditStore(store)) return;
 
     if (isShiftOver(date, shiftTemplate.endTime)) {
       enqueueSnackbar("This shift has ended and can no longer be changed", { variant: "info" });
@@ -199,7 +212,7 @@ const WeeklySchedule = () => {
     setSelectedShiftTemplate(shiftTemplate);
     setSelectedStore(store);
     setShowAssignmentModal(true);
-  }, [isAdmin, allMembersSchedules]);
+  }, [canManage, isOrgAdmin, assignedStores, allMembersSchedules]);
 
   const handleCloseModal = () => {
     setShowAssignmentModal(false);
@@ -209,7 +222,7 @@ const WeeklySchedule = () => {
   };
 
   const handleOpenExtraWorkModal = (date = null, memberId = null) => {
-    if (!isAdmin) return;
+    if (!canManage) return;
     setSelectedDate(date);
     setSelectedMemberForExtraWork(memberId);
     setShowExtraWorkModal(true);
@@ -295,7 +308,7 @@ const WeeklySchedule = () => {
         weekDates={weekDates}
         activeStoreId={activeStore?._id}
         onCellClick={handleCombinedCellClick}
-        readOnly={!isAdmin}
+        readOnly={!canManage}
       />
     </div>
   );
@@ -426,8 +439,8 @@ const WeeklySchedule = () => {
   // Tab definitions
   const tabs = [
     { key: TABS.BY_STORE, label: "By Store", icon: MdStore, show: true },
-    { key: TABS.BY_MEMBER, label: "By Member", icon: MdPeople, show: isAdmin },
-    { key: TABS.MY_SCHEDULE, label: "My Schedule", icon: MdPerson, show: !isAdmin },
+    { key: TABS.BY_MEMBER, label: "By Member", icon: MdPeople, show: canManage },
+    { key: TABS.MY_SCHEDULE, label: "My Schedule", icon: MdPerson, show: !canManage },
   ].filter(t => t.show);
 
   return (
@@ -435,7 +448,7 @@ const WeeklySchedule = () => {
       <FeaturePageHeader
         title="Weekly Schedule"
         actions={
-          isAdmin ? (
+          canManage ? (
             <>
               <button
                 type="button"
@@ -507,7 +520,7 @@ const WeeklySchedule = () => {
                 {renderByStoreSchedule()}
 
                 {/* Summary Stats */}
-                {!isAdmin && allMembersSchedules && allMembersSchedules.length > 0 && (
+                {!canManage && allMembersSchedules && allMembersSchedules.length > 0 && (
                   <div className="bg-[#1f1f1f] rounded-lg p-6 border border-[#343434]">
                     <h4 className="text-[#f5f5f5] text-lg font-semibold mb-4">
                       Week Summary
@@ -543,7 +556,7 @@ const WeeklySchedule = () => {
                 )}
 
                 {/* Extra Work Entries View (admin only) */}
-                {isAdmin && (
+                {canManage && (
                   <div className="bg-[#1f1f1f] rounded-lg border border-[#343434] overflow-hidden">
                     <div className="p-4 sm:p-6 border-b border-[#343434]">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
@@ -553,7 +566,9 @@ const WeeklySchedule = () => {
                             Extra Work Entries
                           </h4>
                           <p className="text-[#ababab] text-sm mt-1">
-                            Logged extra work hours from every store
+                            {isOrgAdmin
+                              ? "Logged extra work hours from every store"
+                              : "Logged extra work hours for this store"}
                           </p>
                         </div>
                         <HeaderActionButton
@@ -567,6 +582,7 @@ const WeeklySchedule = () => {
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                        {isOrgAdmin ? (
                         <div>
                           <label className="block text-xs text-[#ababab] mb-2">Filter by Store</label>
                           <select
@@ -580,6 +596,7 @@ const WeeklySchedule = () => {
                             ))}
                           </select>
                         </div>
+                        ) : null}
                         <div>
                           <label className="block text-xs text-[#ababab] mb-2">Filter by Member</label>
                           <select
@@ -710,12 +727,12 @@ const WeeklySchedule = () => {
         )}
 
         {/* ── By Member Tab (admin only) ── */}
-        {activeTab === TABS.BY_MEMBER && isAdmin && (
+        {activeTab === TABS.BY_MEMBER && canManage && (
           <ByMemberView year={currentWeek.year} week={currentWeek.week} />
         )}
 
         {/* ── My Schedule Tab (member only) ── */}
-        {activeTab === TABS.MY_SCHEDULE && !isAdmin && (
+        {activeTab === TABS.MY_SCHEDULE && !canManage && (
           <MyScheduleView year={currentWeek.year} week={currentWeek.week} />
         )}
       </div>

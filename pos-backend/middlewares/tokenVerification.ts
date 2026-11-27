@@ -3,7 +3,8 @@ import createHttpError from "http-errors";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import User from "../models/userModel.js";
-import { userRoles } from "../constants/user.js";
+import { userRoles, isStoreManagerRole } from "../constants/user.js";
+import StoreUser from "../models/storeUserModel.js";
 
 
 const isVerifiedUser = async (req, res, next) => {
@@ -61,4 +62,56 @@ const isAdmin = (req, res, next) => {
     }
 }
 
-export { isVerifiedUser, isAdmin };
+// Admin, or a store manager acting on a store they belong to.
+// Store context must already have verified the assignment.
+const canManageStore = (req, res, next) => {
+    if (!req.user) {
+        return next(createHttpError(401, "Unauthorized!"));
+    }
+
+    if (req.user.role === userRoles.ADMIN) {
+        return next();
+    }
+
+    if (isStoreManagerRole(req.user.role) && req.store) {
+        return next();
+    }
+
+    return next(createHttpError(403, "Access denied."));
+};
+
+// Admin, or a store manager who is assigned to at least one store.
+const isAdminOrStoreManager = async (req, res, next) => {
+    try {
+        if (!req.user) {
+            return next(createHttpError(401, "Unauthorized!"));
+        }
+
+        if (req.user.role === userRoles.ADMIN) {
+            return next();
+        }
+
+        if (!isStoreManagerRole(req.user.role)) {
+            return next(createHttpError(403, "Access denied."));
+        }
+
+        if (req.store) {
+            return next();
+        }
+
+        const assigned = await StoreUser.exists({
+            user: req.user._id,
+            isActive: true
+        });
+
+        if (!assigned) {
+            return next(createHttpError(403, "No store assigned."));
+        }
+
+        return next();
+    } catch (error) {
+        return next(createHttpError(403, "Access denied."));
+    }
+};
+
+export { isVerifiedUser, isAdmin, canManageStore, isAdminOrStoreManager };

@@ -30,6 +30,7 @@ import {
 } from "../redux/api/endpoints";
 import { unwrapList, unwrapPaginated } from "../redux/api/queryResult";
 import { formatVND, getTodayDate } from "../utils";
+import { canManageStore } from "../constants";
 import SpendingModal from "../components/spending/SpendingModal";
 import CategoryModal from "../components/spending/CategoryModal";
 import VendorModal from "../components/spending/VendorModal";
@@ -40,7 +41,7 @@ import HeaderActionButton from "../components/shared/HeaderActionButton";
 
 const SpendingManager = () => {
   const { role } = useSelector((state) => state.user);
-  const isAdmin = role === "Admin";
+  const isAdmin = canManageStore(role);
 
   const [activeTab, setActiveTab] = useState("spending");
   const today = getTodayDate();

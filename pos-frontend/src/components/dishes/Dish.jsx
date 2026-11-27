@@ -11,6 +11,7 @@ import {
 import { enqueueSnackbar } from "notistack";
 import biryani from "../../assets/images/hyderabadibiryani.jpg";
 import { formatPriceK, formatVND } from "../../utils";
+import { canManageStore } from "../../constants";
 
 const hasStorePriceOverride = (overlay) => {
   if (!overlay) return false;
@@ -19,7 +20,7 @@ const hasStorePriceOverride = (overlay) => {
 };
 
 const Dish = ({ dish, onEdit, onRecipe }) => {
-  const isAdmin = useSelector((state) => state.user.role) === "Admin";
+  const canManage = canManageStore(useSelector((state) => state.user.role));
   const [deleteDish] = useDeleteDishMutation();
   const [toggleDishAvailability] = useToggleDishAvailabilityMutation();
   const [upsertDishStore] = useUpsertDishStoreMutation();
@@ -84,7 +85,7 @@ const Dish = ({ dish, onEdit, onRecipe }) => {
     e.stopPropagation();
 
     try {
-      const result = isAdmin
+      const result = canManage
         ? await upsertDishStore({
             dishId: dish._id,
             isAvailable: !dish.isAvailable,
@@ -92,7 +93,7 @@ const Dish = ({ dish, onEdit, onRecipe }) => {
         : await toggleDishAvailability(dish._id).unwrap();
       const newStatus = result.isAvailable;
       enqueueSnackbar(
-        `Dish ${newStatus ? "enabled" : "disabled"}${isAdmin ? " at this store" : ""}!`,
+        `Dish ${newStatus ? "enabled" : "disabled"}${canManage ? " at this store" : ""}!`,
         { variant: "success" }
       );
     } catch (error) {

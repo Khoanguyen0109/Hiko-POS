@@ -281,6 +281,8 @@ const MemberCard = ({ member, onEdit, onDelete, onToggleActive, onManageStores, 
     switch (role?.toLowerCase()) {
       case 'admin':
         return 'bg-red-900/20 text-red-400 border-red-700';
+      case 'store manager':
+        return 'bg-purple-900/20 text-purple-400 border-purple-700';
       case 'manager':
         return 'bg-blue-900/20 text-blue-400 border-blue-700';
       case 'staff':
@@ -296,6 +298,8 @@ const MemberCard = ({ member, onEdit, onDelete, onToggleActive, onManageStores, 
     switch (role?.toLowerCase()) {
       case 'admin':
         return '👑';
+      case 'store manager':
+        return '🏪';
       case 'manager':
         return '👔';
       case 'staff':

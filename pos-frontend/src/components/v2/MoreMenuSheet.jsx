@@ -21,10 +21,10 @@ import { BiSolidDish } from "react-icons/bi";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import PropTypes from "prop-types";
-import { ROUTES } from "../../constants";
+import { ROUTES, canManageStore } from "../../constants";
 import BottomSheet from "../shared/BottomSheet";
 
-function buildMoreMenuSections({ isAdmin, canManageTickets }) {
+function buildMoreMenuSections({ isAdmin, canManage, canManageTickets }) {
   return [
     {
       label: "Main",
@@ -38,7 +38,7 @@ function buildMoreMenuSections({ isAdmin, canManageTickets }) {
       label: "Schedule",
       items: [
         { path: ROUTES.SCHEDULES, icon: <FaCalendarAlt size={18} />, label: "Schedules" },
-        ...(isAdmin
+        ...(canManage
           ? [
               {
                 path: ROUTES.SHIFT_TEMPLATES,
@@ -69,7 +69,7 @@ function buildMoreMenuSections({ isAdmin, canManageTickets }) {
       label: "Inventory",
       items: [
         { path: ROUTES.STORAGE, icon: <MdStorage size={18} />, label: "Storage" },
-        ...(isAdmin
+        ...(canManage
           ? [
               {
                 path: ROUTES.STORAGE_ITEMS,
@@ -85,7 +85,7 @@ function buildMoreMenuSections({ isAdmin, canManageTickets }) {
           : []),
       ],
     },
-    ...(isAdmin
+    ...(canManage
       ? [
           {
             label: "Menu Management",
@@ -139,10 +139,11 @@ const MoreMenuSheet = ({ isOpen, onClose }) => {
   const { role } = useSelector((state) => state.user);
   const activeStore = useSelector((state) => state.store.activeStore);
   const isAdmin = role === "Admin";
+  const canManage = canManageStore(role);
   const storeRole = activeStore?.role || activeStore?.storeRole || "";
-  const canManageTickets = isAdmin || storeRole === "Owner" || storeRole === "Manager";
+  const canManageTickets = canManage || storeRole === "Owner" || storeRole === "Manager";
 
-  const sections = buildMoreMenuSections({ isAdmin, canManageTickets });
+  const sections = buildMoreMenuSections({ isAdmin, canManage, canManageTickets });
 
   const isActive = (path) => {
     if (path === ROUTES.DOCS) {

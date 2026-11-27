@@ -7,7 +7,7 @@ import User from "../models/userModel.js";
 import StoreUser from "../models/storeUserModel.js";
 import Store from "../models/storeModel.js";
 import bcrypt from "bcrypt";
-import { userRoles } from "../constants/user.js";
+import { userRoles, isStoreManagerRole } from "../constants/user.js";
 
 // Admin: Get all members (paginated)
 const getAllMembers = async (req, res, next) => {
@@ -23,6 +23,19 @@ const getAllMembers = async (req, res, next) => {
         if (search) {
             const re = new RegExp(search.trim(), 'i');
             filter.$or = [{ name: re }, { phone: re }, { email: re }];
+        }
+
+        if (isStoreManagerRole(req.user.role)) {
+            const assignments = await StoreUser.find({
+                user: req.user._id,
+                isActive: true,
+            }).select("store");
+            const storeIds = assignments.map((row) => row.store);
+            const peers = storeIds.length
+                ? await StoreUser.find({ store: { $in: storeIds }, isActive: true }).select("user")
+                : [];
+            const peerIds = [...new Set(peers.map((row) => row.user.toString()))];
+            filter._id = { $in: peerIds };
         }
 
         const [members, total] = await Promise.all([

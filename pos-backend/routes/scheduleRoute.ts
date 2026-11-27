@@ -1,6 +1,6 @@
 import express from "express";
 import { getAllSchedules, getSchedulesByWeek, getSchedulesByDate, getSchedulesByDateRange, getSchedulesByMember, getScheduleById, createSchedule, bulkCreateSchedules, updateSchedule, deleteSchedule, assignMemberToShift, batchAssignMembers, unassignMemberFromShift, updateMemberStatus, getMySchedules, getMySchedulesAllStores, getAllMembersWeek, checkConflicts } from "../controllers/scheduleController.js";
-import { isVerifiedUser, isAdmin } from "../middlewares/tokenVerification.js";
+import { isVerifiedUser, canManageStore, isAdminOrStoreManager } from "../middlewares/tokenVerification.js";
 import { storeContext } from "../middlewares/storeContext.js";
 
 const router = express.Router();
@@ -17,7 +17,7 @@ router.route("/all-members-week/:year/:week")
 
 // Admin: check conflicts before assigning
 router.route("/check-conflicts")
-    .post(isVerifiedUser, isAdmin, checkConflicts);
+    .post(isVerifiedUser, isAdminOrStoreManager, checkConflicts);
 
 // ── Store-scoped routes ──────────────────────────────────────────────────
 
@@ -38,26 +38,26 @@ router.route("/member/:memberId")
 
 router.route("/")
     .get(isVerifiedUser, storeContext, getAllSchedules)
-    .post(isVerifiedUser, storeContext, isAdmin, createSchedule);
+    .post(isVerifiedUser, storeContext, canManageStore, createSchedule);
 
 router.route("/bulk")
-    .post(isVerifiedUser, storeContext, isAdmin, bulkCreateSchedules);
+    .post(isVerifiedUser, storeContext, canManageStore, bulkCreateSchedules);
 
 router.route("/:id")
     .get(isVerifiedUser, storeContext, getScheduleById)
-    .put(isVerifiedUser, storeContext, isAdmin, updateSchedule)
-    .delete(isVerifiedUser, storeContext, isAdmin, deleteSchedule);
+    .put(isVerifiedUser, storeContext, canManageStore, updateSchedule)
+    .delete(isVerifiedUser, storeContext, canManageStore, deleteSchedule);
 
 router.route("/:id/assign")
-    .patch(isVerifiedUser, storeContext, isAdmin, assignMemberToShift);
+    .patch(isVerifiedUser, storeContext, canManageStore, assignMemberToShift);
 
 router.route("/:id/batch-assign")
-    .patch(isVerifiedUser, storeContext, isAdmin, batchAssignMembers);
+    .patch(isVerifiedUser, storeContext, canManageStore, batchAssignMembers);
 
 router.route("/:id/unassign")
-    .patch(isVerifiedUser, storeContext, isAdmin, unassignMemberFromShift);
+    .patch(isVerifiedUser, storeContext, canManageStore, unassignMemberFromShift);
 
 router.route("/:id/status")
-    .patch(isVerifiedUser, storeContext, isAdmin, updateMemberStatus);
+    .patch(isVerifiedUser, storeContext, canManageStore, updateMemberStatus);
 
 export default router;

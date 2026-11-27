@@ -742,7 +742,9 @@ const getAllMembersWeek = async (req, res, next) => {
             return next(createHttpError(400, "Year and week are required"));
         }
 
-        const memberFields = req.user?.role === "Admin" ? "name email phone" : "name";
+        const memberFields = req.user?.role === "Admin" || req.user?.role === "Store manager"
+            ? "name email phone"
+            : "name";
 
         const schedules = await Schedule.find({
             year: parseInt(year),

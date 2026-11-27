@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useSelector } from "react-redux";
 import PropTypes from "prop-types";
 import { MdWarning, MdTrendingUp, MdTrendingDown, MdInventory, MdReceipt, MdStore } from "react-icons/md";
 import { useGetStorageVarianceQuery } from "../../redux/api/endpoints";
@@ -21,9 +22,10 @@ const varianceClass = (value) => {
 };
 
 const MaterialVariance = ({ dateFilter, customDateRange }) => {
+    const isOrgAdmin = useSelector((state) => state.user.role) === "Admin";
     const [storeFilter, setStoreFilter] = useState("");
     const params = useMemo(() => {
-        const next = { scope: "all" };
+        const next = isOrgAdmin ? { scope: "all" } : {};
         const today = getTodayDateVietnam();
 
         if (dateFilter === "custom" && customDateRange.startDate && customDateRange.endDate) {
@@ -53,7 +55,7 @@ const MaterialVariance = ({ dateFilter, customDateRange }) => {
         }
 
         return next;
-    }, [dateFilter, customDateRange]);
+    }, [dateFilter, customDateRange, isOrgAdmin]);
 
     const { data: variance, isLoading: loading, error } = useGetStorageVarianceQuery(params);
     const summary = variance?.summary;

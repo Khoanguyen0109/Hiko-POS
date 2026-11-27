@@ -119,7 +119,8 @@ const ImportModal = ({
           ...prev,
           source: value,
           supplierId: "",
-          supplierInvoice: ""
+          supplierInvoice: "",
+          unitCost: 0,
         };
       }
 
@@ -149,7 +150,7 @@ const ImportModal = ({
       return;
     }
 
-    if (!formData.unitCost || formData.unitCost < 0) {
+    if (!isFromStore && (formData.unitCost === undefined || formData.unitCost === null || formData.unitCost < 0)) {
       setError("Unit cost must be a non-negative number");
       setLoading(false);
       return;
@@ -165,7 +166,7 @@ const ImportModal = ({
       const submitData = {
         storageItemId: formData.storageItemId,
         quantity: formData.quantity,
-        unitCost: formData.unitCost,
+        ...(isFromStore ? {} : { unitCost: formData.unitCost }),
         source: formData.source,
         sourceStore: isFromStore ? formData.sourceStore : undefined,
         supplierId: isFromStore ? undefined : (formData.supplierId || undefined),
@@ -260,28 +261,30 @@ const ImportModal = ({
               </div>
             </div>
 
-            <div>
-              <label className="block text-[#ababab] text-sm mb-2">
-                Unit Cost (VND) <span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
-                <MdAttachMoney className="text-[#ababab] mr-2" size={18} />
-                <input
-                  type="number"
-                  name="unitCost"
-                  value={formData.unitCost}
-                  onChange={handleInputChange}
-                  required
-                  min="0"
-                  step="0.01"
-                  className="bg-transparent flex-1 text-white focus:outline-none"
-                  placeholder="0"
-                />
+            {!isFromStore && (
+              <div>
+                <label className="block text-[#ababab] text-sm mb-2">
+                  Unit Cost (VND) <span className="text-red-500">*</span>
+                </label>
+                <div className="flex items-center rounded-lg p-3 px-4 bg-[#1f1f1f] border border-[#343434] focus-within:border-brand">
+                  <MdAttachMoney className="text-[#ababab] mr-2" size={18} />
+                  <input
+                    type="number"
+                    name="unitCost"
+                    value={formData.unitCost}
+                    onChange={handleInputChange}
+                    required
+                    min="0"
+                    step="0.01"
+                    className="bg-transparent flex-1 text-white focus:outline-none"
+                    placeholder="0"
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
-          {/* Total Cost Display (Auto-calculated) */}
+          {!isFromStore && (
           <div className="bg-[#1a1a1a] rounded-lg p-4 border border-[#343434]">
             <div className="flex items-center justify-between">
               <span className="text-[#ababab] font-medium">Total Cost:</span>
@@ -293,6 +296,7 @@ const ImportModal = ({
               Auto-calculated: {formData.quantity || 0} × {formData.unitCost || 0}
             </p>
           </div>
+          )}
 
           {/* Source */}
           <div>
@@ -317,7 +321,10 @@ const ImportModal = ({
             {isFromStore && (
               <div className="mt-2 flex items-start gap-2 text-xs text-[#ababab]">
                 <MdInfo className="mt-0.5 shrink-0 text-brand" size={14} />
-                <span>Internal transfer from another store. No expense will be created.</span>
+                <span>
+                  Internal transfer from another store. No expense will be created.
+                  Stock is valued at this item&apos;s average cost.
+                </span>
               </div>
             )}
           </div>
@@ -411,7 +418,13 @@ const ImportModal = ({
             </button>
             <button
               type="submit"
-              disabled={loading || !formData.storageItemId || !formData.quantity || !formData.unitCost || (isFromStore && !formData.sourceStore)}
+              disabled={
+                loading
+                || !formData.storageItemId
+                || !formData.quantity
+                || (!isFromStore && !formData.unitCost)
+                || (isFromStore && !formData.sourceStore)
+              }
               className="px-6 py-2 bg-brand text-[#f5f5f5] rounded-lg hover:bg-brand-hover transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
             >
               <MdSave />

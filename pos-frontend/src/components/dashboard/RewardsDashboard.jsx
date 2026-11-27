@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSelector } from "react-redux";
 import { MdPeople, MdCardGiftcard, MdTrendingUp, MdLocalOffer } from "react-icons/md";
 import { useGetRewardAnalyticsQuery } from "../../redux/api/endpoints";
 import LoadingState from "../shared/LoadingState";
@@ -14,10 +15,11 @@ const PERIODS = [
 ];
 
 const RewardsDashboard = () => {
+  const isOrgAdmin = useSelector((state) => state.user.role) === "Admin";
   const [period, setPeriod] = useState("30d");
   const { data: analytics, isLoading: analyticsLoading } = useGetRewardAnalyticsQuery({
     period,
-    scope: "all",
+    ...(isOrgAdmin ? { scope: "all" } : {}),
   });
 
   if (analyticsLoading) {

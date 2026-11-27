@@ -1,11 +1,11 @@
 import express from "express";
 import { getAllMembers, getMemberById, createMember, updateMember, deleteMember, toggleMemberActiveStatus, getMemberStores, updateMemberStores, getOwnProfile, updateOwnProfile, changePassword } from "../controllers/memberController.js";
-import { isVerifiedUser, isAdmin } from "../middlewares/tokenVerification.js";
+import { isVerifiedUser, isAdmin, isAdminOrStoreManager } from "../middlewares/tokenVerification.js";
 const router = express.Router();
 
 // Admin routes - require admin privileges
 router.route("/")
-    .get(isVerifiedUser, isAdmin, getAllMembers)
+    .get(isVerifiedUser, isAdminOrStoreManager, getAllMembers)
     .post(isVerifiedUser, isAdmin, createMember);
 
 // Member routes - require authentication (MUST come before /:id routes)

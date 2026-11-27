@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import { useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { MdChat, MdClose } from "react-icons/md";
-import { ROUTES } from "../../constants";
+import { ROUTES, canManageStore } from "../../constants";
 import { useV2Ui } from "../../hooks/useV2Ui";
 import { axiosWrapper } from "../../https/axiosWrapper";
 import { baseApi } from "../../redux/api/baseApi";
@@ -23,7 +23,7 @@ const ADMIN_PROMPTS = [
 ];
 
 function promptsForRole(role) {
-  if (role === "Admin") {
+  if (canManageStore(role)) {
     return [...STAFF_PROMPTS, ...ADMIN_PROMPTS];
   }
   return STAFF_PROMPTS;

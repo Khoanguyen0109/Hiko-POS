@@ -17,6 +17,6 @@ const ADMIN_PROMPTS: CapabilityPrompt[] = [
 ];
 
 export function capabilitiesForRole(role: string | undefined): CapabilityPrompt[] {
-    if (role === "Admin") return [...STAFF_PROMPTS, ...ADMIN_PROMPTS];
+    if (role === "Admin" || role === "Store manager") return [...STAFF_PROMPTS, ...ADMIN_PROMPTS];
     return STAFF_PROMPTS;
 }

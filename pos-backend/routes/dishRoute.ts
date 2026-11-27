@@ -14,7 +14,7 @@ import {
     upsertDishStore,
     deleteDishStore,
 } from "../controllers/dishController.js";
-import { isVerifiedUser, isAdmin } from "../middlewares/tokenVerification.js";
+import { isVerifiedUser, isAdmin, canManageStore } from "../middlewares/tokenVerification.js";
 import { optionalStoreContext, storeContext } from "../middlewares/storeContext.js";
 const router = express.Router();
 
@@ -25,8 +25,8 @@ router.route("/category/:categoryId").get(isVerifiedUser, optionalStoreContext, 
 router.route("/:id/stores").get(isVerifiedUser, isAdmin, getDishStores);
 router.route("/:id/stores").put(isVerifiedUser, isAdmin, saveDishStores);
 router.route("/:id/store").get(isVerifiedUser, storeContext, getDishStore);
-router.route("/:id/store").put(isVerifiedUser, storeContext, isAdmin, upsertDishStore);
-router.route("/:id/store").delete(isVerifiedUser, storeContext, isAdmin, deleteDishStore);
+router.route("/:id/store").put(isVerifiedUser, storeContext, canManageStore, upsertDishStore);
+router.route("/:id/store").delete(isVerifiedUser, storeContext, canManageStore, deleteDishStore);
 router.route("/:id").get(isVerifiedUser, optionalStoreContext, getDishById);
 router.route("/:id").put(isVerifiedUser, updateDish);
 router.route("/:id").delete(isVerifiedUser, deleteDish);

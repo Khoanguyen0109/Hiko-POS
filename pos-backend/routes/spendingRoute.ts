@@ -22,7 +22,7 @@ import {
     getSpendingDashboard,
 } from "../controllers/spendingController.js";
 
-import { isVerifiedUser, isAdmin } from "../middlewares/tokenVerification.js";
+import { isVerifiedUser, isAdminOrStoreManager } from "../middlewares/tokenVerification.js";
 import { storeContext } from "../middlewares/storeContext.js";
 const router = express.Router();
 
@@ -119,7 +119,7 @@ router.get("/analytics/reports", isVerifiedUser, storeContext, getSpendingAnalyt
  *   color?: string
  * }
  */
-router.post("/categories", isVerifiedUser, isAdmin, addSpendingCategory);
+router.post("/categories", isVerifiedUser, isAdminOrStoreManager, addSpendingCategory);
 
 /**
  * @route   GET /api/spending/categories
@@ -136,14 +136,14 @@ router.get("/categories", isVerifiedUser, getSpendingCategories);
  * @desc    Update spending category
  * @access  Private
  */
-router.put("/categories/:id", isVerifiedUser, isAdmin, updateSpendingCategory);
+router.put("/categories/:id", isVerifiedUser, isAdminOrStoreManager, updateSpendingCategory);
 
 /**
  * @route   DELETE /api/spending/categories/:id
  * @desc    Delete spending category
  * @access  Private
  */
-router.delete("/categories/:id", isVerifiedUser, isAdmin, deleteSpendingCategory);
+router.delete("/categories/:id", isVerifiedUser, isAdminOrStoreManager, deleteSpendingCategory);
 
 // ==================== VENDOR ROUTES ====================
 // Note: Vendor routes must come before parameterized routes

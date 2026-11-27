@@ -23,7 +23,7 @@ const registerSchema = z.object({
   password: passwordSchema,
   role: z.enum(
     [userRoles.ADMIN, userRoles.USER] as [string, ...string[]],
-    { message: `Role must be one of: ${Object.values(userRoles).join(", ")}` }
+    { message: `Role must be one of: ${userRoles.ADMIN}, ${userRoles.USER}` }
   ),
   email: z
     .string()

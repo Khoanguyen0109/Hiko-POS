@@ -1,7 +1,7 @@
 import express from "express";
 import { addStorageItem, getStorageItems, getStorageItemById, updateStorageItem, deleteStorageItem, getLowStockItems } from "../controllers/storageItemController.js";
 
-import { isVerifiedUser, isAdmin } from "../middlewares/tokenVerification.js";
+import { isVerifiedUser, canManageStore } from "../middlewares/tokenVerification.js";
 import { storeContext } from "../middlewares/storeContext.js";
 const router = express.Router();
 
@@ -15,12 +15,12 @@ router.get("/", isVerifiedUser, storeContext, getStorageItems);
 router.get("/:id", isVerifiedUser, storeContext, getStorageItemById);
 
 // Create storage item (Admin only)
-router.post("/", isVerifiedUser, storeContext, isAdmin, addStorageItem);
+router.post("/", isVerifiedUser, storeContext, canManageStore, addStorageItem);
 
 // Update storage item (Admin only)
-router.put("/:id", isVerifiedUser, storeContext, isAdmin, updateStorageItem);
+router.put("/:id", isVerifiedUser, storeContext, canManageStore, updateStorageItem);
 
 // Delete storage item (Admin only)
-router.delete("/:id", isVerifiedUser, storeContext, isAdmin, deleteStorageItem);
+router.delete("/:id", isVerifiedUser, storeContext, canManageStore, deleteStorageItem);
 
 export default router;

@@ -8,7 +8,7 @@ import Store from "../models/storeModel.js";
 import StoreUser from "../models/storeUserModel.js";
 import Ticket from "../models/ticketModel.js";
 import createHttpError from "http-errors";
-import { userRoles } from "../constants/user.js";
+import { userRoles, isStoreManagerRole } from "../constants/user.js";
 import { getDateRangeVietnam, getCurrentVietnamTime, getStartOfDayVietnam, getEndOfDayVietnam, VIETNAM_TIMEZONE } from "../utils/dateUtils.js";
 import { toZonedTime } from "date-fns-tz";
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth } from "date-fns";
@@ -164,10 +164,15 @@ const getAllMembersSalarySummary = async (req, res, next) => {
             return next(error);
         }
 
-        const stores = await Store.find({ isActive: true })
+        let stores = await Store.find({ isActive: true })
             .select("_id name code")
             .sort({ name: 1 })
             .lean();
+
+        if (isStoreManagerRole(req.user.role)) {
+            const currentStoreId = req.store?._id?.toString();
+            stores = stores.filter((store) => store._id.toString() === currentStoreId);
+        }
 
         const storeIds = stores.map((store) => store._id);
 

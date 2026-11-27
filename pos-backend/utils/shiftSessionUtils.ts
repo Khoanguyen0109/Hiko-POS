@@ -15,7 +15,7 @@ export function isManagerOrAbove(
   userRole: string,
   storeRole?: StoreRole | string
 ): boolean {
-  if (userRole === "Admin") return true;
+  if (userRole === "Admin" || userRole === "Store manager") return true;
   return storeRole === "Owner" || storeRole === "Manager";
 }
 

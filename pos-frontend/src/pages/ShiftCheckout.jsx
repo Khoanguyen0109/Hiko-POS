@@ -28,6 +28,7 @@ import {
   getTotalBill,
 } from "../components/shiftcheckout/ShiftCheckoutUi";
 import { formatVND, getTodayDate } from "../utils";
+import { canManageStore } from "../constants";
 
 const TABS = {
   MY_SHIFT: "my_shift",
@@ -204,9 +205,9 @@ const ShiftCheckout = () => {
   const { role, _id: userId } = useSelector((state) => state.user);
   const activeStore = useSelector((state) => state.store.activeStore);
   const storeRole = activeStore?.role || activeStore?.storeRole || "";
-  const isAdmin = role === "Admin";
+  const canManage = canManageStore(role);
   const canViewDay =
-    isAdmin || storeRole === "Owner" || storeRole === "Manager";
+    canManage || storeRole === "Owner" || storeRole === "Manager";
   const canEditCheckout = canViewDay;
 
   const [activeTab, setActiveTab] = useState(TABS.MY_SHIFT);
@@ -451,7 +452,7 @@ const ShiftCheckout = () => {
                   <th className={thClass}>Diff</th>
                   <th className={thClass}>Status</th>
                   <th className={thClass}>Notes</th>
-                  {(canEditCheckout || isAdmin) ? (
+                  {canEditCheckout ? (
                     <th className={`${thClass} text-right`}>Actions</th>
                   ) : null}
                 </tr>
@@ -462,7 +463,7 @@ const ShiftCheckout = () => {
                     key={c._id}
                     checkout={c}
                     canEditCheckout={canEditCheckout}
-                    canDeleteCheckout={isAdmin}
+                    canDeleteCheckout={canManage}
                     onEdit={openCheckoutFromDay}
                     onDelete={handleDeleteCheckout}
                     deleteLoading={deleteLoading}

@@ -7,7 +7,7 @@ import { clearAuthData } from "../../utils/auth";
 import { MdDashboard, MdPerson, MdSettings, MdKeyboardArrowDown } from "react-icons/md";
 import { useState, useRef, useEffect } from "react";
 
-import { ROUTES } from "../../constants";
+import { ROUTES, canManageStore } from "../../constants";
 import StoreSwitcher from "./StoreSwitcher";
 import { clearStore } from "../../redux/slices/storeSlice";
 
@@ -64,7 +64,7 @@ const Header = () => {
 
       {/* LOGGED USER DETAILS */}
       <div className="flex items-center gap-2 md:gap-4">
-        {userData.role === "Admin" && (
+        {canManageStore(userData.role) && (
           <div onClick={() => navigate("/dashboard")} className="bg-[#1f1f1f] rounded-[15px] p-2 md:p-3 cursor-pointer">
             <MdDashboard className="text-[#f5f5f5] text-xl md:text-2xl" />
           </div>

@@ -2,7 +2,7 @@
 import createHttpError from "http-errors";
 import StoreUser from "../models/storeUserModel.js";
 import Store from "../models/storeModel.js";
-import { userRoles } from "../constants/user.js";
+import { userRoles, isStoreManagerRole } from "../constants/user.js";
 
 const storeContext = async (req, res, next) => {
     try {
@@ -47,7 +47,7 @@ const storeContext = async (req, res, next) => {
 
 const isStoreRole = (...allowedRoles) => {
     return (req, res, next) => {
-        if (req.user.role === userRoles.ADMIN) {
+        if (req.user.role === userRoles.ADMIN || isStoreManagerRole(req.user.role)) {
             return next();
         }
 

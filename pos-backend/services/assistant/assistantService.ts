@@ -358,7 +358,7 @@ async function assignDraft(
     store: StoreRef,
     parsed: ParsedUtterance
 ): Promise<ChatResult> {
-    if (actor.role !== "Admin") {
+    if (actor.role !== "Admin" && actor.role !== "Store manager") {
         return { reply: "Only an admin can change shifts.", slip: null, choices: null };
     }
     const memberships = await StoreUser.find({ store: store._id, isActive: true }).populate("user", "name isActive");
@@ -556,7 +556,9 @@ export async function commitDraft(draftId: string, actor: Actor, store: StoreRef
     }
 
     if (draft.kind === "assign") {
-        if (actor.role !== "Admin") throw createHttpError(403, "Only an admin can change shifts.");
+        if (actor.role !== "Admin" && actor.role !== "Store manager") {
+            throw createHttpError(403, "Only an admin can change shifts.");
+        }
         await invokeHandler(assignMemberToShift, {
             ...reqBase,
             params: { id: String(payload.scheduleId) },

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useSelector } from "react-redux";
 import { useGetStorageAnalyticsQuery } from "../../redux/api/endpoints";
 import { MdStorage, MdWarning, MdTrendingUp, MdTrendingDown } from "react-icons/md";
 import { formatVND } from "../../utils";
@@ -7,8 +8,9 @@ import LoadingState from "../shared/LoadingState";
 import StoreSummariesTable from "./StoreSummariesTable";
 
 const StorageAnalytics = ({ dateFilter, customDateRange }) => {
+    const isOrgAdmin = useSelector((state) => state.user.role) === "Admin";
     const params = useMemo(() => {
-        const next = { scope: "all" };
+        const next = isOrgAdmin ? { scope: "all" } : {};
         const today = getTodayDateVietnam();
 
         if (dateFilter === "custom" && customDateRange.startDate && customDateRange.endDate) {
@@ -38,7 +40,7 @@ const StorageAnalytics = ({ dateFilter, customDateRange }) => {
         }
 
         return next;
-    }, [dateFilter, customDateRange]);
+    }, [dateFilter, customDateRange, isOrgAdmin]);
 
     const { data: analytics, isLoading: loading, error } = useGetStorageAnalyticsQuery(params);
     const summary = analytics?.summary;

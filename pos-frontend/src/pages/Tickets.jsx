@@ -19,6 +19,7 @@ import {
   useGetStoreMembersQuery,
 } from "../redux/api/endpoints";
 import { unwrapList, unwrapPaginated } from "../redux/api/queryResult";
+import { canManageStore } from "../constants";
 
 const MONTHS = [
   "January","February","March","April","May","June",
@@ -42,7 +43,7 @@ const Tickets = () => {
   const [deletingId,   setDeletingId]   = useState(null);
 
   const storeRole = activeStore?.role || activeStore?.storeRole || "";
-  const canManage = role === "Admin" || storeRole === "Owner" || storeRole === "Manager";
+  const canManage = canManageStore(role) || storeRole === "Owner" || storeRole === "Manager";
 
   const { data: membersResult } = useGetStoreMembersQuery(activeStore?._id ?? skipToken);
   const storeMembers = unwrapList(membersResult);

@@ -13,7 +13,7 @@ import {
   sendCampaignOtp,
   verifyCampaignOtp,
 } from "../controllers/campaignController.js";
-import { isVerifiedUser, isAdmin } from "../middlewares/tokenVerification.js";
+import { isVerifiedUser, isAdminOrStoreManager } from "../middlewares/tokenVerification.js";
 import { campaignPlayLimiter } from "../middlewares/campaignPlayLimiter.js";
 
 const router = express.Router();
@@ -24,7 +24,7 @@ router.post("/:slug/otp/verify", campaignPlayLimiter, verifyCampaignOtp);
 router.post("/:slug/play", campaignPlayLimiter, playCampaign);
 router.post("/:slug/lookup", campaignPlayLimiter, lookupVoucher);
 
-router.use(isVerifiedUser, isAdmin);
+router.use(isVerifiedUser, isAdminOrStoreManager);
 
 router.get("/analytics/dashboard", getDashboardAnalytics);
 router.post("/participations/:participationId/clear", clearParticipation);

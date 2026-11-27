@@ -10,7 +10,7 @@ import {
   deleteCheckout,
   updateCheckout,
 } from "../controllers/shiftCheckoutController.js";
-import { isVerifiedUser, isAdmin } from "../middlewares/tokenVerification.js";
+import { isVerifiedUser, canManageStore } from "../middlewares/tokenVerification.js";
 import { storeContext, isStoreRole } from "../middlewares/storeContext.js";
 
 const router = express.Router();
@@ -21,7 +21,7 @@ router
 
 router
   .route("/list")
-  .get(isVerifiedUser, storeContext, isAdmin, getList);
+  .get(isVerifiedUser, storeContext, canManageStore, getList);
 
 router
   .route("/day/:date")
@@ -51,6 +51,6 @@ router
     isStoreRole("Owner", "Manager"),
     updateCheckout
   )
-  .delete(isVerifiedUser, storeContext, isAdmin, deleteCheckout);
+  .delete(isVerifiedUser, storeContext, canManageStore, deleteCheckout);
 
 export default router;
