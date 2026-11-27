@@ -5,6 +5,7 @@ import { MdSearch, MdClose, MdRestaurantMenu } from "react-icons/md";
 import defaultDishImage from "../../assets/images/hyderabadibiryani.jpg";
 import DishBottomSheet from "./DishBottomSheet";
 import { formatPriceK } from "../../utils";
+import { matchesFullTextSearch } from "../../utils/searchText";
 import { buildStandaloneToppingItem, POS_TOPPING_CATEGORY } from "../../utils/toppingOrderItem";
 import { addItems } from "../../redux/slices/cartSlice";
 import LoadingState from "../shared/LoadingState";
@@ -79,7 +80,7 @@ const MenuContainer = () => {
 
       if (searchTerm.trim()) {
         filtered = filtered.filter((dish) =>
-          dish.name.toLowerCase().includes(searchTerm.toLowerCase())
+          matchesFullTextSearch(dish.name, searchTerm)
         );
       }
 
@@ -112,7 +113,7 @@ const MenuContainer = () => {
   const isToppingCategory = selectedCategory === POS_TOPPING_CATEGORY;
   const visibleToppings = toppings.filter((topping) => {
     if (!searchTerm.trim()) return true;
-    return topping.name.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesFullTextSearch(topping.name, searchTerm);
   });
 
   if (categoriesLoading || dishesLoading) {
